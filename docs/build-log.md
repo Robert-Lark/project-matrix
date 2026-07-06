@@ -141,3 +141,34 @@ entry.
 **Downstream:** spun out `snapshot-capture` (Task) — the one-time capture into R2.
 Resolving `data-contract` **unblocks `data-strategy-lab`** (its other dep,
 `measurement-methodology`, was already resolved).
+
+## Methodology notes
+
+Cross-cutting workflow learnings — the "how this was built *with AI*" story,
+separate from the per-decision record. Prime source material for the talk / blog /
+"How it was built" surface.
+
+### Context as a managed resource (2026-07-06)
+
+The whole point of the `/decision-mapping` discipline is that **the artifacts are
+the memory**: the map, ADRs, `CONTEXT.md`, prototypes, and this log are loaded in
+full into each session, so **clearing context between sessions is safe by design**.
+What a session must do before clearing is externalise every decision, its rationale,
+and its rejected alternatives into those files — then the only thing lost on clear
+is the conversational back-and-forth, whose load-bearing parts are already distilled
+into each ADR's "Considered alternatives" and this log.
+
+Two distinct bridges, not to be confused:
+- **The decision-mapping handoff** bridges *planning session → planning session*
+  (artifacts carry the state).
+- **`/to-prd`** bridges *planning → building* — run it only when a coherent scope
+  is **resolved enough to implement**.
+
+Judgment call recorded: **`/to-prd` was deliberately *not* run after `data-contract`.**
+The foundations aren't all resolved (`design-system`, `deployment-topology` still
+open), and even the most self-contained resolved piece — the data layer — depends on
+`deployment-topology` (where the Worker/monorepo live) and `design-system` (image
+dimensions). PRD-ing now would spec against moving ground. The to-prd moment is
+*after* the foundation tickets resolve, PRD-ing the foundation build as one phase.
+Knowing *when* to compress context and *when* to convert plans to specs is itself
+the staff-level agentic-era signal this project exists to demonstrate.
