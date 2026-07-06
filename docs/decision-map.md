@@ -48,10 +48,21 @@ Type: Grilling
 
 ### measurement-methodology: How are metrics captured fairly across paradigms?
 Blocked by: —
-Status: open
+Status: resolved
 Type: Grilling + Research
 **Question:** How do we capture TTFB/FCP/LCP/CLS/INP, KB-transferred, and a compute-cost estimate *comparably and fairly* across a static-edge deploy vs Vercel-Edge SSR vs server-HTML/HTMX vs a non-React frontier build — so a skeptical staff engineer can't call the benchmark rigged? Includes the `sendBeacon`→observability (Datadog/New Relic) pipeline and the infra-cost model. This is the thesis's credibility root.
-**Answer:** _(open)_
+**Answer:** Resolved via `/grilling`, verified against primary sources (web.dev, W3C/MDN, vendor pricing). Rationale + trade-offs in [ADR-0001](adr/0001-benchmark-measurement-methodology.md); session narrative in `build-log.md` Phase 1. Nine decisions:
+1. **Lab vs field split.** Lab (synthetic, throttled) is the *comparison engine* — reproducible head-to-head numbers carry the "not rigged" claim. Field/RUM is the *reality check* + the only honest INP source (Lighthouse can't measure INP, only a TBT proxy); field is never used to rank variants (can't control who visits).
+2. **One ruler.** Google `web-vitals` lib, identical build injected into every variant, in both lab and field → same metric definitions everywhere. Bytes come from the browser's own network accounting.
+3. **KB bucketed, not lumped.** HTML/JS/CSS/fonts/images/data, with **initial JS KB as the headline** (resumability/islands vs heavy-hydration story), plus a **per-interaction byte cost**.
+4. **Fairness controls.** Three published test profiles (fast-wifi+laptop, avg-broadband+desktop, slow-4G+mid phone); cold vs warm as separate columns; median-of-N (~7–10) lab runs, p75 for field; **one variable changes at a time**.
+5. **TTFB fairness.** Decompose into travel-time vs server think-time; warm as headline + cold-start as labeled callout; two locations (near/far) to show edge reach honestly; framed as a *trade*, not a race.
+6. **KB fairness.** Identical compression (Brotli) + identical assets everywhere; strip our own instrumentation; count real compressed bytes-over-wire.
+7. **Cost model.** Separate a measured **resource profile** (CPU-ms/bytes/requests per visit) from a dated, swappable **rate card**; report both an *architecture-only* number (same card for all) and a *real-world* number (each on its host); normalize to $/1M visits; show **actual (near-$0) charge + grounded extrapolation**; publish the arithmetic.
+8. **Pipeline.** web-vitals → tagged beacon (variant/surface/env/cache/location) fired on tab-hidden → CF Worker collector → CF store (durable, ~$0) + Datadog mirror (observability breadth).
+9. **Anti-rigging + execution.** Public harness; a receipt behind every number; one-command reproduce; plain-language methodology page + inline limits-of-data tooltip; pinned cloud runner + WebPageTest cross-check; dated snapshots (not live) tied to commit SHAs; all variants measured in one batch.
+
+**Implementation is downstream** — building the harness (Playwright runner + web-vitals injection + collector Worker + cost calculator + methodology page) is a to-prd/implement job needing `design-system` (identical assets), `data-contract` (payload to render), and `deployment-topology` (variants hosted) first. No new decision node required; existing edges unchanged.
 
 ### data-contract: Discogs proxy, payload schema, caching, commerce layer
 Blocked by: —
