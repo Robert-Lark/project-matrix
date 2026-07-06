@@ -25,5 +25,7 @@ Running record of how this project is built *with AI* — source material for th
 
 **Artifacts:** `decision-map.md` (canonical) · this log · the Gemini PRD (`~/Downloads` — archive into `docs/` later).
 
+**Published — building in public.** Crystallized planning pushed to a public repo: `https://github.com/Robert-Lark/project-matrix` (branch `main`, committed with a GitHub noreply address to keep the work email out of public history). The repo history now *is* part of the process record; each future session commits + pushes at handoff.
+
 ## Phase 1 — Foundations
 _(fill in as the foundation tickets resolve)_
