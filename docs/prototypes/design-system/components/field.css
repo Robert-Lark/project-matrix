@@ -1,0 +1,59 @@
+/*
+ * Component module — form field. The accessible DEFAULT (ADR-0003).
+ * Its DS-OFF ("stripped") counterpart for the A/B demo lives in the reference
+ * render — identical markup and layout MINUS the a11y wiring, so the two boxes
+ * differ ONLY in accessibility.
+ *
+ * Error state styles off [aria-invalid], never a class — so the visual defect
+ * cannot exist without the programmatic one. Meaning is carried by icon + text
+ * in .pm-field__error, never by colour alone (survives forced-colors AND
+ * colour-blindness).
+ */
+
+.pm-field {
+  display: grid;
+  gap: var(--space-stack-xs);
+  margin-block-end: var(--space-stack);
+}
+
+.pm-field__label {
+  font: var(--weight-medium) var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-text);
+}
+
+.pm-field__control {
+  min-height: 44px;   /* comfortably clears the 24px target floor */
+  padding: var(--space-inset-xs) var(--space-inset-sm);
+  font: var(--text-body) / 1.3 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.pm-field__control:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-color: var(--color-focus);
+}
+
+.pm-field__hint {
+  font: var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.pm-field__control[aria-invalid="true"] {
+  border-color: var(--color-danger);
+  border-width: 2px;
+}
+
+.pm-field__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-stack-xs);
+  font: var(--weight-medium) var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-danger);
+}
+
+/* Icon = a redundant, non-colour cue for the error. */
+.pm-field__error::before { content: "\26A0"; }  /* ⚠ */

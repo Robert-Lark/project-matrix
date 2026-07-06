@@ -1,0 +1,46 @@
+/*
+ * Component module — button / CTA. A11y defaults baked in (ADR-0003):
+ *  - min target size (WCAG 2.5.8)
+ *  - visible focus via :focus-visible (never `outline: none`)
+ *  - a 1px border so the button SHAPE stays visible under forced-colors,
+ *    where background fills are flattened
+ *  - transition reads --motion-fast, which collapses to ~0 under
+ *    prefers-reduced-motion — no per-component media query needed
+ */
+
+.pm-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-inline);
+  min-height: var(--target-min);
+  min-width: var(--target-min);
+  padding: var(--space-inset-sm) var(--space-inset);
+  font: var(--weight-medium) var(--text-body) / 1 var(--font-ui);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: 1px solid transparent;   /* visible shape under forced-colors */
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+
+.pm-button:hover { background: var(--color-accent-hover); }
+
+/* Style focus off :focus-visible, not a JS class. Survives forced-colors
+   because --color-focus maps to the system Highlight colour. */
+.pm-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pm-button--secondary {
+  color: var(--color-accent);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}

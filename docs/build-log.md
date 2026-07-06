@@ -142,6 +142,75 @@ entry.
 Resolving `data-contract` **unblocks `data-strategy-lab`** (its other dep,
 `measurement-methodology`, was already resolved).
 
+### `design-system` — resolved (2026-07-06)
+
+The shared-presentation ticket: how one token + component system renders
+byte-identically across paradigms as different as vanilla, React/Next, Astro/Svelte,
+Qwik, HTMX, and the Remix 3 frontier — *without drift* — so the render-axis numbers
+aren't confounded by the components themselves.
+
+**Method.** `/decision-mapping` → `/grilling` + `/domain-modeling`, one question at a
+time, down the design tree: unit-of-sharing → CSS-as-control-vs-variable → authoring
+shape/token tiers → theming/forced-colors → the a11y default set → ADA-section
+structure → drift enforcement → coverage/naming/fonts → aesthetic + build strategy.
+
+**The seam Rob drew (the turning point).** I recommended holding CSS *delivery*
+constant to remove it as a confound. Rob rejected it with a sharper distinction:
+"you did it differently" is a valid critique for **markup** (an authoring choice) but
+*not* for **CSS delivery**, because critical-CSS inlining, scoping, and tree-shaking
+are genuine framework optimizations whose payoff *is the verdict*. That split the
+decision at the right seam — **same declared styles + same DOM (control); native CSS
+delivery/optimization (measured variable)** — the exact analogue of data-contract's
+"same data, not same access," and it flips the CSS-KB bucket from noise to signal.
+Two honesty guardrails fell out: *repackage don't re-value*, and *idiomatic default
+not hand-tuned*.
+
+**A11y reframed as portfolio evidence (Rob).** Rob pulled accessibility out of the
+Checkout surface into its own **ADA section**: separate pages, guided walkthroughs
+for the non-obvious defects, and a side-by-side compliant-vs-not comparison. The
+framing that made it land: the DS *ships a11y as the default*, so failure→repair =
+**DS-off vs DS-on** — what a rushed team ships without the system. A design insight
+surfaced from the structure itself: a11y failures split into **element-scoped**
+(honest as two live boxes) and **global page-state** (forced-colors/reflow/
+reduced-motion — can't be two simultaneous live boxes, so mode-toggle demos with an
+"emulation ≠ real OS mode" caveat). Spotting that split is itself an ADA-expertise
+signal.
+
+**The eight decisions** (full rationale + rejected alternatives in
+[ADR-0003](adr/0003-design-system-and-zero-bias-presentation.md)): CSS + canonical
+markup contract, no shared runtime (Web Components rejected; HiFi is React-only and
+can't cross paradigms); presentation zero-bias = same styles not same delivery;
+global token layer + per-component modules, two-tier tokens (components consume
+semantic only); single theme + first-class forced-colors via the semantic seam;
+a11y shipped as DS defaults with matched compliant/stripped pairs; drift *proven*
+via a framework-free reference render + normalized-DOM + pixel diff in CI; aesthetic
+deferred + swappable; fonts a controlled constant.
+
+**Design principle surfaced (Rob).** The aesthetic is a distinct decision that must
+not be an accident of the first prototype — so the architecture was built
+aesthetic-agnostic (look = values poured into the primitive tier later), the
+prototype uses a labeled neutral placeholder, and `aesthetic-direction` was spun out
+for deliberate exploration (`/prototype` + frontend-design).
+
+**Prototype self-caught a bug.** A token-consistency check (grep component `var(--…)`
+against `tokens.css`) caught the prototype violating its own two-tier rule — dangling
+`--space-N` refs and components reaching into the `--pm-*` primitive tier. Fixed
+before resolving; the check *is* a shrunk version of the drift gate the ADR mandates.
+
+**Skills / tools used:** `/decision-mapping` · `/grilling` · `/domain-modeling` ·
+a shell token-consistency check on the prototype.
+
+**Artifacts:** [ADR-0003](adr/0003-design-system-and-zero-bias-presentation.md) · the
+prototype [`docs/prototypes/design-system/`](prototypes/design-system/) (`tokens.css`,
+3 component modules, framework-free `reference/index.html`) · new `CONTEXT.md`
+Presentation terms · ticket answer + reshaped matrix in `decision-map.md` · this entry.
+
+**Downstream:** spun out `aesthetic-direction`, `a11y-section` (both unblocked), and a
+`home-surface` candidate (blocked by `deployment-topology`). Resolving `design-system`
+**unblocks `deployment-topology` and `remix3-frontier`**. The matrix's "Checkout/A11y"
+row split into Checkout (INP) + a standalone A11y section, and a home/gateway surface
+was added.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
@@ -172,3 +241,31 @@ dimensions). PRD-ing now would spec against moving ground. The to-prd moment is
 *after* the foundation tickets resolve, PRD-ing the foundation build as one phase.
 Knowing *when* to compress context and *when* to convert plans to specs is itself
 the staff-level agentic-era signal this project exists to demonstrate.
+
+### One-shot the issues, not the project (2026-07-06)
+
+Rob asked whether, once the ADRs + full PRD are written, the entire build could be
+handed to Fable 5 to one-shot. Recorded answer: **no to one-shotting the project,
+yes to one-shotting the issues** — and the decomposition we're already doing is what
+makes the difference. Three reasons, in order of force:
+
+1. **The thesis and the medium would contradict.** This portfolio argues "when anyone
+   can one-shot working code, the differentiator is architectural judgment." A
+   single un-verified one-shot would make the medium undercut the message; the
+   disciplined decomposition (map → ADRs → PRD → issues → implement) *is* the skill on
+   display, and it *is* the content of the "How it was built" surface.
+2. **Credibility rests on verification, which is iterative.** The whole project stands
+   on numbers being real and rendering being *provably* identical (drift tests,
+   benchmark fairness, self-hosted assets, forced-colors). A one-shot *generates*
+   code; it can't *verify* a variant didn't drift or that a benchmark isn't subtly
+   rigged — and that verification is exactly what a skeptic attacks. Holds regardless
+   of model strength.
+3. **It's an ecosystem, not an artifact.** Monorepo + N framework apps + `-cd` +
+   `-terraform` + Worker + snapshot capture + harness — beyond any single output
+   window, and not exercisable end-to-end in one pass.
+
+The right use: the ADR→PRD→`/to-issues` decomposition is *precisely what makes each
+well-scoped issue one-shottable* (a single variant's release card, `tokens.css`, one
+Worker endpoint). Let a strong model rip through each bounded, verifiable issue; keep
+the human verify loop on the cross-cutting invariants. This is already the downstream
+plan — `/to-prd → /to-issues → /implement`.

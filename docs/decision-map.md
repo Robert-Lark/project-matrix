@@ -21,18 +21,20 @@
 - *Data strategy (technique):* cold → **TanStack Query** (REST-native client cache; the lead — Apollo cut as wrong for Discogs REST, optionally retained as a "misapplication" exhibit) → server loaders + progressive enhancement → edge/KV cache.
 - *Environment (flips the winner):* network throttle × data volume × cache warmth.
 
-**Sparse matrix — the five store surfaces.**
+**Sparse matrix — the store surfaces.**
 
 | Surface | Commercial form | Built in | Also varies | Spotlights |
 |---|---|---|---|---|
+| Home / gateway | landing: what / who / why + CTA | singleton (vanilla/static — TBD `deployment-topology`) | — | entry point; explains the site, gateway to the rest |
 | Editorial (spine) | blog / staff-pick + CTA | all core variants + Remix 3 (frontier) | network, CPU | render baseline; hydration-overkill-for-prose |
 | PDP (spine) | product detail, janky→fixed | vanilla, React/Next, Astro, Qwik (HTMX opt) | network | the flip: interactivity earns JS; CLS/LCP; Qwik shines |
 | Catalog/PLP (spotlight) | search + faceted filters + sort | React/Next + HTMX | data strategy × cache warmth × network | data axis; edge TTFB 400ms→15ms |
-| Checkout/A11y (spotlight) | checkout / account form | vanilla, React/Next, HTMX (Qwik opt) | forced-colors + CPU | INP under load; a11y failure→repair |
+| Checkout (spotlight) | checkout / account form | vanilla, React/Next, HTMX (Qwik opt) | CPU | INP under load |
+| A11y section (spotlight) | store surfaces, compliant vs not | singleton (vanilla) | forced-colors, zoom, reduced-motion | ADA craft: DS-on vs DS-off; two-box A/B + mode-toggle demos |
 | How it was built | store chrome, editorial | singleton | — | process evidence |
 
 **The flip (thesis proof):** React/Next is the *villain* on Editorial and a *contender* on PDP — same variant, opposite verdict.
-**Contextual switcher:** the live control adapts per surface — render-switcher on spine surfaces, data-strategy switcher on PLP, device/CPU + forced-colors controls on Checkout. HUD constant.
+**Contextual switcher:** the live control adapts per surface — render-switcher on spine surfaces, data-strategy switcher on PLP, device/CPU controls on Checkout, a11y-mode toggles (forced-colors / zoom / reduced-motion) on the A11y section. HUD constant.
 
 ---
 
@@ -91,10 +93,21 @@ Type: Task
 
 ### design-system: Shared token + component system replicable across variants
 Blocked by: —
-Status: open
+Status: resolved
 Type: Grilling + Prototype
 **Question:** The single CSS Custom Property token system + store component set (PLP grid, PDP, forms, CTAs) that renders visually identical across every variant (the zero-bias guarantee). Stakes are raised because a storefront is a big shared surface. How is it authored so multiple paradigms consume it without drift?
-**Answer:** _(open)_
+**Answer:** Resolved via `/grilling` + `/domain-modeling`. Rationale + rejected alternatives in [ADR-0003](adr/0003-design-system-and-zero-bias-presentation.md); prototype at [`prototypes/design-system/`](prototypes/design-system/) (two-tier `tokens.css` + 3 component modules + framework-free `reference/` render); vocabulary in [CONTEXT.md](../CONTEXT.md); narrative in `build-log.md` Phase 1. Eight decisions:
+1. **Shared artifact = CSS + a canonical markup contract, no shared runtime.** Each paradigm re-implements the DOM (identical elements/nesting/`pm-` classes) + imports identical style rules ⇒ pixels identical *by construction*. Web Components rejected (would force a JS runtime into the no-JS variants). Kills "that variant is slow because its components were written differently." HiFi (React-only) can't be the shared layer.
+2. **Presentation zero-bias = same styles, not same delivery** (mirrors data's "same data, not same access"). Declared rules + rendered DOM = control; CSS scoping/splitting/inlining/tree-shaking = the *measured variable* (the paradigm's payoff is part of the verdict). Guardrails: repackage-not-revalue; idiomatic-default-not-hand-tuned. CSS KB flips from noise to signal.
+3. **Global token layer + per-component modules; two-tier tokens** (primitive → semantic), components consume semantic only — one auditable theming/forced-colors seam.
+4. **Single canonical theme + first-class forced-colors** (semantic remap to CSS system colors; no meaning-by-color-alone; visible focus survives); dark mode deferred (cheap via the seam).
+5. **A11y shipped as DS defaults** — focus-visible rings, WCAG target sizes, `rem`/reflow, reduced-motion, forced-colors, accessible forms + skip-link/landmarks. State off native attributes, not JS classes. Every a11y component ships a **matched compliant/stripped pair**; failure→repair = DS-off vs DS-on. Five headline guarantees span WCAG POUR.
+6. **Drift proven, not promised** — a framework-free **reference render** is the golden master; CI checks each variant by normalized-DOM equivalence + pixel diff × 3 profiles.
+7. **Aesthetic deferred + swappable** — architecture is aesthetic-agnostic (the look = values poured into the primitive tier later); prototype uses a labeled neutral placeholder.
+8. **Fonts = controlled constant** (self-hosted, subset, identical everywhere; one sans + tabular figures for metrics).
+
+**Propagated:** matrix reshaped (see Notes — Checkout/A11y splits; a11y becomes its own section; home/gateway surfaced); PDP interactivity is DS-appearance-shared / behavior-per-paradigm.
+**Spun out:** `aesthetic-direction`, `a11y-section` (both unblocked), and a `home-surface` candidate (blocked by `deployment-topology`). Resolving this **unblocks `deployment-topology` and `remix3-frontier`**.
 
 ### deployment-topology: Monorepo, hosting, contextual switcher
 Blocked by: design-system, data-contract
@@ -115,6 +128,27 @@ Blocked by: design-system
 Status: open
 Type: Research + Prototype
 **Question:** The minimum Remix 3 (alpha) showcase that demonstrates the non-React server-HTML + frames paradigm, clearly labeled pre-release and fenced from core numbers. Re-verify Remix 3 status at build time (fast-moving).
+**Answer:** _(open)_
+
+### aesthetic-direction: The visual look, poured into the primitive token tier
+Blocked by: design-system
+Status: open
+Type: Prototype + Grilling
+**Question:** The actual aesthetic — palette, typeface pairing, spacing rhythm, density, radii/shadow feel, and overall compositional voice — deliberately deferred from `design-system` (which is aesthetic-agnostic). Explore concrete directions (references/mood, `/prototype` + frontend-design skill), pick one, and pour it into the **primitive** token tier only; semantic tokens and components stay untouched (that swappability is the ADR-0003 payoff). Must clear WCAG contrast at token-definition time and survive the forced-colors remap.
+**Answer:** _(open)_
+
+### a11y-section: The dedicated ADA section (hybrid A/B + mode-toggle demos)
+Blocked by: design-system
+Status: open
+Type: Grilling + Prototype
+**Question:** The portfolio's ADA section, hosted in the **vanilla** variant (orthogonal to the render/data axes — it compares compliant-vs-not, not paradigm-vs-paradigm). Hybrid structure: **one two-box A/B page** for element-scoped defects (focus, forms, target size, contrast, live regions) + **mode-toggle demos** for global-state defects (forced-colors, reflow/zoom, reduced-motion), each with an honesty caveat that emulation ≠ the real OS mode. Decide: per-page vs consolidated layout, the guided-walkthrough copy per defect, and which store surface hosts each demo. Consumes the DS matched compliant/stripped pairs + the comparison-layout / walkthrough / mode-emulation primitives.
+**Answer:** _(open)_
+
+### home-surface: Landing / gateway page
+Blocked by: design-system, deployment-topology
+Status: open
+Type: Grilling
+**Question:** The entry point opened via a blog/application link — explains what the site is, who built it, and why, and acts as a gateway to the rest (scoped simple per Rob: chrome + prose + CTA, nothing complex). Which paradigm serves it (leaning vanilla/static; needn't be part of the benchmarked spine) is a `deployment-topology` call. Surfaced during `design-system` as a gap in the original five-surface matrix.
 **Answer:** _(open)_
 
 ### (fog) per-surface builds

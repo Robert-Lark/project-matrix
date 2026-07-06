@@ -83,6 +83,44 @@ The genuine client-side interaction on a PDP (image gallery/zoom, add-to-cart wi
 cart state, quantity, format switch). Distinct from commerce-backend fidelity, and
 kept rich because the render-axis thesis depends on it.
 
+### Presentation
+
+**Canonical markup contract**:
+The shared, paradigm-neutral definition of a component's rendered DOM — exact
+elements, nesting, and class names — that every variant must emit identically.
+There is no shared component *runtime*; each paradigm re-implements the markup
+(JSX, Astro, Qwik, HTMX partial, vanilla template) but the DOM it produces is
+identical. Together with the shared style rules, this makes pixels identical *by
+construction* — so "that variant is slow because its components were written
+differently" is never a valid excuse.
+_Avoid_: "shared component library" (implies shared runtime code — there is none).
+
+**Presentation zero-bias**:
+The design-system counterpart to the data zero-bias guarantee. The *control* is
+the declared style rules + the rendered DOM (identical everywhere). The *measured
+variable* is how each paradigm delivers and optimizes that CSS — scoping,
+code-splitting, critical-CSS inlining, unused-CSS elimination — because those are
+genuine paradigm capabilities whose payoff is part of the verdict. "Same styles,
+not same delivery," mirroring data's "same data, not same access."
+
+**Semantic token**:
+The aliased design token a component actually consumes (`--color-text`,
+`--color-surface`, `--space-inset`), one level above the raw primitive scale. The
+single seam through which theming and forced-colors are applied — reassign the
+semantic token once and every component adapts.
+
+**Reference render**:
+The framework-free rendering of each component (canonical markup + shared CSS as
+plain static HTML, no framework). Serves two roles: the openable prototype, and the
+drift-proof **golden master** every variant is diffed against in CI (normalized-DOM
+equivalence + pixel screenshot). Never shipped to a visitor.
+
+**Matched pair**:
+An a11y-relevant component shipped in two forms — the compliant **DS-on** default and
+a **DS-off** (stripped) counterpart, byte-identical except the accessibility
+treatment. The pair makes a side-by-side comparison differ *only* in accessibility;
+the DS-off form is what a rushed team ships without the design system.
+
 ## Standing principle
 
 **Real-world fidelity**: a finding is worthless if a working engineer could not
