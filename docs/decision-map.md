@@ -66,9 +66,27 @@ Type: Grilling + Research
 
 ### data-contract: Discogs proxy, payload schema, caching, commerce layer
 Blocked by: —
-Status: open
+Status: resolved
 Type: Grilling + Prototype
 **Question:** Which Discogs endpoints; the normalized payload schema shared by all variants (zero-bias); the Cloudflare Worker reverse-proxy design; cold vs edge/KV caching; and how the commerce layer (cart / price / CTA) is handled — real Discogs marketplace data (auth?) vs simulated over catalog data?
+**Answer:** Resolved via `/grilling` + `/domain-modeling`; API facts verified against `discogs.com/developers`. Rationale + trade-offs in [ADR-0002](adr/0002-data-contract-and-frozen-snapshot.md); prototype schema at [`prototypes/data-contract/`](prototypes/data-contract/); vocabulary in [CONTEXT.md](../CONTEXT.md); narrative in `build-log.md` Phase 1. Eight decisions:
+1. **Provenance = frozen snapshot** is the canonical origin (real data captured once, frozen); makes numbers reproducible, kills rate-limit/uptime risk, collapses auth to capture-time only.
+2. **Catalog (immutable, freezable) vs commerce (mutable, dynamic)** is the load-bearing split; freezing catalog is real-world-faithful, only the dynamic slice's request cost is hidden.
+3. **Live-origin demonstration** — on-demand PDP action fetching live prices, fenced from all numbers (like Remix 3), presented as a demo **not a "mode"** (a "live" toggle would imply the default is fake); mandatory self-explaining copy.
+4. **Commerce is thin** — real frozen price aggregate (`lowest_price`+`num_for_sale`, inline on the release); cart = client state; checkout = simulated (no payment/orders/PII); no per-seller listings table.
+5. **Endpoints + scope** — PLP `GET /database/search` (filters), PDP `GET /releases/{id}?curr_abbr=USD` (price inline, one call), images downloaded + self-hosted (auth+rate-limited); heavy curated **crate** (~500 releases); data-volume knob = serve N (24 vs 240) from it.
+6. **Zero-bias payload = two trays** normalized once at capture — `ReleaseSummary` (PLP) + `ReleaseDetail` (PDP); **data-not-UI** guardrail (typed primitives, no pre-render work); one Zod schema, validated at capture.
+7. **Zero-bias = same data, not same access** — static variants bake the tray in at build; runtime variants fetch via the Worker; the access pattern is the measured variable, matching each paradigm's real production shape.
+8. **Serving = R2 origin → Worker (thin read + beacon tagging + live path) → KV warm tier** (global ⇒ reproducible warm); cold = bypass to R2; cache state harness-driven; client-side caching deferred to `data-strategy-lab`.
+
+**Propagated guardrail:** PDP keeps rich *product interactivity* (gallery/zoom, add-to-cart+cart state, quantity, format switch) despite thin commerce — the render-axis "interactivity earns JS" flip depends on it (→ `design-system`, PDP build).
+**Standing principle reinforced:** findings must replicate in the real world — no lab artifacts.
+
+### snapshot-capture: Capture + freeze the crate into R2
+Blocked by: data-contract
+Status: open
+Type: Task
+**Question:** Run the one-time capture: pick the crate (genre/era), pull ~500 releases via the verified endpoints respecting the 60/min rate-limit headers with backoff, download + self-host images, normalize to the two trays, Zod-validate against `prototypes/data-contract/schema.ts`, and land it in R2 with a dated `SnapshotManifest` (capture date + commit SHA). Image *derivative* sizing may need a follow-up once `design-system` fixes component dimensions.
 **Answer:** _(open)_
 
 ### design-system: Shared token + component system replicable across variants

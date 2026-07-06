@@ -1,0 +1,114 @@
+{
+  "_note": "ILLUSTRATIVE fixture, not captured data. Shows the shape a variant receives. Conforms to schema.ts. Real values arrive from the snapshot-capture task.",
+
+  "sampleSummary": {
+    "id": 1611072,
+    "slug": "1611072-miles-davis-kind-of-blue",
+    "title": "Kind Of Blue",
+    "artist": "Miles Davis",
+    "cover": {
+      "src": "/assets/img/1611072-primary.avif",
+      "width": 600,
+      "height": 600,
+      "alt": "Miles Davis — Kind Of Blue, front cover"
+    },
+    "format": "Vinyl, LP, Album, Reissue, 180 Gram",
+    "year": 1959,
+    "priceFrom": { "amount": 21.5, "currency": "USD" },
+    "numForSale": 58,
+    "genres": ["Jazz"],
+    "styles": ["Modal", "Cool Jazz"]
+  },
+
+  "sampleDetail": {
+    "id": 1611072,
+    "slug": "1611072-miles-davis-kind-of-blue",
+    "title": "Kind Of Blue",
+    "artist": "Miles Davis",
+    "cover": {
+      "src": "/assets/img/1611072-primary.avif",
+      "width": 600,
+      "height": 600,
+      "alt": "Miles Davis — Kind Of Blue, front cover"
+    },
+    "format": "Vinyl, LP, Album, Reissue, 180 Gram",
+    "year": 1959,
+    "priceFrom": { "amount": 21.5, "currency": "USD" },
+    "numForSale": 58,
+    "genres": ["Jazz"],
+    "styles": ["Modal", "Cool Jazz"],
+    "images": [
+      { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis — Kind Of Blue, front cover" },
+      { "src": "/assets/img/1611072-back.avif", "width": 600, "height": 600, "alt": "Kind Of Blue, back cover" }
+    ],
+    "tracklist": [
+      { "position": "A1", "title": "So What", "durationSeconds": 562 },
+      { "position": "A2", "title": "Freddie Freeloader", "durationSeconds": 574 },
+      { "position": "A3", "title": "Blue In Green", "durationSeconds": 337 },
+      { "position": "B1", "title": "All Blues", "durationSeconds": 693 },
+      { "position": "B2", "title": "Flamenco Sketches", "durationSeconds": 566 }
+    ],
+    "labels": [{ "name": "Columbia", "catno": "CS 8163" }],
+    "formats": [
+      { "name": "Vinyl", "qty": 1, "descriptions": ["LP", "Album", "Reissue", "180 Gram"] }
+    ],
+    "notes": "180 gram audiophile reissue. Illustrative fixture."
+  },
+
+  "samplePlpPage": {
+    "items": [
+      {
+        "id": 1611072,
+        "slug": "1611072-miles-davis-kind-of-blue",
+        "title": "Kind Of Blue",
+        "artist": "Miles Davis",
+        "cover": { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis — Kind Of Blue" },
+        "format": "Vinyl, LP, Album, Reissue, 180 Gram",
+        "year": 1959,
+        "priceFrom": { "amount": 21.5, "currency": "USD" },
+        "numForSale": 58,
+        "genres": ["Jazz"],
+        "styles": ["Modal", "Cool Jazz"]
+      },
+      {
+        "id": 1420493,
+        "slug": "1420493-john-coltrane-a-love-supreme",
+        "title": "A Love Supreme",
+        "artist": "John Coltrane",
+        "cover": { "src": "/assets/img/1420493-primary.avif", "width": 600, "height": 600, "alt": "John Coltrane — A Love Supreme" },
+        "format": "Vinyl, LP, Album, Reissue",
+        "year": 1965,
+        "priceFrom": { "amount": 28.0, "currency": "USD" },
+        "numForSale": 34,
+        "genres": ["Jazz"],
+        "styles": ["Free Jazz", "Modal"]
+      }
+    ],
+    "page": 1,
+    "perPage": 24,
+    "total": 500,
+    "totalPages": 21,
+    "facets": {
+      "genres": [{ "value": "Jazz", "count": 500 }],
+      "styles": [
+        { "value": "Modal", "count": 92 },
+        { "value": "Hard Bop", "count": 141 },
+        { "value": "Cool Jazz", "count": 63 },
+        { "value": "Free Jazz", "count": 48 }
+      ],
+      "formats": [
+        { "value": "LP", "count": 500 },
+        { "value": "Reissue", "count": 318 },
+        { "value": "180 Gram", "count": 121 }
+      ]
+    }
+  },
+
+  "sampleManifest": {
+    "capturedAt": "2026-07-06",
+    "source": "api.discogs.com",
+    "crate": "jazz-original-pressings",
+    "releaseCount": 500,
+    "commitSha": null
+  }
+}
