@@ -323,6 +323,50 @@ front Worker/switcher + edge Worker + measurement harness) has arrived. All six
 remaining open tickets are unblocked; per-surface builds stay fog until the foundation
 build exists.
 
+### `foundation-build` — PRD published (2026-07-07)
+
+The bridge from planning to building: the `/to-prd` moment the map had been holding
+until all four foundations resolved. Scope: monorepo scaffold + composed origin
+(front Worker + switcher/HUD chrome + placeholder stand-ins) + edge Worker data
+plane + measurement harness, deployed, with the spike suite re-run against the
+real origin as the first-deploy smoke.
+
+**Method.** `/to-prd` — synthesize from the resolved ADRs, don't re-interview. The
+one mandated checkpoint (test seams) bounced when asked in jargon ("composed-origin
+HTTP seam, output seams") — Rob: "I have no idea what you are asking me." Re-asked
+plainly ("test it from the outside, like a visitor" / "cardboard-cutout placeholder
+pages") and both recommendations were approved. Mid-session Rob granted **standing
+best-judgment authorization** for technical decisions going forward — the ADRs now
+encode his intent, so checkpoints resolve against them instead of blocking on him.
+
+**Verification before publication.** The draft PRD was adversarially reviewed by a
+38-agent workflow: seven lenses (one per ADR, completeness vs the map, glossary
+vocabulary, implementability) with every claimed defect re-verified by an
+independent refuter. **25 confirmed, 6 refuted.** The confirmed set was dominated
+by *silently dropped ADR clauses* — per-interaction byte cost, the
+one-variable-per-comparison rule, Brotli identity, cost-model cache-hit/region
+inputs, forced-colors/fonts obligations — plus one invented "verbatim" attribution
+and a real routing gap (the contract's `/assets/img/...` paths had no route). The
+implementability lens caught eight spec gaps an issue-slicing agent would have had
+to guess (instrumentation path, profile spec, fixture size, warm mechanism, beacon
+write observable, font files, local-vs-deployed Brotli, `/` behavior) — each
+decided under the standing authorization and folded in. A final two-agent pass on
+the revised PRD came back clean.
+
+**Process note.** The workflow was cut mid-run by a session usage limit; resuming
+from the run journal replayed all completed agents from cache — same
+artifacts-are-the-state discipline, this time inside a single tool run.
+
+**Skills / tools used:** `/to-prd` · a Workflow verification fan-out with
+adversarial refuters · `gh` (label + issue).
+
+**Artifacts:** [issue #1](https://github.com/Robert-Lark/project-matrix/issues/1)
+(the PRD, labeled `ready-for-agent` — label created) · `foundation-build` ticket in
+`decision-map.md` · this entry.
+
+**Downstream:** `/to-issues` on issue #1 to slice it into tracer-bullet issues,
+then `/implement` per issue.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

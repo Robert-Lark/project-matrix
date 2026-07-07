@@ -132,6 +132,13 @@ Type: Research + Prototype
 
 **Propagated:** foundations are now fully resolved — per the build-log judgment call, the `/to-prd` moment for the foundation build (monorepo scaffold + front Worker/switcher + edge Worker + measurement harness) has arrived.
 
+### foundation-build: Monorepo scaffold, composed origin, edge Worker, measurement harness
+Blocked by: cf-composition-spike
+Status: PRD published — [issue #1](https://github.com/Robert-Lark/project-matrix/issues/1) (`ready-for-agent`)
+Type: to-prd → to-issues → implement
+**Question:** Turn ADR-0001..0004 + the spike hardenings into the deployed, tested skeleton: monorepo scaffold + front Worker/switcher chrome + edge Worker data plane + measurement harness, with throwaway placeholder stand-in variants, tested outside-in at the composed origin (seam confirmed with Rob).
+**Answer:** PRD published 2026-07-07 as [issue #1](https://github.com/Robert-Lark/project-matrix/issues/1); adversarially verified against the ADRs/FINDINGS/glossary before publishing (38-agent workflow: 25 confirmed defects fixed, 6 refuted). Notable scope decisions (all ADR-consistent, made under Rob's standing best-judgment authorization): reserved `/_pm/*` instrumentation path on the front Worker; fixture snapshot expanded to ≥240 synthesized releases so `?n=`/pagination are observable; interim open-license placeholder font (plumbing real now, face stays with `aesthetic-direction`); two-location runs deferred but receipts carry a location label from day one; front Worker serves a throwaway chrome-free index at `/` until `home-surface`. **Next: `/to-issues` on issue #1.**
+
 ### snapshot-capture: Capture + freeze the crate into R2
 Blocked by: data-contract
 Status: open
