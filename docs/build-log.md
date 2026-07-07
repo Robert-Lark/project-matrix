@@ -211,6 +211,67 @@ Presentation terms · ticket answer + reshaped matrix in `decision-map.md` · th
 row split into Checkout (INP) + a standalone A11y section, and a home/gateway surface
 was added.
 
+### `deployment-topology` — resolved (2026-07-06)
+
+The last foundation ticket: where each variant is hosted, the monorepo layout, and
+the contextual switcher that swaps architecture on the same route — including how
+route + state survive the swap. Stakes: hosting, build, and navigation are each
+benchmark-critical surfaces where a careless choice silently confounds the numbers.
+
+**Method.** `/decision-mapping` → `/grilling` + `/domain-modeling`, one question at a
+time, seven decisions down the dependency tree (hosting → monorepo → URL scheme →
+swap mechanics → state partition → throttle honesty → switcher delivery). No new
+external facts were needed — the ticket sits downstream of the resolved ADRs — and the
+one class of unverified claim (Cloudflare composition specifics: service bindings,
+Workers Static Assets, HTMLRewriter, per-paradigm adapters) was deliberately **not**
+asserted as fact but fenced into a spike ticket, per the web-research discipline.
+
+**The through-line.** Every decision was the same move applied one layer down: *hold
+the layer constant so it can't confound the paradigm, unless it genuinely is a paradigm
+capability.* Hosting is held constant (single CF plane) so a provider's network can't
+masquerade as a paradigm difference — the direct sibling of ADR-0001's "one variable at
+a time" and ADR-0003's "same styles, not same delivery." The switcher's hard navigation
+isn't a limitation but the *honest* measurement (a real cold/warm load of the target
+paradigm). And the URL-as-measurement-condition scheme turns every link into a
+reproducible receipt, extending ADR-0001 §9's anti-rigging story into the navigation
+layer.
+
+**The honesty edge held twice.** (1) Network throttle can't be applied to a real
+visitor, so rather than fake it in-browser (a lab artifact a skeptic discounts),
+`?profile=` selects which *dated lab snapshot* the HUD shows, beside the visitor's own
+real RUM. (2) The switcher/HUD chrome is edge-injected from a known path, so it is
+byte-identical across variants *and* cleanly stripped from the measured KB — and its
+core is anchor links that work JS-off, so it never injects a runtime into the no-JS
+variants (the exact reasoning that killed Web Components in ADR-0003 §1).
+
+**The seven decisions** (full rationale + rejected alternatives in
+[ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md)): single canonical
+CF plane (host held constant; native-host as a fenced exhibit); one monorepo pinned by
+one SHA (pnpm + Turborepo, no shared component runtime, a deliberate and justified
+deviation from the org 3-repo GitOps standard); single origin, path-prefixed, via a
+front routing Worker; the swap is a hard navigation; the URL is the measurement
+condition (cart the only stored state, UI micro-state resets); throttle is a snapshot
+selector, not a live fake; and the contextual switcher is per-surface, sparse,
+near-zero-JS, edge-injected chrome.
+
+**Working-method note (Rob's steer).** Rob twice interrupted the options to ask "what
+do you recommend?" — the signal being that in a decision-mapping grilling he wants the
+recommendation *led* up front with its reasoning, then the options, rather than options
+first. Folded into how the later questions were posed.
+
+**Skills / tools used:** `/decision-mapping` · `/grilling` · `/domain-modeling`.
+
+**Artifacts:** [ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md) · new
+`CONTEXT.md` "Controls & instrumentation" terms + "Canonical plane" · ticket answer in
+`decision-map.md` · this entry.
+
+**Downstream:** spun out `cf-composition-spike` (verify the CF composition + adapters
+before scaffolding the monorepo). **Unblocks `home-surface`** (now partially answered:
+singleton, static, off the benchmarked spine). With all four foundations
+(`measurement-methodology`, `data-contract`, `design-system`, `deployment-topology`)
+resolved, the frontier is now the foundation-build to-prd plus the spun-out
+research/prototype tickets; the per-surface builds remain fog until then.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

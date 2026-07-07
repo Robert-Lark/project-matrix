@@ -78,6 +78,13 @@ images.
 Cloudflare KV — the globally-replicated edge cache that makes a "warm" read
 reproducible everywhere. Contrast **cold**: bypass the edge and read the origin.
 
+**Canonical plane**:
+The single Cloudflare host every variant deploys to, co-located with the origin.
+Holding the host constant makes it a fairness control, not a benchmark variable — a
+latency gap can only be the paradigm. A variant may also appear on its native host
+(e.g. Next on Vercel) as a fenced "real-world host" exhibit, excluded from the numbers.
+_Avoid_: "the server", "prod" — there is one shared plane, not a per-variant server.
+
 **Product interactivity**:
 The genuine client-side interaction on a PDP (image gallery/zoom, add-to-cart with
 cart state, quantity, format switch). Distinct from commerce-backend fidelity, and
@@ -120,6 +127,34 @@ An a11y-relevant component shipped in two forms — the compliant **DS-on** defa
 a **DS-off** (stripped) counterpart, byte-identical except the accessibility
 treatment. The pair makes a side-by-side comparison differ *only* in accessibility;
 the DS-off form is what a rushed team ships without the design system.
+
+### Controls & instrumentation
+
+**Contextual switcher** (or just **switcher**):
+The live control that swaps the architecture serving the current route by a **hard
+navigation** to the target variant's URL — never a soft, in-place swap (there is no
+shared runtime to swap). "Contextual" because its control-set is a function of the
+surface: render-swap on the spine, data-strategy-swap on the PLP, device/CPU on
+Checkout, a11y-mode toggles on the A11y section. Its options are **sparse** — only the
+variants a surface is actually built in.
+_Avoid_: "toggle" (it navigates, it doesn't flip in place), "framework picker".
+
+**HUD**:
+The constant heads-up display of measurement, present on every surface: the selected
+profile's published lab snapshot shown alongside the visitor's own live web-vitals.
+
+**Chrome**:
+The switcher + HUD together — project **instrumentation**, edge-injected identically
+into every variant and deliberately **excluded from each variant's measured KB**. Not
+part of any paradigm's own bytes.
+_Avoid_: "the UI", "the shell" — chrome is instrumentation, not the store itself.
+
+**Measurement condition**:
+The full set of variables that define one reproducible measurement, carried entirely
+in the **URL** — path (variant / surface / entity-id) + query (data-volume, cache-
+warmth, and the profile snapshot-selector). Because the condition lives in the URL, a
+URL *is* a shareable receipt for a measurement. Contrast the **cart**, which is
+application state (same-origin storage), not a measurement condition.
 
 ## Standing principle
 

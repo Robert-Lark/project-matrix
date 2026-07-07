@@ -84,13 +84,6 @@ Type: Grilling + Prototype
 **Propagated guardrail:** PDP keeps rich *product interactivity* (gallery/zoom, add-to-cart+cart state, quantity, format switch) despite thin commerce — the render-axis "interactivity earns JS" flip depends on it (→ `design-system`, PDP build).
 **Standing principle reinforced:** findings must replicate in the real world — no lab artifacts.
 
-### snapshot-capture: Capture + freeze the crate into R2
-Blocked by: data-contract
-Status: open
-Type: Task
-**Question:** Run the one-time capture: pick the crate (genre/era), pull ~500 releases via the verified endpoints respecting the 60/min rate-limit headers with backoff, download + self-host images, normalize to the two trays, Zod-validate against `prototypes/data-contract/schema.ts`, and land it in R2 with a dated `SnapshotManifest` (capture date + commit SHA). Image *derivative* sizing may need a follow-up once `design-system` fixes component dimensions.
-**Answer:** _(open)_
-
 ### design-system: Shared token + component system replicable across variants
 Blocked by: —
 Status: resolved
@@ -111,9 +104,32 @@ Type: Grilling + Prototype
 
 ### deployment-topology: Monorepo, hosting, contextual switcher
 Blocked by: design-system, data-contract
-Status: open
+Status: resolved
 Type: Grilling
 **Question:** Monorepo layout; per-variant hosting (CF Pages static/SSR, Vercel Edge, etc.); and the contextual switcher that swaps architecture on the same route (render-switcher on spine surfaces, data-switcher on PLP). How do route/state sync across a variant swap?
+**Answer:** Resolved via `/grilling` + `/domain-modeling`. Rationale + rejected alternatives in [ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md); vocabulary in [CONTEXT.md](../CONTEXT.md); narrative in `build-log.md` Phase 1. One move throughout: **hold each layer constant so it can't confound the paradigm, unless it genuinely _is_ a paradigm capability.** Seven decisions:
+1. **Single canonical plane (Cloudflare); host held constant.** All variants on CF (Pages/Workers), co-located with the R2/KV data plane ⇒ host is a fairness control, not a variable (no cross-cloud data hop; a TTFB gap can only be the paradigm). Idiomatic CF adapter per paradigm, not hand-tuned. Optional native-host deploy (Next→Vercel) as a **fenced** "real-world host" exhibit, out of core numbers.
+2. **One monorepo, pinned by one SHA** (ADR-0001 §9 "one batch"). pnpm workspaces + Turborepo; `variants/` · `packages/` (tokens, reference-as-spec, data-contract, switcher, measurement — **no component runtime**) · `workers/edge` · `tools/` · `docs/`. pnpm's strict node_modules = zero-bias asset. Deliberately **deviates from the org 3-repo GitOps standard** (justified: reproducibility-first portfolio, not a production service).
+3. **Single origin, path-prefixed** `/{variant}/{surface}/...`, composed by a thin front routing Worker (service bindings + Workers Static Assets); `/api/*` → the ADR-0002 edge Worker. Wins over subdomains: identical transport stack for all (fairness control), cart survives via shared same-origin storage, trivial switcher mapping.
+4. **The swap is a hard navigation — forced and honest.** No shared client runtime to soft-swap (ADR-0003 §1); a full document load is the honest cold/warm measure of the target paradigm.
+5. **URL is the measurement condition.** Path = identity (variant/surface/id); query = env knobs, split into **live request modifiers** (`n`, `cache`) vs a **snapshot selector** (`profile`, §6); `localStorage` = **cart only**; transient UI micro-state resets on swap. ⇒ a URL is a complete, shareable, reproducible receipt (ADR-0001 §9).
+6. **Throttle = snapshot selector, never a live fake.** `?profile=` picks which dated lab snapshot the HUD shows (page not re-throttled); HUD also shows the visitor's real RUM. Synthetic in-browser throttle = lab artifact, rejected for numbers (fenced "feel-it" demo only).
+7. **Contextual switcher = per-surface, sparse, near-zero-JS, edge-injected chrome.** Front Worker injects switcher+HUD into a known slot in every variant (HTMLRewriter) ⇒ byte-identical by construction + cleanly stripped from measured KB (ADR-0001 §6). Anchor-link core works JS-off (doesn't bias no-JS variants — ADR-0003 §1 logic). Control-set is a function of surface; options sparse to the variants a surface is actually built in. Drift normalizer ignores the chrome slot.
+
+**Spun out:** `cf-composition-spike` (Research + Prototype, unblocked) to verify the CF composition mechanism + per-paradigm adapters before the monorepo scaffold. **Unblocks `home-surface`** (now partially answered: singleton, served static on the canonical plane, no render-switcher). Monorepo scaffold + switcher build are downstream to-prd/implement jobs.
+
+### cf-composition-spike: Verify the Cloudflare single-origin composition + adapters
+Blocked by: deployment-topology
+Status: in-progress
+Type: Research + Prototype
+**Question:** Verify (against Cloudflare primary docs + a throwaway spike, not model recall) the single-origin composition mechanism ADR-0004 assumes: a front Worker dispatching by path prefix via **service bindings** + **Workers Static Assets**, and **HTMLRewriter** injecting the switcher/HUD chrome into a known slot. Confirm the per-paradigm CF adapters exist and behave idiomatically: Next (`@cloudflare/next-on-pages` / OpenNext), Qwik CF adapter, and a Remix 3 target (re-verify — pre-release). If any fails, flag the affected ADR-0004 decision for revision before the monorepo is scaffolded.
+**Answer:** _(open)_
+
+### snapshot-capture: Capture + freeze the crate into R2
+Blocked by: data-contract
+Status: open
+Type: Task
+**Question:** Run the one-time capture: pick the crate (genre/era), pull ~500 releases via the verified endpoints respecting the 60/min rate-limit headers with backoff, download + self-host images, normalize to the two trays, Zod-validate against `prototypes/data-contract/schema.ts`, and land it in R2 with a dated `SnapshotManifest` (capture date + commit SHA). Image *derivative* sizing may need a follow-up once `design-system` fixes component dimensions.
 **Answer:** _(open)_
 
 ### data-strategy-lab: The PLP data-strategy comparison
@@ -148,7 +164,7 @@ Type: Grilling + Prototype
 Blocked by: design-system, deployment-topology
 Status: open
 Type: Grilling
-**Question:** The entry point opened via a blog/application link — explains what the site is, who built it, and why, and acts as a gateway to the rest (scoped simple per Rob: chrome + prose + CTA, nothing complex). Which paradigm serves it (leaning vanilla/static; needn't be part of the benchmarked spine) is a `deployment-topology` call. Surfaced during `design-system` as a gap in the original five-surface matrix.
+**Question:** The entry point opened via a blog/application link — explains what the site is, who built it, and why, and acts as a gateway to the rest (scoped simple per Rob: chrome + prose + CTA, nothing complex). _Paradigm settled by [ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md): singleton, served static on the canonical plane, no render-switcher — off the benchmarked spine._ Remaining: the actual content/structure, the gateway model to the rest, and the self-explaining copy. Surfaced during `design-system` as a gap in the original five-surface matrix.
 **Answer:** _(open)_
 
 ### (fog) per-surface builds
