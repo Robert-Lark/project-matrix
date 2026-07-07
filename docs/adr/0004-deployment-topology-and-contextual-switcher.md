@@ -199,3 +199,29 @@ paradigm-injected noise.
   monorepo scaffold itself is a to-prd/implement job (after `cf-composition-spike`).
 - The topology, the URL-as-receipt scheme, and the edge-injected-chrome approach
   double as source content for the "How it was built" surface.
+
+## Addendum — verified by `cf-composition-spike` (2026-07-06)
+
+The composition mechanism this ADR assumes was verified end-to-end by a local
+spike plus a primary-docs research pass (73/73 claims adversarially confirmed);
+evidence and citations in
+[`prototypes/cf-composition/FINDINGS.md`](../prototypes/cf-composition/FINDINGS.md).
+**No decision above is reversed.** Refinements adopted there:
+
+- **Mechanism naming: "Workers everywhere," not Pages** — `next-on-pages` is
+  deprecated/archived (Next now deploys via OpenNext `@opennextjs/cloudflare`
+  on Workers) and Astro's adapter dropped Pages support. §1's canonical plane
+  is unchanged.
+- **Every static variant ships a one-line `env.ASSETS.fetch(request)`
+  forwarder script** — serving assets *through a service binding without a
+  script* is undocumented (works locally; not relied upon).
+- **Switcher slot selector uses the documented `div#pm-chrome-slot` form**
+  (bare `#id` is absent from HTMLRewriter's documented selector list).
+- **Local dev = one `wrangler dev` process per Worker** — the single-process
+  multi-`-c` mode is experimental and demonstrably broken for
+  assets-through-bindings.
+- **First monorepo deploy must re-run the spike's `test.sh` against the real
+  origin** — local workerd verified; production deploy is the last unverified
+  hop.
+- **Remix 3 (fenced frontier) has no official Cloudflare target as of
+  3.0.0-beta.5** — hosting for that exhibit is decided in `remix3-frontier`.

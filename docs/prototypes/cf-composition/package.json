@@ -1,0 +1,13 @@
+{
+  "name": "pm-cf-composition-spike",
+  "private": true,
+  "description": "Throwaway spike verifying the ADR-0004 Cloudflare single-origin composition mechanism",
+  "scripts": {
+    "dev": "./dev.sh",
+    "dev:single-process": "wrangler dev -c front/wrangler.jsonc -c variant-static/wrangler.jsonc -c variant-static-noscript/wrangler.jsonc -c variant-ssr/wrangler.jsonc",
+    "test": "./test.sh"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

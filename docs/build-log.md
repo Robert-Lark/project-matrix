@@ -272,6 +272,57 @@ singleton, static, off the benchmarked spine). With all four foundations
 resolved, the frontier is now the foundation-build to-prd plus the spun-out
 research/prototype tickets; the per-surface builds remain fog until then.
 
+### `cf-composition-spike` — resolved (2026-07-06)
+
+The de-risking ticket ADR-0004 spun out: prove the Cloudflare single-origin
+composition mechanism (front Worker + service bindings + Workers Static Assets +
+HTMLRewriter chrome injection) and the per-paradigm adapters against **primary docs
+and a runnable spike**, not model recall, before the monorepo is scaffolded.
+
+**A resumed session.** The first attempt at this ticket built the full spike (front
+Worker, three stand-in variants, an 18-assertion `test.sh`) but hung for an hour —
+the dev server was run in the session's foreground — and Rob killed it. Resume cost
+was near zero: the artifacts on disk *were* the state (the context-as-managed-resource
+note below, vindicated in anger). The resumed session re-ran everything, debugged,
+researched, and resolved.
+
+**The spike found a real bug worth finding.** First run: 6 assertions failed — every
+static asset fetched *through a service binding* returned a bare 500 (redirects
+survived, content didn't). Isolation: assets serve fine when the target Worker is hit
+directly; everything passes when the four Workers run as **separate `wrangler dev`
+processes** (dev-registry mode). The failure is specific to the single-process
+multi-`-c` dev mode — which the docs themselves label experimental. Codified in the
+spike's `dev.sh` + README; monorepo consequence: one dev process per Worker (fits one
+Turborepo `dev` task per workspace).
+
+**The research pass.** A 14-agent workflow: 7 areas (service bindings, static assets,
+HTMLRewriter, Next/Qwik/Astro adapters, Remix 3 status), each researcher's every claim
+re-fetched and re-judged by an adversarial verifier — **73/73 confirmed, 0
+contradicted**. The one thing the docs are *silent* on (does a binding fetch traverse
+the target's asset-routing layer?) is exactly what the spike answered empirically —
+lab and library covering each other's blind spots.
+
+**Verdict: ADR-0004 holds; no decision reversed.** Refinements recorded in the ADR
+addendum: "Workers everywhere" naming (next-on-pages archived → OpenNext; Astro
+adapter dropped Pages), the one-line ASSETS-forwarder script on every static variant
+(keeps every hop documented), `div#pm-chrome-slot` selector form, per-Worker dev
+processes, and first-deploy smoke = re-run `test.sh` against the real origin. Remix 3
+verified at 3.0.0-beta.5 with **no official CF Workers target** — `remix3-frontier`'s
+question narrowed accordingly.
+
+**Skills / tools used:** `/decision-mapping` · `/bash-scripting` · a Workflow research
+fan-out with adversarial verification · the spike itself (`wrangler dev`, `curl`).
+
+**Artifacts:** [`prototypes/cf-composition/FINDINGS.md`](prototypes/cf-composition/FINDINGS.md)
+(citations, confidence levels) · runnable spike + `README.md`/`dev.sh`/`test.sh` in the
+same dir · ADR-0004 addendum · ticket answer in `decision-map.md` · this entry.
+
+**Downstream:** foundations are now **fully** resolved. Per the "when to to-prd"
+judgment call below, the `/to-prd` moment for the foundation build (monorepo scaffold +
+front Worker/switcher + edge Worker + measurement harness) has arrived. All six
+remaining open tickets are unblocked; per-surface builds stay fog until the foundation
+build exists.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
@@ -302,6 +353,16 @@ dimensions). PRD-ing now would spec against moving ground. The to-prd moment is
 *after* the foundation tickets resolve, PRD-ing the foundation build as one phase.
 Knowing *when* to compress context and *when* to convert plans to specs is itself
 the staff-level agentic-era signal this project exists to demonstrate.
+
+### Long-running processes belong in the background (2026-07-06)
+
+The first `cf-composition-spike` session hung for an hour because a dev server ran in
+the session's foreground; the session died with the ticket half-done. Two learnings:
+(1) agent sessions must run servers/watchers as background tasks and poll their logs —
+a foreground blocking process freezes the whole loop; (2) the artifact discipline paid
+out — because the spike code, tests, and map state were already on disk, the resumed
+session lost only conversation, not work. The failure mode and the recovery are both
+part of the "how this was built" story.
 
 ### One-shot the issues, not the project (2026-07-06)
 

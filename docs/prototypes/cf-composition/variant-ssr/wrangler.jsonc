@@ -1,0 +1,7 @@
+// SSR variant stand-in (e.g. Next/Qwik/HTMX server-HTML). No assets — every
+// response is rendered by the script, echoing what the binding forwarded.
+{
+  "name": "pm-spike-variant-ssr",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-01"
+}

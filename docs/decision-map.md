@@ -120,10 +120,17 @@ Type: Grilling
 
 ### cf-composition-spike: Verify the Cloudflare single-origin composition + adapters
 Blocked by: deployment-topology
-Status: in-progress
+Status: resolved
 Type: Research + Prototype
 **Question:** Verify (against Cloudflare primary docs + a throwaway spike, not model recall) the single-origin composition mechanism ADR-0004 assumes: a front Worker dispatching by path prefix via **service bindings** + **Workers Static Assets**, and **HTMLRewriter** injecting the switcher/HUD chrome into a known slot. Confirm the per-paradigm CF adapters exist and behave idiomatically: Next (`@cloudflare/next-on-pages` / OpenNext), Qwik CF adapter, and a Remix 3 target (re-verify — pre-release). If any fails, flag the affected ADR-0004 decision for revision before the monorepo is scaffolded.
-**Answer:** _(open)_
+**Answer:** Resolved via runnable spike + primary-docs research (7 areas, every claim adversarially re-fetched: 73/73 confirmed). Evidence + citations in [`prototypes/cf-composition/FINDINGS.md`](prototypes/cf-composition/FINDINGS.md); spike runnable per its README; ADR-0004 addendum records the refinements. **Verdict: mechanism holds, no ADR-0004 decision reversed.** Five findings:
+1. **All composition behaviors pass end-to-end locally** — prefix dispatch via service bindings, prefix-nested assets through a binding, HTMLRewriter injection into the slot (HTML only; non-HTML byte-identical), path/query/header fidelity, trailing-slash 307s, assets-first front, 404 on unknown prefix.
+2. **Adapters verified current: "Workers everywhere," not Pages.** Next = OpenNext `@opennextjs/cloudflare` (next-on-pages deprecated, repo archived 2025-09); Qwik = official `cloudflare-workers` adapter (v1 stable, active); Astro = `@astrojs/cloudflare` v14 (Pages dropped), static builds adapter-free. All emit normal Workers ⇒ service-binding targets.
+3. **Hardenings adopted:** every static variant ships the one-line `env.ASSETS.fetch(request)` forwarder script (binding→asset-layer without a script is undocumented — works locally, not relied on); switcher slot selector = documented `div#pm-chrome-slot` form; **monorepo dev = one `wrangler dev` per Worker** (multi-`-c` single-process mode is experimental + demonstrably broken: bare 500s on assets-through-bindings).
+4. **Remix 3 = 3.0.0-beta.5, not production ready, NO official CF Workers target** (Node ≥24.3 template only; Workers = README claim + sub-package demos) → `remix3-frontier` question narrowed.
+5. **Residual risk (accepted):** real-deploy behavior unverified until the monorepo's first deploy — that deploy re-runs the spike's `test.sh` against the deployed origin as a smoke test.
+
+**Propagated:** foundations are now fully resolved — per the build-log judgment call, the `/to-prd` moment for the foundation build (monorepo scaffold + front Worker/switcher + edge Worker + measurement harness) has arrived.
 
 ### snapshot-capture: Capture + freeze the crate into R2
 Blocked by: data-contract
@@ -143,7 +150,7 @@ Type: Prototype + Grilling
 Blocked by: design-system
 Status: open
 Type: Research + Prototype
-**Question:** The minimum Remix 3 (alpha) showcase that demonstrates the non-React server-HTML + frames paradigm, clearly labeled pre-release and fenced from core numbers. Re-verify Remix 3 status at build time (fast-moving).
+**Question:** The minimum Remix 3 (beta) showcase that demonstrates the non-React server-HTML + frames paradigm, clearly labeled pre-release and fenced from core numbers. Re-verify Remix 3 status at build time (fast-moving). _Verified 2026-07-06 (`cf-composition-spike`): 3.0.0-beta.5 (npm `next` tag, "not production ready"); frames/server-HTML direction confirmed; **no official CF Workers deployment target** — official template is Node ≥24.3 `node:http`; Workers exist only as a README portability claim + `fetch-router`/`multipart-parser` demos. Must decide hosting: hand-rolled Workers entry (e.g. via `@remix-run/fetch-router`) vs a fenced off-plane Node host (acceptable — already fenced from core numbers)._
 **Answer:** _(open)_
 
 ### aesthetic-direction: The visual look, poured into the primitive token tier

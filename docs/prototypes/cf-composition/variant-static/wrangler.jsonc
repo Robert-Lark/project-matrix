@@ -1,0 +1,14 @@
+// Static variant stand-in (e.g. vanilla). Assets are nested under /vanilla/
+// inside ./public — the documented "serving a subdirectory" shape — so the
+// front Worker forwards requests unmodified. The one-line script makes this
+// Worker a service-binding target even if binding fetches bypass the
+// assets-first layer (the noscript sibling probes that exact question).
+{
+  "name": "pm-spike-variant-static",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
+}

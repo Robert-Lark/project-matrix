@@ -1,0 +1,11 @@
+// Probe: an assets-ONLY Worker (no "main" script). Question under test — can
+// a service binding target it, and does the binding fetch serve its assets?
+// Either outcome is a finding; the safe fallback is the variant-static
+// pattern (one-line ASSETS forwarder script).
+{
+  "name": "pm-spike-variant-noscript",
+  "compatibility_date": "2026-04-01",
+  "assets": {
+    "directory": "./public"
+  }
+}

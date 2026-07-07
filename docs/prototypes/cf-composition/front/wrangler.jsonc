@@ -1,0 +1,16 @@
+// Front routing Worker — ADR-0004 §3 (single origin, path-prefixed) + §7
+// (edge-injected chrome). Has its OWN static assets (the home singleton) plus
+// service bindings to each variant Worker.
+{
+  "name": "pm-spike-front",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-01",
+  "assets": {
+    "directory": "./public"
+  },
+  "services": [
+    { "binding": "VARIANT_STATIC", "service": "pm-spike-variant-static" },
+    { "binding": "VARIANT_NOSCRIPT", "service": "pm-spike-variant-noscript" },
+    { "binding": "VARIANT_SSR", "service": "pm-spike-variant-ssr" }
+  ]
+}

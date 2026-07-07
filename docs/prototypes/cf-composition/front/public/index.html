@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>home — front Worker assets</title>
+</head>
+<body>
+  <div id="pm-chrome-slot"></div>
+  <h1>home (singleton, served assets-first by the front Worker)</h1>
+  <p>
+    If the slot above is empty in the served response, the front script — and
+    therefore chrome injection — was bypassed: assets are served before the
+    Worker script by default. <code>run_worker_first</code> is the lever if the
+    home surface ever needs injected chrome.
+  </p>
+  <p>
+    <a href="/vanilla/pdp/1/">vanilla pdp</a>
+    <a href="/ssr/pdp/1/">ssr pdp</a>
+    <a href="/astro/editorial/">astro editorial (noscript probe)</a>
+  </p>
+</body>
+</html>

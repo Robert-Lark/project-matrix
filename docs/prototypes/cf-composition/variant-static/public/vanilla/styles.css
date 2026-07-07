@@ -1,0 +1,5 @@
+/* passthrough probe: must arrive byte-identical through the front Worker,
+   untouched by HTMLRewriter (content-type guard). */
+body {
+  font-family: sans-serif;
+}
