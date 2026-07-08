@@ -435,3 +435,24 @@ well-scoped issue one-shottable* (a single variant's release card, `tokens.css`,
 Worker endpoint). Let a strong model rip through each bounded, verifiable issue; keep
 the human verify loop on the cross-cutting invariants. This is already the downstream
 plan — `/to-prd → /to-issues → /implement`.
+
+### Slicing the foundation PRD under a session limit (2026-07-07)
+
+`/to-issues` on issue #1 produced seven tracer-bullet issues (#2–#8), chained
+#2→#3→#4→#5→{#6,#7}→#8, each verifiable outside-in at the composed origin. The
+pre-publish adversarial verification (nine lenses + per-finding refuters, the same
+pattern as the PRD's 38-agent pass) hit the subscription session limit mid-run:
+four of nine finder lenses completed, zero refuters ran. Per the standing
+best-judgment authorization the session finished the job inline instead of blocking
+on the limit reset — the seven raw findings were re-verified by hand against the
+ADR sources (five distinct defects, all confirmed and fixed) and the five missing
+lenses were run inline. Two learnings: (1) finder redundancy paid out — the two most
+load-bearing defects (story-13 fidelity-through-the-rewriter, chrome checks joining
+the post-deploy smoke) were each found independently by two different lenses;
+(2) size verification fan-outs against the session budget, or stagger them — a
+half-run refuter pass is worth less than a smaller pass that completes.
+
+One structural judgment call worth recording: the drift gate (#6) blocks on the
+chrome slice (#5), not just the placeholders — the gate has to hold on the
+chrome-injected pages variants actually serve, and proving it against empty slots
+first would have handed #5 a CI-breaking coordination hazard it doesn't own.
