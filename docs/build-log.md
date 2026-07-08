@@ -456,3 +456,19 @@ One structural judgment call worth recording: the drift gate (#6) blocks on the
 chrome slice (#5), not just the placeholders — the gate has to hold on the
 chrome-injected pages variants actually serve, and proving it against empty slots
 first would have handed #5 a CI-breaking coordination hazard it doesn't own.
+
+**Follow-up (same day):** Rob asked whether the missing verification runs were
+pivotal or confirmatory. Assessment: refuters and four of the five missing lenses
+confirmatory (evidence: 40% duplicate rate among completed finders, dying agents'
+last greps converging on already-found defects, ADR-0002 re-read in full with
+nothing new) — but the seams lens was the exception, since every confirmed defect
+was a between-issues defect and the graph author had audited his own graph. Re-run
+against the published issues, it found three more real seams, all fixed in place:
+the edge Worker (#4) had no observability/exception requirements (story 42 was
+owned only by #3, which closes before the edge Worker exists); no issue required
+the SSR placeholder to actually emit the paradigm noise the drift gate (#6) must
+prove it strips; and no issue required the two placeholders to share a surface
+path, which the sparse switcher config (#5) silently needs — the spike's own
+variants served disjoint surfaces, so prior art would have steered an implementer
+straight into it. Eight seam defects total, all of one species: requirements each
+slice assumed its neighbor owned.
