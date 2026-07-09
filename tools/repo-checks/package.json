@@ -1,0 +1,16 @@
+{
+  "name": "@pm/repo-checks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CI guards for the monorepo's structural guarantees (ADR-0004 §2, ADR-0003 §1): strict dependency isolation between workspaces and no shared component-runtime package. Dev/CI only — never shipped.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

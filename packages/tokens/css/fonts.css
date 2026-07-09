@@ -1,0 +1,24 @@
+/*
+ * Project Matrix — design system · FONT LOADING (controlled constant)
+ * ----------------------------------------------------------------------------
+ * Fonts are a fairness control, not a paradigm feature (ADR-0003 §8): one
+ * self-hosted, subset, variable sans — identical files, identical loading,
+ * everywhere. This file is the loading half; the files live in ../fonts/.
+ *
+ *   ⚠ PLACEHOLDER FACE. "PM Placeholder Sans" is a Latin subset of Inter
+ *   (SIL OFL 1.1 — see ../fonts/LICENSE-OFL.txt and ../fonts/README.md),
+ *   renamed so the placeholder status is visible in the name itself. The real
+ *   pairing is decided in `aesthetic-direction` and swaps in by replacing the
+ *   font files + the --pm-font-* primitives, with zero component changes.
+ *
+ * The face is variable (wght 100–900, opsz 14–32) — the token scale's
+ * intermediate weights (e.g. --pm-weight-medium: 550) are real, not synthesized
+ * — and ships OpenType tabular figures (tnum) for the metric/price text.
+ */
+@font-face {
+  font-family: "PM Placeholder Sans";
+  src: url("../fonts/PMPlaceholderSans.var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

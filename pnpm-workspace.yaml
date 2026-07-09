@@ -1,0 +1,14 @@
+# The one-SHA monorepo (ADR-0004 §2): variants, shared packages, workers, tools.
+# docs/ is planning material, not a workspace.
+packages:
+  - "variants/*"
+  - "packages/*"
+  - "workers/*"
+  - "tools/*"
+
+# Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
+# pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a
+# workspace can resolve only what it declares, even through tooling that
+# exports NODE_PATH (vitest does). pnpm ≥10 reads this here, NOT from .npmrc.
+# Proven by tools/repo-checks/test/workspace-isolation.test.ts.
+hoist: false

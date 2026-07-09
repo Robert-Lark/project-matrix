@@ -1,0 +1,33 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": ["tsconfig.base.json", ".npmrc", "pnpm-workspace.yaml"],
+  "tasks": {
+    "//#lint": {
+      "inputs": [
+        "eslint.config.mjs",
+        "*.{ts,tsx,js,mjs,cjs}",
+        ".github/**/*.{ts,js,mjs,cjs}",
+        "packages/**/*.{ts,tsx,js,mjs,cjs}",
+        "workers/**/*.{ts,tsx,js,mjs,cjs}",
+        "variants/**/*.{ts,tsx,js,mjs,cjs}",
+        "tools/**/*.{ts,tsx,js,mjs,cjs}"
+      ]
+    },
+    "topo": {
+      "dependsOn": ["^topo"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["topo"]
+    },
+    "test": {
+      "dependsOn": ["topo"]
+    },
+    "@pm/repo-checks#test": {
+      "cache": false
+    }
+  }
+}

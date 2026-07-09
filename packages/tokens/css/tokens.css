@@ -1,0 +1,153 @@
+/*
+ * Project Matrix — design system · TOKENS (two-tier)
+ * ----------------------------------------------------------------------------
+ * The single CSS custom-property token system every variant consumes,
+ * byte-identical. Lifted from docs/prototypes/design-system/ (ADR-0003).
+ * This file proves the ARCHITECTURE, not the aesthetic.
+ *
+ *   ⚠ PLACEHOLDER AESTHETIC. Every value in the PRIMITIVE tier below is a
+ *   neutral stand-in. The real look is decided in the `aesthetic-direction`
+ *   ticket and poured into these primitives — components never change, because
+ *   they reference only SEMANTIC tokens. That swappability is the point.
+ *
+ * Tiers (ADR-0003):
+ *   1. PRIMITIVE — raw scale (palette, type, space…). Never used by a component.
+ *   2. SEMANTIC  — the aliases components consume (--color-text, --space-inset…).
+ *                  The ONE seam for theming + forced-colors.
+ */
+
+:root {
+  /* ── 1. PRIMITIVE ───────────────────────────────────────────────────────── */
+  /* Neutral palette (PLACEHOLDER) */
+  --pm-neutral-0:   #ffffff;
+  --pm-neutral-50:  #f6f7f8;
+  --pm-neutral-100: #eceef0;
+  --pm-neutral-200: #d9dde1;
+  --pm-neutral-400: #9aa2ab;
+  --pm-neutral-600: #5b636d;
+  --pm-neutral-700: #414750;
+  --pm-neutral-900: #1c2024;
+  --pm-neutral-950: #0f1113;
+  --pm-accent-500:  #3b5bdb;  /* PLACEHOLDER accent */
+  --pm-accent-700:  #2c4299;
+  --pm-danger-600:  #b42318;  /* status colour — NEVER used alone; paired w/ text+icon */
+
+  /* Type scale — rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
+  /* Fonts are a controlled constant (ADR-0003 §8): one self-hosted, subset,
+     variable sans served identically everywhere (css/fonts.css + fonts/).
+     "PM Placeholder Sans" is a PLACEHOLDER face (subset Inter — see
+     fonts/README.md); the real pairing is `aesthetic-direction`'s call and
+     pours in here with zero component changes. Metrics (prices, HUD) use the
+     same face with tabular figures — see --pm-numeric-tabular below. */
+  --pm-font-ui: "PM Placeholder Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-font-metric: "PM Placeholder Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-numeric-tabular: tabular-nums;  /* the face ships tnum; metric text opts in via --numeric-metric */
+  --pm-size-0: 0.75rem;
+  --pm-size-1: 0.875rem;
+  --pm-size-2: 1rem;
+  --pm-size-3: 1.25rem;
+  --pm-size-4: 1.5rem;
+  --pm-size-5: 2rem;
+  --pm-weight-normal: 400;
+  --pm-weight-medium: 550;
+  --pm-weight-bold: 700;
+
+  /* Space scale */
+  --pm-space-1: 0.25rem;
+  --pm-space-2: 0.5rem;
+  --pm-space-3: 0.75rem;
+  --pm-space-4: 1rem;
+  --pm-space-5: 1.5rem;
+  --pm-space-6: 2rem;
+
+  /* Radii · shadow · motion · focus · target */
+  --pm-radius-1: 4px;
+  --pm-radius-2: 8px;
+  --pm-shadow-1: 0 1px 2px rgba(15,17,19,.08), 0 2px 8px rgba(15,17,19,.06);
+  --pm-ease: cubic-bezier(.2, 0, 0, 1);
+  --pm-dur-fast: 120ms;
+  --pm-dur-base: 200ms;
+  --pm-focus-width: 3px;
+  --pm-focus-offset: 2px;
+  --pm-target-min: 24px;  /* WCAG 2.5.8 AA floor; interactive controls meet or exceed */
+
+  /* ── 2. SEMANTIC (components consume ONLY these) ────────────────────────── */
+  --color-surface:      var(--pm-neutral-0);
+  --color-surface-sunk: var(--pm-neutral-50);
+  --color-text:         var(--pm-neutral-900);
+  --color-text-muted:   var(--pm-neutral-600);
+  --color-border:       var(--pm-neutral-200);
+  --color-accent:       var(--pm-accent-500);
+  --color-accent-hover: var(--pm-accent-700);
+  --color-on-accent:    var(--pm-neutral-0);
+  --color-focus:        var(--pm-accent-500);
+  --color-danger:       var(--pm-danger-600);
+
+  --font-ui:     var(--pm-font-ui);
+  --font-metric: var(--pm-font-metric);
+  --numeric-metric: var(--pm-numeric-tabular);  /* tabular figures for aligned prices + HUD */
+  --text-small:   var(--pm-size-1);
+  --text-body:    var(--pm-size-2);
+  --text-title:   var(--pm-size-3);
+  --text-display: var(--pm-size-5);
+  --weight-normal: var(--pm-weight-normal);
+  --weight-medium: var(--pm-weight-medium);
+  --weight-bold:   var(--pm-weight-bold);
+
+  --space-inset:    var(--pm-space-4);
+  --space-inset-sm: var(--pm-space-3);
+  --space-inset-xs: var(--pm-space-2);
+  --space-stack:    var(--pm-space-3);   /* default vertical rhythm */
+  --space-stack-sm: var(--pm-space-2);
+  --space-stack-xs: var(--pm-space-1);   /* tight text stack */
+  --space-inline:   var(--pm-space-2);
+  --space-gap:      var(--pm-space-5);   /* grid gap between cards */
+
+  --radius-card:    var(--pm-radius-2);
+  --radius-control: var(--pm-radius-1);
+  --shadow-card:    var(--pm-shadow-1);
+
+  --focus-ring:   var(--pm-focus-width) solid var(--color-focus);
+  --focus-offset: var(--pm-focus-offset);
+  --target-min:   var(--pm-target-min);
+
+  /* Motion — gated below by prefers-reduced-motion */
+  --motion-fast: var(--pm-dur-fast);
+  --motion-base: var(--pm-dur-base);
+  --motion-ease: var(--pm-ease);
+}
+
+/* ── Reduced motion (honour the OS setting) ─────────────────────────────────
+   Collapse durations at the SEMANTIC tier → every component that reads
+   --motion-* stops animating, without touching a single component rule. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0.01ms;
+    --motion-base: 0.01ms;
+  }
+}
+
+/* ── Forced colors (Windows High Contrast) ──────────────────────────────────
+   Remap the SEMANTIC tier to CSS system colors in ONE place. Every component
+   adapts for free — the whole reason for the two-tier seam. Meaning that rode
+   on hue (e.g. --color-danger) collapses to CanvasText here, because the real
+   signal is carried by text + icon in the component, never by colour alone.
+   Keywords verified 2026-07-07 against CSS Color Module Level 4 §6.2
+   (drafts.csswg.org/css-color-4/#css-system-colors) + MDN <system-color>:
+   Canvas "background of application content or documents", CanvasText "text
+   in application content", LinkText "text in non-active, non-visited links",
+   Highlight "background of selected items". */
+@media (forced-colors: active) {
+  :root {
+    --color-surface:      Canvas;
+    --color-surface-sunk: Canvas;
+    --color-text:         CanvasText;
+    --color-text-muted:   CanvasText;
+    --color-border:       CanvasText;
+    --color-accent:       LinkText;
+    --color-accent-hover: LinkText;
+    --color-on-accent:    Canvas;
+    --color-focus:        Highlight;
+    --color-danger:       CanvasText;
+  }
+}

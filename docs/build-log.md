@@ -367,6 +367,70 @@ adversarial refuters · `gh` (label + issue).
 **Downstream:** `/to-issues` on issue #1 to slice it into tracer-bullet issues,
 then `/implement` per issue.
 
+## Phase 2 — Foundation build
+
+### Issue #2 — monorepo scaffold + shared package lifts — landed (2026-07-09)
+
+The first implementation slice: the repo is now the ADR-0004 §2 monorepo. pnpm 11
++ Turborepo, workspaces `variants`/`packages`/`workers`/`tools` (docs untouched),
+CI on every push, and four shared packages lifted from the prototypes:
+`@pm/data-contract` (schema verbatim, fixtures pinned by tests),
+`@pm/tokens` (two-tier tokens with the forced-colors remap + reduced-motion
+gating intact — the fenced system-color keyword re-verification was performed
+against css-color-4 §6.2 + MDN and recorded in the file), `@pm/reference`
+(the golden master, framework-free), and `@pm/measurement` (the versioned
+three-profile spec; mobile/desktop pin Lighthouse's published defaults —
+verified against the Lighthouse/Lantern sources, not recall — and fast-wifi is
+explicitly project-defined since no published preset exists; WebPageTest's
+connectivity table was checked and has none).
+
+**Judgment calls under the standing authorization.** Placeholder face = a Latin
+subset of Inter v4.1 (OFL-1.1, no Reserved Font Name) renamed **"PM Placeholder
+Sans"** so the interim status is visible in the name itself; variable wght keeps
+the token scale's 550 real; `tnum` kept for the metric/price text (the metric
+font moved from the prototype's system-monospace stack to the sans's tabular
+figures — ADR-0003 §8's "one variable sans + tabular figures"). Installs pin the
+**public npm registry** in-repo (the machine's global npmrc pointed at the org
+CodeArtifact mirror — a public, reproducible-by-anyone repo can't depend on
+credentialed infra, ADR-0001 §9). `hoist: false` had to live in
+`pnpm-workspace.yaml` — pnpm 11 silently ignores it in `.npmrc`, and the gap was
+real: vitest exports a `NODE_PATH` ending in pnpm's hidden hoist dir, which was
+fully populated until the setting applied.
+
+**Verification.** Outside-in first (the reference render driven in a real
+browser over file:// and HTTP — font, tokens, tabular figures all apply), then a
+7-lens adversarial workflow (acceptance, lift-fidelity, ADR-conflict, isolation
+skeptic, CI/tooling, font/licensing+a11y, seams). The finders returned 11
+distinct findings; the refuter stage was killed by the session limit (again —
+see the methodology follow-up), so refutation ran inline against the journal.
+Confirmed and fixed: the demo scaffolding consumed **undefined `--space-1..6`
+tokens** (inherited verbatim from the prototype — computed padding was `0px`;
+now points at the `--pm-space-*` primitives); two **demonstrated Turborepo
+cache-soundness holes** (the repo-checks guards read state outside their
+package hash and replayed stale PASSes over a planted violation — that task is
+now deliberately uncached; root-level files weren't in the `//#lint` inputs);
+the isolation suite was hardened (root-dependency **allowlist contract**, a
+CI-only ancestor-`node_modules` guard, failure messages that name the leaking
+path) and its header now documents the two porosity channels it does NOT cover
+(Node's walk-up past the repo on dev machines; pnpm's transitive bin shims —
+exec-level only, module resolution stays strict); the profile spec pins its
+**binary Kbps base** with a blessed ×128 bytes/sec helper so issue #7 can't
+drift by 2.4%; and the reference README documents the symlink-following
+requirement for issue #6's static server. Deviation ledger completeness: the
+tokens.css header comment was also edited during the lift (comment-only).
+
+**Skills / tools used:** Workflow fan-out with per-finding refuters (finders
+completed; refuters re-run inline) · chrome-devtools MCP (outside-in render
+verification) · a background research agent for the primary-source profile
+values · fonttools/pyftsubset.
+
+**Artifacts:** the scaffold itself (root config + `packages/` + `tools/`) ·
+[issue #2](https://github.com/Robert-Lark/project-matrix/issues/2) (criteria
+ticked, closed by the landing commit) · this entry.
+
+**Downstream:** issue #3 (composed origin) unblocks; per Rob's standing
+instruction sessions roll straight into the next unblocked issue.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
@@ -472,3 +536,17 @@ path, which the sparse switcher config (#5) silently needs — the spike's own
 variants served disjoint surfaces, so prior art would have steered an implementer
 straight into it. Eight seam defects total, all of one species: requirements each
 slice assumed its neighbor owned.
+
+### Verification fan-outs vs the session limit, round two (2026-07-09)
+
+The issue #2 verification workflow was sized down from the 38-agent PRD pass
+(7 finders + one refuter per finding) — and the limit still killed it, this
+time surgically: all 7 finders completed, all 13 refuters died. Two learnings
+sharpen the earlier note: (1) **the journal is the recovery seam** — finder
+output was fully preserved in the run journal, so refutation re-ran inline at
+zero re-discovery cost (artifacts-are-the-state again, now for agent output);
+(2) **stage fan-outs across the limit boundary** — finders and refuters as
+separately launched passes would have let the refuters land on fresh budget.
+Corollary worth keeping: a workflow's *result value* can be hollow when a late
+stage dies (`confirmed: []` here meant "no refuter ran", not "no defects") —
+read the failure list before trusting the summary.

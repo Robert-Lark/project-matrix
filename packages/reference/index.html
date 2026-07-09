@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design system — reference render</title>
+
+  <!-- The design system, consumed from the shared @pm/tokens package (the
+       pnpm workspace link): font first (the controlled constant, ADR-0003 §8),
+       then tokens, then per-component modules — all plain <link>s with no
+       framework. This render is the drift-proof GOLDEN MASTER: every variant's
+       build is diffed against it in CI (normalized-DOM equivalence + pixel
+       screenshot). Never shipped to a visitor. -->
+  <link rel="preload" href="./node_modules/@pm/tokens/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="./node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="./node_modules/@pm/tokens/css/components/release-card.css">
+  <link rel="stylesheet" href="./node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="./node_modules/@pm/tokens/css/components/field.css">
+
+  <!-- Demo-page scaffolding ONLY — not part of the design system. -->
+  <style>
+    body { margin: 0; background: var(--color-surface-sunk); color: var(--color-text);
+           font: var(--text-body)/1.5 var(--font-ui); }
+    .demo { max-width: 960px; margin-inline: auto; padding: var(--pm-space-6) var(--pm-space-4); }
+    .demo h1 { font-size: var(--text-display); margin: 0 0 var(--pm-space-2); }
+    .demo h2 { font-size: var(--text-title); margin: var(--pm-space-6) 0 var(--pm-space-3);
+               padding-block-end: var(--pm-space-2); border-block-end: 1px solid var(--color-border); }
+    .demo__note { background: var(--color-surface); border: 1px solid var(--color-border);
+                  border-radius: var(--radius-card); padding: var(--pm-space-4); }
+    .demo__row { display: flex; gap: var(--pm-space-4); flex-wrap: wrap; align-items: center; }
+    .demo__ab { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--pm-space-5); }
+    .demo__panel { background: var(--color-surface); border: 1px solid var(--color-border);
+                   border-radius: var(--radius-card); padding: var(--pm-space-4); }
+    .demo__panel h3 { margin: 0 0 var(--pm-space-1); font-size: var(--text-body); }
+    .demo__tag { font: var(--weight-bold) var(--text-small)/1 var(--font-metric); }
+    .demo__caption { color: var(--color-text-muted); font-size: var(--text-small); margin-block-start: var(--pm-space-3); }
+    .demo__skip { position: absolute; left: -9999px; }
+    .demo__skip:focus { left: var(--pm-space-4); top: var(--pm-space-4); }
+  </style>
+</head>
+<body>
+  <a class="demo__skip pm-button" href="#main">Skip to content</a>
+  <main class="demo" id="main">
+    <h1>Design system — reference render</h1>
+    <p class="demo__note">
+      ⚠ <strong>Placeholder aesthetic.</strong> Colours, type and spacing here are
+      neutral stand-ins. This render proves the <em>architecture</em> — token tiers,
+      the semantic seam, forced-colors, and the canonical markup — not the final look
+      (that's the <code>aesthetic-direction</code> ticket). It is also the drift-proof
+      golden master every variant is measured against.
+    </p>
+
+    <!-- ── PLP release card: renders ReleaseSummary trays from the data contract ── -->
+    <h2>PLP grid — release card</h2>
+    <ul class="pm-grid" style="list-style: none; margin: 0; padding: 0;">
+      <li class="pm-release-card">
+        <img class="pm-release-card__media" width="600" height="600"
+             alt="Miles Davis — Kind Of Blue, front cover"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
+        <div class="pm-release-card__body">
+          <h3 class="pm-release-card__title">Kind Of Blue</h3>
+          <p class="pm-release-card__artist">Miles Davis</p>
+          <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue, 180 Gram · 1959</p>
+          <div class="pm-release-card__foot">
+            <!-- price formatted IN RENDER from {amount:21.5, currency:"USD"} (data-not-UI) -->
+            <span class="pm-release-card__price">$21.50</span>
+            <span class="pm-release-card__stock">58 for sale</span>
+          </div>
+        </div>
+      </li>
+      <li class="pm-release-card">
+        <img class="pm-release-card__media" width="600" height="600"
+             alt="John Coltrane — A Love Supreme, front cover"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
+        <div class="pm-release-card__body">
+          <h3 class="pm-release-card__title">A Love Supreme</h3>
+          <p class="pm-release-card__artist">John Coltrane</p>
+          <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1965</p>
+          <div class="pm-release-card__foot">
+            <span class="pm-release-card__price">$28.00</span>
+            <span class="pm-release-card__stock">34 for sale</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <!-- ── Button / CTA: focus ring, target size, forced-colors survival ── -->
+    <h2>Button / CTA</h2>
+    <div class="demo__row">
+      <button class="pm-button" type="button">Add to cart</button>
+      <button class="pm-button pm-button--secondary" type="button">Save for later</button>
+      <button class="pm-button" type="button" disabled>Sold out</button>
+    </div>
+    <p class="demo__caption">Tab to a button: the focus ring is styled off <code>:focus-visible</code>,
+      not a class. Turn on OS High Contrast — the shape stays visible (the transparent border)
+      and the ring maps to the system <code>Highlight</code> colour.</p>
+
+    <!-- ── A11y A/B: matched compliant / stripped pair (differ ONLY in a11y) ── -->
+    <h2>Accessible form field — DS-on vs DS-off</h2>
+    <div class="demo__ab">
+      <div class="demo__panel">
+        <h3><span class="demo__tag">DS-ON</span> — accessible default</h3>
+        <div class="pm-field">
+          <label class="pm-field__label" for="email-ok">Email address</label>
+          <input class="pm-field__control" id="email-ok" name="email" type="email"
+                 autocomplete="email" aria-describedby="email-ok-hint email-ok-err" aria-invalid="true">
+          <span class="pm-field__hint" id="email-ok-hint">We'll send your receipt here.</span>
+          <span class="pm-field__error" id="email-ok-err">Enter a valid email address.</span>
+        </div>
+        <p class="demo__caption">Real <code>&lt;label for&gt;</code>, <code>autocomplete</code>,
+          error tied via <code>aria-describedby</code> + <code>aria-invalid</code>, and the error
+          reads with an icon + text — not colour alone.</p>
+      </div>
+
+      <div class="demo__panel">
+        <h3><span class="demo__tag">DS-OFF</span> — what ships without the system</h3>
+        <!-- Identical footprint, a11y stripped: placeholder-as-label, no association,
+             error signalled by colour ONLY. This is the "failure" side of the demo. -->
+        <div class="pm-field">
+          <input class="pm-field__control" type="text" placeholder="Email address"
+                 style="border-color: var(--color-danger); border-width: 2px;">
+          <span style="color: var(--color-danger); font-size: var(--text-small);">Invalid</span>
+        </div>
+        <p class="demo__caption">No label (placeholder vanishes on type; screen reader announces
+          nothing), no <code>autocomplete</code>, error by red border + red word only — invisible
+          under forced-colors and to colour-blind users.</p>
+      </div>
+    </div>
+
+    <p class="demo__note" style="margin-block-start: var(--pm-space-6);">
+      <strong>Try the global-state a11y modes:</strong> zoom to 400% (layout reflows, no horizontal
+      scroll — everything is in <code>rem</code>); enable OS reduced-motion (the button transition
+      collapses to zero); enable OS forced-colors (the whole page remaps via the semantic tier).
+    </p>
+  </main>
+</body>
+</html>

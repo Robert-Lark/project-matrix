@@ -1,0 +1,19 @@
+{
+  "name": "project-matrix",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "check": "turbo run lint typecheck test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "turbo": "2.10.4",
+    "typescript-eslint": "^8.63.0"
+  }
+}

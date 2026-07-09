@@ -1,0 +1,22 @@
+{
+  "name": "@pm/data-contract",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The zero-bias data contract (ADR-0002): Zod schemas + inferred types for the two trays and the wire shapes. One source of truth for every variant and the edge Worker.",
+  "type": "module",
+  "exports": {
+    ".": "./src/schema.ts"
+  },
+  "types": "./src/schema.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

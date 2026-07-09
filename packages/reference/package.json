@@ -1,0 +1,19 @@
+{
+  "name": "@pm/reference",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The framework-free reference render (ADR-0003 §6): the golden-master spec every variant is drift-checked against. Consumed by the drift gate and the measurement harness — never deployed as a variant.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pm/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

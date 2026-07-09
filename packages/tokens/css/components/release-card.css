@@ -1,0 +1,81 @@
+/*
+ * Component module — PLP release card. Renders a ReleaseSummary tray
+ * (see docs/prototypes/data-contract/schema.ts), byte-identical everywhere.
+ *
+ * Consumes SEMANTIC tokens only. Authored as its own module so each paradigm
+ * can deliver it its native way — Astro/Svelte scope it, Vite/Next split &
+ * tree-shake it, vanilla concatenates or inlines it — WITHOUT changing the
+ * computed result (ADR-0003: "repackage, don't re-value").
+ *
+ * Naming: `pm-` BEM. State styles off native attributes/pseudo-classes, never
+ * JS-toggled classes.
+ */
+
+.pm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-gap);
+}
+
+.pm-release-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+/* Dimensions come from DATA (Image.width/height) → space reserved before the
+   image loads → honest CLS. aspect-ratio backs it up if attrs are absent. */
+.pm-release-card__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  background: var(--color-surface-sunk);
+}
+
+.pm-release-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-stack-xs);
+  padding: var(--space-inset);
+}
+
+.pm-release-card__title {
+  margin: 0;
+  font: var(--weight-bold) var(--text-title) / 1.25 var(--font-ui);
+  color: var(--color-text);
+}
+
+.pm-release-card__artist {
+  font: var(--text-body) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.pm-release-card__meta {
+  font: var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.pm-release-card__foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-inline);
+  margin-block-start: var(--space-stack-sm);
+}
+
+/* Tabular figures so prices align down the grid. --numeric-metric must come
+   after the font shorthand (the shorthand resets font-variant). */
+.pm-release-card__price {
+  font: var(--weight-bold) var(--text-title) / 1 var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  color: var(--color-text);
+}
+
+.pm-release-card__stock {
+  font: var(--text-small) / 1 var(--font-ui);
+  color: var(--color-text-muted);
+}

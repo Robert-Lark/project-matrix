@@ -1,0 +1,13 @@
+<!--
+  Canonical font-loading markup (ADR-0003 §8) — every consumer of the design
+  system (reference render, chrome/HUD, variants) loads the font with exactly
+  this shape: one preload for the single variable file, then the @font-face
+  stylesheet. Only the base path may differ per consumer (each resolves the
+  @pm/tokens package its own way); everything else is copied verbatim so font
+  delivery stays a controlled constant across variants.
+
+  Note: `crossorigin` is required on font preloads even same-origin — fonts are
+  fetched in CORS mode; without it the preload is re-fetched and wasted.
+-->
+<link rel="preload" href="./node_modules/@pm/tokens/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./node_modules/@pm/tokens/css/fonts.css">
