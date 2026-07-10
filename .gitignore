@@ -5,3 +5,4 @@ coverage/
 *.tsbuildinfo
 .wrangler/
 .DS_Store
+tools/bench-runner/receipts/

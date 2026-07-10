@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "check": "turbo run lint typecheck test",
     "dev": "turbo run dev",
-    "origin-suite": "node tools/origin-suite/run-local.mjs"
+    "origin-suite": "node tools/origin-suite/run-local.mjs",
+    "bench": "turbo run build --filter=@pm/bench-runner --output-logs=errors-only && node tools/bench-runner/dist/cli.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

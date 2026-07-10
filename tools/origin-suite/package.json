@@ -9,6 +9,7 @@
     "suite": "vitest run"
   },
   "devDependencies": {
+    "@pm/bench-runner": "workspace:*",
     "@pm/data-contract": "workspace:*",
     "@pm/drift-gate": "workspace:*",
     "@pm/measurement": "workspace:*",

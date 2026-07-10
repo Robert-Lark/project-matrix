@@ -17,6 +17,10 @@ Dev/CI-only tooling — never shipped to a visitor (ADR-0004 §2).
   extractor + permitted-noise registry, pixel comparator, the reference/fixture
   static server, and the deliberate-drift fixture. The checks themselves run
   inside the origin suite (`suite/drift.browser.test.ts`).
+- `bench-runner` — the ADR-0001 comparison engine (issue #7): profiled
+  batches over composed-origin URLs emitting SHA-pinned receipts, with
+  `pnpm bench run` / `pnpm bench reproduce`. Proven at the seam by
+  `suite/bench.browser.test.ts`.
 
-The bench runner, cost calculator, and snapshot capture arrive with their
-slices (issues #7–#8, `snapshot-capture`).
+The cost calculator and snapshot capture arrive with their slices (issue #8,
+`snapshot-capture`).

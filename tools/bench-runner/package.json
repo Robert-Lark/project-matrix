@@ -1,0 +1,26 @@
+{
+  "name": "@pm/bench-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The ADR-0001 comparison engine as a tool (issue #7): a Playwright bench runner driving composed-origin URLs under the three published test profiles (applied at the automation layer via CDP), cold/warm as separate columns, median-of-N batches, bucketed compressed KB with /_pm/* instrumentation stripped, decomposed TTFB, web-vitals harvested from the injected chrome's own beacons (intercepted — lab traffic never reaches the RUM collector), and SHA-pinned receipts with a one-command reproduce. Dev/CI only — never shipped. Deliberately has no `test` script (@pm/origin-suite precedent): the runner is proven at the composed-origin seam by suite/bench.browser.test.ts.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --external:playwright --outfile=dist/cli.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@pm/measurement": "workspace:*",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  }
+}

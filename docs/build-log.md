@@ -635,6 +635,66 @@ rAF/JS-off failure.
 **Deploy leg:** unchanged — credential-gated; when armed, the smoke
 drift-checks production pages against the local golden master for free.
 
+### Issue #7 — bench runner — landed (2026-07-10)
+
+ADR-0001 as a tool: `@pm/bench-runner` drives composed-origin URLs in real
+Chromium under the three published profiles (CDP-applied — the blessed
+`kbpsToBytesPerSecond` conversion, CPU multiplier, viewport/DPR from the
+versioned spec; mechanism + exact applied values published in the receipt)
+and emits **SHA-pinned receipts** (`pnpm bench run` / `pnpm bench
+reproduce`). Batch discipline per §4/§9: one profile + one `?n=` per batch,
+cold/warm as columns (cold = the edge bypass; warm = one unmeasured priming
+visit through the KV write-through, keyed by a fresh `?run=` nonce),
+round-robin interleave so noise hits every variant equally, median-of-N with
+raw runs kept. Web vitals come from the injected chrome's own pinned
+web-vitals build — the runner intercepts the chrome's `POST /api/beacon` and
+fulfills it locally, so THE one ruler is reused **and lab runs never pollute
+the field data**; a chromeless document (the tray API driven as a URL)
+honestly reports null vitals, never invented. KB is bucketed compressed
+transfer with `/_pm/*` + `/api/beacon` stripped-but-reported (non-vacuity
+asserted); interactions are registry IDs so receipts reproduce them by name.
+
+**CPU-ms per visit — the fenced re-verification done** (research agent
+against Cloudflare docs + workerd/workers-sdk source, plus live probes):
+OSS workerd hardcodes trace `cpuTime` to 0, so the ONLY local real
+accounting is the workerd inspector's CDP `Profiler` (a genuine V8 sampling
+profiler in workerd source) — the runner brackets each visit with
+start/stop over all four pinned dev inspectors (wrangler's proxy demands an
+Origin header; Node undici's non-standard `headers` option supplies it) and
+sums non-`(idle)` deltas; proven live with `handlePlp`/`computeFacets`
+attribution. Deployed, the defensible source is Workers observability's
+per-invocation `$workers.cpuTimeMs` via the telemetry query API — arms with
+the deploy leg, so against a remote origin the field is an honest **null
+naming that source** (never estimated). Origin suite grew to 79 assertions
+(receipt contract, columns observed as bypass/hit, stripping non-vacuity,
+TTFB decomposition, provenance strings, reproduce), plus the CLI driven
+end-to-end at slow-4G with a receipt inspected by hand.
+
+**Verification: the staged finder workflow died whole on the session limit
+(all four lenses, zero output — round three, and this time the journal had
+nothing to recover), so verification ran fully inline.** Two real defects
+found and fixed by hand-walking the receipt against the probes: (1) visits
+shared one browser context, so the deployed plane's `immutable`/etag
+assets would have silently zeroed later runs' transfer sizes — every run
+is now a fresh context (first-time visitor; the browser cache is a
+held-constant, the cache columns measure the EDGE tier); (2) a
+slow-4G receipt showed 13ms TTFB — probing proved Chromium **rebases
+navigation-timing sub-phases beneath applied CDP throttling** (500ms
+emulated latency delivers on the wall clock while `responseStart` reads
+~1ms), so the TTFB decomposition reflects the plane's real serving, and
+every receipt now states this in `methodNotes` (limits-of-data, in the
+receipt itself). Also fixed: interaction bytes counted by append-only
+entry index (a name-keyed diff hid re-fetches), and the receipt gained
+`harness` (browser + version + settle window) for reproduce completeness.
+
+**Skills / tools used:** background research agent (primary sources) ·
+empirical CDP probes (inspector profiler, latency attribution) · inline
+four-lens verification after the workflow died · Playwright.
+
+**Deploy leg:** unchanged — credential-gated; the smoke runs the tiny bench
+batch against the deployed origin (pre-warming KV through its
+eventual-consistency window) with the CPU field asserted null-and-named.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
@@ -754,3 +814,16 @@ separately launched passes would have let the refuters land on fresh budget.
 Corollary worth keeping: a workflow's *result value* can be hollow when a late
 stage dies (`confirmed: []` here meant "no refuter ran", not "no defects") —
 read the failure list before trusting the summary.
+
+**Round three (2026-07-10, issue #7):** the fan-out was already staged down
+to finders-only (4 lenses, the #6 pattern that had just completed cleanly) —
+and the limit killed all four at once, mid-flight, with nothing in the
+journal to recover (`findings: []` × 4 was pure hollowness; the failure list
+was the only truth). The fallback that worked: **inline verification by the
+main session** — hand-walking each lens against live probes instead of
+agents. It found the two realest defects of the slice (the browser-cache
+confound and the nav-timing-rebase-under-throttling discovery), arguably
+*because* the prober could iterate empirically — run a receipt, disbelieve a
+number, write a probe — where a finder agent reads code. Sharpened learning:
+near a limit boundary, don't stage smaller fan-outs — go inline first and
+spend the budget on probes, not agents.
