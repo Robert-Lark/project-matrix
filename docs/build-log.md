@@ -827,3 +827,23 @@ confound and the nav-timing-rebase-under-throttling discovery), arguably
 number, write a probe — where a finder agent reads code. Sharpened learning:
 near a limit boundary, don't stage smaller fan-outs — go inline first and
 spend the budget on probes, not agents.
+
+**The fix, encoded (2026-07-10):** the root cause is that `parallel()`
+fan-outs fail *correlated* — near the wall no agent has returned yet, so
+one kill takes everything — and that verification runs at end-of-slice,
+exactly when the rolling window is most depleted. The repo now carries
+[`.claude/workflows/verify-slice.js`](../.claude/workflows/verify-slice.js),
+the standing verification workflow: lenses run **sequentially** (every
+completed lens is durable in the journal before the next starts; a kill
+loses at most the in-flight one), every finder **streams confirmed findings
+to a scratch file as it goes** (so even the in-flight lens leaves a
+recoverable trail), and a limit death is resumed after the reset with
+`resumeFromRunId` (completed lenses replay from cache — "lost" becomes
+"delayed"). Wall-clock cost is irrelevant: the workflow runs in the
+background while the main session does inline empirical probing in the
+foreground — the two verification legs that, per rounds #6 and #7, catch
+*different* defect classes (code-reading lenses found the NBSP/includeAA
+class; probes found the caching/timing class). Refutation stays inline, per
+the standing rule. Note #6's evidence against shrinking the pass: keep the
+four lenses — three of them independently found the `<html lang>` blind
+spot, and that redundancy is what makes an adopted finding trustworthy.

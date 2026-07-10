@@ -10,6 +10,9 @@ export default tseslint.config(
       "**/coverage/**",
       "**/.wrangler/**",
       "docs/**",
+      // Agent-harness workflow scripts: they run in the Workflow sandbox
+      // with injected globals (agent/phase/log/args), not as repo modules.
+      ".claude/workflows/**",
     ],
   },
   js.configs.recommended,
