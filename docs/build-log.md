@@ -431,6 +431,50 @@ ticked, closed by the landing commit) · this entry.
 **Downstream:** issue #3 (composed origin) unblocks; per Rob's standing
 instruction sessions roll straight into the next unblocked issue.
 
+### Issue #3 — composed origin + placeholders — code-complete; deploy leg awaits credentials (2026-07-09)
+
+The walking skeleton: the ADR-0004 §3 composition as real code. Front routing
+Worker (path-prefix dispatch over service bindings, throwaway chrome-free
+index at `/`, 404 on unknown prefixes, structured JSON logs, generic-message
+error posture) + two throwaway placeholders sharing one `/{variant}/sample/`
+surface: `placeholder-static` (the one-line ASSETS-forwarder, spike hardening
+1) and `placeholder-ssr` (per-request render carrying exactly the ADR-0003 §6
+permitted noise — hydration marker, comment nodes, scoping hash — with
+request-fidelity evidence in response headers so the DOM stays canonical).
+Both render the reference grid verbatim from the shared `@pm/tokens` assets.
+`pnpm dev` = one `wrangler dev` per Worker (the forbidden single-process mode
+stays forbidden); `pnpm run origin-suite` = the 18-assertion composed-origin
+suite (extends the spike's 18, chrome assertions deferred to #5) against real
+cross-process dev — also driven visually in a browser through the composed
+origin (styled card, loaded font, empty chrome slot).
+
+**Verification (staged this time).** Finder-only workflow (4 lenses), refutation
+inline — and the limit still ate one finder (acceptance; walked by hand
+instead). Ten findings, all confirmed, all fixed pre-commit. The standouts:
+the SSR placeholder's assets were riding the **undocumented binding→asset-layer
+path that spike hardening 1 exists to remove** (works locally, fenced-unknown in
+prod — its script now forwards misses to its own ASSETS binding, and the suite
+gained SSR-asset byte-identity assertions so the post-deploy smoke covers the
+one hop the spike never could); the placeholders rendered one card where the
+golden master renders two (a #6 landmine — now verbatim); no `concurrency`
+group on deploy (two quick pushes could interleave into a mixed-SHA plane —
+now serialized); secrets were job-level (now step-scoped away from
+`pnpm install`); `upload-artifact` silently drops dot-directories; and
+`spawnSync` was starving the piped dev logs of exactly the failure window
+(children now write straight to file descriptors).
+
+**The one open leg:** CI's deploy job (variants → front → readiness poll →
+smoke with the Brotli assertion) is wired but **gated**: no
+`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` repo secrets exist and wrangler
+has no local login, so it skips with a loud warning. Arming it is a Rob task
+(mint the token, register the workers.dev subdomain once — steps in
+`workers/README.md`); the first armed deploy retires the spike's accepted
+residual risk. Issue #3 stays open on that single criterion; per the
+continue-through instruction the build rolls on to #4, whose work is local.
+
+**Skills / tools used:** staged Workflow finders + inline refutation ·
+chrome-devtools MCP (composed-origin drive) · the spike suite as prior art.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

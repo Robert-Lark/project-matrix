@@ -6,9 +6,21 @@ packages:
   - "workers/*"
   - "tools/*"
 
+# Dependency build scripts are gated (pnpm ≥11 supply-chain default); these
+# three are wrangler's own toolchain (bundler, image codec, the local Workers
+# runtime) and are required for `wrangler dev`/`deploy`.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
 # pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a
 # workspace can resolve only what it declares, even through tooling that
 # exports NODE_PATH (vitest does). pnpm ≥10 reads this here, NOT from .npmrc.
 # Proven by tools/repo-checks/test/workspace-isolation.test.ts.
 hoist: false
+
+minimumReleaseAgeExclude:
+  - miniflare@4.20260708.1
+  - wrangler@4.110.0

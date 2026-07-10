@@ -1,0 +1,24 @@
+// Front routing Worker — ADR-0004 §3 (single origin, path-prefixed) + §7
+// (edge-injected chrome, arriving with issue #5). Has its OWN static assets
+// (the throwaway chrome-free index at /) plus service bindings to each
+// variant Worker. Deploy order: variants first, then this (bindings must
+// resolve). Local dev: one `wrangler dev` per Worker — the single-process
+// multi-config mode is forbidden (spike FINDINGS: breaks assets-through-
+// bindings).
+{
+  "name": "pm-front",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public"
+  },
+  "services": [
+    { "binding": "PLACEHOLDER_STATIC", "service": "pm-placeholder-static" },
+    { "binding": "PLACEHOLDER_SSR", "service": "pm-placeholder-ssr" }
+  ],
+  // Workers Logs — structured logs queryable in the dashboard (PRD story 42).
+  "observability": {
+    "enabled": true
+  }
+}

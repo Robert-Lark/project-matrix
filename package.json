@@ -8,7 +8,9 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "check": "turbo run lint typecheck test"
+    "check": "turbo run lint typecheck test",
+    "dev": "turbo run dev",
+    "origin-suite": "node tools/origin-suite/run-local.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

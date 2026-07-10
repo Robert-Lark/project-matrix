@@ -1,0 +1,18 @@
+{
+  "name": "@pm/placeholder-ssr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "THROWAWAY SSR stand-in variant (issue #3): renders the canonical sample markup per-request with representative permitted paradigm noise (hydration marker, comment nodes, scoping hash) so the drift gate can prove its normalizer. Replaced by real paradigm variants downstream.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev --port 8789 --inspector-port 9232",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@pm/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}

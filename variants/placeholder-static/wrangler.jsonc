@@ -1,0 +1,16 @@
+// Throwaway static placeholder variant. Assets are nested under the
+// /placeholder-static/ prefix (the documented "serving a subdirectory"
+// shape), so the front Worker forwards requests untouched.
+{
+  "name": "pm-placeholder-static",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

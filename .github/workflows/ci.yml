@@ -28,3 +28,133 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm exec turbo run lint typecheck test
+
+  # The composed-origin integration suite against local cross-process dev
+  # (issue #3): one wrangler dev per Worker, plain HTTP at the seam.
+  origin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-origin-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-origin-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: node tools/origin-suite/run-local.mjs
+
+      - name: Upload dev logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: origin-dev-logs
+          path: tools/origin-suite/.dev-logs/
+          # The log dir is dot-prefixed; v4 excludes hidden files by default.
+          include-hidden-files: true
+
+  # Deploy to the canonical plane from main (ADR-0004 §1), then re-run the
+  # suite against the REAL deployed origin — the post-deploy smoke that
+  # retires the spike's one accepted residual risk (FINDINGS §5). Gated on
+  # the Cloudflare secrets; skips loudly (not silently) until they exist.
+  deploy:
+    needs: [check, origin]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # One SHA per deploy (ADR-0004 §2): overlapping main pushes must not
+    # interleave their wrangler deploys into a mixed-SHA plane. Deploys queue;
+    # a superseded pending deploy is dropped in favor of the newest.
+    concurrency:
+      group: deploy-canonical-plane
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-origin-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-origin-${{ runner.os }}-
+
+      # Secrets are scoped to the steps that need them — never to pnpm
+      # install or builds, which execute third-party lifecycle scripts.
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check deploy credentials
+        id: creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "${CLOUDFLARE_API_TOKEN}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Deploy skipped — CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID repo secrets are not set. The canonical plane is not yet receiving deploys (issue #3 deploy leg; setup steps in workers/README.md)."
+          fi
+
+      - name: Build variant dists
+        if: steps.creds.outputs.present == 'true'
+        run: pnpm exec turbo run build --filter=@pm/placeholder-static --filter=@pm/placeholder-ssr
+
+      # Variants first: the front Worker's service bindings must resolve.
+      - name: Deploy placeholder variants
+        if: steps.creds.outputs.present == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm --filter @pm/placeholder-static run deploy
+          pnpm --filter @pm/placeholder-ssr run deploy
+
+      - name: Deploy front Worker
+        if: steps.creds.outputs.present == 'true'
+        id: front
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          OUT=$(pnpm --filter @pm/front run deploy)
+          echo "$OUT"
+          URL=$(echo "$OUT" | grep -oE 'https://[a-z0-9.-]+\.workers\.dev' | head -1)
+          if [ -z "$URL" ]; then
+            echo "::error::Could not determine the deployed origin URL from wrangler output"
+            exit 1
+          fi
+          echo "origin=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the deployed origin to answer
+        if: steps.creds.outputs.present == 'true'
+        run: |
+          for i in $(seq 1 30); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "${{ steps.front.outputs.origin }}/" || true)
+            if [ "$CODE" = "200" ]; then echo "origin ready"; exit 0; fi
+            echo "waiting ($i): got $CODE"; sleep 3
+          done
+          echo "::error::Deployed origin never answered 200 — smoke would report a readiness race, not an architecture failure"
+          exit 1
+
+      - name: Post-deploy smoke (suite against the deployed origin, Brotli asserted)
+        if: steps.creds.outputs.present == 'true'
+        run: pnpm --filter @pm/origin-suite exec vitest run
+        env:
+          PM_ORIGIN: ${{ steps.front.outputs.origin }}
+          PM_EXPECT_BROTLI: "1"

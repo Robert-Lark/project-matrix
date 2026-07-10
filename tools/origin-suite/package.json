@@ -1,0 +1,16 @@
+{
+  "name": "@pm/origin-suite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The composed-origin integration suite (issue #3, extends the spike's 18 assertions): plain HTTP against the composed origin — outside-in, no Worker internals. Runs against local cross-process dev (run-local.mjs) and, post-deploy, against the deployed origin (PM_ORIGIN + PM_EXPECT_BROTLI=1). Deliberately has no `test` script: `turbo run test` must stay green without dev servers.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "suite": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

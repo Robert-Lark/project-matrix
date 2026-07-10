@@ -17,8 +17,13 @@
       "dependsOn": ["^topo"]
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["topo", "^build"],
       "outputs": ["dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
     },
     "typecheck": {
       "dependsOn": ["topo"]

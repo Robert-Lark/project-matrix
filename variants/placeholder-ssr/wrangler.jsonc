@@ -1,0 +1,16 @@
+// Throwaway SSR placeholder variant. The script renders the sample surface
+// per-request; the assets layer (assets-first, default run order) serves the
+// variant's copy of the shared design system under /placeholder-ssr/assets/.
+{
+  "name": "pm-placeholder-ssr",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

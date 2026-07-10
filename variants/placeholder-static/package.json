@@ -1,0 +1,18 @@
+{
+  "name": "@pm/placeholder-static",
+  "version": "0.1.0",
+  "private": true,
+  "description": "THROWAWAY static stand-in variant (issue #3): proves the composed origin end-to-end until real paradigm variants replace it. Ships the one-line assets-forwarder script (spike hardening 1).",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev --port 8788 --inspector-port 9231",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@pm/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}

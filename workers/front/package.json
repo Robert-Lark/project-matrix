@@ -1,0 +1,14 @@
+{
+  "name": "@pm/front",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The front routing Worker (ADR-0004 §3, §7): composes the single origin by path-prefix dispatch over service bindings, serves the throwaway chrome-free index at /, and (from the chrome slice) injects the switcher/HUD and serves /_pm/*.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --inspector-port 9230",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}

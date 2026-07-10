@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sample surface — Project Matrix placeholder</title>
+
+  <!-- The shared design system, delivered this paradigm's way: plain links to
+       the variant's own copied assets (relative paths, so the markup is
+       byte-identical across variant prefixes). Loading markup shape per
+       @pm/tokens/fonts/loading-markup.html. -->
+  <link rel="preload" href="../assets/pm/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../assets/pm/css/fonts.css">
+  <link rel="stylesheet" href="../assets/pm/css/tokens.css">
+  <link rel="stylesheet" href="../assets/pm/css/components/release-card.css">
+</head>
+<body>
+  <!-- The documented chrome slot (ADR-0004 §7): empty until the front Worker's
+       HTMLRewriter injects the switcher/HUD (issue #5). -->
+  <div id="pm-chrome-slot"></div>
+
+  <main>
+    <h1>Sample surface</h1>
+    <!-- Canonical markup contract (ADR-0003 §1): the release card exactly as
+         the reference render specifies it. -->
+    <ul class="pm-grid" style="list-style: none; margin: 0; padding: 0;">
+      <li class="pm-release-card">
+        <img class="pm-release-card__media" width="600" height="600"
+             alt="Miles Davis — Kind Of Blue, front cover"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
+        <div class="pm-release-card__body">
+          <h3 class="pm-release-card__title">Kind Of Blue</h3>
+          <p class="pm-release-card__artist">Miles Davis</p>
+          <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue, 180 Gram · 1959</p>
+          <div class="pm-release-card__foot">
+            <span class="pm-release-card__price">$21.50</span>
+            <span class="pm-release-card__stock">58 for sale</span>
+          </div>
+        </div>
+      </li>
+      <li class="pm-release-card">
+        <img class="pm-release-card__media" width="600" height="600"
+             alt="John Coltrane — A Love Supreme, front cover"
+             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
+        <div class="pm-release-card__body">
+          <h3 class="pm-release-card__title">A Love Supreme</h3>
+          <p class="pm-release-card__artist">John Coltrane</p>
+          <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1965</p>
+          <div class="pm-release-card__foot">
+            <span class="pm-release-card__price">$28.00</span>
+            <span class="pm-release-card__stock">34 for sale</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>
