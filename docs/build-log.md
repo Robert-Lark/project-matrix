@@ -571,6 +571,70 @@ Playwright · chrome-devtools MCP (visual HUD verification).
 covers chrome injection and `/_pm/*` in production, the last composition
 behaviors the spike couldn't verify.
 
+### Issue #6 — drift gate — landed (2026-07-09)
+
+ADR-0003 §6 as running CI: **drift proven, not promised**. New `@pm/drift-gate`
+tooling (normalized-DOM extractor running *inside the driven browser* — the
+browser's own parse, no second HTML parser; pixelmatch comparator; repo-root
+static server on an ephemeral port) plus a **surface golden master**
+(`packages/reference/surfaces/sample/index.html` — the sample surface as a
+framework-free page, no demo scaffolding, no chrome slot; the component demo
+stays as-is and a suite test pins the two copies' canonical grids to each
+other, so a stale-copy contract fork is impossible). The checks run inside the
+origin suite (68 assertions now), so the one command gates every push AND the
+post-deploy smoke will drift-check the real deployed origin. Chrome exclusion
+per the switcher README contract: the normalizer drops the slot subtree; the
+pixel leg REMOVES the slot before screenshotting (region-masking can't
+compensate for flow shift). Both placeholders pass both checks through the
+composed origin with chrome injected — the SSR placeholder non-vacuously (the
+raw page is asserted to carry all three permitted-noise species, and to NOT
+match with an empty noise spec). The deliberate-drift fixture carries two
+defects, each visible to only one check — a wrong `alt` (DOM-only) and a
+re-valued `--color-text` via an extra stylesheet (pixel-only; literally
+ADR-0003 §2's forbidden token re-valuation) — plus a *populated fake chrome
+slot*, so exclusion is proven unable to mask drift and each check is proven
+to catch exactly its class. Contexts run JS-off (served markup is what the
+contract governs; no beacons from gate runs), which surfaced a runtime
+discovery: `requestAnimationFrame` never fires in a JS-disabled page and an
+async in-page await dies as "execution context destroyed" — font settling is
+therefore Node-side polling of sync evaluates, with layout forced first
+because `document.fonts.status` reads "loaded" *vacuously* before layout
+triggers the fetch (CSS Font Loading spec).
+
+**Verification (staged finders → inline refutation): 15 raw → 10 distinct,
+9 adopted, 1 reframed.** Three finders independently found the gate's one
+real false-pass class: the normalizer compared only body *children*, so
+`<html lang>` / `<body>` attribute drift — pixel-neutral, a11y-load-bearing,
+the exact class the fixture's own alt-drift rationale names — passed both
+checks (now serialized through the same noise filter as every attribute, and
+the extract's first line is asserted). Also adopted: React SSR's `<!-- -->`
+separators would false-fail text equality (text runs now merge across
+comments/dropped elements); `\s`-collapse silently blessed NBSP-for-space
+drift (HTML defines insignificant whitespace as ASCII — now ASCII-only);
+pixelmatch's default anti-aliasing exclusion contradicted the zero-pixel
+criterion (edge-confined drift could count 0 — `includeAA: true`; same-run
+determinism, not the AA heuristic, absorbs benign variance); the deploy job
+discarded the very failure evidence the gate's messages point at (smoke now
+uploads `.dev-logs/` on failure); and the canonical markup carried a demo
+leftover — an inline list-reset `style` on `pm-grid` that React's style
+object cannot reproduce byte-for-byte — moved into the component CSS module
+across all six carriers in lockstep, with the gate itself proving the move
+pixel-identical. **Reframed, not adopted:** dropping
+`script`/`style`/`link`/`template` element categories is wider than issue
+#6's "only the permitted paradigm noise" — but ADR-0003 §2 (delivery is the
+measured variable) wins over issue text per the standing rule; flagged on
+the issue and in the gate README's "known boundaries" (with the two other
+deliberate boundaries: served-DOM-only under JS-off — a JS-on second pass
+lands with the first hydrating variant — and pixel coverage being exactly
+the three published profiles).
+
+**Skills / tools used:** staged Workflow finders (4 lenses, all completed
+this time) + inline refutation · Playwright · a scratch repro script for the
+rAF/JS-off failure.
+
+**Deploy leg:** unchanged — credential-gated; when armed, the smoke
+drift-checks production pages against the local golden master for free.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

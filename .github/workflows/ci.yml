@@ -189,3 +189,15 @@ jobs:
         env:
           PM_ORIGIN: ${{ steps.front.outputs.origin }}
           PM_EXPECT_BROTLI: "1"
+
+      # The drift gate's failure evidence (expected/actual/diff screenshots +
+      # normalized-DOM extracts) is written to .dev-logs/drift/ — without this
+      # upload a deployed-origin drift failure would be destroyed with the
+      # runner and unreproducible after the next deploy replaces the plane.
+      - name: Upload smoke evidence on failure
+        if: failure() && steps.creds.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-dev-logs
+          path: tools/origin-suite/.dev-logs/
+          include-hidden-files: true

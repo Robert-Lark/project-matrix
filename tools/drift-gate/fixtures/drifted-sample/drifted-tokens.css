@@ -1,0 +1,9 @@
+/*
+ * The deliberate token RE-VALUATION (see index.html's header comment):
+ * identical markup, identical component modules, one semantic token given a
+ * different value after tokens.css. DOM-invisible, pixel-visible — the half
+ * of the drift only the pixel check can catch (ADR-0003 §2/§6).
+ */
+:root {
+  --color-text: #8a2b2b; /* canonical value: var(--pm-neutral-900) */
+}

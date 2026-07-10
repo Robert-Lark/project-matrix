@@ -5,10 +5,18 @@ lifted from [`docs/prototypes/design-system/reference/`](../../docs/prototypes/d
 
 `index.html` is the **golden-master spec**: the canonical `pm-` markup contract
 rendered with the shared `@pm/tokens` CSS and font as plain static HTML — no
-framework, no scripts. In CI (the drift gate, issue #6) every variant is checked
+framework, no scripts. The measurement harness reuses it; downstream, the a11y
+section's compliant baseline does too.
+
+`surfaces/sample/index.html` is the **surface golden master** the drift gate
+(issue #6, `tools/drift-gate`) actually compares variant pages against: the
+sample surface's canonical markup composed from the component renders, with
+none of `index.html`'s demo scaffolding — its body is exactly what a
+contract-conforming variant serves (minus the chrome slot, which is
+instrumentation and excluded by the gate). In CI every variant page is checked
 against it by normalized-DOM equivalence + pixel diff across the three test
-profiles. The measurement harness reuses it; downstream, the a11y section's
-compliant baseline does too.
+profiles. Real surfaces each land their own `surfaces/{surface}/` master with
+their builds.
 
 It is a *spec*, not consumed code, and it is **never deployed as a variant** —
 nothing a visitor loads is this file.

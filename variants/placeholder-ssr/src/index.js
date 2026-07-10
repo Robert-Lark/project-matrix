@@ -28,7 +28,7 @@ function samplePage() {
   <main>
     <h1>Sample surface</h1>
     <!-- ph:ssr-boundary -->
-    <ul class="pm-grid ph-x7f3a2" data-ph-scope="x7f3a2" data-ph-hydrate="idle" style="list-style: none; margin: 0; padding: 0;">
+    <ul class="pm-grid ph-x7f3a2" data-ph-scope="x7f3a2" data-ph-hydrate="idle">
       <li class="pm-release-card ph-x7f3a2">
         <img class="pm-release-card__media" width="600" height="600"
              alt="Miles Davis — Kind Of Blue, front cover"

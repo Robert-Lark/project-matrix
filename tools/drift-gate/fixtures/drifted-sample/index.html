@@ -3,30 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sample surface — Project Matrix placeholder</title>
+  <title>Sample surface — DELIBERATE-DRIFT fixture (must fail the gate)</title>
 
-  <!-- The shared design system, delivered this paradigm's way: plain links to
-       the variant's own copied assets (relative paths, so the markup is
-       byte-identical across variant prefixes). Loading markup shape per
-       @pm/tokens/fonts/loading-markup.html. -->
-  <link rel="preload" href="../assets/pm/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="../assets/pm/css/fonts.css">
-  <link rel="stylesheet" href="../assets/pm/css/tokens.css">
-  <link rel="stylesheet" href="../assets/pm/css/components/release-card.css">
+  <!-- The deliberate-drift fixture (issue #6): a copy of the sample-surface
+       golden master carrying exactly two defects, each visible to only ONE
+       of the gate's two checks — so a pass by either check would prove that
+       check broken, not the page conforming:
+
+       1. DOM drift, pixel-neutral: the first card's alt text is wrong.
+          Alt text is canonical markup (a11y is load-bearing, ADR-0003 §5)
+          but paints nothing — only the normalized-DOM check can catch it.
+       2. Pixel drift, DOM-invisible: drifted-tokens.css re-values
+          `--color-text` after tokens.css. Stylesheet links are delivery,
+          dropped by the normalizer (ADR-0003 §2 — repackaging is permitted),
+          so the DOM check is blind to it; the rendered title/price color
+          changes, which only the pixel check can catch. This is literally
+          the violation ADR-0003 §2 names: "changing a token value is not
+          [fine]. Enforced by the drift tests (§6)."
+
+       The chrome slot below is POPULATED with fake chrome: the gate must
+       remove/ignore it (both checks) and still fail on the two defects —
+       proving chrome exclusion cannot mask real drift. -->
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/release-card.css">
+  <link rel="stylesheet" href="./drifted-tokens.css">
 </head>
 <body>
-  <!-- The documented chrome slot (ADR-0004 §7): empty until the front Worker's
-       HTMLRewriter injects the switcher/HUD (issue #5). -->
-  <div id="pm-chrome-slot"></div>
+  <div id="pm-chrome-slot"><nav id="pm-chrome" data-pm-chrome="1" aria-label="Fake chrome — must be excluded by the gate"><span>fake switcher</span> <span>fake HUD</span></nav></div>
 
   <main>
     <h1>Sample surface</h1>
-    <!-- Canonical markup contract (ADR-0003 §1): the release card exactly as
-         the reference render specifies it. -->
     <ul class="pm-grid">
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="Miles Davis — Kind Of Blue, front cover"
+             alt="Album front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">Kind Of Blue</h3>

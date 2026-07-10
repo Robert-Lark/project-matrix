@@ -15,6 +15,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: var(--space-gap);
+  /* The grid is a <ul>: the list reset is the module's job, NOT an inline
+     style in the markup contract — an inline style would force every
+     paradigm to reproduce one exact attribute byte-string (React's style
+     object can't emit `list-style: none;` with that spacing), failing the
+     drift gate on serialization trivia rather than real drift. */
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .pm-release-card {

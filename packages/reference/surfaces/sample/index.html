@@ -3,26 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sample surface — Project Matrix placeholder</title>
+  <title>Sample surface — reference render (golden master)</title>
 
-  <!-- The shared design system, delivered this paradigm's way: plain links to
-       the variant's own copied assets (relative paths, so the markup is
-       byte-identical across variant prefixes). Loading markup shape per
-       @pm/tokens/fonts/loading-markup.html. -->
-  <link rel="preload" href="../assets/pm/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="../assets/pm/css/fonts.css">
-  <link rel="stylesheet" href="../assets/pm/css/tokens.css">
-  <link rel="stylesheet" href="../assets/pm/css/components/release-card.css">
+  <!-- The SURFACE golden master (ADR-0003 §6, issue #6): the sample surface's
+       canonical markup composed from the per-component reference renders,
+       framework-free, consuming the shared design system through the
+       @pm/tokens workspace link. The drift gate compares every variant's
+       served page against THIS page — normalized DOM + pixels — so the page
+       carries no scaffolding of its own: body styling, margins, and layout
+       are exactly what a variant page gets (the demo chrome in ../../index.html
+       is deliberately absent here; that file remains the per-component demo).
+
+       No chrome slot: chrome is instrumentation, not part of the canonical
+       page (packages/switcher/README.md — the gate drops the slot subtree
+       from every variant before comparing). -->
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/release-card.css">
 </head>
 <body>
-  <!-- The documented chrome slot (ADR-0004 §7): empty until the front Worker's
-       HTMLRewriter injects the switcher/HUD (issue #5). -->
-  <div id="pm-chrome-slot"></div>
-
   <main>
     <h1>Sample surface</h1>
-    <!-- Canonical markup contract (ADR-0003 §1): the release card exactly as
-         the reference render specifies it. -->
     <ul class="pm-grid">
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"

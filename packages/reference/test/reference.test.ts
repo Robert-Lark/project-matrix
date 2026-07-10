@@ -12,6 +12,10 @@ import { describe, expect, it } from "vitest";
 
 const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(pkgRoot, "index.html"), "utf8");
+// The surface golden master the drift gate compares variants against
+// (issue #6) — held to the same spec-package rules as the component demo.
+const surfaceDir = join(pkgRoot, "surfaces", "sample");
+const surfaceHtml = readFileSync(join(surfaceDir, "index.html"), "utf8");
 
 describe("consumes the shared design system", () => {
   it("every linked asset resolves on disk through the workspace link", () => {
@@ -27,6 +31,20 @@ describe("consumes the shared design system", () => {
     }
   });
 
+  it("the sample-surface golden master's assets resolve too", () => {
+    const hrefs = [...surfaceHtml.matchAll(/(?:href|src)="(\.\.\/[^"]+)"/g)].map(
+      (m) => m[1]!,
+    );
+    // Font preload, fonts.css, tokens.css, the release-card module.
+    expect(hrefs.length).toBeGreaterThanOrEqual(4);
+    for (const href of hrefs) {
+      expect(
+        existsSync(join(surfaceDir, href)),
+        `${href} does not resolve`,
+      ).toBe(true);
+    }
+  });
+
   it("loads tokens and the self-hosted font from @pm/tokens", () => {
     expect(html).toContain("@pm/tokens/css/tokens.css");
     expect(html).toContain("@pm/tokens/css/fonts.css");
@@ -38,8 +56,20 @@ describe("consumes the shared design system", () => {
 
 describe("framework-free (ADR-0003 §6)", () => {
   it("contains no script at all", () => {
-    expect(html).not.toMatch(/<script/i);
-    expect(html).not.toMatch(/\son[a-z]+="/i);
+    for (const source of [html, surfaceHtml]) {
+      expect(source).not.toMatch(/<script/i);
+      expect(source).not.toMatch(/\son[a-z]+="/i);
+    }
+  });
+
+  it("the surface golden master carries no chrome slot and no demo scaffolding", () => {
+    // Chrome is instrumentation, excluded by the gate on the VARIANT side;
+    // the master must not have a slot at all (packages/switcher/README.md).
+    expect(surfaceHtml).not.toContain("pm-chrome-slot");
+    // No <style>: a variant page gets no demo chrome, so neither may the
+    // page it is pixel-compared against.
+    expect(surfaceHtml).not.toMatch(/<style/i);
+    expect(surfaceHtml).toContain('class="pm-release-card');
   });
 
   it("renders the canonical pm- markup for all three components", () => {

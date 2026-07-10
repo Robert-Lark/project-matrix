@@ -1,0 +1,27 @@
+{
+  "name": "@pm/drift-gate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The ADR-0003 §6 drift gate tooling (issue #6): the normalized-DOM extractor (permitted-noise registry + deterministic serializer, runs inside the driven browser), the pixel comparator, the repo static server that serves the reference render + the deliberate-drift fixture, and the Playwright page helpers. Dev/CI only — never shipped. Deliberately has no `test` script (the @pm/origin-suite precedent): the gate is proven at the composed-origin seam by suite/drift.browser.test.ts, which needs a browser and the running origin.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@pm/measurement": "workspace:*",
+    "@pm/tokens": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/pngjs": "^6.0.5",
+    "playwright": "^1.61.1",
+    "typescript": "^6.0.3"
+  }
+}
