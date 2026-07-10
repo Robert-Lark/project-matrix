@@ -5,7 +5,9 @@
   "name": "pm-placeholder-static",
   "main": "src/index.js",
   "compatibility_date": "2026-06-01",
-  "workers_dev": true,
+  "workers_dev": false, // no direct hostname — reachable ONLY through pm-front's
+                        // service binding, so the single origin (ADR-0004 §3)
+                        // cannot be bypassed on the deployed plane
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS"

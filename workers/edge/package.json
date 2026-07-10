@@ -1,0 +1,20 @@
+{
+  "name": "@pm/edge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The edge data plane (ADR-0002 §8): R2 frozen-snapshot origin → thin read API (/api/plp, /api/pdp/:id) + self-hosted images (/assets/*) → KV warm tier with harness-driven cache state, plus the RUM beacon collector writing to Analytics Engine.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8790 --inspector-port 9233",
+    "deploy": "wrangler deploy",
+    "seed:local": "node seed-local.mjs",
+    "seed:remote": "node seed-local.mjs --remote"
+  },
+  "dependencies": {
+    "@pm/measurement": "workspace:*",
+    "@pm/snapshot-fixture": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@pm/snapshot-fixture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The interim frozen fixture snapshot (issue #4): ≥240 deterministic, clearly-synthesized, schema-valid placeholder releases + placeholder images + dated manifest. Committed for anti-rigging transparency (ADR-0001 §9); the real crate lands via snapshot-capture. Regenerate: pnpm run generate.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pm/data-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "sharp": "^0.34.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

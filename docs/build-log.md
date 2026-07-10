@@ -475,6 +475,54 @@ continue-through instruction the build rolls on to #4, whose work is local.
 **Skills / tools used:** staged Workflow finders + inline refutation ·
 chrome-devtools MCP (composed-origin drive) · the spike suite as prior art.
 
+### Issue #4 — edge data plane — landed (2026-07-09)
+
+The ADR-0002 §8 serving path as real code, end-to-end through the composed
+origin. A **committed, deterministic fixture snapshot** (240 clearly-synthesized
+schema-valid releases + 24 generated AVIFs + dated manifest, seeded PRNG so
+regeneration is byte-stable — inspectable and one-SHA-pinned per the
+anti-rigging ethos; `snapshot-capture` still owns the real crate) behind the
+edge Worker: `GET /api/plp` (pagination, `?n=`, facets computed from stored
+data), `GET /api/pdp/:id`, `/assets/img/*` from R2, the KV warm tier with
+harness-driven `?cache=` + `x-pm-cache-state`, and the `POST /api/beacon`
+Analytics Engine collector. AE semantics were **fenced re-verification done**:
+a research agent confirmed against Cloudflare docs + workerd/miniflare source
+that `writeDataPoint` is void/fire-and-forget, throws `TypeError` synchronously
+on shape violations (1 index ≤96 B, ≤20 blobs, ≤16 KB), and is a documented
+local no-op — so "success after the write call completes" is honest, and every
+client-controlled blob is bounded server-side (oversized input 400s, never
+500s). Origin suite grew to 35 assertions, all green through the composed
+origin, twice back-to-back.
+
+**Verification (staged finders → inline refutation): 26 raw findings, 14
+distinct, all adopted.** The heavy hitters: the KV warm key was built from the
+*raw decoded query* — reproduced live as cache poisoning (`%26` aliasing), key
+splitting, junk-param immortal-entry minting, and a 512-byte-key 500 — replaced
+with per-route keys built from the *effective measurement condition* (parsed
+knobs + a documented `?run=` isolation knob); the local suite was **flaky by
+silent substitution** — a leaked workerd tree from a killed `pnpm dev` held a
+port while the fresh worker died on its inspector bind, and a stale process
+served the suite (8/32 failed, then 32/32 "passed") — the orchestrator now
+pre-flights ports, asserts children survived startup, and escalates teardown
+to SIGKILL; the deployed smoke's miss→hit assertion relied on KV
+read-after-write that Cloudflare explicitly documents as not guaranteed
+(negative lookups are cached) — remote runs now poll for the hit within the
+propagation window; smoke beacons write real, undeletable AE points — now
+tagged with reserved `ci-smoke` values; `workers_dev` disabled on everything
+but `pm-front`, so the deployed single origin cannot be bypassed; beacon tag
+spellings became a shared contract (`BEACON_TAG_KEYS` in `@pm/measurement`)
+before issue #5's sender could drift from prose ("cache-state") to code
+(`cacheState`). Rate limiting on the beacon is documented as deferred to the
+arming step (input caps + single-origin exposure meanwhile).
+
+**Skills / tools used:** staged Workflow finders + inline refutation · a
+background research agent (AE/wrangler primary sources, incl. workerd +
+miniflare source) · sharp/pyftsubset-style deterministic asset generation.
+
+**Deploy leg:** still credential-gated with #3's; the deploy job now also
+creates/seeds the R2 bucket and deploys `pm-edge` (KV namespace id is the one
+remaining paste-in — runbook updated).
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

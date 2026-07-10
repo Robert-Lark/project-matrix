@@ -115,8 +115,18 @@ jobs:
         if: steps.creds.outputs.present == 'true'
         run: pnpm exec turbo run build --filter=@pm/placeholder-static --filter=@pm/placeholder-ssr
 
-      # Variants first: the front Worker's service bindings must resolve.
-      - name: Deploy placeholder variants
+      - name: Seed the frozen snapshot into R2
+        if: steps.creds.outputs.present == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm --filter @pm/edge exec wrangler r2 bucket create pm-snapshot \
+            || echo "bucket exists (a real auth failure would fail the seed below)"
+          pnpm --filter @pm/edge run seed:remote
+
+      # Service-binding targets first: the front Worker's bindings must resolve.
+      - name: Deploy service-bound Workers (variants + edge)
         if: steps.creds.outputs.present == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -124,6 +134,7 @@ jobs:
         run: |
           pnpm --filter @pm/placeholder-static run deploy
           pnpm --filter @pm/placeholder-ssr run deploy
+          pnpm --filter @pm/edge run deploy
 
       - name: Deploy front Worker
         if: steps.creds.outputs.present == 'true'

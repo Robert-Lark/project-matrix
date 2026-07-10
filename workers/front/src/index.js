@@ -7,10 +7,11 @@
 // "serving a subdirectory" shape), so no path rewriting happens and
 // asset-layer redirects stay correct (spike-verified).
 //
-// NOT here yet (later slices own them): /api/* + /assets/* → edge Worker
-// (issue #4); HTMLRewriter chrome injection + /_pm/* instrumentation
-// (issue #5). Until the rewriter exists every response — HTML or not —
-// passes through byte-identical by construction.
+// /api/* and /assets/* dispatch to the edge Worker (the ADR-0002 §8 data
+// plane, issue #4). NOT here yet (issue #5 owns them): HTMLRewriter chrome
+// injection + the /_pm/* instrumentation path. Until the rewriter exists
+// every response — HTML or not — passes through byte-identical by
+// construction.
 
 const VARIANTS = {
   "placeholder-static": "PLACEHOLDER_STATIC",
@@ -27,8 +28,13 @@ function log(level, event, fields) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const variant = url.pathname.split("/")[1];
-    const bindingName = VARIANTS[variant];
+    const prefix = url.pathname.split("/")[1];
+
+    // The data plane (ADR-0002 §8): trays + beacons under /api/*, the frozen
+    // self-hosted images under /assets/* — both served by the edge Worker.
+    const bindingName =
+      prefix === "api" || prefix === "assets" ? "EDGE" : VARIANTS[prefix];
+    const variant = bindingName === "EDGE" ? "edge" : prefix;
 
     if (!bindingName) {
       log("info", "unknown-prefix", { path: url.pathname });

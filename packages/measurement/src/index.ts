@@ -16,3 +16,9 @@ export {
   type ProfileViewport,
   type TestProfile,
 } from "./profiles";
+export {
+  BEACON_TAG_KEYS,
+  type BeaconTagKey,
+  type BeaconTags,
+  type BeaconEvent,
+} from "./beacon";

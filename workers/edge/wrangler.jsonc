@@ -1,0 +1,26 @@
+// The edge data plane Worker (ADR-0002 §8). R2 = the frozen-snapshot origin;
+// KV = the globally-replicated warm tier (reproducible "warm" everywhere);
+// Analytics Engine = the durable ~$0 home for tagged RUM beacons.
+{
+  "name": "pm-edge",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": false, // no direct hostname — reachable ONLY through pm-front's
+                        // service binding, so the single origin (ADR-0004 §3)
+                        // cannot be bypassed on the deployed plane
+  "r2_buckets": [
+    { "binding": "SNAPSHOT", "bucket_name": "pm-snapshot" }
+  ],
+  // Local dev uses wrangler's local KV emulation (any id works). Before the
+  // FIRST real deploy: `wrangler kv namespace create pm-warm` and paste the
+  // returned id here (workers/README.md arming runbook).
+  "kv_namespaces": [
+    { "binding": "WARM", "id": "00000000000000000000000000000000" }
+  ],
+  "analytics_engine_datasets": [
+    { "binding": "BEACONS", "dataset": "pm_rum" }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

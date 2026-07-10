@@ -73,6 +73,9 @@ importers:
 
   tools/origin-suite:
     devDependencies:
+      '@pm/data-contract':
+        specifier: workspace:*
+        version: link:../../packages/data-contract
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2
@@ -95,6 +98,25 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.2)(vite@8.1.3(@types/node@24.13.2)(esbuild@0.28.1))
 
+  tools/snapshot-fixture:
+    dependencies:
+      '@pm/data-contract':
+        specifier: workspace:*
+        version: link:../../packages/data-contract
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.2)(vite@8.1.3(@types/node@24.13.2)(esbuild@0.28.1))
+
   variants/placeholder-ssr:
     dependencies:
       '@pm/tokens':
@@ -110,6 +132,19 @@ importers:
       '@pm/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+    devDependencies:
+      wrangler:
+        specifier: ^4.110.0
+        version: 4.110.0
+
+  workers/edge:
+    dependencies:
+      '@pm/measurement':
+        specifier: workspace:*
+        version: link:../../packages/measurement
+      '@pm/snapshot-fixture':
+        specifier: workspace:*
+        version: link:../../tools/snapshot-fixture
     devDependencies:
       wrangler:
         specifier: ^4.110.0
