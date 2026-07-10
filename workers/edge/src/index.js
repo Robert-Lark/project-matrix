@@ -20,14 +20,12 @@
 //
 // No Discogs credential exists anywhere here (ADR-0002 §1): the Worker only
 // ever reads the frozen snapshot.
-import { BEACON_TAG_KEYS } from "@pm/measurement";
+import { BEACON_TAG_KEYS, clampN } from "@pm/measurement";
 
 const SNAPSHOT_KEYS = {
   summaries: "snapshot/summaries.json",
   details: "snapshot/details.json",
 };
-const DEFAULT_PER_PAGE = 24;
-const MAX_PER_PAGE = 240;
 const MAX_TAG_BYTES = 96; // AE index limit; verified against workerd source
 
 function log(level, event, fields) {
@@ -114,10 +112,9 @@ function computeFacets(summaries) {
 }
 
 async function handlePlp(url, env) {
-  const n = Math.min(
-    Math.max(parseInt(url.searchParams.get("n") ?? "", 10) || DEFAULT_PER_PAGE, 1),
-    MAX_PER_PAGE,
-  );
+  // clampN is the shared canonical knob (ADR-0002 §5) — the same clamp the
+  // chrome's environment tag applies, so tag and served condition agree.
+  const n = clampN(url.searchParams.get("n"));
   const page = Math.max(parseInt(url.searchParams.get("page") ?? "", 10) || 1, 1);
   const run = runKnob(url);
   const key = `v1:/api/plp?n=${n}&page=${page}${run ? `&run=${run}` : ""}`;

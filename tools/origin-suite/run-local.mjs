@@ -103,12 +103,12 @@ async function waitFor(url, timeoutMs) {
   }
 }
 
-// Build the placeholder dists (cached by turbo when unchanged).
-const build = spawnSync(
-  "pnpm",
-  ["exec", "turbo", "run", "build", "--filter=@pm/placeholder-static", "--filter=@pm/placeholder-ssr"],
-  { cwd: repoRoot, stdio: "inherit" },
-);
+// Build every workspace's dist (placeholders, the measurement bundle, the
+// front Worker's /_pm assets) — cached by turbo when unchanged.
+const build = spawnSync("pnpm", ["exec", "turbo", "run", "build"], {
+  cwd: repoRoot,
+  stdio: "inherit",
+});
 if (build.status !== 0) process.exit(build.status ?? 1);
 
 // Fresh edge-Worker state per run: the bypass→miss→hit assertions need a KV

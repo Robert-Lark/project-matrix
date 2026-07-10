@@ -2,17 +2,23 @@
   "name": "@pm/measurement",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared measurement layer (ADR-0001). This slice: the versioned test-profile spec consumed by the HUD, bench runner, drift gate, and receipts. Dependency-free by design.",
+  "description": "Shared measurement layer (ADR-0001): the versioned test-profile spec, the beacon tag contract, and the pinned web-vitals client (bundled to dist/measure.js, served from /_pm/*). The spec/contract exports stay runtime-dependency-free; web-vitals is reachable only through the client bundle.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
   },
   "types": "./src/index.ts",
   "scripts": {
+    "build": "esbuild src/client.ts --bundle --minify --format=iife --outfile=dist/measure.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "web-vitals": "5.3.0"
+  },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }

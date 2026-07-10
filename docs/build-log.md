@@ -523,6 +523,54 @@ miniflare source) · sharp/pyftsubset-style deterministic asset generation.
 creates/seeds the R2 bucket and deploys `pm-edge` (KV namespace id is the one
 remaining paste-in — runbook updated).
 
+### Issue #5 — edge-injected chrome + measurement client — landed (2026-07-09)
+
+The instrumentation layer (ADR-0004 §5–§7, ADR-0001 §2/§6): `@pm/switcher`
+(per-surface sparse control-set config + the chrome renderer — plain-anchor
+switcher rewriting only the variant segment, HUD with `?profile=` snapshot
+selection from the shared spec + the honest no-published-runs empty state,
+everything HTML-escaped) and the `@pm/measurement` client (**pinned
+web-vitals 5.3.0**, esbuild-bundled, `sendBeacon` on visibility-hidden with
+the shared tag contract). The front Worker injects the chrome into
+`div#pm-chrome-slot` via HTMLRewriter (HTML-only, edge responses excluded)
+and serves all instrumentation bytes from `/_pm/*`. Chrome styling consumes
+the PAGE's semantic tokens — no shipped fonts, tabular figures for free.
+Origin suite grew to 52 assertions including two real-Chromium Playwright
+checks: the HUD populates live vitals and the beacon payload carries the
+page's actual measurement condition; the page + swap work fully JS-off.
+Driven visually: TTFB/FCP populating in the injected HUD through the
+composed origin.
+
+**Verification (staged finders → inline refutation): 13 raw → 9 distinct,
+all adopted.** The one that would have burned the first armed deploy: this
+slice moved the front Worker's assets to gitignored `dist/`, and the deploy
+job still built only the placeholders — the front deploy would have shipped
+without `/_pm/*` (now an unfiltered turbo build). Also: a junk `?n=` could
+push the environment tag past the collector's 96-byte cap and silently kill
+a page's entire RUM — the knob vocabulary (`clampN` + `knobTags`, wire format
+`n=<effective>|cache=<cold|default>`) now lives once in `@pm/measurement`,
+consumed by both the chrome's tags and the edge Worker's served condition, so
+tag and condition are bijective by construction; slot cardinality is a logged
+contract (zero slots = silent unmeasured page, two = double-counted RUM —
+both verified in workerd); the Playwright beacon check reads the payload, not
+just the 204 (five "unknown" fallbacks would otherwise pass); Chromium is
+cached in CI; and the **instrumentation-boundary contract** for issues #6/#7
+is written down in `packages/switcher/README.md` — strip = `/_pm/*`
+subresources + the slot subtree + `/api/beacon` requests; the drift gate must
+REMOVE the slot subtree before pixel-diffing (it's in document flow —
+region-masking can't compensate for the layout shift).
+
+**Environment note:** the org's TLS interception blocks the Playwright CDN
+locally — the browser tests fall back to the system Chrome
+(`channel: "chrome"`); CI installs bundled Chromium.
+
+**Skills / tools used:** staged Workflow finders + inline refutation ·
+Playwright · chrome-devtools MCP (visual HUD verification).
+
+**Deploy leg:** unchanged — credential-gated with #3's; the smoke now also
+covers chrome injection and `/_pm/*` in production, the last composition
+behaviors the spike couldn't verify.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

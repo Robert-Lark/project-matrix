@@ -11,6 +11,7 @@ import {
   getProfile,
   kbpsToBytesPerSecond,
 } from "../src/profiles";
+import { clampN, knobTags } from "../src/beacon";
 
 describe("the versioned profile spec", () => {
   it("is version 1 with exactly the three published profiles", () => {
@@ -44,6 +45,34 @@ describe("the versioned profile spec", () => {
     // 1638.4 Kbps (mobileSlow4G) = 1.6 * 1024 * 1024 bits/s = 209715.2 B/s.
     expect(kbpsToBytesPerSecond(1638.4)).toBeCloseTo(209715.2, 5);
     expect(kbpsToBytesPerSecond(10240)).toBe(1310720);
+  });
+});
+
+describe("the canonical knob vocabulary (shared by tag and served condition)", () => {
+  it("clampN collapses aliases and junk onto the effective value", () => {
+    expect(clampN("240")).toBe(240);
+    expect(clampN("0240")).toBe(240);
+    expect(clampN("99999")).toBe(240);
+    expect(clampN("0")).toBe(24);
+    expect(clampN("-5")).toBe(1);
+    expect(clampN("abc")).toBe(24);
+    expect(clampN(null)).toBe(24);
+    expect(clampN("x".repeat(500))).toBe(24);
+  });
+
+  it("the environment tag wire format is pinned: n=<effective>|cache=<cold|default>", () => {
+    expect(knobTags("?n=240&cache=cold")).toEqual({
+      environment: "n=240|cache=cold",
+      cacheState: "cold",
+    });
+    expect(knobTags("")).toEqual({
+      environment: "n=24|cache=default",
+      cacheState: "default",
+    });
+    // Bounded regardless of input — a junk ?n= can never push the tag past
+    // the collector's 96-byte limit (silent-RUM-loss guard).
+    const junk = knobTags(`?n=${"9".repeat(300)}`);
+    expect(junk.environment.length).toBeLessThan(30);
   });
 });
 

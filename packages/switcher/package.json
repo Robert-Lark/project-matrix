@@ -1,0 +1,23 @@
+{
+  "name": "@pm/switcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The contextual switcher + HUD chrome (ADR-0004 §7): per-surface sparse control-set config and the chrome HTML the front Worker injects. Instrumentation, never part of any variant's build.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./chrome.css": "./src/chrome.css"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pm/measurement": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}
