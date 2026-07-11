@@ -927,6 +927,101 @@ lock) · the saved verify-slice workflow (background) + inline empirical
 probes (foreground) · Monitor-tailed background capture · sharp · the
 composed origin itself.
 
+### `smoke-snapshot-awareness` — landed (2026-07-11)
+
+The recorded prerequisite of the Rob-gated deploy leg (issue #9 close-out,
+follow-up 4): the origin suite asserted fixture literals —
+`ph-00-primary.avif` byte identity, PDP ids 9000001/9000002/1234567 — so
+the post-deploy smoke would have gone red the moment the remote bucket
+switched to the real crate. Landed as
+[issue #11](https://github.com/Robert-Lark/project-matrix/issues/11),
+one session, one issue.
+
+**The design move: ask the origin, then assert its own committed truth.**
+The edge Worker gained `GET /api/snapshot` — a thin R2 read of the dated
+`SnapshotManifest`, ADR-0002 §1's provenance signal served squarely inside
+§8's "thin read API." A new suite resolver fetches it, matches it against
+the committed snapshots it knows — fixture first, crate only when the
+fixture doesn't match, so CI never reads the crate artifact — requires
+full manifest equality (a right-named but stale re-seed fails on its
+date), and derives every probe value from the matched snapshot's committed
+files: PDP ids from the trays, the guaranteed-missing id as
+max-committed-id + 1, and image byte identity as sha256 — the crate's
+committed `images-index.json` carries a sha256 per derivative precisely
+because its image bytes are git-excluded, which is exactly what a CI
+checkout smoking a crate-seeded bucket needs. "Couldn't tell which
+snapshot" throws at module load: every data-plane test fails, nothing
+skips (ADR-0001 §9).
+
+**Parameterizing made the assertions stronger, not weaker.** The old tests
+checked contract-validity plus a few lengths; the new ones deep-equal the
+wire payloads against the committed artifacts themselves — the PLP first
+page IS `summaries.json`'s first 24 entries in committed order, the PDP
+tray IS the committed detail, the PLP total IS the manifest's
+releaseCount (was: ≥240). And a green run now *names* which snapshot it
+asserted in the log — exit 0 stopped being the only evidence, which
+mattered immediately: the first crate-leg "pass" was only trusted after
+the miniflare state (45 MB, 1,841 objects, the crate name in the manifest
+blob) proved the right seed had actually been under test.
+
+**Proven all four ways (the issue's definition of done):** fixture path
+green twice back-to-back (118/118 — the 113 plus two provenance
+assertions and three content-coverage sweeps); the full suite green
+against a crate-seeded local plane via
+the new run mode (`PM_SEED_DIR=tools/snapshot-capture/crate pnpm run
+origin-suite` — CI never sets it; the fixture stays the CI seed forever);
+wrong and mixed seeds demonstrably failing (probe dirs seeded through the
+real path: a fixture manifest over crate data fails on total/ids/sweep/
+sample/image at once; a crate seed with a wrong-byte probed image is
+caught by the sha256 leg alone; an unknown crate name and a stale
+capturedAt both die in the resolver before a single vacuous pass); and
+the unseeded plane — the "couldn't tell" case — failing loudly rather
+than skipping. The
+workers/README arming runbook now reads: secrets → deploy → smoke →
+remote crate seed → re-smoke → close #3 then #1, with no code steps left
+in between.
+
+**Verification:** the saved verify-slice workflow ran in the background
+(the args-as-JSON-string gotcha fired again, exactly as documented; the
+session-copy patch + resume worked as recorded) while the foreground ran
+the seed probes above — the empirical leg the lenses can't do. The
+lenses' standout finding class — **the KV warm tier is persistent and its
+keys carry no snapshot identity** — proved its worth by firing TWICE. An
+un-nonced tray read in the deployed re-smoke could be served the
+PREVIOUS smoke's warm payload (false-failing step 4 of the arming
+runbook, or letting a torn re-seed false-pass behind a warm hit), and an
+un-nonced *write* plants the canonical default-PLP key a real visitor
+would later HIT as a stale fixture payload forever. The first sweep
+nonced the data-plane file (including the HEAD probe, which rides the
+write-through); then three later lenses independently caught the ONE
+remaining un-nonced request hiding in a *sibling* file
+(`chrome.test.ts`'s rewriter probe — now `cache=cold`, which bypasses
+the tier in both directions). A convention that survives only as prose
+will regress, so the discipline is now a repo-check: every tray request
+in the suite must be nonced, cold, or carry a `kv-exempt:` marker naming
+why it provably never touches the tier. Alongside: the Worker gives
+nonce-keyed entries a 1-hour TTL (harness artifacts stop accreting in
+deployed KV forever), and the runbook's crate-seed step gained an
+explicit warm-tier flush — the earlier draft's "no visitor traffic
+precedes it" was exactly the kind of unproven exclusion the skeptic lens
+exists to kill, since the origin is publicly reachable from the first
+deploy on. Other adopted findings sharpened the assertions themselves:
+manifest equality became raw-vs-raw (Zod strips unknown keys, so
+parsed-value equality would go asymmetric the day a manifest grows a
+field); tray content coverage grew a full PLP sweep plus a deterministic
+PDP sample (page 1 + one probe detail alone would have let a seed
+doctored in later rows pass); image byte-identity grew a five-position
+sample over ALL committed derivatives (one predictable probe image was a
+game-able 1-of-1,817 blind spot — the remaining sampled-not-exhaustive
+boundary is stated at the test, like the PDP sample's); and a latent
+cache-leg id collision got its own sub-nonce. Notably, the old
+`total ≥ 240` assertion would have *passed* on the stale-warm payload —
+the exact-equality rewrite is what surfaced the whole hazard class.
+
+**Skills / tools used:** the saved verify-slice workflow + inline seed
+probes · the composed origin itself · miniflare state inspection (the
+crate-seed evidence).
+
 ## Phase 4 — Variant frontier
 
 ### `remix3-frontier` — resolved (2026-07-11)

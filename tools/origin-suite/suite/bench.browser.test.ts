@@ -48,6 +48,9 @@ const PROFILE = PROFILES["avg-broadband-desktop"];
 const RUNS = 2;
 
 const PAGE_TARGETS = ["/placeholder-static/sample/", "/placeholder-ssr/sample/"] as const;
+// A bare path constant: the bench runner mints a fresh per-batch ?run=
+// nonce for every visit it drives (@pm/bench-runner batch discipline).
+// kv-exempt: nonced by the bench runner at request time
 const API_TARGET = "/api/plp";
 
 let receipt: ReceiptT;

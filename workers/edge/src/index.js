@@ -23,6 +23,7 @@
 import { BEACON_TAG_KEYS, clampN } from "@pm/measurement";
 
 const SNAPSHOT_KEYS = {
+  manifest: "snapshot/manifest.json",
   summaries: "snapshot/summaries.json",
   details: "snapshot/details.json",
 };
@@ -75,7 +76,13 @@ async function serveData(url, env, key, compute) {
   const payload = await compute();
   if (payload === null) return null;
   const body = JSON.stringify(payload);
-  if (!bypass) await env.WARM.put(key, body); // write-through: one priming request warms this URL
+  // Write-through: one priming request warms this URL. A `?run=`-keyed
+  // entry exists only to isolate one harness run (suite/bench), so it
+  // expires instead of accreting in deployed KV forever; visitor-facing
+  // (un-nonced) entries keep the frozen-data infinite TTL.
+  if (!bypass) {
+    await env.WARM.put(key, body, runKnob(url) ? { expirationTtl: 3600 } : undefined);
+  }
   return new Response(body, {
     headers: {
       "content-type": "application/json; charset=utf-8",
@@ -152,6 +159,19 @@ async function handlePdp(url, env, rawId) {
     response ??
     json({ error: "release not found" }, 404, { "x-pm-cache-state": "none" })
   );
+}
+
+async function handleSnapshot(env) {
+  // Provenance, not measurement (ADR-0002 §1): the dated SnapshotManifest
+  // names which frozen snapshot this plane serves. The origin suite reads it
+  // to pick WHICH committed snapshot's artifacts to assert against (issue
+  // #11) — so it sits deliberately outside the warm tier and carries no
+  // cache-state marker.
+  const obj = await env.SNAPSHOT.get(SNAPSHOT_KEYS.manifest);
+  if (!obj) return json({ error: "snapshot manifest not found" }, 404);
+  return new Response(obj.body, {
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
 
 async function handleImage(url, env) {
@@ -249,6 +269,10 @@ export default {
           methodGate(request, ["GET", "HEAD"]) ??
           (await handlePdp(url, env, pdpMatch[1]))
         );
+      }
+
+      if (url.pathname === "/api/snapshot") {
+        return methodGate(request, ["GET", "HEAD"]) ?? (await handleSnapshot(env));
       }
 
       if (url.pathname === "/api/beacon") {

@@ -8,7 +8,7 @@
 // wrangler's local dev registry (the spike's proven shape).
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, openSync, rmSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const suiteDir = dirname(fileURLToPath(import.meta.url));
@@ -112,16 +112,26 @@ const build = spawnSync("pnpm", ["exec", "turbo", "run", "build"], {
 if (build.status !== 0) process.exit(build.status ?? 1);
 
 // Fresh edge-Worker state per run: the bypass→miss→hit assertions need a KV
-// that this run's requests haven't already warmed. Then seed local R2 with
-// the frozen fixture snapshot.
+// that this run's requests haven't already warmed. Then seed local R2 with a
+// frozen snapshot — the synthesized fixture by default (the CI seed, always;
+// issue #9). PM_SEED_DIR selects another committed snapshot-layout directory
+// for a local verification run (e.g. the real crate,
+// PM_SEED_DIR=tools/snapshot-capture/crate); the suite itself asks the plane
+// which snapshot it serves (/api/snapshot) and asserts that snapshot's
+// committed artifacts (issue #11), so the one command holds either way.
 rmSync(join(repoRoot, "workers/edge/.wrangler/state"), {
   recursive: true,
   force: true,
 });
-const seed = spawnSync("pnpm", ["run", "seed:local"], {
-  cwd: join(repoRoot, "workers/edge"),
-  stdio: "inherit",
-});
+const seedDir = process.env.PM_SEED_DIR
+  ? resolve(repoRoot, process.env.PM_SEED_DIR)
+  : null;
+if (seedDir) console.log(`PM_SEED_DIR set — seeding ${seedDir}`);
+const seed = spawnSync(
+  "node",
+  ["seed-local.mjs", ...(seedDir ? ["--dir", seedDir] : [])],
+  { cwd: join(repoRoot, "workers/edge"), stdio: "inherit" },
+);
 if (seed.status !== 0) process.exit(seed.status ?? 1);
 
 let suiteStatus;

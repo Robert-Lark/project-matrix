@@ -53,7 +53,12 @@ describe("chrome injection (ADR-0004 §7)", () => {
   it("non-HTML responses stay untouched with the rewriter active", async () => {
     const css = await (await get("/placeholder-static/assets/pm/css/tokens.css")).text();
     expect(css).not.toContain("pm-chrome");
-    const api = await (await get("/api/plp?n=24")).text();
+    // cache=cold bypasses the warm tier in BOTH directions: this probe must
+    // not plant a canonical un-nonced KV entry on the deployed plane — the
+    // fixture-era smoke's entry would outlive the crate re-seed and be
+    // served to real visitors as a stale hit (issue #11; enforced by the
+    // repo-checks warm-tier discipline guard).
+    const api = await (await get("/api/plp?n=24&cache=cold")).text();
     expect(api).not.toContain("pm-chrome");
   });
 

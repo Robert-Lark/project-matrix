@@ -10,9 +10,13 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
   `GET /api/plp` + `GET /api/pdp/:id` (Zod-contract trays), `/assets/img/*`
   image serving, the KV warm tier (`?cache=` bypass; `x-pm-cache-state`
   marker; `?run=` is the documented harness isolation knob folded into the
-  warm key), and the `POST /api/beacon` Analytics Engine collector (tag
+  warm key), the `POST /api/beacon` Analytics Engine collector (tag
   contract imported from `@pm/measurement`; suite traffic uses the reserved
-  `ci-smoke` tag values, excluded from any field analysis by convention).
+  `ci-smoke` tag values, excluded from any field analysis by convention),
+  and `GET /api/snapshot` — the served snapshot's dated `SnapshotManifest`
+  (provenance, ADR-0002 §1; issue #11). The origin suite reads it to decide
+  WHICH committed snapshot's artifacts to assert against, so the smoke holds
+  whether the bucket serves the synthesized fixture or the real crate.
   Local dev seeds wrangler's local R2 from `tools/snapshot-fixture/snapshot/`
   (`pnpm --filter @pm/edge run seed:local`). The seeder accepts `--dir <path>`
   to seed any other snapshot-layout directory — `pnpm capture seed` uses it to
@@ -41,7 +45,13 @@ multi-config mode (`wrangler dev -c a -c b`) is **forbidden** — it
 demonstrably breaks assets-through-bindings (spike FINDINGS).
 
 `pnpm run origin-suite` starts the same processes, runs the composed-origin
-integration suite against them, and tears them down.
+integration suite against them, and tears them down. It re-seeds local R2
+with the fixture every run (the CI seed, always); to run the same suite
+against a crate-seeded local plane instead, set
+`PM_SEED_DIR=tools/snapshot-capture/crate` — the suite asks the plane which
+snapshot it serves (`GET /api/snapshot`) and asserts that snapshot's own
+committed artifacts (ids + trays + image sha256s), failing closed if it
+cannot tell (issue #11). CI never sets `PM_SEED_DIR`.
 
 ## Deploying (the canonical plane)
 
@@ -78,11 +88,37 @@ git, so CI cannot re-seed them). From then on the seeder's clobber guard
 refuses to overwrite a bucket whose manifest names a different crate, and
 deploys leave the crate in place.
 
-**Known follow-up (recorded on issue #9):** a handful of origin-suite
-assertions are fixture-coupled (`/assets/img/ph-00-primary.avif` byte
-identity, PDP ids `9000002`/`1234567`). They hold against the local plane
-(the suite always re-seeds the fixture) and against a fixture-seeded deploy,
-but the post-deploy smoke will need snapshot-aware fixtures (ids + sha256s
-read from the committed trays/images-index) before the remote bucket is
-switched to the real crate. Both gates are Rob-held, so this cannot fire by
-accident.
+**Arming runbook (the remaining Rob-gated steps, in order — no code steps
+left in between; issue #11 removed the last one):**
+
+1. Complete the one-time prerequisites above and mint the two repo secrets.
+2. Push (or re-run the deploy job): CI deploys the plane and runs the
+   post-deploy smoke against the fixture-seeded bucket. The suite is
+   snapshot-aware — it reads `GET /api/snapshot` and asserts the committed
+   artifacts of whatever snapshot the bucket serves — so this run asserts
+   the fixture's, and goes green.
+3. Seed the real crate remotely: `pnpm capture seed --remote`. The clobber
+   guard keeps later deploys from resetting the bucket to the fixture.
+   Then **flush the warm tier**: KV keys carry no snapshot identity by
+   design (frozen data never needs invalidation *within* a snapshot's
+   lifetime), so any canonical key warmed before this re-seed would keep
+   serving the fixture forever. The smoke itself plants only
+   self-expiring `?run=`-keyed entries (enforced by the repo-checks
+   warm-tier guard), but the origin is publicly reachable from step 2 on
+   and stray traffic cannot be ruled out. E.g.:
+
+   ```sh
+   wrangler kv key list --binding WARM --remote \
+     --config workers/edge/wrangler.jsonc | jq '[.[].name]' > /tmp/pm-warm-keys.json
+   wrangler kv bulk delete /tmp/pm-warm-keys.json --binding WARM --remote \
+     --config workers/edge/wrangler.jsonc --force
+   ```
+
+   (An empty list is the expected result if nothing hit the plane; the
+   flush is then a no-op. Any FUTURE re-seed under live traffic needs the
+   same flush.)
+4. Re-run the smoke (re-run the deploy job): the same assertions now resolve
+   the crate's manifest and assert the crate's committed trays + its
+   `images-index.json` sha256s — proven green locally against a crate-seeded
+   plane before this was recorded (issue #11).
+5. Close #3, then #1.
