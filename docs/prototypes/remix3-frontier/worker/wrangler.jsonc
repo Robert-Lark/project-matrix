@@ -1,0 +1,12 @@
+{
+  // Hand-rolled Workers entry for the Remix 3 spike. Deliberately minimal:
+  // no nodejs_compat flag — the claim under test is that the beta's core
+  // render path is web-standard. If this config ever needs the flag, that
+  // fact belongs in FINDINGS.md.
+  "name": "remix3-frontier-spike",
+  "main": "index.ts",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "../public"
+  }
+}

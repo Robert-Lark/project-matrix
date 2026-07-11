@@ -225,3 +225,35 @@ evidence and citations in
   hop.
 - **Remix 3 (fenced frontier) has no official Cloudflare target as of
   3.0.0-beta.5** — hosting for that exhibit is decided in `remix3-frontier`.
+
+## Addendum — Remix 3 frontier hosting, decided by `remix3-frontier` (2026-07-11)
+
+The exhibit stays **on the canonical plane via a hand-rolled Workers
+entry** — §1 holds without an exception. Decided empirically, not from
+docs: a runnable spike
+([`prototypes/remix3-frontier/`](../prototypes/remix3-frontier/), findings +
+citations in its
+[FINDINGS.md](../prototypes/remix3-frontier/FINDINGS.md)) runs the full
+Remix 3 beta render path (`@remix-run/ui` streaming SSR + frames +
+render-middleware + fetch-router) on workerd with **no `nodejs_compat`
+flag**, behind a ~15-line `fetch` entry, emitting HTML identical to the
+official Node template's output (modulo per-render instance ids; 42/42
+assertions across both hosts + a browser-verified frames leg). Re-verified
+same-day against primary sources (54/54 claims adversarially confirmed):
+still `3.0.0-beta.5`, still "not production ready", still no official
+deployment target beyond the Node ≥ 24.3 template — so a plain fetch
+handler is the idiomatic Workers shape for its fetch-native router, and
+§1's "idiomatic adapter, not hand-tuned" is not violated.
+
+The fenced **off-plane Node host** (acceptable in principle) is the
+recorded fallback, rejected because it buys nothing the fence doesn't
+already excuse and would cost a second provider, a different transport
+stack, and the exhibit falling outside the composed origin. Revisit
+trigger: a future beta pin breaking the Workers entry in a way a pinned
+version can't hold.
+
+Two propagated judgments (details in FINDINGS §7): the exhibit **owes the
+ADR-0003 canonical-markup/shared-CSS contract** (fencing excludes numbers,
+not visual identity), and the **drift gate covers it in advisory mode** —
+drift on the remix3 Editorial surface warns but never fails CI, so a
+weekly-cadence beta can never block the benchmarked matrix's deploy.

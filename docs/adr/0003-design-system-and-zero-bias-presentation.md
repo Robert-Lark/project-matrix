@@ -164,3 +164,19 @@ paradigm feature, so no variant optimizes it differently. One variable sans (UI/
 - **Prototype:** [`docs/prototypes/design-system/`](../prototypes/design-system/) —
   `tokens.css` (two-tier + forced-colors + reduced-motion), three component modules,
   and the framework-free `reference/index.html` (golden master + reactable demo).
+
+## Addendum — §6 scope for the fenced Remix 3 exhibit (2026-07-11)
+
+`remix3-frontier` resolved that the fenced Remix 3 showcase **owes this
+ADR's canonical-markup/shared-CSS contract** (fencing excludes benchmark
+numbers, not visual identity), and that §6's drift gate covers its
+Editorial surface **in advisory mode**: drift there warns but never fails
+the build. §6's "either drift fails the build" continues to apply in full
+to every *benchmarked* variant; the carve-out exists because the exhibit is
+in no published number (so a drift there defrauds no comparison) and its
+weekly-cadence pre-release dependency must not be able to block the
+matrix's deploy. Hosting rationale:
+[ADR-0004's second addendum](0004-deployment-topology-and-contextual-switcher.md);
+the carve-out's reasoning and the paradigm-noise list to register when the
+gate is wired:
+[`prototypes/remix3-frontier/FINDINGS.md`](../prototypes/remix3-frontier/FINDINGS.md) §7(b).

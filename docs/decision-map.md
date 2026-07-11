@@ -155,10 +155,15 @@ Type: Prototype + Grilling
 
 ### remix3-frontier: Frontier showcase scope
 Blocked by: design-system
-Status: open
+Status: resolved (2026-07-11)
 Type: Research + Prototype
 **Question:** The minimum Remix 3 (beta) showcase that demonstrates the non-React server-HTML + frames paradigm, clearly labeled pre-release and fenced from core numbers. Re-verify Remix 3 status at build time (fast-moving). _Verified 2026-07-06 (`cf-composition-spike`): 3.0.0-beta.5 (npm `next` tag, "not production ready"); frames/server-HTML direction confirmed; **no official CF Workers deployment target** — official template is Node ≥24.3 `node:http`; Workers exist only as a README portability claim + `fetch-router`/`multipart-parser` demos. Must decide hosting: hand-rolled Workers entry (e.g. via `@remix-run/fetch-router`) vs a fenced off-plane Node host (acceptable — already fenced from core numbers)._
-**Answer:** _(open)_
+**Answer:** Resolved as [issue #10](https://github.com/Robert-Lark/project-matrix/issues/10) via runnable spike + adversarial primary-source research (4 areas, 54/54 claims confirmed 2026-07-11). Evidence + citations in [`prototypes/remix3-frontier/FINDINGS.md`](prototypes/remix3-frontier/FINDINGS.md); hosting recorded in the ADR-0004 second addendum; narrative in `build-log.md` Phase 4. Five findings:
+1. **Status unchanged, fence stays mandatory:** `3.0.0-beta.5` (2026-07-01) is still the newest v3 anywhere (npm + GitHub tags); "not production ready" stands unretracted; no RC timeline exists; beta cadence 1–4 weeks.
+2. **Paradigm confirmed from the shipped beta:** non-React (own `Handle`-based component model; Preact fork struck through in the blog), `<Frame src>` = server-rendered UI reloadable independently, `run()` intercepts plain anchors via the Navigation API (`rmx-target`/`rmx-src`) → HTML-over-the-wire partial updates with JS-off fallback by construction.
+3. **Hosting = hand-rolled Workers entry on the canonical plane** (ADR-0004 §1 holds; off-plane Node host = recorded fallback). Proven: the full render path (ui SSR + frames + render-middleware + fetch-router) runs on workerd, **no nodejs_compat**, ~15-line entry, output identical to the official Node host modulo per-render ids (spike `test.sh` 42/42 both hosts + browser-verified frame reloads/history/island state). Frictions recorded: `clientEntry()` needs a stable ID on workerd (`import.meta` is empty at runtime there); client assets must be prebuilt (esbuild, ~30 lines) — the template's runtime asset server is Node-only.
+4. **The showcase owes the ADR-0003 markup/CSS contract** (fencing excludes numbers, not visual identity — spike renders `pm-` markup + stylesheet frictionlessly); **drift gate covers it in advisory mode** (warns, never fails CI — a weekly-cadence beta can't block the matrix deploy).
+5. **Labeling = three layers, machine-checkable:** on-surface plaque (`data-pm-fenced="true"`, exact version, "excluded from every benchmark number" — mechanism proven in the spike), switcher tag + HUD shows RUM-only (no lab snapshot exists for it by policy), bench runner never batches `/remix3/*`. Exact-pin the beta (metapackage carets its sub-packages — the committed lockfile is the real pin); the spike's `test.sh` is the canary on any bump. The Editorial-spine build consumes this ticket's decisions downstream.
 
 ### aesthetic-direction: The visual look, poured into the primitive token tier
 Blocked by: design-system

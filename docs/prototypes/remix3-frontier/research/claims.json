@@ -1,0 +1,539 @@
+{
+  "generated": "2026-07-11",
+  "method": "4 research areas, each a fetch agent + an independent adversarial re-fetch verifier; primary sources only (npm registry, remix.run, github.com/remix-run, developers.cloudflare.com)",
+  "totals": {
+    "total": 54,
+    "CONFIRMED": 54
+  },
+  "areas": [
+    {
+      "area": "release-status",
+      "claims": [
+        {
+          "id": "R1",
+          "claim": "The npm \"next\" dist-tag of the \"remix\" package currently points to 3.0.0-beta.5.",
+          "quote": "\"next\": \"3.0.0-beta.5\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "Full dist-tags fetched via curl: rc=1.0.0-rc.4, pre=2.17.0-pre.1, latest=2.17.5, next=3.0.0-beta.5 (plus experimental/nightly/deferred tags, none on the v3 line).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fresh curl of https://registry.npmjs.org/remix: dist-tags object contains \"next\": \"3.0.0-beta.5\" (full set: rc=1.0.0-rc.4, pre=2.17.0-pre.1, latest=2.17.5, next=3.0.0-beta.5, plus experimental/nightly/deferred tags, none on the v3 line). Quote matches verbatim."
+        },
+        {
+          "id": "R2",
+          "claim": "remix 3.0.0-beta.5 was published to npm on 2026-07-01 at 19:04 UTC.",
+          "quote": "\"3.0.0-beta.5\": \"2026-07-01T19:04:05.918Z\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "From the registry document's \"time\" field.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Registry time field contains \"3.0.0-beta.5\": \"2026-07-01T19:04:05.918Z\" verbatim (https://registry.npmjs.org/remix), i.e. 2026-07-01 19:04 UTC as claimed."
+        },
+        {
+          "id": "R3",
+          "claim": "No npm publish of any remix version has occurred since 3.0.0-beta.5 — the registry's last-modified timestamp coincides with the beta.5 publish.",
+          "quote": "\"modified\": \"2026-07-01T19:04:06.285Z\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "Registry time.modified (2026-07-01T19:04:06.285Z) is within 1 second of the beta.5 publish (R2), so beta.5 is the newest publish package-wide. 3.0.0-beta.5 is also the highest-numbered 3.x key in the time field.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Registry shows \"modified\": \"2026-07-01T19:04:06.285Z\" verbatim. Independent check: sorting the entire time object (1142 versions) by timestamp puts 3.0.0-beta.5 (2026-07-01T19:04:05.918Z) newest package-wide, ahead of beta.4 (2026-06-05) and 2.17.5 (2026-06-01); 3.0.0-beta.5 is also the highest 3.x key (3.x keys run alpha.0–alpha.6, beta.0–beta.5). https://registry.npmjs.org/remix"
+        },
+        {
+          "id": "R4",
+          "claim": "On GitHub, the highest remix@3* tag in remix-run/remix is remix@3.0.0-beta.5; no RC or stable v3 tag exists.",
+          "quote": "\"refs/tags/remix@3.0.0-beta.5\"",
+          "url": "https://api.github.com/repos/remix-run/remix/git/matching-refs/tags/remix@3",
+          "note": "The matching-refs query returned exactly 13 refs: remix@3.0.0-alpha.0 through alpha.6 and remix@3.0.0-beta.0 through beta.5. No -rc.* and no bare 3.0.0.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "https://api.github.com/repos/remix-run/remix/git/matching-refs/tags/remix@3 returned exactly 13 refs: refs/tags/remix@3.0.0-alpha.0 through alpha.6 and refs/tags/remix@3.0.0-beta.0 through \"refs/tags/remix@3.0.0-beta.5\" (quote verbatim); no -rc.* and no bare remix@3.0.0. Independent probe: https://api.github.com/repos/remix-run/remix/releases/latest returns tag_name \"remix@3.0.0-beta.5\"."
+        },
+        {
+          "id": "R5",
+          "claim": "The most recent GitHub release for the remix package is \"remix v3.0.0-beta.5\", published 2026-07-01T19:06:08Z.",
+          "quote": "\"tag_name\": \"remix@3.0.0-beta.5\", \"name\": \"remix v3.0.0-beta.5\", \"published_at\": \"2026-07-01T19:06:08Z\"",
+          "url": "https://api.github.com/repos/remix-run/remix/releases?per_page=10",
+          "note": "The releases feed's other recent entries are sibling workspace packages (ui@0.4.0, route-pattern@0.23.0, node-fetch-server@0.14.0, etc.) all published the same day; none is a newer remix core release. Quote reassembled from three adjacent fields of the same JSON release object.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "https://api.github.com/repos/remix-run/remix/releases?per_page=10: the only remix@ core entry is {\"tag_name\": \"remix@3.0.0-beta.5\", \"name\": \"remix v3.0.0-beta.5\", \"published_at\": \"2026-07-01T19:06:08Z\"} — all three quoted fields verbatim. The other nine entries are sibling packages (ui@0.4.0, static-middleware@0.4.13, session-middleware@0.3.4, route-pattern@0.23.0, etc.) all published 2026-07-01T19:05–19:06Z, so nothing newer exists. Independent probe: /releases/latest returns the same release."
+        },
+        {
+          "id": "R6",
+          "claim": "The Remix team's production-readiness statement for Remix 3 (in the April 30, 2026 beta preview post) is that it is a pre-release and not production ready.",
+          "quote": "This is still a pre-release. It is not production ready yet, and there is still a lot to do.",
+          "url": "https://remix.run/blog/remix-3-beta-preview",
+          "note": "Same post gives the install path as \"npx remix@next new my-remix-app\" and states an intent to \"keep moving quickly, following up with new features and releases every week\".",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://remix.run/blog/remix-3-beta-preview (HTTP 200): contains verbatim \"This is still a pre-release. It is not production ready yet, and there is still a lot to do.\" (continuing \"But it is ready for you to kick the tires...\"). Page dated April 30, 2026; also contains \"npx remix@next new my-remix-app\" and \"keep moving quickly, following up with new features and releases every week\" as the note states."
+        },
+        {
+          "id": "R7",
+          "claim": "No blog post newer than the beta preview retracts or updates the not-production-ready status; the newest post (React Router v8, June 17, 2026) still refers to Remix 3 as a beta.",
+          "quote": "You should also [check out the Remix 3 beta](./remix-3-beta-preview). It's pretty cool.",
+          "url": "https://remix.run/blog/react-router-v8",
+          "note": "Blog index at https://remix.run/blog lists only two posts newer than the beta preview: \"A Brand New Remix\" (May 6, 2026, /blog/brand-new) and \"React Router v8\" (June 17, 2026). Both were fetched; neither announces an RC or stable release.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://remix.run/blog/react-router-v8 (dated June 17, 2026): contains \"You should also <a href=\\\"./remix-3-beta-preview\\\">check out the Remix 3 beta</a>. It's pretty cool.\" — the quote verbatim modulo HTML-vs-markdown link syntax. Blog index (https://remix.run/blog) lists exactly two posts newer than the April 30, 2026 beta preview: react-router-v8 (June 17, 2026) and brand-new (May 6, 2026); next-newest date is December 8, 2025. Staleness probe: grep for 'release candidate', '3.0.0-rc', 'remix 3 stable' across the index and all three fetched posts found no matches."
+        },
+        {
+          "id": "R8",
+          "claim": "The intermediate post \"A Brand New Remix\" (May 6, 2026) also describes Remix 3 as pre-stable, noting the new remix.run site runs on an alpha build.",
+          "quote": "The site is built on Remix 3 (alpha)",
+          "url": "https://remix.run/blog/brand-new",
+          "note": "Post also references the beta announcement: \"To announce a new brand and release Remix 3 Beta\". No stable-release timeline given.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://remix.run/blog/brand-new (dated May 6, 2026), line: \"<p><a href=\\\"/\\\">The site</a> is built on Remix 3 (alpha) — notably without React, using plain TypeScript and the framework's native component model.</p>\" — rendered text matches the quote \"The site is built on Remix 3 (alpha)\" verbatim (an <a> tag wraps 'The site'). Also contains verbatim \"To announce a new brand and release Remix 3 Beta\". No stable-release timeline present."
+        },
+        {
+          "id": "R9",
+          "claim": "Beta release cadence per registry timestamps: beta.0 2026-04-30, beta.1 2026-05-20, beta.2 2026-05-20, beta.3 2026-05-29, beta.4 2026-06-05, beta.5 2026-07-01 — the gap widened to ~26 days between beta.4 and beta.5.",
+          "quote": "\"3.0.0-beta.0\": \"2026-04-30T19:12:23.815Z\", \"3.0.0-beta.1\": \"2026-05-20T03:22:56.691Z\", \"3.0.0-beta.2\": \"2026-05-20T20:19:24.314Z\", \"3.0.0-beta.3\": \"2026-05-29T18:18:29.180Z\", \"3.0.0-beta.4\": \"2026-06-05T18:26:42.079Z\", \"3.0.0-beta.5\": \"2026-07-01T19:04:05.918Z\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "Quote reassembled from adjacent keys of the registry's \"time\" object. Relative to the 2026-07-06 baseline: beta.5 predates the baseline (2026-07-01), so no new version has shipped since the baseline was taken; as of today (2026-07-11) it is 10 days since the last publish.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "All six timestamps reproduced verbatim from the registry time object at https://registry.npmjs.org/remix: beta.0 2026-04-30T19:12:23.815Z, beta.1 2026-05-20T03:22:56.691Z, beta.2 2026-05-20T20:19:24.314Z, beta.3 2026-05-29T18:18:29.180Z, beta.4 2026-06-05T18:26:42.079Z, beta.5 2026-07-01T19:04:05.918Z. beta.4→beta.5 gap is 26 days (Jun 5 18:26 UTC → Jul 1 19:04 UTC), matching '~26 days'; beta.5 (2026-07-01) predates the 2026-07-06 baseline and remains the newest publish."
+        }
+      ],
+      "gaps": [
+        "No RC (release-candidate) version or timeline for Remix 3 stable could be found in any fetched source — neither the npm registry, GitHub tags/releases, nor the three blog posts fetched state when 3.0.0 stable or an RC is expected.",
+        "No production-readiness statement newer than the April 30, 2026 beta preview post exists on remix.run/blog — the \"not production ready yet\" statement remains the team's latest explicit position as of the fetched blog index.",
+        "GitHub releases were only sampled at per_page=10 (all dated 2026-07-01); the matching-refs tag query (exhaustive for remix@3*) is the authoritative basis for the no-newer-v3 claim, not the release sample.",
+        "The nightly dist-tag value (0.0.0-nightly-a3608e530-20250722) carries a 2025 date-stamp in its version string; whether nightlies are still being produced for the v3 line was not investigated."
+      ]
+    },
+    {
+      "area": "paradigm",
+      "claims": [
+        {
+          "id": "P1",
+          "claim": "Remix 3 is deliberately non-React: the team states it will have no critical dependencies, including React.",
+          "quote": "To do that, we need to own the full stack without leaning on layers of abstraction we don't control. That means no critical dependencies, not even React.",
+          "url": "https://remix.run/blog/wake-up-remix",
+          "note": "Corroborated at the registry level: `npm view remix@next dependencies` (3.0.0-beta.5, 44 deps) contains no key matching /react/i, and peerDependencies are only mysql2, pg, redis, playwright.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://remix.run/blog/wake-up-remix today; quote appears verbatim: \"To do that, we need to own the full stack without leaning on layers of abstraction we don't control. That means no critical dependencies, not even React.\" Registry corroboration re-run: `npm view remix@next dependencies` returned 44 keys with zero matching /react/i, and peerDependencies are exactly {mysql2, pg, redis, playwright}."
+        },
+        {
+          "id": "P2",
+          "claim": "The earlier 'fork of Preact' direction announced in May 2025 has been retracted — the live wake-up-remix post now renders that sentence inside a <del> (strikethrough) tag, leaving 'building our own component model' as the current statement.",
+          "quote": "<del>We're starting with a fork of Preact, a mature virtual DOM library already used heavily at Shopify, Google, and countless others.</del> Instead, we're building our own component model that feels closer to the web than anything we've seen before.</p>",
+          "url": "https://remix.run/blog/wake-up-remix",
+          "note": "Quote is from the page's raw HTML source (fetched via curl), showing the <del> markup around the Preact sentence.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "curl of https://remix.run/blog/wake-up-remix raw HTML today contains the exact markup: \"<del>We're starting with a fork of Preact, a mature virtual DOM library already used heavily at Shopify, Google, and countless others.</del> Instead, we're building our own component model that feels closer to the web than anything we've seen before.\" The strikethrough is still live."
+        },
+        {
+          "id": "P3",
+          "claim": "The repo confirms Preact is not the runtime: GitHub code search for 'preact' in remix-run/remix hits only benchmark harnesses (packages/ui/bench/frameworks/preact*), a type-definition attribution in the UI runtime, and lockfile entries — and packages/ui declares a single runtime dependency, a types-only package.",
+          "quote": "  \"dependencies\": {\n    \"@types/dom-navigation\": \"^1.0.7\"\n  },",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/package.json",
+          "note": "packages/ui/src/runtime/dom.ts (raw.githubusercontent.com/remix-run/remix/main/packages/ui/src/runtime/dom.ts) contains only an MIT attribution comment: \" * Adapted from Preact:\" pointing at preact's dom.d.ts type definitions. Code search: gh api 'search/code?q=preact+repo:remix-run/remix' returned 13 hits, all bench/, listbox README/test, dom.ts, pnpm-lock.yaml.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw.githubusercontent.com/remix-run/remix/main/packages/ui/package.json shows dependencies exactly as quoted: {\"@types/dom-navigation\": \"^1.0.7\"} and no peerDependencies. packages/ui/src/runtime/dom.ts lines 6-8 contain \"* Adapted from Preact:\" pointing at preactjs/preact src/dom.d.ts (MIT). Independent re-run of `gh api 'search/code?q=preact+repo:remix-run/remix'` returned total_count 13; every path is under packages/ui/bench/frameworks/preact* or bench/runner.ts, packages/ui/src/listbox/{README.md,index.test.tsx}, packages/ui/src/runtime/dom.ts, or pnpm-lock.yaml — no Preact runtime dependency found."
+        },
+        {
+          "id": "P4",
+          "claim": "UI in Remix 3 is rendered by the ui package (published as @remix-run/ui), which the repo README describes as Remix's own view layer with its own reconciler.",
+          "quote": "- [ui](packages/ui): View layer with reconciler, component model, and first-party UI components",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/README.md",
+          "note": "The api.github.com/repos/remix-run/remix/contents/packages listing confirms a `ui` package exists and there is NO separate `frames` package — frames live inside packages/ui. npm registry: @remix-run/ui latest = 0.4.0, description \"UI runtime, headless primitives, and styled components for Remix\" (https://registry.npmjs.org/@remix-run%2fui via npm view).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw README.md line 95 verbatim: \"- [ui](packages/ui): View layer with reconciler, component model, and first-party UI components\". api.github.com/repos/remix-run/remix/contents/packages lists 45 packages including `ui` and no `frames` package. Staleness probe: `npm view @remix-run/frames` returns E404 Not Found. npm shows @remix-run/ui version 0.4.0 with description \"UI runtime, headless primitives, and styled components for Remix\"."
+        },
+        {
+          "id": "P5",
+          "claim": "The ui package README states it ships the component runtime, server rendering, and frame hydration — i.e., rendering, SSR, and frames are all part of remix/ui.",
+          "quote": "Runtime UI primitives for Remix apps, including the component runtime, server rendering, frame hydration, reusable mixins, and headless first-party behavior primitives.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/README.md",
+          "note": "Feature list on the same page: \"Component runtime APIs for rendering, hydration, frame navigation, and JSX\" and \"Server rendering APIs for streaming Remix UI trees and frames\".",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw.githubusercontent.com/remix-run/remix/main/packages/ui/README.md opens verbatim: \"Runtime UI primitives for Remix apps, including the component runtime, server rendering, frame hydration, reusable mixins, and headless first-party behavior primitives.\" Feature bullets also present verbatim: \"Component runtime APIs for rendering, hydration, frame navigation, and JSX\" and \"Server rendering APIs for streaming Remix UI trees and frames\"."
+        },
+        {
+          "id": "P6",
+          "claim": "Frames are the beta's flagship server-HTML mechanism: server-rendered UI addressed by a src URL that the client can load and reload independently, replacing an RPC layer with plain HTTP + markup.",
+          "quote": "A frame is server-rendered UI with a src. The client can load it, navigate it, or reload it independently while the server keeps rendering HTML. It's server/client communication that feels like the web: URLs, requests, responses, and markup instead of a separate RPC layer.",
+          "url": "https://remix.run/blog/remix-3-beta-preview",
+          "note": "Blog post is dated \"April 30, 2026\" and opens: \"Today we're releasing the Remix 3 beta preview.\"",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "https://remix.run/blog/remix-3-beta-preview contains the quote verbatim (with `src` in an inline <code> tag): \"A frame is server-rendered UI with a src. The client can load it, navigate it, or reload it independently while the server keeps rendering HTML. It's server/client communication that feels like the web: URLs, requests, responses, and markup instead of a separate RPC layer.\" Page shows \"April 30, 2026\" and opens \"Today we're releasing the Remix 3 beta preview.\""
+        },
+        {
+          "id": "P7",
+          "claim": "The shipped frame primitive is a <Frame> component imported from 'remix/ui', taking src (required), fallback, and name props; frames stream after initial HTML, nest, contain client entries, and reload without full navigation.",
+          "quote": "A `<Frame>` renders server content into the page. Frames can stream in after the initial HTML, nest inside other frames, contain client entries, and be reloaded from the client without a full page navigation.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/docs/frames.md",
+          "note": "Props per the same doc: \"**`src`** (required) - The URL to fetch the frame content from.\" Import shown as `import { Frame } from 'remix/ui'`.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw packages/ui/docs/frames.md line 3 verbatim: \"A `<Frame>` renders server content into the page. Frames can stream in after the initial HTML, nest inside other frames, contain client entries, and be reloaded from the client without a full page navigation.\" Props section lists exactly three props: `src` (required, \"The URL to fetch the frame content from.\"), `fallback` (optional), `name` (optional). Line 8 shows `import { Frame } from 'remix/ui'`."
+        },
+        {
+          "id": "P8",
+          "claim": "Frame streaming is controlled by the fallback prop: with a fallback the frame is non-blocking (streams in later); without one it blocks the initial HTML chunk.",
+          "quote": "**`fallback`** (optional) - Content to show while the frame is loading. When provided, the frame streams non-blocking (the initial page renders immediately with the fallback, and the real content arrives later). Without a fallback, the frame blocks rendering until its content resolves.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/docs/frames.md",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "frames.md line 24 verbatim: \"**`fallback`** (optional) - Content to show while the frame is loading. When provided, the frame streams non-blocking (the initial page renders immediately with the fallback, and the real content arrives later). Without a fallback, the frame blocks rendering until its content resolves.\" The doc also has a \"Blocking vs non-blocking\" section stating \"The presence of a `fallback` prop determines streaming behavior\"."
+        },
+        {
+          "id": "P9",
+          "claim": "Frame reloads are client-triggered via handle.frame.reload() (and handle.frames.get(name) for named frames); the new server HTML is diffed into the DOM while client entries keep local state and receive updated props.",
+          "quote": "Client entries inside a frame can trigger a reload via `handle.frame.reload()`:",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/docs/frames.md",
+          "note": "Reload steps per the same doc: \"2. The new HTML is parsed and diffed against the current frame content.\" ... \"4. Client entries inside the frame receive updated props from the server while preserving their local component state.\"",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "frames.md line 71 verbatim: \"Client entries inside a frame can trigger a reload via `handle.frame.reload()`:\". Line 25: \"**`name`** (optional) - Registers the frame for lookup via `handle.frames.get(name)` from client entries.\" Reload steps at lines 125/127: \"2. The new HTML is parsed and diffed against the current frame content.\" and \"4. Client entries inside the frame receive updated props from the server while preserving their local component state.\""
+        },
+        {
+          "id": "P10",
+          "claim": "Server-side page rendering uses renderToStream from 'remix/ui/server', which resolves each frame's HTML through a user-supplied resolveFrame function; on the client, a `run` function boots hydration of frames and client entries.",
+          "quote": "On the server, `renderToStream` calls your `resolveFrame` function to get the HTML for each frame:",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/ui/docs/frames.md",
+          "note": "Client boot per the same doc's lifecycle: \"**Client boot** - `run` discovers frame boundaries, hydrates client entries inside them, and sets up observers for any pending (non-blocking) frames still streaming.\" Import shown as `import { renderToStream } from 'remix/ui/server'`.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "frames.md line 45 verbatim: \"On the server, `renderToStream` calls your `resolveFrame` function to get the HTML for each frame:\", with line 48 `import { renderToStream } from 'remix/ui/server'`. Client boot at line 200 verbatim: \"**Client boot** - `run` discovers frame boundaries, hydrates client entries inside them, and sets up observers for any pending (non-blocking) frames still streaming.\" Client-side `run({...})` usage shown at line 184."
+        },
+        {
+          "id": "P11",
+          "claim": "render-middleware is the glue between routing and rendering: it stores a renderer in fetch-router request context so route actions call context.render(...), and its README shows the canonical Remix UI wiring (renderWith + renderToStream + createHtmlResponse, with resolveFrame delegating to router.fetch).",
+          "quote": "Request-scoped renderer middleware for Remix. It stores a renderer in `fetch-router` request context so route actions can render responses without passing request-specific rendering details through every action.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/render-middleware/README.md",
+          "note": "Same README: \"For Remix UI, create a renderer that owns frame resolution and response creation.\" — the example resolves frames by fetching the frame src back through the app's own router (`await router.fetch(new URL(src, url))`).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw packages/render-middleware/README.md opens verbatim: \"Request-scoped renderer middleware for Remix. It stores a renderer in `fetch-router` request context so route actions can render responses without passing request-specific rendering details through every action.\" Line 63: \"For Remix UI, create a renderer that owns frame resolution and response creation.\" The example uses renderWith (line 71), renderToStream (line 74), `await router.fetch(new URL(src, url))` (line 76), and createHtmlResponse (line 86)."
+        },
+        {
+          "id": "P12",
+          "claim": "html-template is a separate, lower-level server-HTML tool: an auto-escaping HTML template literal tag, not the component renderer.",
+          "quote": "Safe HTML template literals for Remix. `html-template` automatically escapes interpolated values to prevent XSS while still supporting explicit trusted HTML insertion.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/html-template/README.md",
+          "note": "So 'server-HTML' in Remix 3 has two layers: html-template for raw safe HTML strings, and remix/ui renderToStream for component trees + frames.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "raw packages/html-template/README.md opens verbatim: \"Safe HTML template literals for Remix. `html-template` automatically escapes interpolated values to prevent XSS while still supporting explicit trusted HTML insertion.\" It is a template-literal tag package, distinct from the ui renderer."
+        },
+        {
+          "id": "P13",
+          "claim": "The component model is Remix's own (not React's): plain JavaScript variables for state, explicit handle.update() calls, and behavior composed via a mix prop of mixins; components take a Handle and return a render closure.",
+          "quote": "Remix components follow the same pattern: plain JavaScript variables for state, explicit updates, abortable async work, and reusable behavior composed with mixins. Component code is written in a procedural style that is easy to follow. First do this, then do that.",
+          "url": "https://remix.run/blog/remix-3-beta-preview",
+          "note": "The post's code sample uses `function CopyToClipboard(handle: Handle<{ url: string }>)` with `let state = ...` and `handle.update()` — no hooks, no React imports; interactivity ships as \"client entries for the bits of UI that actually need interactivity\" (same post).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "https://remix.run/blog/remix-3-beta-preview contains the quote verbatim: \"Remix components follow the same pattern: plain JavaScript variables for state, explicit updates, abortable async work, and reusable behavior composed with mixins. Component code is written in a procedural style that is easy to follow. First do this, then do that.\" The code sample (tag-stripped from the page) shows `function CopyToClipboard(handle: Handle<{ url: string }>)`, `let state: \"idle\" | \"copied\" | \"error\"`, three `handle.update()` calls, `mix={[btn.secondaryStyle, on(\"click\", ...)]}`, imports only from \"remix/ui\" (zero `from \"react\"` occurrences), and returns a render closure `return () => {...}`. The phrase \"client entries for the bits of UI that actually need interactivity\" is also present."
+        },
+        {
+          "id": "P14",
+          "claim": "The beta is installable as remix@next, which the npm registry currently resolves to 3.0.0-beta.5, and that package depends on @remix-run/ui ^0.4.0 plus the html-template, fetch-router, and render-middleware packages.",
+          "quote": "\"next\": \"3.0.0-beta.5\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "Via npm view remix --registry=https://registry.npmjs.org/: dist-tags latest=2.17.5, next=3.0.0-beta.5. remix@next dependencies include \"@remix-run/ui\": \"^0.4.0\", \"@remix-run/html-template\": \"^0.3.1\", \"@remix-run/fetch-router\": \"^0.20.1\", \"@remix-run/render-middleware\": \"^0.1.4\". Repo README install instruction: \"To try the current Remix beta, install the `next` dist-tag\" (raw.githubusercontent.com/remix-run/remix/main/README.md).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "npm view remix dist-tags (registry.npmjs.org) returns \"next\": \"3.0.0-beta.5\" and \"latest\": \"2.17.5\". remix@next dependencies include \"@remix-run/ui\": \"^0.4.0\", \"@remix-run/html-template\": \"^0.3.1\", \"@remix-run/fetch-router\": \"^0.20.1\", \"@remix-run/render-middleware\": \"^0.1.4\" (44 deps total). Repo README line 99 verbatim: \"To try the current Remix beta, install the `next` dist-tag:\""
+        },
+        {
+          "id": "P15",
+          "claim": "The repo positions Remix 3 as a full-stack, non-center-stack framework of composable packages distributed under one remix umbrella, following the wake-up-remix principles (Model-First, Build on Web APIs, Religiously Runtime, Avoid Dependencies, Demand Composition, Distribute Cohesively).",
+          "quote": "All prior versions of Remix (and React Router) were \"center stack\". We owned the routing and rendering layers, but we left everything else to you. Remix 3 is a different approach: what would it look like to build the full stack?",
+          "url": "https://remix.run/blog/remix-3-beta-preview",
+          "note": "Repo README: \"This is the source repository for Remix 3. It is under active development.\" and lists the six principles verbatim (raw.githubusercontent.com/remix-run/remix/main/README.md). Net verdict for the baseline: 'non-React server-HTML + frames' is CONFIRMED, with the precision that frames/SSR/hydration all live in the @remix-run/ui package (no separate frames package) and the renderer is Remix's own reconciler, not a Preact fork.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "https://remix.run/blog/remix-3-beta-preview contains the quote verbatim: \"All prior versions of Remix (and React Router) were \\\"center stack\\\". We owned the routing and rendering layers, but we left everything else to you. Remix 3 is a different approach: what would it look like to build the full stack?\" Repo README line 16: \"This is the source repository for Remix 3. It is under active development.\" and lines 20-25 list all six principles by name (Model-First Development, Build on Web APIs, Religiously Runtime, Avoid Dependencies, Demand Composition, Distribute Cohesively)."
+        }
+      ],
+      "gaps": [
+        "No dated editorial note explains when or why the Preact-fork sentence was struck through in the wake-up-remix post — the <del> markup is the only visible retraction; no fetched source states the reason for dropping the fork.",
+        "The exact default rendering wiring scaffolded by `npx remix@next new` (whether the generated app template uses render-middleware + renderToStream out of the box) was not verified — the CLI app template files were not fetched; the render-middleware README's Remix UI example is the closest documented wiring.",
+        "The npm-hosted README for @remix-run/ui was not fetched separately; claims about the ui package use the repo README at main (registry metadata — version 0.4.0 and description — was verified via npm view).",
+        "No fetched source explicitly enumerates 'frames' as THE paradigm name for Remix 3's rendering model; the characterization rests on the beta-preview post calling frames 'one of my favorite examples of the direction we're heading' plus the ui package docs."
+      ]
+    },
+    {
+      "area": "deploy-targets",
+      "claims": [
+        {
+          "id": "D1",
+          "claim": "The official Remix 3 app template (remix-run/remix/template, what `npx remix@next new` scaffolds) runs a Node server built on node:http plus createRequestListener from remix/node-fetch-server — it is a Node deployment target, not a Workers one.",
+          "quote": "import * as http from 'node:http'\nimport { createRequestListener } from 'remix/node-fetch-server'\n\nimport { router } from './app/router.ts'\n\nconst port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100\n\nconst server = http.createServer(",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/template/server.ts",
+          "note": "The template also registers SIGINT/SIGTERM shutdown handlers via process.on — Node-process-specific behavior.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/template/server.ts — quote matches verbatim (lines 1-8): \"import * as http from 'node:http'\" / \"import { createRequestListener } from 'remix/node-fetch-server'\" / \"const server = http.createServer(\". Note also holds: lines 37-38 are \"process.on('SIGINT', shutdown)\" and \"process.on('SIGTERM', shutdown)\". The scaffolding claim was traced end-to-end: packages/cli/src/lib/commands/new.ts calls bootstrapProject; packages/cli/src/lib/bootstrap-project.ts line 16 has \"const PACKAGE_TEMPLATE_DIRECTORY = path.resolve(MODULE_DIRECTORY, '../../template')\"; remix@3.0.0-beta.5 on npm has bin {\"remix\": \"dist/cli-entry.js\"} and depends on @remix-run/cli ^0.3.4, whose published tarball (registry.npmjs.org/@remix-run/cli/-/cli-0.3.4.tgz) ships package/template/server.ts beginning with the identical node:http/createRequestListener code."
+        },
+        {
+          "id": "D2",
+          "claim": "The official template requires Node >= 24.3.0 and runs TypeScript directly via `node --import remix/node-tsx server.ts` (no bundler).",
+          "quote": "\"start\": \"NODE_ENV=production node --import remix/node-tsx server.ts\", ... \"engines\": {\n    \"node\": \">=24.3.0\"\n  }",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/template/package.json",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/template/package.json — contains verbatim \"\\\"start\\\": \\\"NODE_ENV=production node --import remix/node-tsx server.ts\\\"\" and \"\\\"engines\\\": { \\\"node\\\": \\\">=24.3.0\\\" }\". Scripts are only dev/start/test/typecheck — no build/bundler step; dev is \"NODE_ENV=development node --watch --import remix/node-tsx server.ts\"."
+        },
+        {
+          "id": "D3",
+          "claim": "The published remix@next package (3.0.0-beta.5, current `next` dist-tag; `latest` is still 2.17.5) itself declares engines node >=24.3.0 in its npm metadata.",
+          "quote": "{\n  \"engines\": {\n    \"node\": \">=24.3.0\"\n  },\n  \"version\": \"3.0.0-beta.5\"\n}",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "Via `npm view remix@next engines version --json` and `npm view remix dist-tags --json` (dist-tags: latest 2.17.5, next 3.0.0-beta.5, rc 1.0.0-rc.4).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "npm view remix@next engines version --json --registry=https://registry.npmjs.org/ returned exactly {\"engines\": {\"node\": \">=24.3.0\"}, \"version\": \"3.0.0-beta.5\"}. npm view remix dist-tags --json returned \"latest\": \"2.17.5\", \"next\": \"3.0.0-beta.5\", \"rc\": \"1.0.0-rc.4\" — all matching the claim and note."
+        },
+        {
+          "id": "D4",
+          "claim": "The repo README's portability claim names Cloudflare Workers explicitly as an environment Remix packages work in.",
+          "quote": "This means Remix code is **portable by default**. Remix packages work seamlessly across [Node.js](https://nodejs.org/), [Bun](https://bun.sh/), [Deno](https://deno.com/), [Cloudflare Workers](https://workers.cloudflare.com/), and other environments.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/README.md",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/README.md — line 37 contains the quote verbatim: \"This means Remix code is **portable by default**. Remix packages work seamlessly across [Node.js](https://nodejs.org/), [Bun](https://bun.sh/), [Deno](https://deno.com/), [Cloudflare Workers](https://workers.cloudflare.com/), and other environments.\""
+        },
+        {
+          "id": "D5",
+          "claim": "There is still no official Cloudflare Workers app template or adapter in remix-run/remix: a full recursive tree listing and a GitHub code search for 'cloudflare' (19 hits) show the only Workers artifacts are two package-level demos, packages/fetch-router/demos/cf-workers and packages/multipart-parser/demos/cf-workers; the template/ dir contains exactly one (Node) template and docs/ has no deployment guide files.",
+          "quote": "packages/fetch-router/demos/cf-workers/wrangler.jsonc ... packages/multipart-parser/demos/cf-workers/wrangler.toml",
+          "url": "https://api.github.com/search/code?q=cloudflare+repo:remix-run/remix",
+          "note": "Tool-verified negative: `curl api.github.com/repos/remix-run/remix/git/trees/main?recursive=1 | jq ... | grep -iE 'deploy|cloudflare|worker|wrangler'` returns only the two demo dirs plus unrelated worker-thread test files (packages/test/src/lib/worker-*.ts, packages/cli/src/lib/load-route-map-worker.ts). template/ contents: .gitignore, AGENTS.md, README.md, app/, package.json, public/, server.ts, tsconfig.json (per api.github.com/repos/remix-run/remix/contents/template).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Independently re-ran all three checks. (1) gh api search/code?q=cloudflare+repo:remix-run/remix: total_count 19; the only Workers app dirs in the hits are packages/fetch-router/demos/cf-workers/* (incl. wrangler.jsonc) and packages/multipart-parser/demos/cf-workers/* (incl. wrangler.toml); other hits are READMEs/portability sentences, decisions/005, an auth provider, pnpm-lock. (2) Untruncated recursive tree (api.github.com/repos/remix-run/remix/git/trees/main?recursive=1, truncated:false, 2516 paths): grep -iE 'deploy|cloudflare|worker|wrangler' returns only the two demo dirs, packages/test/src/lib/worker-*.ts, and packages/cli/src/lib/load-route-map-worker.ts. (3) template/ top-level contents exactly: .gitignore, AGENTS.md, README.md, app/, package.json, public/, server.ts, tsconfig.json; docs/ is a docs-site app with zero deployment-guide files; top-level demos/ (assets, bookstore, frame-navigation, frames, social-auth, sse, timeboxer, unpkg) has no Workers content. Staleness probes found no X elsewhere: npm @remix-run/cloudflare dist-tags has latest 2.17.5 and NO next/3.x tag; remix-run org repo listing shows no Remix 3 Workers template repo (remix-replit-template is Replit-targeted; react-router-templates is React Router)."
+        },
+        {
+          "id": "D6",
+          "claim": "The fetch-router + D1 Cloudflare Workers demo found in the 2026-07-06 baseline still exists at packages/fetch-router/demos/cf-workers on main.",
+          "quote": "This example is a [Cloudflare Workers](https://workers.cloudflare.com/) application that handles routing using `@remix-run/fetch-router` with data stored in a [Cloudflare D1](https://developers.cloudflare.com/d1/) database.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/README.md",
+          "note": "Its wrangler.jsonc (same dir, fetched) declares a d1_databases binding (database_name fetch-router-blog, compatibility_date 2025-11-18) and its package.json deps are scoped @remix-run/* packages (fetch-router, cookie, session, html-template, etc.) with wrangler ^4.90.1 — it does NOT depend on the `remix` umbrella package or the ui package, i.e. it demos the router, not the full framework rendering stack.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/README.md — quote verbatim: \"This example is a [Cloudflare Workers](https://workers.cloudflare.com/) application that handles routing using `@remix-run/fetch-router` with data stored in a [Cloudflare D1](https://developers.cloudflare.com/d1/) database.\" Note verified from same dir: wrangler.jsonc has \"compatibility_date\": \"2025-11-18\" and d1_databases binding DB with \"database_name\": \"fetch-router-blog\"; package.json deps are exclusively @remix-run/* scoped (fetch-router, cookie, session, html-template, response, data-schema, middleware pkgs) with wrangler ^4.90.1 in devDependencies — no `remix` umbrella package, no @remix-run/ui."
+        },
+        {
+          "id": "D7",
+          "claim": "The multipart-parser + R2 Cloudflare Workers demo also still exists at packages/multipart-parser/demos/cf-workers, and its README states it needs no nodejs_compat flag.",
+          "quote": "This is a demo of how you can upload a file directly to [a Cloudflare worker](https://developers.cloudflare.com/workers/) and store it in R2.\n\nNotice: `multipart-parser` doesn't use any node-specific APIs, so this demo does not rely on Cloudflare Workers' [`nodejs_compat` flag](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) in order to run.",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/multipart-parser/demos/cf-workers/README.md",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/multipart-parser/demos/cf-workers/README.md — both quoted paragraphs verbatim, including \"Notice: `multipart-parser` doesn't use any node-specific APIs, so this demo does not rely on Cloudflare Workers' [`nodejs_compat` flag](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) in order to run.\" Dir confirmed present on main via the recursive tree listing."
+        },
+        {
+          "id": "D8",
+          "claim": "fetch-router is documented as runtime-agnostic (Request/Response on the Fetch API), explicitly listing Cloudflare Workers among the environments it works in.",
+          "quote": "**Fetch API**: Built on standard web APIs that work everywhere - Node.js, Bun, Deno, Cloudflare Workers, and browsers",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/README.md",
+          "note": "Identical sentence appears in the npm-registry readme for @remix-run/fetch-router (https://registry.npmjs.org/@remix-run/fetch-router, latest 0.20.1, modified 2026-07-01). README intro: 'A minimal, composable router built on the web Fetch API and route-pattern.'",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/README.md — line 7 verbatim: \"**Fetch API**: Built on standard web APIs that work everywhere - Node.js, Bun, Deno, Cloudflare Workers, and browsers\". Intro sentence matches the note: \"A minimal, composable router built on the [web Fetch API](...) and [`route-pattern`](...)\". npm registry check: @remix-run/fetch-router version 0.20.1, time.modified 2026-07-01T19:02:03.085Z — matches the note."
+        },
+        {
+          "id": "D9",
+          "claim": "node-fetch-server is documented as Node-specific: it adapts Node's HTTP server interfaces to fetch-style Request/Response, which is the bridge the official template uses.",
+          "quote": "Build Node.js servers with web-standard Fetch API primitives. `node-fetch-server` converts Node's HTTP server interfaces into [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request)/[`Response`](https://developer.mozilla.org/en-US/docs/Web/API/Response) flows that match modern runtimes. ... **Node.js HTTP Integration** - Works directly with `node:http`, `node:https`, and `node:http2`",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/node-fetch-server/README.md",
+          "note": "npm @remix-run/node-fetch-server latest is 0.14.0 (registry.npmjs.org, modified 2026-07-01).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/node-fetch-server/README.md — both quoted parts verbatim: \"Build Node.js servers with web-standard Fetch API primitives. `node-fetch-server` converts Node's HTTP server interfaces into [`Request`](...)/[`Response`](...) flows that match modern runtimes.\" and \"**Node.js HTTP Integration** - Works directly with `node:http`, `node:https`, and `node:http2`\". The bridge claim holds: template/server.ts imports createRequestListener from 'remix/node-fetch-server'. npm note verified: @remix-run/node-fetch-server version 0.14.0, time.modified 2026-07-01T19:01:28.779Z."
+        },
+        {
+          "id": "D10",
+          "claim": "Cloudflare's official framework guides do not list Remix 3; the entry is titled 'React Router (formerly Remix)' and covers React Router v8.",
+          "quote": "React Router (formerly Remix) ... Scaffold a full-stack app with React Router v8",
+          "url": "https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/",
+          "note": "The framework-guides index page (https://developers.cloudflare.com/workers/framework-guides/, fetched) lists React Router among Astro/Next.js/SvelteKit etc. with no separate Remix entry. Quotes extracted via WebFetch summarization of the fetched pages.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/ (HTTP 200) — <title> is \"React Router (formerly Remix) · Cloudflare Workers docs\"; page contains \"React Router v8\" 3 times and \"Scaffold a full-stack app with <a href=\\\"https://reactrouter.com/\\\">React Router v8\" (quote matches modulo inline link markup). Fetched https://developers.cloudflare.com/workers/framework-guides/ — the only \"remix\" occurrences (2) are both the string \"React Router (formerly Remix)\" linking to the react-router guide; \"Remix 3\" occurs 0 times on both pages. No separate Remix entry exists."
+        },
+        {
+          "id": "D11",
+          "claim": "The 'Remix 3 Beta Preview' blog post (dated April 30, 2026 on the remix.run blog index) contains no deployment-target roadmap; its only 'roadmap' sentence is about dependency philosophy, and its runtime statement is about being bundler-free, not about hosting platforms.",
+          "quote": "Remix 3 also reduces how much of your app's foundation depends on somebody else's roadmap. ... Remix 3 takes a different path. The runtime is the source of truth. Assets are compiled and served by Remix, but the app model does not depend on a big pre-runtime analysis step to make sense.",
+          "url": "https://remix.run/blog/remix-3-beta-preview",
+          "note": "Post sections: Built For The Web / Unbundling / Fewer Dependencies, More Leverage / Try It. A word-search of the fetched page for deploy/server/Node/edge/host/platform/portable/plan found no deployment-target sentences (per WebFetch over the fetched content).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Fetched https://remix.run/blog/remix-3-beta-preview (HTTP 200) and extracted full text. All three quoted sentences appear verbatim: \"Remix 3 also reduces how much of your app's foundation depends on somebody else's roadmap.\" / \"Remix 3 takes a different path. The runtime is the source of truth.\" / \"Assets are compiled and served by Remix, but the app model does not depend on a big pre-runtime analysis step to make sense.\" Keyword scan of the post text: 'roadmap' occurs exactly once (the dependency sentence); 'deploy' 0, 'host' 0, 'Cloudflare' 0, 'Workers' 0, 'Node' 0, 'platform' 0, 'portab' 0; 'edge' 1 (\"sharp edges\"); 'server' 4, all about server rendering/frames, none about hosting targets. Section headings Built For The Web / Unbundling / Fewer Dependencies, More Leverage / Try It all present. Date \"April 30, 2026\" appears on the post page itself and adjacent to the remix-3-beta-preview entry on https://remix.run/blog."
+        }
+      ],
+      "gaps": [
+        "No official statement of future/planned deployment targets for Remix 3 was found anywhere: the repo README has no roadmap section beyond the portability claim (D4), the Remix 3 Beta Preview post has none (D11), and the wake-up-remix post (https://remix.run/blog/wake-up-remix, fetched) contains no sentences about deployment, runtimes, Node/Deno/Bun/Cloudflare, or hosting plans per WebFetch over the fetched content.",
+        "No official example shows the FULL Remix 3 framework (the `remix` package with remix/ui rendering) running on Cloudflare Workers — the two cf-workers demos cover only fetch-router(+D1) and multipart-parser(+R2); whether remix/ui or the umbrella package works on Workers is unestablished from official sources.",
+        "Could not determine from official sources whether the Remix 3 hosted docs site has a deployment page — the repo docs/ tree (fetched recursively) is a generated docs-site source with no files matching deploy/cloudflare/wrangler, but the rendered docs site itself was not crawled.",
+        "Cloudflare framework-guides quotes (D10) came through WebFetch's summarizer over the fetched pages, not raw page markdown; the 'React Router v8' version attribution rests on that extraction.",
+        "The prompt's 'as of undefined' date: research reflects remix-run/remix@main and npm registry state as fetched today (2026-07-11 per environment); remix-3-beta-preview blog date (April 30, 2026) comes from the remix.run/blog index page as rendered by WebFetch."
+      ]
+    },
+    {
+      "area": "workers-compat",
+      "claims": [
+        {
+          "id": "W1",
+          "claim": "@remix-run/fetch-router (latest 0.20.1) explicitly claims Cloudflare Workers support in its README, declares no engines field, and its only dependency is @remix-run/route-pattern ^0.23.0.",
+          "quote": "**Fetch API**: Built on standard web APIs that work everywhere - Node.js, Bun, Deno, Cloudflare Workers, and browsers",
+          "url": "https://registry.npmjs.org/@remix-run%2ffetch-router",
+          "note": "Registry metadata for 0.20.1: engines absent, dependencies {\"@remix-run/route-pattern\": \"^0.23.0\"}. A grep of the published tarball's dist/*.js found zero node: builtin imports.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2ffetch-router: dist-tags latest is still 0.20.1; versions['0.20.1'] has engines null and dependencies exactly {\"@remix-run/route-pattern\": \"^0.23.0\"}. README quote verbatim: \"**Fetch API**: Built on standard web APIs that work everywhere - Node.js, Bun, Deno, Cloudflare Workers, and browsers\". Independently re-downloaded fetch-router-0.20.1.tgz and grepped dist/**/*.js: zero node: matches."
+        },
+        {
+          "id": "W2",
+          "claim": "@remix-run/response (latest 0.3.7) claims to work in any JavaScript runtime including Cloudflare Workers, and declares no engines field.",
+          "quote": "**Web Standards Compliant:** Built on the standard `Response` API, works in any JavaScript runtime (Node.js, Bun, Deno, Cloudflare Workers)",
+          "url": "https://registry.npmjs.org/@remix-run%2fresponse",
+          "note": "Registry metadata for 0.3.7: engines absent, dependencies are @remix-run/html-template ^0.3.1, @remix-run/headers ^0.21.1, @remix-run/mime ^0.4.2. Its exports map has no root export — only ./compress, ./file, ./html, ./redirect subpaths, each with plain types/default conditions.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2fresponse: latest still 0.3.7; versions['0.3.7'].engines null. README quote verbatim: \"**Web Standards Compliant:** Built on the standard `Response` API, works in any JavaScript runtime (Node.js, Bun, Deno, Cloudflare Workers)\". Registry exports for 0.3.7 confirm no root '.' export — only ./compress, ./file, ./html, ./redirect (plus ./package.json), each with only types/default conditions; deps are html-template ^0.3.1, headers ^0.21.1, mime ^0.4.2 as noted."
+        },
+        {
+          "id": "W3",
+          "claim": "@remix-run/response's ./compress subpath statically imports node:zlib at the top of its runtime JS, so that one subpath requires Node zlib; the ./html, ./redirect, and ./file subpath JS files contain no node: imports.",
+          "quote": "import { constants, createBrotliCompress, createDeflate, createGzip, } from 'node:zlib';",
+          "url": "https://registry.npmjs.org/@remix-run/response/-/response-0.3.7.tgz",
+          "note": "Quote is line 1 of dist/lib/compress.js in the published 0.3.7 tarball (static import, not dynamic). A grep of all dist .js files in the tarball found node:zlib as the only node: import in the package.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-downloaded https://registry.npmjs.org/@remix-run/response/-/response-0.3.7.tgz. Line 1 of package/dist/lib/compress.js is exactly \"import { constants, createBrotliCompress, createDeflate, createGzip, } from 'node:zlib';\" (static top-level import). Grep of all dist .js files found node: only in compress.js (the second match is a comment); dist/html.js, dist/redirect.js, dist/file.js and their lib chains contain no node: imports."
+        },
+        {
+          "id": "W4",
+          "claim": "@remix-run/html-template (latest 0.3.1) explicitly claims edge-runtime compatibility, has zero dependencies, and declares no engines field.",
+          "quote": "**Runtime agnostic** - Works in Node.js, Bun, Deno, browsers, and edge runtimes",
+          "url": "https://registry.npmjs.org/@remix-run%2fhtml-template",
+          "note": "Registry metadata for 0.3.1: engines and dependencies both absent. No node: imports found in the published tarball's dist .js files.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2fhtml-template: latest still 0.3.1; versions['0.3.1'] has engines null and dependencies null. README quote verbatim: \"**Runtime agnostic** - Works in Node.js, Bun, Deno, browsers, and edge runtimes\". Tarball html-template-0.3.1.tgz dist .js grep: zero node: matches."
+        },
+        {
+          "id": "W5",
+          "claim": "@remix-run/headers (latest 0.21.1) is a zero-dependency Headers subclass with no engines declaration and no node: builtin imports in its published dist.",
+          "quote": "Because `SuperHeaders` is a real `Headers` subclass, it can be passed directly to platform APIs:",
+          "url": "https://registry.npmjs.org/@remix-run%2fheaders",
+          "note": "Registry metadata for 0.21.1: engines and dependencies both absent. Grep of tarball dist .js files found zero node: imports.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2fheaders: latest still 0.21.1; versions['0.21.1'] engines null, dependencies null. README quote verbatim: \"Because `SuperHeaders` is a real `Headers` subclass, it can be passed directly to platform APIs:\". Tarball headers-0.21.1.tgz dist .js grep: zero node: matches."
+        },
+        {
+          "id": "W6",
+          "claim": "@remix-run/ui (latest 0.4.0) declares no engines field, its only dependency is @types/dom-navigation ^1.0.7, its exports map uses only types/default conditions (no node condition), and no node: builtin imports appear anywhere in its published dist — including the server-rendering entry dist/server/stream.js.",
+          "quote": "- Server rendering APIs for streaming Remix UI trees and frames",
+          "url": "https://registry.npmjs.org/@remix-run%2fui",
+          "note": "Quote is from the README Features list. Registry metadata for 0.4.0: engines absent, dependencies {\"@types/dom-navigation\": \"^1.0.7\"}. The ./server export maps to ./dist/server/stream.js. README makes no explicit runtime-support (Node/Workers/edge) claim either way.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2fui: latest still 0.4.0; versions['0.4.0'] engines null, dependencies exactly {\"@types/dom-navigation\": \"^1.0.7\"}; every entry in the exports map (including ./server -> ./dist/server/stream.js) uses only types/default conditions — no node condition. README quote verbatim: \"- Server rendering APIs for streaming Remix UI trees and frames\"; README grep for node/worker/deno/bun/edge found no runtime-support claims. Tarball ui-0.4.0.tgz: dist/server/stream.js exists, its imports are all relative (runtime/component.js etc.); the only 'node:' grep hits in dist are code comments/object keys, not imports."
+        },
+        {
+          "id": "W7",
+          "claim": "@remix-run/render-middleware (latest 0.1.4) declares no engines field, depends only on @remix-run/fetch-router ^0.20.1, and has no node: builtin imports in its published dist.",
+          "quote": "- **Small runtime** - The package only stores a renderer in request context",
+          "url": "https://registry.npmjs.org/@remix-run%2frender-middleware",
+          "note": "Registry metadata for 0.1.4: engines absent, dependencies {\"@remix-run/fetch-router\": \"^0.20.1\"}. Grep of tarball dist .js files found zero node: imports. README makes no explicit runtime-support claim.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/@remix-run%2frender-middleware: latest still 0.1.4; versions['0.1.4'] engines null, dependencies exactly {\"@remix-run/fetch-router\": \"^0.20.1\"}. README quote verbatim: \"- **Small runtime** - The package only stores a renderer in request context\". Tarball render-middleware-0.1.4.tgz dist .js grep: zero node: matches."
+        },
+        {
+          "id": "W8",
+          "claim": "@remix-run/assets (latest 0.4.4) is Node-toolchain-bound: it depends on chokidar (file watcher), lightningcss, and the oxc native toolchain, and its published dist statically imports node:fs, node:fs/promises, node:os, node:path, and node:url.",
+          "quote": "from 'node:fs'",
+          "url": "https://registry.npmjs.org/@remix-run/assets/-/assets-0.4.4.tgz",
+          "note": "Quote is from grep of the 0.4.4 tarball's dist .js files, which also matched node:fs/promises, node:os, node:path, node:url across dist/lib (paths.js, file-matcher.js, styles/compiler.js, scripts/compiler.js, asset-server.js, etc.). Registry deps (https://registry.npmjs.org/@remix-run%2fassets) include \"chokidar\": \"^5.0.0\", \"lightningcss\": \"^1.32.0\", \"oxc-minify\"/\"oxc-parser\"/\"oxc-resolver\"/\"oxc-transform\" ^0.121.x. No engines field. This is the build/dev asset pipeline — the least Workers-suitable of the eight.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched registry (https://registry.npmjs.org/@remix-run%2fassets): latest still 0.4.4; deps include \"chokidar\": \"^5.0.0\", \"lightningcss\": \"^1.32.0\", \"oxc-minify\"/\"oxc-parser\"/\"oxc-transform\" ^0.121.0 and \"oxc-resolver\" ^11.19.1; engines null. Re-downloaded assets-0.4.4.tgz: static top-level imports of all five builtins confirmed, e.g. dist/lib/paths.js:1 \"import * as path from 'node:path';\", dist/lib/styles/compiler.js:1-3 import 'node:os', 'node:path', 'node:url', dist/lib/styles/transform.js:1 \"import * as fs from 'node:fs/promises';\", 8 files import from 'node:fs' (incl. asset-server.js, file-matcher.js, scripts/compiler.js). No dynamic import('node:...') found."
+        },
+        {
+          "id": "W9",
+          "claim": "@remix-run/static-middleware (latest 0.4.13) statically imports node:path and node:fs/promises in its runtime JS (dist/lib/static.js and dist/lib/directory-listing.js), so it requires a filesystem API.",
+          "quote": "import * as path from 'node:path';",
+          "url": "https://registry.npmjs.org/@remix-run/static-middleware/-/static-middleware-0.4.13.tgz",
+          "note": "Lines 1-2 of dist/lib/static.js are \"import * as path from 'node:path';\" and \"import * as fsp from 'node:fs/promises';\". Registry metadata (https://registry.npmjs.org/@remix-run%2fstatic-middleware): no engines; deps include @remix-run/fs ^0.4.6, whose README says \"Seamless Node.js Compat - Works seamlessly with Node.js file descriptors and handles\". On Workers you'd typically replace this with the platform ASSETS binding anyway.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-downloaded https://registry.npmjs.org/@remix-run/static-middleware/-/static-middleware-0.4.13.tgz: dist/lib/static.js lines 1-2 are exactly \"import * as path from 'node:path';\" / \"import * as fsp from 'node:fs/promises';\" and dist/lib/directory-listing.js lines 1-2 are identical. Registry (https://registry.npmjs.org/@remix-run%2fstatic-middleware): latest still 0.4.13, engines null, deps include \"@remix-run/fs\": \"^0.4.6\"."
+        },
+        {
+          "id": "W10",
+          "claim": "Cloudflare's nodejs_compat mechanism: adding the nodejs_compat compatibility flag with a compatibility date of 2024-09-23 or later enables built-in Node.js APIs plus polyfills in Workers.",
+          "quote": "To enable built-in Node.js APIs and add polyfills, add the `nodejs_compat` compatibility flag to your Wrangler configuration file, and ensure that your Worker's compatibility date is 2024-09-23 or later.",
+          "url": "https://developers.cloudflare.com/workers/runtime-apis/nodejs/",
+          "note": "Same page: \"Cloudflare Workers provides a subset of Node.js APIs in two forms: 1. As built-in APIs provided by the Workers Runtime. 2. As polyfill shim implementations that Wrangler adds to your Worker's code.\"",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://developers.cloudflare.com/workers/runtime-apis/nodejs/ (markdown endpoint, line 24): \"To enable built-in Node.js APIs and add polyfills, add the `nodejs_compat` compatibility flag to your [Wrangler configuration file](...), and ensure that your Worker's [compatibility date](...) is 2024-09-23 or later.\" — verbatim modulo inline link markup. The two-forms passage also present (lines 17-20): \"Cloudflare Workers provides a subset of Node.js APIs in two forms: 1. As built-in APIs provided by the Workers Runtime... 2. As polyfill shim implementations that Wrangler adds to your Worker's code...\"."
+        },
+        {
+          "id": "W11",
+          "claim": "The node: builtins the flagged Remix packages use — zlib (response/compress), fs and path (static-middleware, assets) — are listed as supported on Cloudflare's Node.js compatibility page, with native implementations intended to track current Node.js.",
+          "quote": "Unless otherwise specified, native implementations of Node.js APIs in Workers are intended to match the implementation in the Current release of Node.js.",
+          "url": "https://developers.cloudflare.com/workers/runtime-apis/nodejs/",
+          "note": "The page's support table lists Crypto, Zlib, File system, and Path as supported (green). Whether fs support satisfies static-middleware's actual disk-read pattern is an empirical question for the local spike.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Same page, line 88: \"Unless otherwise specified, native implementations of Node.js APIs in Workers are intended to match the implementation in the [Current release of Node.js](...)\" — verbatim modulo link markup. Supported-APIs table rows confirm: Zlib \"🟢 supported\", File system \"🟢 supported\", Path \"🟢 supported\" (Crypto also 🟢). Note for completeness: OS (used by @remix-run/assets, not named in this claim) is listed \"🟡 partially supported\"."
+        },
+        {
+          "id": "W12",
+          "claim": "Remix maintainer mjackson (GitHub author_association MEMBER on remix-run/remix) filed issue #10834 explicitly asking for a demo of fetch-router running on Cloudflare Workers, deployed with wrangler.",
+          "quote": "Similar to #10832, this demo should show fetch-router running on Cloudflare Workers. It should be its own pnpm workspace in `packages/fetch-router/demos/cf-workers`.",
+          "url": "https://api.github.com/repos/remix-run/remix/issues/10834",
+          "note": "html_url: https://github.com/remix-run/remix/issues/10834. Issue state: closed. Same body continues: \"It should deploy using `wrangler`.\"",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://api.github.com/repos/remix-run/remix/issues/10834: user.login \"mjackson\", author_association \"MEMBER\", state \"closed\", body contains verbatim \"Similar to #10832, this demo should show fetch-router running on Cloudflare Workers. It should be its own pnpm workspace in `packages/fetch-router/demos/cf-workers`.\" and later \"It should deploy using `wrangler`.\""
+        },
+        {
+          "id": "W13",
+          "claim": "PR #10851 (merged 2025-11-25T18:29:29Z) added the Cloudflare Workers demo for fetch-router and its author verified a live deployment on workers.dev.",
+          "quote": "Verified it's [deployable](https://fetch-router-cf-workers-demo.brookslybrand.workers.dev/)",
+          "url": "https://api.github.com/repos/remix-run/remix/pulls/10851",
+          "note": "html_url: https://github.com/remix-run/remix/pull/10851; merged: true; author brookslybrand (author_association CONTRIBUTOR). Body: \"Resolves #10834\".",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://api.github.com/repos/remix-run/remix/pulls/10851: merged true, merged_at \"2025-11-25T18:29:29Z\", user.login \"brookslybrand\" (author_association CONTRIBUTOR), title \"feat(fetch-router): add Cloudflare Workers demo\", body contains verbatim \"Verified it's [deployable](https://fetch-router-cf-workers-demo.brookslybrand.workers.dev/)\" and \"Resolves #10834\"."
+        },
+        {
+          "id": "W14",
+          "claim": "The in-repo cf-workers demo runs without the nodejs_compat flag: its wrangler.jsonc sets only a compatibility_date (2025-11-18) and declares no compatibility_flags at all.",
+          "quote": "\"compatibility_date\": \"2025-11-18\",",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/wrangler.jsonc",
+          "note": "Full config contains only $schema, name, main (worker.ts), compatibility_date, observability, and a d1_databases binding — no compatibility_flags key. worker.ts (same directory) is a plain fetch handler: \"return await router.fetch(request)\".",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/wrangler.jsonc (current main): contains exactly \"compatibility_date\": \"2025-11-18\", and the only keys are $schema, name, main (\"worker.ts\"), compatibility_date, observability, d1_databases — no compatibility_flags key anywhere. worker.ts (same dir, fetched) is a plain fetch handler containing \"return await router.fetch(request)\"."
+        },
+        {
+          "id": "W15",
+          "claim": "The cf-workers demo's dependency set shows several core render-path packages running on Workers together: @remix-run/fetch-router, @remix-run/html-template, and @remix-run/response (plus cookie, session, session-middleware, form-data-middleware, logger-middleware, data-schema) — but not @remix-run/ui or @remix-run/render-middleware.",
+          "quote": "\"@remix-run/fetch-router\": \"workspace:*\",",
+          "url": "https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/package.json",
+          "note": "Demo README (same directory, fetched): \"This example is a [Cloudflare Workers](https://workers.cloudflare.com/) application that handles routing using `@remix-run/fetch-router` with data stored in a [Cloudflare D1](https://developers.cloudflare.com/d1/) database.\"",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://raw.githubusercontent.com/remix-run/remix/main/packages/fetch-router/demos/cf-workers/package.json: dependencies are exactly @remix-run/cookie, data-schema, fetch-router, form-data-middleware, html-template, logger-middleware, response, session, session-middleware (all \"workspace:*\") — quote \"\\\"@remix-run/fetch-router\\\": \\\"workspace:*\\\",\" verbatim at line 8; @remix-run/ui and @remix-run/render-middleware absent. Demo README verbatim: \"This example is a [Cloudflare Workers](https://workers.cloudflare.com/) application that handles routing using `@remix-run/fetch-router` with data stored in a [Cloudflare D1](https://developers.cloudflare.com/d1/) database.\""
+        },
+        {
+          "id": "W16",
+          "claim": "The Remix team deliberately scoped the Workers demo to fetch-router only, even after a community member offered a fuller Workers port (D1/KV/R2 bookstore); no maintainer statement covers the full v3 UI render path on Workers.",
+          "quote": "For this project we're keeping it really simple and just showing how `fetch-router` works on Cloudflare Workers",
+          "url": "https://api.github.com/repos/remix-run/remix/issues/10834/comments",
+          "note": "Comment by brookslybrand on issue #10834, replying to y-core's community reference implementation (https://github.com/remix-ed/r3-cf-bookstore/tree/cf-workers) which \"replaces AsyncLocalStorage\" for sessions and \"replaces local file handling\" with R2 — a hint at the parts that needed swapping.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://api.github.com/repos/remix-run/remix/issues/10834/comments: brookslybrand comment verbatim \"For this project we're keeping it really simple and just showing how `fetch-router` works on Cloudflare Workers\", replying to y-core's bookstore reference implementation whose comment says session handling \"(replaces AsyncLocalStorage)\" and R2Bucket uploads \"(replaces local file handling)\". Staleness probe for the negative half: GitHub search repo:remix-run/remix cloudflare in:title (30 results) surfaced no issue/PR/statement about running the full v3 UI render path on Workers — only the fetch-router demo (#10834/#10851) and R2 file-storage work (#10784/#10816). Minor nuance: brookslybrand's author_association is CONTRIBUTOR, not MEMBER; the team framing rests on his \"we're\" phrasing."
+        },
+        {
+          "id": "W17",
+          "claim": "The remix metapackage 3.0.0-beta.5 declares engines node >=24.3.0 on the npm registry.",
+          "quote": "\"node\": \">=24.3.0\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "From .versions[\"3.0.0-beta.5\"].engines. The metapackage also bundles Node-bound deps (@remix-run/node-fetch-server, @remix-run/node-tsx, @remix-run/cli, @remix-run/assets) alongside the runtime-agnostic core — so the engines gate applies to installing the omnibus package, not to the individual scoped core packages, none of which declare engines (W1-W9).",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Re-fetched https://registry.npmjs.org/remix: .versions[\"3.0.0-beta.5\"].engines is exactly {\"node\": \">=24.3.0\"} — quote \"\\\"node\\\": \\\">=24.3.0\\\"\" verbatim. None of the eight scoped packages checked (W1-W9) declare engines (all null in registry metadata)."
+        },
+        {
+          "id": "W18",
+          "claim": "remix@3.0.0-beta.5 declares peerDependencies on mysql2 ^3.15.3, pg ^8.16.3, redis ^5.10.0, and playwright ^1.60.0, all four marked optional in peerDependenciesMeta.",
+          "quote": "\"peerDependencies\": {\n    \"mysql2\": \"^3.15.3\",\n    \"pg\": \"^8.16.3\",\n    \"redis\": \"^5.10.0\",\n    \"playwright\": \"^1.60.0\"\n  }",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "peerDependenciesMeta marks each {\"optional\": true}. Registry facts only; package-manager auto-install behavior out of scope per task.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Same fetch of https://registry.npmjs.org/remix: .versions[\"3.0.0-beta.5\"].peerDependencies is exactly {\"mysql2\": \"^3.15.3\", \"pg\": \"^8.16.3\", \"redis\": \"^5.10.0\", \"playwright\": \"^1.60.0\"} and peerDependenciesMeta marks each of the four {\"optional\": true}."
+        },
+        {
+          "id": "W19",
+          "claim": "3.0.0-beta.5 is published under the \"next\" dist-tag; \"latest\" on the remix package is still 2.17.5.",
+          "quote": "\"next\": \"3.0.0-beta.5\"",
+          "url": "https://registry.npmjs.org/remix",
+          "note": "dist-tags object also shows \"latest\": \"2.17.5\". So a bare `npm install remix` does not get the beta.",
+          "verdict": "CONFIRMED",
+          "verdictEvidence": "Same fetch of https://registry.npmjs.org/remix: dist-tags currently show \"next\": \"3.0.0-beta.5\" and \"latest\": \"2.17.5\" — unchanged since the baseline; no newer beta has taken the next tag, so bare `npm install remix` still resolves to 2.17.5."
+        }
+      ],
+      "gaps": [
+        "No maintainer statement found (issues, PRs, or comments on remix-run/remix via api.github.com search) about running the FULL Remix 3 render path — @remix-run/ui server rendering + render-middleware — on Cloudflare Workers. The only maintainer-driven Workers artifact is the fetch-router demo (W12-W16), which excludes @remix-run/ui and @remix-run/render-middleware.",
+        "The Remix 3 Beta Preview blog post (https://remix.run/blog/remix-3-beta-preview, fetched) contains no statement about supported runtimes, Node version requirements, or deployment targets — it covers architecture/philosophy only.",
+        "READMEs of @remix-run/ui and @remix-run/render-middleware make no explicit runtime-support claim in either direction (no 'works on Workers', no 'Node-only'); their Workers-compatibility rests on the absence of node: imports and engines fields, not on a documented claim.",
+        "GitHub Discussions were not searched — api.github.com/search/issues covers only issues and PRs; any maintainer position stated in a Discussion thread would not have been found.",
+        "Whether Cloudflare's nodejs_compat fs implementation actually satisfies @remix-run/static-middleware's disk-read pattern (openLazyFile via @remix-run/fs, node:fs/promises stat/read) is not established by documentation; that determination belongs to the local spike.",
+        "The exact set of Web APIs @remix-run/ui's server renderer relies on at runtime (e.g. whether it touches DOM globals or Navigation API beyond types — its one dependency is @types/dom-navigation, types-only) was not established from documentation; dist inspection showed no node: imports but no positive runtime-support doc exists."
+      ]
+    }
+  ]
+}

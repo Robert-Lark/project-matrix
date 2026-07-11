@@ -1,0 +1,59 @@
+/* Spike-local placeholder styles for the pm- classes. In the real Editorial
+   build these rules come from the shared design-system CSS (ADR-0003);
+   nothing here is canonical. */
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+
+.pm-frontier-plaque {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  background: #fff7e0;
+  border-bottom: 2px solid #d9a400;
+  font-size: 0.9rem;
+}
+
+.pm-editorial {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.pm-staff-pick {
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+}
+
+.pm-staff-pick__eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.pm-staff-pick__title {
+  margin: 0.25rem 0;
+}
+
+.pm-staff-pick__meta {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.pm-staff-pick__blurb {
+  margin-bottom: 0;
+}
+
+.pm-staff-pick__controls {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}

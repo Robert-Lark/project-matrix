@@ -1,0 +1,25 @@
+{
+  "name": "remix3-frontier-spike",
+  "private": true,
+  "type": "module",
+  "description": "Throwaway spike: Remix 3 beta server-HTML + frames, hosted on a hand-rolled Cloudflare Workers entry vs the official Node shape",
+  "scripts": {
+    "build:client": "node build-client.mjs",
+    "dev:node": "node --import remix/node-tsx server-node.ts",
+    "dev:worker": "wrangler dev --config worker/wrangler.jsonc --port 8931 --inspector-port 9331",
+    "typecheck": "tsc --noEmit",
+    "test": "./test.sh"
+  },
+  "engines": {
+    "node": ">=24.3.0"
+  },
+  "dependencies": {
+    "remix": "3.0.0-beta.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.110.0"
+  }
+}

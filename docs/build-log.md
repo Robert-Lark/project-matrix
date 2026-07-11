@@ -927,6 +927,95 @@ lock) · the saved verify-slice workflow (background) + inline empirical
 probes (foreground) · Monitor-tailed background capture · sharp · the
 composed origin itself.
 
+## Phase 4 — Variant frontier
+
+### `remix3-frontier` — resolved (2026-07-11)
+
+The first variant-axis ticket ([issue #10](https://github.com/Robert-Lark/project-matrix/issues/10)):
+decide and de-risk the fenced Remix 3 showcase before the Editorial spine
+builds it. Two legs, launched in parallel per the standing pattern — an
+adversarial research workflow in the background (4 areas, finder +
+re-fetch verifier per area, the cf-composition pattern scaled to fit:
+**54/54 claims confirmed**) while the foreground built the spike.
+
+**The re-verification came back "unchanged, but deeper."** Beta.5
+(2026-07-01) is still the newest v3 anywhere; "not production ready" stands
+unretracted; still no official deployment target beyond the Node ≥24.3
+template. But the research surfaced the decisive shape of the gap: the
+maintainers deliberately scoped their own Workers demo to fetch-router
+("we're keeping it really simple…"), and **no official example runs the
+full `@remix-run/ui` render path on Workers at all** — the exact question
+the hosting decision turns on, answerable only empirically. It also
+surfaced the paradigm's best-kept detail, read from the shipped dist:
+`run()` installs a Navigation API listener that routes plain `<a href>`
+clicks through frame reloads via `rmx-target`/`rmx-src` attributes —
+progressive enhancement isn't a pattern the app author builds, it's the
+runtime's default posture.
+
+**The spike answered in one afternoon: the frontier runs on the canonical
+plane.** One host-agnostic app (editorial page, `<Frame>`-composed
+staff-pick partial carrying its own next-anchor, one `clientEntry` island,
+the fence plaque) served by both the official Node shape and a ~15-line
+hand-rolled Workers `fetch` entry — because the beta's router is
+fetch-shaped, the "adapter" is nearly a pass-through. workerd ran the full
+render path with **no `nodejs_compat` flag** (the core packages ship zero
+`node:` imports — verified in the dists, confirmed by the research), and
+both hosts emit identical HTML modulo per-render instance ids. `test.sh`:
+42/42. The browser leg sealed it: one click on "Next pick" produced exactly
+one network request — an HTML partial — while the island's counter state
+survived the swap (the page demonstrably never reloaded), and Back restored
+the previous frame without a document load. Two frictions, both small, both
+recorded in FINDINGS §4: workerd leaves the bundled module's `import.meta`
+empty at runtime (probed: `url === undefined` — so `clientEntry()` needs a
+stable-ID fallback; the verification pass caught the first draft blaming
+the bundler, and a probe pinned the real mechanism), and the template's
+runtime asset server is Node-only (prebuild with esbuild instead —
+code-split so islands share the runtime chunk's module instances).
+
+**The decision, and the two judgments it forced.** Workers entry wins;
+the off-plane Node host is the recorded fallback (it buys nothing the
+fence doesn't already excuse and would cost a second provider, a foreign
+transport stack, and exile from the composed origin). ADR-0004 gets a
+second addendum. The sub-questions the ticket said not to resolve
+silently, resolved loudly (FINDINGS §7): the fenced showcase **owes** the
+ADR-0003 canonical-markup/shared-CSS contract — fencing excludes numbers,
+not visual identity, and the spike proves the contract costs nothing
+(plain `pm-` markup renders fine; `css()` stays off store components) —
+and the drift gate covers the remix3 surface **in advisory mode**: drift
+warns, never fails CI, because a weekly-cadence beta must not be able to
+hold the benchmarked matrix's deploy hostage. Labeling is three
+machine-checkable layers (plaque with `data-pm-fenced="true"` — mechanism
+proven and test-asserted — switcher tag + RUM-only HUD, and the bench
+runner never batching `/remix3/*`).
+
+**Verification:** the research leg carried the rigor for the claims
+(fetch + adversarial re-fetch, quotes + URLs throughout; the full 54-claim
+set committed as `research/claims.json` so the number is auditable);
+verify-slice ran in the background with inline probing foreground, per the
+standing rule. Four lenses returned 20 raw findings (~17 distinct);
+essentially all adopted pre-commit. The heavy hitters: the recorded
+mechanism for the clientEntry friction blamed the bundler when the actual
+wrangler bundle on disk preserves `import.meta` verbatim — an inline probe
+inside the running Worker pinned the truth (workerd leaves it empty at
+runtime) and five documents were corrected; the ADR-0003 drift-gate
+carve-out lived only in ADR-0004's addendum, leaving the ADR of record
+silently contradicted (ADR-0003 now carries its own addendum); "exact-pin
+the beta" was only true through the lockfile (the metapackage carets every
+sub-package — wording corrected); test.sh's cross-host headline checks
+passed vacuously with both hosts down (non-empty guards added, plus a
+readiness wait and an exportName assertion); and the skeptic lens demanded
+the unexercised prefix-mounting seam be named in the residual-risk record
+rather than discovered by the Editorial build. One finding refuted as
+stale (a size figure already fixed mid-session); one partially adopted
+(the exportName fallback keeps the official template's title-case
+semantics rather than the proposed throw — template fidelity is the
+spike's evidentiary point — but gained the test assertion).
+
+**Skills / tools used:** a 4-area research Workflow (finder + adversarial
+verifier pairs) · the spike itself (wrangler dev + node --import
+remix/node-tsx, one app two hosts) · chrome-devtools MCP for the browser
+leg · esbuild · the saved verify-slice workflow + inline probes.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

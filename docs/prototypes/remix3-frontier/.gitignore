@@ -1,0 +1,4 @@
+# Build artifacts — regenerate with `npm run build:client`.
+public/assets/entry.js
+public/assets/counter-button.js
+public/assets/chunks/
