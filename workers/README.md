@@ -55,6 +55,10 @@ cannot tell (issue #11). CI never sets `PM_SEED_DIR`.
 
 ## Deploying (the canonical plane)
 
+**The plane is live (armed 2026-07-11): https://pm-front.robresearch87.workers.dev**
+— serving the real crate; the runbook below was executed end-to-end and is
+kept for re-arming and future re-seeds.
+
 CI deploys from `main` — variants first (service bindings must resolve), then
 the front Worker — and re-runs the integration suite against the deployed
 origin with the Brotli assertion (the post-deploy smoke, spike FINDINGS §5).
@@ -77,8 +81,15 @@ reaches the plane.
    `wrangler deploy` interactively).
 2. **KV namespace for the warm tier**: run
    `wrangler kv namespace create pm-warm` and paste the returned id into
-   `workers/edge/wrangler.jsonc` (`kv_namespaces[0].id` — currently an
-   all-zeros local-dev placeholder; the edge deploy fails until replaced).
+   `workers/edge/wrangler.jsonc` (`kv_namespaces[0].id` — an all-zeros
+   local-dev placeholder until then; the edge deploy fails until replaced).
+3. **Analytics Engine enabled on the account** (Cloudflare dashboard →
+   Workers → Analytics Engine → create a dataset: name `pm_rum`, binding
+   `BEACONS`, matching `workers/edge/wrangler.jsonc`). Discovered on the
+   first armed deploy (2026-07-11): the API rejects any Worker binding an
+   Analytics Engine dataset until the account has opted in once via the
+   dashboard — `pm-edge` fails with error 10089 ("You need to enable
+   Analytics Engine") and a dashboard deep-link. One-time, account-wide.
 
 The `pm-snapshot` R2 bucket needs no manual step — the deploy job creates it
 idempotently and seeds the committed fixture snapshot on every deploy —
@@ -108,11 +119,16 @@ left in between; issue #11 removed the last one):**
    and stray traffic cannot be ruled out. E.g.:
 
    ```sh
-   wrangler kv key list --binding WARM --remote \
-     --config workers/edge/wrangler.jsonc | jq '[.[].name]' > /tmp/pm-warm-keys.json
-   wrangler kv bulk delete /tmp/pm-warm-keys.json --binding WARM --remote \
-     --config workers/edge/wrangler.jsonc --force
+   # from the repo root; the --filter already puts wrangler in workers/edge,
+   # so do NOT also pass --config (it would resolve relative to that cwd)
+   pnpm --filter @pm/edge exec wrangler kv key list --binding WARM --remote \
+     | jq '[.[].name]' > /tmp/pm-warm-keys.json
+   pnpm --filter @pm/edge exec wrangler kv bulk delete /tmp/pm-warm-keys.json \
+     --binding WARM --remote --force
    ```
+
+   (Executed 2026-07-11: 12 keys, every one a `?run=`-nonced suite key —
+   the nonce discipline held on the real plane; deleted, recount 0.)
 
    (An empty list is the expected result if nothing hit the plane; the
    flush is then a no-op. Any FUTURE re-seed under live traffic needs the

@@ -813,6 +813,76 @@ Rob: `snapshot-capture`, `data-strategy-lab`, `aesthetic-direction`,
 unblocked — per the decision-map discipline, one ticket per session,
 Rob picks the next node.
 
+### The deploy leg — armed (2026-07-11)
+
+The last Rob-gated step of the foundation, run as a paired session: Rob
+drove every credentialed click and command (guided one step at a time, in
+plain terms), the agent did everything verifiable — pre-checks, config,
+CI-watching, live-origin probes, close-outs. Roughly 15 minutes of Rob's
+hands, exactly as scoped.
+
+**The runbook survived contact with reality with two corrections.** One
+genuinely new one-time prerequisite surfaced: Cloudflare rejects a Worker
+that binds an Analytics Engine dataset until the account has opted into
+Analytics Engine once via the dashboard (`pm-edge` deploy failed with API
+error 10089 on the first armed run; the two placeholder Workers, which
+bind nothing, had already deployed cleanly). Enabling it is a two-field
+dashboard dialog — dataset `pm_rum`, binding `BEACONS`, which the
+dashboard then echoed back as a config snippet character-identical to
+what `workers/edge/wrangler.jsonc` has carried since issue #4. The other
+correction was an incantation bug the README had pre-declared as
+"e.g."-level: the warm-tier flush commands pass `--config
+workers/edge/wrangler.jsonc`, but run via `pnpm --filter @pm/edge exec`
+the cwd is already `workers/edge`, so the path doubles and wrangler
+throws ENOENT. Both are fixed in the README. Two other pre-registered
+prerequisites turned out already satisfied or trivial: the account had a
+workers.dev subdomain (`robresearch87`) from onboarding, and the KV
+namespace was one command + one id paste (committed as `8d9e722` after
+the origin suite ran green twice back-to-back on the final tree,
+118/118 ×2, per the standing rule).
+
+**The sequence as it actually ran:** wrangler login (the stale global
+wrangler 4.35.0 died with a blank error; the repo's 4.110.0 succeeded —
+one more argument for never trusting the global tool) → KV namespace +
+id commit → API token (Edit Cloudflare Workers template + Workers R2
+Storage:Edit added by hand; zone resources "All zones", vacuous on a
+zone-less account) → two repo secrets → push → deploy failed on 10089 →
+Analytics Engine enabled → re-run failed jobs → **first armed deploy
+green**: fixture-seeded bucket, smoke 118/118 with `PM_EXPECT_BROTLI=1`,
+resolver naming the fixture. Then the crate transition per the runbook:
+`pnpm capture seed --remote` (1,820 objects, ~45 MB, zero Discogs calls),
+warm-tier flush (12 keys, every single one `?run=`-nonced fixture-era
+suite traffic — the #11 nonce discipline held on the real plane; recount
+0), full re-run → **crate smoke green**: the same 118 assertions resolved
+the crate's manifest and asserted its committed trays and image sha256s,
+while the seed step's clobber guard refused to reset the bucket and
+exited 0, exactly as written.
+
+**The spike's one accepted residual risk is retired.** `cf-composition-
+spike` FINDINGS §5 accepted that composition behaviors were unverified on
+the real plane until the first deploy. Every one passed: prefix dispatch,
+assets-through-bindings, HTMLRewriter chrome injection, passthrough
+fidelity, trailing-slash 307s, unknown-prefix 404s, Brotli on the wire
+(`content-encoding: br` over HTTP/2, hand-verified), and the warm tier
+behaving as designed in production KV (priming `miss`, immediate `hit` —
+the suite's 90 s eventual-consistency allowance wasn't even needed).
+Neither documented bench flake fired in any of the three deployed-smoke
+runs.
+
+**Close-outs:** #3's last open criterion (CI deploys from main +
+post-deploy smoke incl. Brotli) closed with the run as evidence; #1's
+done paragraph re-verified clause by clause **against the deployed
+origin** — chrome-injected variant page, both trays cold/warm with a
+real release, a served image byte-identical to its committed sha256, the
+bench/receipt leg, the drift gate — and closed. The plane is live at
+https://pm-front.robresearch87.workers.dev, redeployed and re-smoked on
+every push to main. Riders resolved in passing: Rob dropped the
+"Prometheus Studio" label (no re-plan; the frozen crate stands), and
+roblark.com's registrar/DNS answer ("Netlify or Vercel, to be
+confirmed") is recorded on the new `domain-cutover` ticket — the session
+deliberately touched no DNS and attached no custom domain; the legacy
+portfolio at roblark.com is untouched.
+
 ## Phase 3 — Store data
 
 ### `snapshot-capture` — resolved (2026-07-10)
