@@ -6,3 +6,4 @@ coverage/
 .wrangler/
 .DS_Store
 tools/bench-runner/receipts/
+tools/cost-calculator/reports/

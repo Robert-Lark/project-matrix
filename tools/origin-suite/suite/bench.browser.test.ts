@@ -18,9 +18,11 @@
  * quiet plane.
  */
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
+import { computeCostReport, parseRateCard, renderReport } from "@pm/cost-calculator";
 import {
   PROFILE_SPEC_VERSION,
   PROFILES,
@@ -217,17 +219,62 @@ describe("the measured resource profile (ADR-0001 §7)", () => {
       : "CPU-ms comes from real V8 profiles of the local plane, source named",
     () => {
       for (const target of receipt.targets) {
-        const cpu = target.columns.cold.resourceProfile.cpuMs;
-        if (REMOTE) {
-          expect(cpu.value).toBeNull();
-          expect(cpu.source).toContain("observability");
-        } else {
-          expect(cpu.value).toBeGreaterThan(0);
-          expect(cpu.source).toContain("v8-inspector-profile");
+        // BOTH columns: a zeroed (invented) warm-column value must not
+        // hide behind a correctly-null cold column.
+        for (const column of [target.columns.cold, target.columns.warm]) {
+          const cpu = column.resourceProfile.cpuMs;
+          if (REMOTE) {
+            expect(cpu.value).toBeNull();
+            expect(cpu.source).toContain("observability");
+          } else {
+            expect(cpu.value).toBeGreaterThan(0);
+            expect(cpu.source).toContain("v8-inspector-profile");
+          }
         }
       }
     },
   );
+});
+
+describe("the cost calculator consumes the receipt as-is (issue #8: input shape aligns)", () => {
+  it("prices the real receipt with the shipped dated card, honest about CPU both ways", () => {
+    const card = parseRateCard(
+      JSON.parse(
+        readFileSync(
+          join(repoRoot, "tools/cost-calculator/ratecards/2026-07-10-usd.json"),
+          "utf8",
+        ),
+      ),
+    );
+    const report = computeCostReport({
+      receipt,
+      card,
+      assumptions: { cacheHitRatio: 0.5, region: "us-east" },
+      architectureHostId: "cloudflare-workers-paid",
+      realWorldHosts: Object.fromEntries(
+        receipt.targets.map((t) => [t.path, "cloudflare-workers-paid"]),
+      ),
+      date: new Date().toISOString(),
+    });
+    expect(report.input.commit.sha).toBe(receipt.commit.sha);
+    for (const target of report.views.architectureOnly.targets) {
+      // Bytes and requests always price (measured on both planes)…
+      expect(target.blended.requests.value).toBeGreaterThan(0);
+      expect(target.blended.egressBytes.value).toBeGreaterThan(0);
+      const cpuLine = target.lines.find((l) => l.basis === "cpuMs")!;
+      if (REMOTE) {
+        // …CPU is an honest UNPRICED line until the deploy leg arms.
+        expect(cpuLine.costUsdPer1MVisits).toBeNull();
+        expect(target.totalUsdPer1MVisits).toBeNull();
+        expect(target.unpriced.map((u) => u.meter)).toContain("Workers CPU time");
+      } else {
+        expect(cpuLine.costUsdPer1MVisits).toBeGreaterThan(0);
+        expect(target.totalUsdPer1MVisits).toBeGreaterThan(0);
+      }
+    }
+    // The published-arithmetic rendering holds together end-to-end.
+    expect(renderReport(report)).toContain("ARCHITECTURE-ONLY");
+  });
 });
 
 describe("one-command reproduce (ADR-0001 §9)", () => {

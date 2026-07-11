@@ -21,6 +21,11 @@ Dev/CI-only tooling — never shipped to a visitor (ADR-0004 §2).
   batches over composed-origin URLs emitting SHA-pinned receipts, with
   `pnpm bench run` / `pnpm bench reproduce`. Proven at the seam by
   `suite/bench.browser.test.ts`.
+- `cost-calculator` — the ADR-0001 §7 cost model (issue #8): measured
+  resource profile (from receipts) × dated, swappable rate card →
+  $/1M visits at a required cache-hit ratio and region, architecture-only
+  and real-world views, full arithmetic published (`pnpm cost
+  from-receipt`). Asserted pure by `suite/cost.test.ts`; proven against a
+  real receipt at the seam by `suite/bench.browser.test.ts`.
 
-The cost calculator and snapshot capture arrive with their slices (issue #8,
-`snapshot-capture`).
+Snapshot capture arrives with its slice (`snapshot-capture`).

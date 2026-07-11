@@ -1,0 +1,25 @@
+{
+  "name": "@pm/cost-calculator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The ADR-0001 §7 cost model as auditable arithmetic (issue #8): a measured resource profile (the bench receipt's cpuMs/bytes/requests, never estimated) × a dated, swappable rate card → $/1M visits at a required, explicit cache-hit ratio and region — the architecture-only view (one host's rates for every variant) and the real-world view (each variant on its actual host), plus free-tier fit and paid-plan charge at a stated monthly volume. Every line publishes its intermediate arithmetic and the rate's sourced quote. Dev/CI only — never shipped. Deliberately has no `test` script (@pm/origin-suite precedent): the arithmetic is asserted by suite/cost.test.ts and proven against a real receipt at the seam by suite/bench.browser.test.ts.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pm/bench-runner": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  }
+}

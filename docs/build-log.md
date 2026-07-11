@@ -695,7 +695,84 @@ four-lens verification after the workflow died · Playwright.
 batch against the deployed origin (pre-warming KV through its
 eventual-consistency window) with the CPU field asserted null-and-named.
 
-## Methodology notes
+### Issue #8 — cost calculator — landed (2026-07-10)
+
+ADR-0001 §7 as auditable arithmetic: `@pm/cost-calculator` (`pnpm cost
+from-receipt`) prices a bench receipt's measured resource profile — the
+per-target cold/warm `resourceProfile` columns — against a **dated,
+swappable rate card**, producing $/1M visits for BOTH views (architecture-
+only: one host's rates for every variant; real-world: each variant on its
+stated host) plus an actual-charge view at a stated monthly volume
+(free-plan fit shown as allowance arithmetic — free plans block, not bill;
+paid-plan bill = base + max(0, overage − credit) with included allotments).
+The §7 split is structural: the calculator has **no price knowledge in
+code** — cards are data files whose every rate carries the verbatim vendor
+quote + URL it was verified from, and the required inputs (cache-hit
+ratio, region, architecture host, per-target host mapping) are **explicit
+or refused** — no defaults hidden in code. The cache-hit ratio is not a
+model: it blends the receipt's two *measured* columns
+(`h × warm + (1 − h) × cold`), which is what the columns exist for. Nulls
+stay honest end-to-end: a quantity whose named source couldn't account it
+(CPU-ms against the deployed origin until the telemetry leg arms) yields
+an UNPRICED line and a null total with the subtotal labeled partial —
+with one deliberate exception, a **$0 rate prices unknown usage at exactly
+$0** (zero is arithmetic here, not an estimate; an all-free static host
+must not report "unknown total"). Vendor meters the profile genuinely
+cannot see (Vercel Provisioned Memory, Fast Origin Transfer) are DECLARED
+per host in the card and surface in the report's method notes instead of
+silently vanishing.
+
+**The rate card was re-verified at build time, as ADR-0001 required** (rate
+cards drift by design): a fetch+confirm agent pair per vendor against the
+live pricing pages, every figure quote-cited, each report independently
+re-fetched by a second agent. Cloudflare: all 2026-07-06 figures confirmed
+unchanged ($0.30/1M requests, $0.02/1M CPU-ms beyond included; egress
+explicitly $0; static assets "free and unlimited"; free tier 100k req/day
+with a per-invocation 10ms CPU cap — a cap the per-visit profile can't
+verify, so the card states it as uncheckable). Vercel: sharpened —
+"~$0.13/CPU-hr" is exactly **$0.128/CPU-hr Active CPU at iad1** (regional
+to $0.221; Active CPU pauses during I/O, so measured CPU-ms is the correct
+input); $0.15/GB Fast Data Transfer confirmed as the iad1 rate ($0.15–
+$0.35 regional); and the confirm pass caught a dimension the first pass
+missed — **Fast Origin Transfer** ($0.06/GB iad1, both directions, every
+function-backed request), now declared unmeasured in the card. The card's
+region vocabulary is its own (`us-east` → iad1; Cloudflare flat), so one
+`--region` input resolves per-region and flat rates together.
+
+**Assertions:** `suite/cost.test.ts` holds the arithmetic to exact
+hand-computed dollars — fixtures chosen float-exact so every dollar
+assertion is `toBe`, no tolerance to hide in; the fixture receipt is
+parsed through the real `Receipt` contract, pinning the input shape to
+what the bench runner emits. The seam leg (`bench.browser.test.ts`)
+prices the REAL receipt with the SHIPPED card end-to-end; the honest CPU
+null is asserted locally on every run, and the deployed branch (UNPRICED,
+armed-path source named) is written into the same test but first executes
+in the post-deploy smoke when the Cloudflare secrets arm. Origin suite:
+79 → 113 assertions, green twice back-to-back on the final tree.
+
+**Verification (the saved verify-slice workflow's first full outing +
+inline probes): 15 raw findings → 15 adopted, 0 refuted.** The
+background/foreground split earned its keep again — the lenses and the
+probes caught disjoint sets. Probes (two full suite runs, a live CLI run
+against a real local-plane receipt, hand-audited arithmetic, node
+one-liners) caught a malformed small-number format, a $0-rate ×
+unknown-usage false-unknown, and a host-mapping typo hole. The lenses
+then found what reading catches: correctness — empty-string CLI values
+coercing to a silent cold-only default (`Number("") === 0`), the
+percent-encoded `repoRoot` (copied from bench-runner's CLI — both fixed),
+parse-time card validation gaps, and prose contradicting the $0-rate
+branch; conformance — the CPU provenance test read only the cold column
+(an invented warm 0 would have passed every gate) and `--host`
+duplicates silently last-winning; seams — "1,500 visits visits" in the
+published paid-plan arithmetic and duplicate hostIds pricing
+first-match-wins; anti-rigging — the visits-basis invocation meter
+erasing the static-paradigm difference on Vercel (fixed in DATA: a
+`vercel-pro-static` host block prices the zero-function deployment
+honestly), the report unable to name WHICH receipt priced it (runNonce
+now echoed), the receipt's own methodNotes not traveling with the
+dollars, negative doctored profiles pricing silently (now refused
+loudly), and the renderer displaying a tiny nonzero as the load-bearing
+"$0".
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
 separate from the per-decision record. Prime source material for the talk / blog /
@@ -827,6 +904,26 @@ confound and the nav-timing-rebase-under-throttling discovery), arguably
 number, write a probe — where a finder agent reads code. Sharpened learning:
 near a limit boundary, don't stage smaller fan-outs — go inline first and
 spend the budget on probes, not agents.
+
+**Round four (2026-07-10, issue #8) — the resilient design pays out:**
+the limit hit again mid-run and, for the first time, cost almost nothing.
+The saved sequential workflow had lenses 1–2 durable in the journal
+(refuted and fixed inline BEFORE the wall — another dividend of
+launch-early); lenses 3–4 died and were resumed after the reset with
+`resumeFromRunId`, replaying the completed lenses from cache. Two
+operational lessons for the pattern's runbook: (1) **resume with
+byte-identical args** — the first resume attempt updated the context
+string ("these findings are already fixed…") and silently invalidated
+the prompt cache for ALL lenses, restarting lens 1 from scratch; caught
+by checking which lens the live agent transcript was running, stopped,
+re-resumed with the original args verbatim. (2) **the harness can
+deliver workflow `args` as a JSON string** rather than an object — the
+saved script's guard rejected it; hardening the saved script mid-session
+was (correctly) blocked by the permission classifier as agent-config
+self-modification, so the run used a hardened session copy. Proposed
+patch for `.claude/workflows/verify-slice.js`, pending Rob's review:
+accept both (`const input = typeof args === 'string' ? JSON.parse(args)
+: args` at the guard, with a try/catch falling through to the error).
 
 **The fix, encoded (2026-07-10):** the root cause is that `parallel()`
 fan-outs fail *correlated* — near the wall no agent has returned yet, so

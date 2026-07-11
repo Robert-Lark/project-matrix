@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./receipt": "./src/receipt.ts",
     "./package.json": "./package.json"
   },
   "types": "./src/index.ts",

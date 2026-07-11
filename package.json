@@ -11,7 +11,8 @@
     "check": "turbo run lint typecheck test",
     "dev": "turbo run dev",
     "origin-suite": "node tools/origin-suite/run-local.mjs",
-    "bench": "turbo run build --filter=@pm/bench-runner --output-logs=errors-only && node tools/bench-runner/dist/cli.mjs"
+    "bench": "turbo run build --filter=@pm/bench-runner --output-logs=errors-only && node tools/bench-runner/dist/cli.mjs",
+    "cost": "turbo run build --filter=@pm/cost-calculator --output-logs=errors-only && node tools/cost-calculator/dist/cli.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,365 @@
+{
+  "kind": "pm-rate-card",
+  "cardVersion": 1,
+  "id": "usd-2026-07-10",
+  "capturedAt": "2026-07-10",
+  "verifiedBy": "figures fetched from the vendors' live pricing pages on 2026-07-10 and independently re-fetched by a second pass the same day; every rate carries its verbatim quote + URL. Vendor page last-updated stamps: Cloudflare Workers pricing 2026-07-07, static-assets billing 2026-04-23; Vercel /docs/pricing 2026-06-16, functions usage-and-pricing 2026-06-16, manage-cdn-usage 2026-06-23, regional-pricing/iad1 2026-02-13.",
+  "regions": ["us-east"],
+  "hosts": [
+    {
+      "hostId": "cloudflare-workers-paid",
+      "vendor": "Cloudflare",
+      "plan": "Workers Paid (Standard usage model)",
+      "monthlyBaseUsd": 5,
+      "rates": [
+        {
+          "meter": "Workers requests",
+          "basis": "requests",
+          "amountUsd": 0.3,
+          "per": 1000000,
+          "unit": "requests",
+          "regions": "all",
+          "includedPerMonth": 10000000,
+          "quote": "10 million included per month +$0.30 per additional million",
+          "url": "https://developers.cloudflare.com/workers/platform/pricing/",
+          "note": "every browser-observed request to the composed origin invokes the front Worker; service-binding sub-requests are not billed extra (\"Requests made from your Worker to another worker via a Service Binding do not incur additional request fees.\")"
+        },
+        {
+          "meter": "Workers CPU time",
+          "basis": "cpuMs",
+          "amountUsd": 0.02,
+          "per": 1000000,
+          "unit": "CPU-ms",
+          "regions": "all",
+          "includedPerMonth": 30000000,
+          "quote": "30 million CPU milliseconds included per month +$0.02 per additional million CPU milliseconds",
+          "url": "https://developers.cloudflare.com/workers/platform/pricing/"
+        },
+        {
+          "meter": "Data transfer (egress)",
+          "basis": "egressBytes",
+          "amountUsd": 0,
+          "per": 1,
+          "unit": "GB",
+          "regions": "all",
+          "quote": "There are no additional charges for data transfer (egress) or throughput (bandwidth).",
+          "url": "https://developers.cloudflare.com/workers/platform/pricing/"
+        }
+      ],
+      "unmeasured": [
+        {
+          "meter": "Workers KV reads",
+          "priceSummary": "10 million/month included, + $0.50/million beyond (Paid)",
+          "quote": "10 million/month, + $0.50/million",
+          "url": "https://developers.cloudflare.com/workers/platform/pricing/",
+          "note": "the edge Worker's warm-tier KV reads happen server-side, per data fetch — the browser-observed request count cannot account them"
+        }
+      ],
+      "freePlan": {
+        "plan": "Workers Free",
+        "allowances": [
+          {
+            "meter": "Workers requests",
+            "basis": "requests",
+            "allowance": 100000,
+            "unit": "requests",
+            "period": "day",
+            "quote": "100,000 per day",
+            "url": "https://developers.cloudflare.com/workers/platform/pricing/"
+          },
+          {
+            "meter": "Workers CPU time (per-invocation cap)",
+            "allowance": 10,
+            "unit": "CPU-ms",
+            "period": "invocation",
+            "quote": "10 milliseconds of CPU time per invocation",
+            "url": "https://developers.cloudflare.com/workers/platform/pricing/",
+            "note": "a per-invocation CAP, not a daily pool — the measured profile carries per-visit totals, so fit cannot be verified from it"
+          }
+        ],
+        "overflow": "beyond the free allowance requests fail rather than bill: \"If you exceed your free tier request limits, these requests will receive a 429 (Too Many Requests) response instead of falling back to static asset serving.\""
+      },
+      "caveats": [
+        "the Workers Paid $5/month is a minimum account charge bundling Workers, Pages Functions, KV, Hyperdrive, and Durable Objects: \"The Workers Paid plan includes Workers, Pages Functions, Workers KV, Hyperdrive, and Durable Objects usage for a minimum charge of $5 USD per month for an account.\"",
+        "Cloudflare Workers pricing is flat/global — no regional price table exists on the pricing page (the only region-priced item there is the separate Containers product), so these rates answer for any stated region"
+      ]
+    },
+    {
+      "hostId": "cloudflare-static-assets",
+      "vendor": "Cloudflare",
+      "plan": "Workers Static Assets (any plan)",
+      "monthlyBaseUsd": 0,
+      "rates": [
+        {
+          "meter": "Static asset requests",
+          "basis": "requests",
+          "amountUsd": 0,
+          "per": 1000000,
+          "unit": "requests",
+          "regions": "all",
+          "quote": "Requests to static assets are free and unlimited.",
+          "url": "https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/"
+        },
+        {
+          "meter": "Server CPU time",
+          "basis": "cpuMs",
+          "amountUsd": 0,
+          "per": 1000000,
+          "unit": "CPU-ms",
+          "regions": "all",
+          "quote": "Requests to static assets are free and unlimited.",
+          "url": "https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/",
+          "note": "models the pure static-asset serving path, which executes no billable Worker CPU; measured CPU-ms from a Worker-fronted plane does not apply on this host model — requests routed to a Worker instead bill as Workers (\"Requests to the Worker script (for example, in the case of SSR content) are billed according to Workers pricing.\")"
+        },
+        {
+          "meter": "Data transfer (egress)",
+          "basis": "egressBytes",
+          "amountUsd": 0,
+          "per": 1,
+          "unit": "GB",
+          "regions": "all",
+          "quote": "There are no additional charges for data transfer (egress) or throughput (bandwidth).",
+          "url": "https://developers.cloudflare.com/workers/platform/pricing/"
+        }
+      ],
+      "freePlan": {
+        "plan": "Workers Free (static assets)",
+        "allowances": [
+          {
+            "meter": "Static asset requests",
+            "basis": "requests",
+            "allowance": "unlimited",
+            "unit": "requests",
+            "period": "month",
+            "quote": "Requests to static assets are free and unlimited.",
+            "url": "https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/"
+          }
+        ],
+        "overflow": "static asset requests do not overflow (free and unlimited); Worker-routed requests on the free plan 429 beyond 100,000/day"
+      },
+      "caveats": [
+        "this host models a variant deployed AS pure static assets; \"When using run_worker_first, requests matching the specified patterns will always invoke your Worker script.\" — such requests bill as Workers requests instead"
+      ]
+    },
+    {
+      "hostId": "vercel-pro",
+      "vendor": "Vercel",
+      "plan": "Pro (fluid compute, on-demand + $20 monthly usage credit)",
+      "monthlyBaseUsd": 20,
+      "monthlyCreditUsd": 20,
+      "rates": [
+        {
+          "meter": "Edge Requests",
+          "basis": "requests",
+          "amountUsd": 2,
+          "per": 1000000,
+          "unit": "requests",
+          "regions": ["us-east"],
+          "includedPerMonth": 10000000,
+          "quote": "Edge Requests | Included First 10,000,000, then $2.00 per 1,000,000 Requests",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "every CDN request, static assets included: \"Static assets and functions all incur CDN Requests.\" \"CDN Requests appear as Edge Requests in your billing dashboard\" (https://vercel.com/docs/manage-cdn-usage); us-east = Vercel iad1 (Washington D.C.), regional range $2.00–$3.20/1M"
+        },
+        {
+          "meter": "Function Invocations",
+          "basis": "visits",
+          "amountUsd": 0.6,
+          "per": 1000000,
+          "unit": "invocations",
+          "regions": "all",
+          "quote": "If your function receives 1.5 million requests on a Pro plan, Vercel bills those invocations at $0.60 per million, subject to your monthly Pro usage credit.",
+          "url": "https://vercel.com/docs/functions/usage-and-pricing",
+          "note": "stated assumption: one function invocation per visit — the server-rendered document; client-side fetches that hit functions would add invocations this per-visit basis does not count. No regional invocation prices are published; the flat $0.60/1M is applied (\"Starting at $0.60 per 1M\" on vercel.com/pricing)"
+        },
+        {
+          "meter": "Active CPU",
+          "basis": "cpuMs",
+          "amountUsd": 0.128,
+          "per": 1,
+          "unit": "CPU-hr",
+          "regions": ["us-east"],
+          "quote": "| Washington D.C., USA (iad1) | $0.128 | $0.0106 | — 'The prices are per hour for CPU and per GB-hr for memory'; 'Billed per CPU-hour'",
+          "url": "https://vercel.com/docs/functions/usage-and-pricing",
+          "note": "Active CPU pauses during I/O (\"You are only billed during actual code execution and not during I/O operations\") — measured CPU-ms, not wall-time, is the matching input; us-east = iad1, regional range $0.128–$0.221/CPU-hr"
+        },
+        {
+          "meter": "Fast Data Transfer",
+          "basis": "egressBytes",
+          "amountUsd": 0.15,
+          "per": 1,
+          "unit": "GB",
+          "regions": ["us-east"],
+          "includedPerMonth": 1000,
+          "quote": "Fast Data Transfer | Included First 1 TB, then $0.15 per 1 GB",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "billed cached or uncached (\"Requests to static assets incur the same Fast Data Transfer usage if the response is cached or uncached.\"); includedPerMonth is 1 TB expressed in GB; us-east = iad1, regional range $0.15–$0.35/GB"
+        }
+      ],
+      "unmeasured": [
+        {
+          "meter": "Provisioned Memory",
+          "priceSummary": "$0.0106/GB-hr at iad1 (regional range to $0.0183)",
+          "quote": "Billed for the entire instance lifetime in GB-hours",
+          "url": "https://vercel.com/docs/functions/usage-and-pricing",
+          "note": "a second compute dimension billed on wall-time × memory (\"Memory is reserved for your function even when it's waiting for I/O\") — the measured profile carries CPU-ms only, so pricing only Active CPU undercounts Vercel compute"
+        },
+        {
+          "meter": "Fast Origin Transfer",
+          "priceSummary": "$0.06/GB at iad1 (regional range $0.06–$0.43), no included allotment in the iad1 table",
+          "quote": "Fast Origin Transfer | $0.06 per 1 GB",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "bytes between the CDN and functions, billed on BOTH directions for every function-backed request (\"Usage is incurred on both the input and output data transfer when using compute or blob on Vercel.\") — the browser-side measured bytes cannot decompose CDN↔function transfer"
+        },
+        {
+          "meter": "Edge Request CPU Duration",
+          "priceSummary": "$0.30/CPU-hr at iad1 (regional range $0.30–$0.48), metered in 10ms increments",
+          "quote": "Edge Requests - Additional CPU Duration | $0.30 per 1 Hour — 'CDN Requests of 10ms or less in duration don't incur any additional charges. CPU duration is metered in increments of 10ms.'",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "routing-layer CPU per CDN request; not observable from the browser and typically negligible for a simple visit profile"
+        }
+      ],
+      "freePlan": {
+        "plan": "Hobby",
+        "allowances": [
+          {
+            "meter": "Function Invocations",
+            "basis": "visits",
+            "allowance": 1000000,
+            "unit": "invocations",
+            "period": "month",
+            "quote": "1M / month included",
+            "url": "https://vercel.com/pricing",
+            "note": "checked on the visits basis under the same one-invocation-per-visit assumption as the Pro rate"
+          },
+          {
+            "meter": "Active CPU",
+            "basis": "cpuMs",
+            "allowance": 4,
+            "unit": "CPU-hr",
+            "period": "month",
+            "quote": "Active CPU | 4 hours included (Hobby column of the fluid compute pricing table)",
+            "url": "https://vercel.com/docs/functions/usage-and-pricing"
+          },
+          {
+            "meter": "Fast Data Transfer",
+            "basis": "egressBytes",
+            "allowance": 100,
+            "unit": "GB",
+            "period": "month",
+            "quote": "100 GB / month included",
+            "url": "https://vercel.com/pricing"
+          },
+          {
+            "meter": "Edge Requests",
+            "basis": "requests",
+            "allowance": 1000000,
+            "unit": "requests",
+            "period": "month",
+            "quote": "1M / month included",
+            "url": "https://vercel.com/pricing"
+          },
+          {
+            "meter": "Provisioned Memory",
+            "allowance": 360,
+            "unit": "GB-hr",
+            "period": "month",
+            "quote": "Provisioned Memory | 360 GB-hrs included (Hobby column of the fluid compute pricing table)",
+            "url": "https://vercel.com/docs/functions/usage-and-pricing",
+            "note": "not checkable: the measured profile has no wall-time × memory dimension"
+          }
+        ],
+        "overflow": "Hobby is non-commercial and does not bill overage; exceeding the allowance pauses the deployment or requires upgrading to Pro"
+      },
+      "caveats": [
+        "Pro has NO included allotment for invocations or Active CPU (docs table shows N/A) — they bill on demand from the first unit, offset by the plan's monthly credit: Pro is \"$20/user/month\" with \"$20 of included usage credit\"; monthlyBaseUsd assumes one seat",
+        "region prices are the Vercel iad1 (Washington D.C.) column — the cheapest published region; this card's us-east maps to iad1",
+        "this host models a FUNCTION-BACKED (server-rendered) variant — the invocation meter's one-per-visit assumption is false for a static deployment, whose documents come from the CDN with zero invocations; price static variants on vercel-pro-static instead"
+      ]
+    },
+    {
+      "hostId": "vercel-pro-static",
+      "vendor": "Vercel",
+      "plan": "Pro (static deployment: CDN only, no functions)",
+      "monthlyBaseUsd": 20,
+      "monthlyCreditUsd": 20,
+      "rates": [
+        {
+          "meter": "Edge Requests",
+          "basis": "requests",
+          "amountUsd": 2,
+          "per": 1000000,
+          "unit": "requests",
+          "regions": ["us-east"],
+          "includedPerMonth": 10000000,
+          "quote": "Edge Requests | Included First 10,000,000, then $2.00 per 1,000,000 Requests",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "\"Static assets and functions all incur CDN Requests.\" (https://vercel.com/docs/manage-cdn-usage); us-east = iad1, regional range $2.00–$3.20/1M"
+        },
+        {
+          "meter": "Server CPU time",
+          "basis": "cpuMs",
+          "amountUsd": 0,
+          "per": 1000000,
+          "unit": "CPU-ms",
+          "regions": "all",
+          "quote": "Static assets and functions all incur CDN Requests.",
+          "url": "https://vercel.com/docs/manage-cdn-usage",
+          "note": "a static deployment executes no billable function CPU — documents and assets are served from the CDN; measured CPU-ms from a Worker-fronted measurement plane does not apply on this host model"
+        },
+        {
+          "meter": "Fast Data Transfer",
+          "basis": "egressBytes",
+          "amountUsd": 0.15,
+          "per": 1,
+          "unit": "GB",
+          "regions": ["us-east"],
+          "includedPerMonth": 1000,
+          "quote": "Fast Data Transfer | Included First 1 TB, then $0.15 per 1 GB",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "billed cached or uncached (\"Requests to static assets incur the same Fast Data Transfer usage if the response is cached or uncached.\"); us-east = iad1, regional range $0.15–$0.35/GB"
+        }
+      ],
+      "unmeasured": [
+        {
+          "meter": "Edge Request CPU Duration",
+          "priceSummary": "$0.30/CPU-hr at iad1 (regional range $0.30–$0.48), metered in 10ms increments",
+          "quote": "Edge Requests - Additional CPU Duration | $0.30 per 1 Hour — 'CDN Requests of 10ms or less in duration don't incur any additional charges. CPU duration is metered in increments of 10ms.'",
+          "url": "https://vercel.com/docs/pricing/regional-pricing/iad1",
+          "note": "routing-layer CPU per CDN request; not observable from the browser and typically negligible for a simple visit profile"
+        }
+      ],
+      "freePlan": {
+        "plan": "Hobby",
+        "allowances": [
+          {
+            "meter": "Edge Requests",
+            "basis": "requests",
+            "allowance": 1000000,
+            "unit": "requests",
+            "period": "month",
+            "quote": "1M / month included",
+            "url": "https://vercel.com/pricing"
+          },
+          {
+            "meter": "Fast Data Transfer",
+            "basis": "egressBytes",
+            "allowance": 100,
+            "unit": "GB",
+            "period": "month",
+            "quote": "100 GB / month included",
+            "url": "https://vercel.com/pricing"
+          }
+        ],
+        "overflow": "Hobby is non-commercial and does not bill overage; exceeding the allowance pauses the deployment or requires upgrading to Pro"
+      },
+      "caveats": [
+        "models a variant deployed as pure static output on Vercel (no functions, no ISR): the paradigm difference against vercel-pro — zero invocations, zero Active CPU, zero Fast Origin Transfer — is what this block exists to price honestly"
+      ]
+    }
+  ],
+  "notes": [
+    "rates are marginal (beyond included monthly allotments); the $/1M-visits views price at marginal rates — included allotments, base fees, and credits enter the actual-charge view",
+    "ISR Reads and Runtime Cache Reads ($0.40/1M read units at iad1) are Vercel cache/storage-feature charges incurred only by ISR/Data-Cache-backed pages — out of this card's per-visit scope, noted so the omission is visible",
+    "R2 operation pricing was not verified this session — if a host model ever needs R2 reads priced, verify it first (never fill from training data)"
+  ]
+}

@@ -15,12 +15,15 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { runBatch, specFromReceipt, type BatchSpec } from "./batch";
 import { InspectorCpuSource, LOCAL_PLANE_INSPECTORS } from "./cpu";
 import { parseReceipt, type ReceiptT } from "./receipt";
 
-const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), "..", "..", "..");
+// fileURLToPath, not URL.pathname: pathname keeps percent-encoding, which
+// would break the default receipt path under a checkout containing spaces.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 function writeReceipt(receipt: ReceiptT, out: string | undefined): void {
   const path =
