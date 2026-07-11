@@ -774,6 +774,47 @@ dollars, negative doctored profiles pricing silently (now refused
 loudly), and the renderer displaying a tiny nonzero as the load-bearing
 "$0".
 
+### Foundation build — close-out (2026-07-10)
+
+The PRD's done paragraph (issue #1), re-verified clause by clause against
+the tree as landed:
+
+- **"load a placeholder variant through the composed origin with chrome
+  injected"** — `composed-origin.test.ts` + `chrome.browser.test.ts`
+  assert it outside-in (path-prefixed routing, 404 on unknown prefixes,
+  switcher + HUD injected into the slot, instrumentation from `/_pm/*`);
+  exercised live this session by the bench batches driving both
+  placeholders through `http://127.0.0.1:8787`.
+- **"fetch both trays and an image from the edge Worker cold and warm"**
+  — `data-plane.test.ts` asserts both trays + image serving with
+  `x-pm-cache-state` bypass/hit as real, separate behaviors; the bench
+  receipt's cold/warm columns observe the same distinction end-to-end.
+- **"run one command to produce a benchmark receipt for it"** —
+  `pnpm bench run … --local-cpu` did exactly that this session; the
+  receipt carried profile + spec version, SHA pin, decomposed TTFB,
+  bucketed stripped KB, chrome-harvested vitals, and real V8-profiled
+  CPU-ms — then priced by `pnpm cost from-receipt` (#8), closing the
+  ADR-0001 chain measurement → receipt → dollars.
+- **"watch CI fail if a variant's DOM or pixels drift from the reference
+  render"** — `drift.browser.test.ts` runs inside the origin suite in CI
+  on every push; the deliberate-drift fixture proves each check catches
+  exactly its defect class, so the gate is demonstrated, not assumed.
+
+All of it is held by the one command: 113 assertions, green twice
+back-to-back locally and in CI. Issues #2, #4–#8 closed; **#3 stays open
+carrying the sole unfinished criterion — the deploy to the canonical
+plane — which is Rob-gated on Cloudflare secrets** (runbook:
+`workers/README.md`; the deploy job skips loudly until armed, and arming
+it re-runs this whole suite as the post-deploy smoke against the deployed
+origin, including the receipt-CPU-null and Brotli assertions written for
+that plane). #1 stays open until #3 closes. The map is handed back to
+Rob: `snapshot-capture`, `data-strategy-lab`, `aesthetic-direction`,
+`a11y-section`, `remix3-frontier`, and `home-surface` are open and
+unblocked — per the decision-map discipline, one ticket per session,
+Rob picks the next node.
+
+## Methodology notes
+
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
 separate from the per-decision record. Prime source material for the talk / blog /
 "How it was built" surface.
