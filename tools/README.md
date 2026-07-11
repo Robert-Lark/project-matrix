@@ -28,4 +28,11 @@ Dev/CI-only tooling — never shipped to a visitor (ADR-0004 §2).
   from-receipt`). Asserted pure by `suite/cost.test.ts`; proven against a
   real receipt at the seam by `suite/bench.browser.test.ts`.
 
-Snapshot capture arrives with its slice (`snapshot-capture`).
+- `snapshot-capture` — the one-time capture of the real crate (ADR-0002
+  §1/§5/§6, issue #9): a checkpointed, resumable CLI (`pnpm capture run`)
+  that pulls the curated ~500-release crate from api.discogs.com under the
+  documented rate limits, normalizes ONCE into the two trays, Zod-validates
+  via `@pm/data-contract`, and freezes the result under its `crate/` dir in
+  the fixture snapshot layout (`pnpm capture seed` pushes it into R2). The
+  token is capture-time only; the synthesized fixture remains the CI seed —
+  CI never touches the crate artifact or the Discogs API.

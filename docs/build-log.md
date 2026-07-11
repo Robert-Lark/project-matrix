@@ -813,6 +813,120 @@ Rob: `snapshot-capture`, `data-strategy-lab`, `aesthetic-direction`,
 unblocked — per the decision-map discipline, one ticket per session,
 Rob picks the next node.
 
+## Phase 3 — Store data
+
+### `snapshot-capture` — resolved (2026-07-10)
+
+The first post-foundation ticket: ADR-0002's one-time capture as a real
+artifact. One session, one issue ([#9](https://github.com/Robert-Lark/project-matrix/issues/9),
+the one-shot-the-issues pattern): pull the curated crate from the live
+Discogs API, self-host the images, normalize ONCE into the two trays,
+Zod-validate, freeze with a dated manifest — and leave CI untouched (the
+synthesized fixture stays the CI seed; nothing in CI speaks to
+api.discogs.com).
+
+**The two genuine Rob-inputs, resolved at session start.** The crate is
+Rob's: ambient / melodic techno / neo-classical vinyl, 2006–2026, from his
+18-label list (Erased Tapes → n5md), recorded verbatim in the issue and as
+data in `crate.spec.json` — curation is deterministic from the frozen search
+checkpoints (start-anchored label match, vinyl-only, client-side year window,
+popularity-ranked per-label quotas, ordered substitution reserve). The token
+arrived as a chat-pasted PAT, stashed immediately at
+`~/.config/project-matrix/` (chmod 600) — capture-time only per ADR-0002 §1;
+a post-capture sweep grepped the tree, checkpoints, and logs for it: zero
+hits anywhere.
+
+**Designed for the session limit, by construction.** ~500 releases at 60/min
+across search + details + images is hours of API time, so the tool
+(`tools/snapshot-capture`, `pnpm capture run`) is checkpointed like the
+verification workflow: every fetched page/release/image lands on disk
+(atomic rename) before the next request, a file's existence is its
+checkpoint, and the final crate is a pure function of (frozen plan,
+tombstones). Proven against a mock Discogs API before one real request:
+SIGKILL mid-images → resume fetched exactly the one missing release; a
+complete capture re-runs with **zero** API requests (the token loads lazily —
+a checkpointed re-run needs no credential); a concurrent second run is
+refused by a pid lockfile (added after the probe's kill-the-wrapper mistake
+orphaned a node child and two runs raced one checkpoint dir — they still
+converged, but the lock makes racing impossible rather than merely
+survivable).
+
+**The probes caught what code-reading never would.** Round one: image
+responses carry no `X-Discogs-Ratelimit-*` headers, and `Number(null) === 0`
+read as "window spent" — parking a full minute after *every image*, turning a
+~30-minute sweep into ~25 hours. Round two, on real data: a Boogie Times
+record arrived via the **Ki** sweep wearing a "Par-**ki**-lee Publishing"
+label (hyphens defeated the word-boundary match), and a spot-audit of the
+frozen crate found three Giuda glam-punk pressings riding "Surfin' Ki
+Records" into an ambient store. Fixed structurally: the matcher became
+start-anchored, "Ki" sharpened to "Ki Records" (best-judgment deviation from
+Rob's verbatim list, recorded), and — the real fix — membership moved to an
+**authoritative details-time guard** on the release's own `labels[]`,
+enforced by a reconcile pass that re-guards already-landed checkpoints, so a
+rule that evolves mid-capture still governs everything. The frozen plan was
+re-cut once (delete `plan.json`, the documented re-plan action) from the
+checkpointed searches: zero search re-pulls; 30 impostors total tombstoned
+and substituted. The committed `curation.json` receipt carries the spec,
+per-label stats, and every tombstone with its reason.
+
+**API facts re-verified, not recalled.** A three-area research workflow
+against `discogs.com/developers` (fetch + adversarial re-fetch per area;
+auth/rate area confirmed 19/19): the exact `Authorization: Discogs token=`
+header, 60/min as a *moving* window with self-throttling expected, the three
+ratelimit header names, undocumented 429 semantics (backoff assumes a full
+window), signed image URLs fetched verbatim with **no token** (the credential
+never leaves the API host) but a mandatory unique User-Agent, `qty` as a
+string, search-result `year` as a sometimes-absent string, `lowest_price`
+null semantics — all encoded in `src/discogs.ts`/`src/raw.ts`.
+
+**Verification: the resilient pattern, now routine.** verify-slice ran in
+the background (the args-as-JSON-string gotcha fired as documented; session
+copy patched, relaunched) while the foreground probed — and the two legs
+again caught disjoint classes. The lenses' 23 raw findings deduped to ~15;
+13 adopted pre-commit, the heavy hitters: a NaN `--min-interval-ms` poisoning
+the pacing scheduler into a no-op (Math.max(NaN,…)); the images phase turning
+retry-exhausted 429/5xx into *permanent* tombstones (a transient CDN incident
+would silently rewrite crate membership — now only dead statuses persist);
+manifest `capturedAt`/`commitSha` drifting on no-op re-runs (freeze is now
+content-aware); the remote clobber guard failing open (now fail-closed —
+"couldn't tell" never reads as "safe to overwrite"); `commitSha` attesting a
+tree that demonstrably didn't produce the trays (now null unless the tree is
+clean; the landing commit is the provenance); and the skeptic lens catching
+the README's CC0 rationale silently covering the two *commerce* aggregates
+ADR-0002 §2 says are not catalog (rationale rewritten honestly, flagged for
+Rob). Two findings reframed, not adopted: name-based label membership stays
+(the spec is names; recorded as a known boundary made auditable by the
+receipt) and the fixture-coupled origin-suite assertions stay a documented
+follow-up (double-gated behind Rob arming both the secrets and the remote
+seed).
+
+**The freeze: 500 releases, 1,817 images** (avg 3.6/release, fit-inside-600
+AVIF anchored to the reference card; originals retained so the derivative
+follow-up never re-pulls), captured-at 2026-07-11, ~2,200 API requests total,
+zero rate-limit incidents. Facets match the brief: Ambient 193 / Experimental
+127 / Modern Classical 72 / Drone 69 / IDM 63; 455 of 500 priced, $0.04 to
+$515.24. Committed weight ~1.7 MB (trays + manifest + index + receipt); 43 MB
+of derivatives and 150 MB of working state stay local + R2. Local R2 seeding
+went through two designs: per-object `wrangler r2 object put` was fine for
+the fixture's 27 objects but ~40 minutes for 1,820 — and 8-way concurrency
+was probed to CORRUPT local state (miniflare persistence is not
+multi-process-safe; 3 of 8 objects byte-mismatched) — so local seeding now
+streams all objects over HTTP through a throwaway seed Worker sharing the
+edge project's persist dir: one workerd process, one writer, **3.5 seconds**.
+Both trays, images, cache states, and the 24/240 knob were then driven
+through the composed origin against the real crate.
+
+**Loose ends, named.** "Prometheus Studio" matched nothing in the window
+(likely a name mismatch — re-planning is nearly free); the remote seed
+shares issue #3's credential gate; the fixture-coupled smoke assertions are
+recorded on the issue for whoever arms the crate remotely.
+
+**Skills / tools used:** a research Workflow (fetch + adversarial verify per
+area) · a mock-API probe harness (fresh / kill / resume / idempotence /
+lock) · the saved verify-slice workflow (background) + inline empirical
+probes (foreground) · Monitor-tailed background capture · sharp · the
+composed origin itself.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

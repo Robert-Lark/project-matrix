@@ -14,7 +14,11 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
   contract imported from `@pm/measurement`; suite traffic uses the reserved
   `ci-smoke` tag values, excluded from any field analysis by convention).
   Local dev seeds wrangler's local R2 from `tools/snapshot-fixture/snapshot/`
-  (`pnpm --filter @pm/edge run seed:local`).
+  (`pnpm --filter @pm/edge run seed:local`). The seeder accepts `--dir <path>`
+  to seed any other snapshot-layout directory — `pnpm capture seed` uses it to
+  land the real captured crate (`tools/snapshot-capture/crate/`); the default
+  stays the fixture, so CI and the origin suite never depend on the real
+  crate or the Discogs API (issue #9).
 
   Two deliberate scope lines: **images are outside the warm tier** (the
   cache-warmth axis belongs to the tray API; image bytes are immutable R2
@@ -67,4 +71,18 @@ reaches the plane.
    all-zeros local-dev placeholder; the edge deploy fails until replaced).
 
 The `pm-snapshot` R2 bucket needs no manual step — the deploy job creates it
-idempotently and seeds the committed fixture snapshot on every deploy.
+idempotently and seeds the committed fixture snapshot on every deploy —
+**until the real crate is seeded remotely** (`pnpm capture seed --remote`, a
+manual credentialed step: the crate's image bytes are deliberately not in
+git, so CI cannot re-seed them). From then on the seeder's clobber guard
+refuses to overwrite a bucket whose manifest names a different crate, and
+deploys leave the crate in place.
+
+**Known follow-up (recorded on issue #9):** a handful of origin-suite
+assertions are fixture-coupled (`/assets/img/ph-00-primary.avif` byte
+identity, PDP ids `9000002`/`1234567`). They hold against the local plane
+(the suite always re-seeds the fixture) and against a fixture-seeded deploy,
+but the post-deploy smoke will need snapshot-aware fixtures (ids + sha256s
+read from the committed trays/images-index) before the remote bucket is
+switched to the real crate. Both gates are Rob-held, so this cannot fire by
+accident.

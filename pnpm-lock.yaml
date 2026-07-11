@@ -202,6 +202,31 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.2)(vite@8.1.3(@types/node@24.13.2)(esbuild@0.28.1))
 
+  tools/snapshot-capture:
+    dependencies:
+      '@pm/data-contract':
+        specifier: workspace:*
+        version: link:../../packages/data-contract
+      '@pm/measurement':
+        specifier: workspace:*
+        version: link:../../packages/measurement
+      sharp:
+        specifier: ^0.34.5
+        version: 0.34.5
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   tools/snapshot-fixture:
     dependencies:
       '@pm/data-contract':

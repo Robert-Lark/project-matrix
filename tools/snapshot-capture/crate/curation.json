@@ -1,0 +1,430 @@
+{
+  "spec": {
+    "slug": "ambient-melodic-techno-neoclassical-2006-2026",
+    "description": "Ambient, melodic techno and neo-classical vinyl from the last two decades, sourced from Rob's label list. Labels define membership; the genre names describe the slice.",
+    "decidedBy": "Rob, 2026-07-10 — recorded verbatim in issue #9",
+    "labels": [
+      "Ad Noiseam",
+      "Ant-Zen",
+      "Cryo Chamber",
+      "Denovali",
+      "Erased Tapes",
+      "Facture",
+      "Home Normal",
+      "Hymen",
+      "Ki Records",
+      "Kranky",
+      "Miasmah",
+      "Past Inside The Present",
+      "Prometheus Studio",
+      "Sonic Pieces",
+      "Subtext",
+      "Temporary Residence",
+      "Thesis",
+      "n5md"
+    ],
+    "format": "Vinyl",
+    "yearMin": 2006,
+    "yearMax": 2026,
+    "targetReleases": 500,
+    "maxImagesPerRelease": 5,
+    "searchPerPage": 100,
+    "maxSearchPagesPerLabel": 40
+  },
+  "planGeneratedAt": "2026-07-11T05:40:57.306Z",
+  "perLabel": {
+    "Ad Noiseam": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 85,
+      "matched": 73,
+      "uniqueNew": 73,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 12,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Ant-Zen": {
+      "pagesFetched": 3,
+      "capped": false,
+      "rawItems": 211,
+      "matched": 97,
+      "uniqueNew": 97,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 114,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Cryo Chamber": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 14,
+      "matched": 13,
+      "uniqueNew": 13,
+      "chosen": 13,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 1,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Denovali": {
+      "pagesFetched": 9,
+      "capped": false,
+      "rawItems": 827,
+      "matched": 795,
+      "uniqueNew": 783,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 3,
+        "image": 29,
+        "labelMismatch": 0
+      }
+    },
+    "Erased Tapes": {
+      "pagesFetched": 4,
+      "capped": false,
+      "rawItems": 365,
+      "matched": 331,
+      "uniqueNew": 326,
+      "chosen": 38,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 3,
+        "image": 31,
+        "labelMismatch": 0
+      }
+    },
+    "Facture": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 9,
+      "matched": 8,
+      "uniqueNew": 8,
+      "chosen": 8,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 1,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Home Normal": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 7,
+      "matched": 6,
+      "uniqueNew": 6,
+      "chosen": 6,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 1,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Hymen": {
+      "pagesFetched": 2,
+      "capped": false,
+      "rawItems": 102,
+      "matched": 29,
+      "uniqueNew": 26,
+      "chosen": 26,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 72,
+        "image": 1,
+        "labelMismatch": 0
+      }
+    },
+    "Ki Records": {
+      "pagesFetched": 7,
+      "capped": false,
+      "rawItems": 625,
+      "matched": 422,
+      "uniqueNew": 414,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 142,
+        "image": 19,
+        "labelMismatch": 42
+      }
+    },
+    "Kranky": {
+      "pagesFetched": 3,
+      "capped": false,
+      "rawItems": 239,
+      "matched": 169,
+      "uniqueNew": 168,
+      "chosen": 48,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 69,
+        "image": 1,
+        "labelMismatch": 0
+      }
+    },
+    "Miasmah": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 74,
+      "matched": 73,
+      "uniqueNew": 73,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 1,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Past Inside The Present": {
+      "pagesFetched": 3,
+      "capped": false,
+      "rawItems": 226,
+      "matched": 219,
+      "uniqueNew": 215,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 0,
+        "image": 7,
+        "labelMismatch": 0
+      }
+    },
+    "Prometheus Studio": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 2,
+      "matched": 0,
+      "uniqueNew": 0,
+      "chosen": 0,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 2,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Sonic Pieces": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 65,
+      "matched": 63,
+      "uniqueNew": 61,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 2,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Subtext": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 48,
+      "matched": 46,
+      "uniqueNew": 46,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 2,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Temporary Residence": {
+      "pagesFetched": 8,
+      "capped": false,
+      "rawItems": 728,
+      "matched": 662,
+      "uniqueNew": 648,
+      "chosen": 61,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 59,
+        "image": 7,
+        "labelMismatch": 0
+      }
+    },
+    "Thesis": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 34,
+      "matched": 32,
+      "uniqueNew": 32,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 1,
+        "image": 1,
+        "labelMismatch": 0
+      }
+    },
+    "n5md": {
+      "pagesFetched": 2,
+      "capped": false,
+      "rawItems": 108,
+      "matched": 93,
+      "uniqueNew": 93,
+      "chosen": 30,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 10,
+        "image": 5,
+        "labelMismatch": 0
+      }
+    }
+  },
+  "reserveSize": 2582,
+  "tombstones": [
+    {
+      "id": 3082799,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 3745622,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 3893038,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 4014787,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 4176402,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 4427550,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5020460,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5036853,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5136390,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5139354,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5809128,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 5813623,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 6830883,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 7189283,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 7810336,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 8781671,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 9528434,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 11118012,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 11998963,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 12877639,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 15161527,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 15371264,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 15750829,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 16420233,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 19488298,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 23265866,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 27043380,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 27673974,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 30065119,
+      "reason": "label-mismatch"
+    },
+    {
+      "id": 30477794,
+      "reason": "label-mismatch"
+    }
+  ]
+}

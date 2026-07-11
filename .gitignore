@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 tools/bench-runner/receipts/
 tools/cost-calculator/reports/
+tools/snapshot-capture/.capture/
+tools/snapshot-capture/crate/img/

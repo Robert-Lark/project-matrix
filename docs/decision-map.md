@@ -141,10 +141,10 @@ Type: to-prd → to-issues → implement
 
 ### snapshot-capture: Capture + freeze the crate into R2
 Blocked by: data-contract
-Status: open
+Status: resolved (2026-07-10)
 Type: Task
 **Question:** Run the one-time capture: pick the crate (genre/era), pull ~500 releases via the verified endpoints respecting the 60/min rate-limit headers with backoff, download + self-host images, normalize to the two trays, Zod-validate against `prototypes/data-contract/schema.ts`, and land it in R2 with a dated `SnapshotManifest` (capture date + commit SHA). Image *derivative* sizing may need a follow-up once `design-system` fixes component dimensions.
-**Answer:** _(open)_
+**Answer:** Landed as [issue #9](https://github.com/Robert-Lark/project-matrix/issues/9) via `tools/snapshot-capture` — a checkpointed, resumable capture CLI (`pnpm capture run/status/seed`; narrative in `build-log.md` Phase 3). **Crate = Rob's pick:** ambient / melodic techno / neo-classical vinyl, 2006–2026, from his 18-label list (spec as data in `crate.spec.json`; deterministic popularity-ranked curation with an authoritative release-labels membership guard). **Frozen 2026-07-11: 500 releases, 1,817 self-hosted AVIF derivatives**, styles led by Ambient/Experimental/Modern Classical/Drone/IDM, 455 priced ($0.04–$515). Committed: trays + dated manifest + sha256 image index (chained to retained originals) + `curation.json` receipt (ADR-0001 §9); image bytes deliberately git-excluded (copyright caution — local + R2 only, flagged for Rob). Local R2 seeded (seed-worker fast path; the fixture **stays the CI seed** — CI never touches the crate or the API); `?n=` 24/240 + cold/warm proven against the real crate through the composed origin. **Remote R2 seed** shares issue #3's credential gate (`pnpm capture seed --remote`; the seeder refuses to clobber a seeded crate with the fixture). Follow-ups on the issue: derivative-sizing note stands; fixture-coupled origin-suite assertions need snapshot-awareness before the remote bucket switches to the crate; "Prometheus Studio" matched nothing (name check with Rob); "Ki" sharpened to "Ki Records" (best-judgment, recorded).
 
 ### data-strategy-lab: The PLP data-strategy comparison
 Blocked by: data-contract, measurement-methodology

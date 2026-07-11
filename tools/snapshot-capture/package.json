@@ -1,0 +1,22 @@
+{
+  "name": "@pm/snapshot-capture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The one-time capture of the real crate (ADR-0002 §1/§5/§6, issue #9): a checkpointed, resumable CLI that pulls ~500 releases from api.discogs.com (label searches → deterministic curation → per-release details with the price aggregate inline → image downloads), respects the X-Discogs-Ratelimit-* headers with backoff, normalizes ONCE into the two trays, Zod-validates via @pm/data-contract, and freezes the result under crate/ in the fixture snapshot layout with a dated SnapshotManifest. Every fetched page/release/image lands on disk before the next request; a re-run resumes, never re-pulls. Dev-only — never shipped; the serve path stays credential-free. Deliberately has no `test` script (@pm/origin-suite precedent): the frozen output is proven by Zod validation at capture time and by serving it through the composed origin.",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --external:sharp --outfile=dist/cli.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pm/data-contract": "workspace:*",
+    "@pm/measurement": "workspace:*",
+    "sharp": "^0.34.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^6.0.3"
+  }
+}

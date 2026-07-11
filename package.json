@@ -12,7 +12,8 @@
     "dev": "turbo run dev",
     "origin-suite": "node tools/origin-suite/run-local.mjs",
     "bench": "turbo run build --filter=@pm/bench-runner --output-logs=errors-only && node tools/bench-runner/dist/cli.mjs",
-    "cost": "turbo run build --filter=@pm/cost-calculator --output-logs=errors-only && node tools/cost-calculator/dist/cli.mjs"
+    "cost": "turbo run build --filter=@pm/cost-calculator --output-logs=errors-only && node tools/cost-calculator/dist/cli.mjs",
+    "capture": "turbo run build --filter=@pm/snapshot-capture --output-logs=errors-only && node tools/snapshot-capture/dist/cli.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
