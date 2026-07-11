@@ -11,11 +11,11 @@
   "r2_buckets": [
     { "binding": "SNAPSHOT", "bucket_name": "pm-snapshot" }
   ],
-  // Local dev uses wrangler's local KV emulation (any id works). Before the
-  // FIRST real deploy: `wrangler kv namespace create pm-warm` and paste the
-  // returned id here (workers/README.md arming runbook).
+  // Local dev uses wrangler's local KV emulation (the id is only read on
+  // deploy). This is the real `pm-warm` namespace, created 2026-07-11 per the
+  // workers/README.md arming runbook.
   "kv_namespaces": [
-    { "binding": "WARM", "id": "00000000000000000000000000000000" }
+    { "binding": "WARM", "id": "da06bfb538504ed3a342cd814d1f54a7" }
   ],
   "analytics_engine_datasets": [
     { "binding": "BEACONS", "dataset": "pm_rum" }
