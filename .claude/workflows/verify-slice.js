@@ -82,17 +82,31 @@ const DEFAULT_LENSES = [
   },
 ]
 
-if (!args || !args.issue || !args.scratchDir || !args.context) {
-  throw new Error('verify-slice needs args: { issue, scratchDir, context, lenses? }')
+// The harness has delivered named-workflow args as a JSON STRING (observed
+// 2026-07-12, aesthetic-direction session — the guard below threw on a valid
+// launch); parse defensively.
+const A = typeof args === 'string' ? JSON.parse(args) : args
+
+if (!A || !A.issue || !A.scratchDir || !A.context) {
+  throw new Error('verify-slice needs args: { issue, scratchDir, context, repoDir?, lenses? }')
 }
 
-const lenses = args.lenses ?? DEFAULT_LENSES
+const lenses = A.lenses ?? DEFAULT_LENSES
 
-const CONTEXT = `Repo: /Users/roblark/Work/project-matrix (work in this directory; READ-ONLY apart from your findings file — do not edit repo files, run builds, or start dev servers; do NOT run pnpm run origin-suite; ports 8787-8790/9230-9233 may be in use).
-The slice under review implements GitHub issue #${args.issue} (run \`gh issue view ${args.issue}\` for the full text and acceptance criteria — the acceptance criteria are the definition of done).
+// repoDir: pass the WORKTREE path when the slice lives in one — otherwise
+// finders review the main checkout's unchanged tree and every lens is vacuous.
+const repoDir = A.repoDir ?? '/Users/roblark/Work/project-matrix'
+
+// Numeric issue → GitHub issue; anything else → a decision-map ticket name.
+const issueLine = /^\d+$/.test(String(A.issue))
+  ? `The slice under review implements GitHub issue #${A.issue} (run \`gh issue view ${A.issue}\` for the full text and acceptance criteria — the acceptance criteria are the definition of done).`
+  : `The slice under review implements the "${A.issue}" ticket — its question, status, and definition of done live in docs/decision-map.md (there is NO GitHub issue; do not run gh issue view).`
+
+const CONTEXT = `Repo: ${repoDir} (work in this directory; READ-ONLY apart from your findings file — do not edit repo files, run builds, or start dev servers; do NOT run pnpm run origin-suite; ports 8787-8790/9230-9233 may be in use).
+${issueLine}
 The ADRs in docs/adr/ are the rationale of record; on any conflict between issue/PRD text and an ADR, the ADR wins.
 
-${args.context}
+${A.context}
 
 Report REAL defects with concrete failure scenarios, not style preferences. For each finding include: file:line, snippet, the failure scenario (inputs/state → wrong outcome), and a proposed fix direction.`
 
@@ -100,7 +114,7 @@ phase('Find')
 const results = []
 for (const lens of lenses) {
   log(`lens ${lens.key} starting (${results.length}/${lenses.length} lenses durable so far)`)
-  const findingsFile = `${args.scratchDir}/findings-${lens.key}.md`
+  const findingsFile = `${A.scratchDir}/findings-${lens.key}.md`
   const result = await agent(
     [
       lens.prompt,

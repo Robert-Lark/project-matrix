@@ -1,0 +1,60 @@
+/*
+ * aesthetic-direction · CANDIDATE A — "Catalogue"
+ * ----------------------------------------------------------------------------
+ * The label's own catalogue: the quiet gallery frame of the neo-classical /
+ * ambient corner of the crate (Erased Tapes-adjacent print culture). Warm
+ * paper-white ground, slate-water accent, generous air, soft large radii.
+ * The covers are the color; the system is mat-board.
+ *
+ * PRIMITIVE TIER ONLY (ADR-0003 §7) — loaded AFTER the shared tokens.css so
+ * these values override the placeholder primitives; the semantic tier and
+ * every component rule are untouched. Exploration artifact, not the pour.
+ */
+:root {
+  /* Palette */
+  --pm-neutral-0:   #fdfcfa;
+  --pm-neutral-50:  #f6f4ef;
+  --pm-neutral-100: #edeae2;
+  --pm-neutral-200: #ddd8cc;
+  --pm-neutral-400: #a29a8b;
+  --pm-neutral-600: #675f52;
+  --pm-neutral-700: #4c463c;
+  --pm-neutral-900: #201c16;
+  --pm-neutral-950: #131009;
+  --pm-accent-500:  #3d5d70;
+  --pm-accent-700:  #2b4454;
+  --pm-danger-600:  #a03a2d;
+
+  /* Type — Familjen Grotesk (variable wght 400–700, tnum). Airy scale. */
+  --pm-font-ui: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-font-metric: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-numeric-tabular: tabular-nums;
+  --pm-size-0: 0.8125rem;
+  --pm-size-1: 0.9375rem;
+  --pm-size-2: 1.0625rem;
+  --pm-size-3: 1.1875rem; /* revised: 1.375 made card titles fight the covers */
+  --pm-size-4: 1.8125rem;
+  --pm-size-5: 2.625rem;
+  --pm-weight-normal: 400;
+  --pm-weight-medium: 550;
+  --pm-weight-bold: 700;
+
+  /* Space — airy top steps */
+  --pm-space-1: 0.25rem;
+  --pm-space-2: 0.5rem;
+  --pm-space-3: 0.875rem;
+  --pm-space-4: 1.25rem;
+  --pm-space-5: 2rem;
+  --pm-space-6: 3rem;
+
+  /* Voice dials */
+  --pm-radius-1: 5px;
+  --pm-radius-2: 14px;
+  --pm-shadow-1: 0 1px 2px rgba(19, 16, 9, 0.04), 0 10px 30px rgba(19, 16, 9, 0.07);
+  --pm-ease: cubic-bezier(0.22, 0.06, 0.14, 1);
+  --pm-dur-fast: 170ms;
+  --pm-dur-base: 280ms;
+  --pm-focus-width: 3px;
+  --pm-focus-offset: 2px;
+  --pm-target-min: 24px;
+}

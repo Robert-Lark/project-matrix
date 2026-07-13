@@ -17,7 +17,7 @@ function samplePage() {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sample surface — Project Matrix placeholder</title>
-  <link rel="preload" href="../assets/pm/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/pm/css/fonts.css">
   <link rel="stylesheet" href="../assets/pm/css/tokens.css">
   <link rel="stylesheet" href="../assets/pm/css/components/release-card.css">

@@ -93,11 +93,16 @@ export function neutralizeChrome(page: Page): Promise<number> {
  *  - `document.fonts.status` alone is vacuous: it reads "loaded" while the
  *    loading list is EMPTY, i.e. before layout has even triggered the font
  *    fetch (CSS Font Loading spec). So layout is forced first (offsetHeight
- *    starts any pending @font-face load), the poll requires every
- *    registered CSS-connected face to report loaded via `fonts.check()`,
- *    and an empty FontFaceSet fails loudly — every gate page loads the
- *    shared fonts.css by contract, so "no faces" means a broken page, not
- *    a fontless one.
+ *    starts any pending @font-face load), then the poll waits until no face
+ *    is still `loading` AND at least one has `loaded` (an empty FontFaceSet
+ *    fails loudly — every gate page loads the shared fonts.css by contract,
+ *    so "no faces" means a broken page, not a fontless one). It does NOT
+ *    require EVERY registered face to load: a `unicode-range` fallback face
+ *    (e.g. the "PM Warn Glyph" ⚠ that only the field error triggers,
+ *    ADR-0006 §3) legitimately stays `unloaded` on pages that never use its
+ *    range, and must not stall the gate. Once the primary face has loaded,
+ *    the same forced layout has already started every OTHER face the page
+ *    actually needs, so "none loading" is a safe settle point.
  *
  * No explicit reflow wait is needed after chrome removal: the screenshot
  * call itself forces layout and a fresh frame. Animations/caret are
@@ -111,10 +116,13 @@ export async function captureStablePixels(page: Page): Promise<Buffer> {
       const faces = Array.from(document.fonts);
       return {
         count: faces.length,
-        loaded: faces.every((f) => f.status === "loaded"),
+        anyLoaded: faces.some((f) => f.status === "loaded"),
+        // a never-triggered unicode-range fallback stays "unloaded", NOT
+        // "loading" — so it doesn't count here and can't stall the gate.
+        loading: faces.some((f) => f.status === "loading"),
       };
     });
-    if (fonts.count > 0 && fonts.loaded) break;
+    if (fonts.count > 0 && fonts.anyLoaded && !fonts.loading) break;
     if (Date.now() > deadline) {
       throw new Error(
         `fonts never settled (${JSON.stringify(fonts)}) — a screenshot now could false-diff`,

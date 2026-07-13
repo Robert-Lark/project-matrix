@@ -1,0 +1,7 @@
+# Regenerable board assets — the SOURCE (tokens.css, fonts.css, *.mjs,
+# picks.json, README.md) is tracked; these are rebuilt by `node
+# build-previews.mjs` + the subset recipe in README.md, and the boards also
+# depend on the main checkout's git-excluded crate images, so they can't be
+# re-rendered from a clone anyway. Keep the repo lean.
+*/preview.html
+*/fonts/

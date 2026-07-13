@@ -1,0 +1,64 @@
+/*
+ * aesthetic-direction · CANDIDATE B — "Faceplate"
+ * ----------------------------------------------------------------------------
+ * The instrument panel: the hardware corner of the crate (modular racks,
+ * mixer faceplates, VU glow). The ONE canonical theme poured dark: warm
+ * charcoal ground, amber signal accent, machined radii, dense rhythm, mono
+ * metrics. Album art glows against it like sleeves under shop lighting.
+ *
+ * Note the seam proof: the primitive SCALE inverts (neutral-0 darkest →
+ * 950 lightest) while the semantic tier is untouched — surface stays
+ * neutral-0, text stays neutral-900. Hover (accent-700) pours LIGHTER,
+ * as dark-ground affordance wants.
+ *
+ * PRIMITIVE TIER ONLY (ADR-0003 §7) — loaded after the shared tokens.css.
+ */
+:root {
+  /* Palette — inverted scale: this theme is dark, there is no second theme */
+  --pm-neutral-0:   #171410;
+  --pm-neutral-50:  #1e1a14;
+  --pm-neutral-100: #262117;
+  --pm-neutral-200: #3a3323;
+  --pm-neutral-400: #6e6349;
+  --pm-neutral-600: #ab9d78;
+  --pm-neutral-700: #c4b693;
+  --pm-neutral-900: #e9e1cd; /* revised: 15:1 body cream sizzled; ~13.9:1 reads calmer long-form */
+  --pm-neutral-950: #fbf7ec;
+  --pm-accent-500:  #e3a64b;
+  --pm-accent-700:  #f2c275;
+  --pm-danger-600:  #e27b6e;
+
+  /* Type — Public Sans (variable wght 100–900, tnum) + JetBrains Mono
+     metrics (monospaced = tabular by construction). Compact scale. */
+  --pm-font-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-font-metric: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --pm-numeric-tabular: tabular-nums;
+  --pm-size-0: 0.75rem;
+  --pm-size-1: 0.875rem;
+  --pm-size-2: 1rem;
+  --pm-size-3: 1.1875rem;
+  --pm-size-4: 1.4375rem;
+  --pm-size-5: 1.9375rem;
+  --pm-weight-normal: 400;
+  --pm-weight-medium: 550;
+  --pm-weight-bold: 700;
+
+  /* Space — dense, rack-unit regular */
+  --pm-space-1: 0.25rem;
+  --pm-space-2: 0.5rem;
+  --pm-space-3: 0.75rem;
+  --pm-space-4: 1rem;
+  --pm-space-5: 1.5rem;
+  --pm-space-6: 2rem;
+
+  /* Voice dials — machined edges, shadow as seat not float */
+  --pm-radius-1: 3px;
+  --pm-radius-2: 8px;
+  --pm-shadow-1: 0 1px 0 rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.35);
+  --pm-ease: cubic-bezier(0.3, 0, 0, 1);
+  --pm-dur-fast: 100ms;
+  --pm-dur-base: 170ms;
+  --pm-focus-width: 3px;
+  --pm-focus-offset: 2px;
+  --pm-target-min: 24px;
+}
