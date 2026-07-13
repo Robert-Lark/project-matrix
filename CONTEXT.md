@@ -90,6 +90,42 @@ The genuine client-side interaction on a PDP (image gallery/zoom, add-to-cart wi
 cart state, quantity, format switch). Distinct from commerce-backend fidelity, and
 kept rich because the render-axis thesis depends on it.
 
+### Data strategies (PLP)
+
+**Data strategy**:
+Where a page's data layer lives — nowhere (**cold**: fetch fresh every time),
+the **browser** (client cache, TanStack Query), the **server** (loaders +
+progressive enhancement), or the **edge** (KV warm tier). The PLP's measured
+axis; each strategy is one idiomatic exemplar differing from cold by exactly
+one architectural move. Strategy is shipped code, so it lives in the URL
+*path*; cold-vs-edge is a serving condition, so it lives in the *query*.
+_Avoid_: "fetching library", "cache mode" (three of the four aren't client
+libraries at all).
+
+**Client warmth**:
+The state of a data strategy's in-page cache. It exists only *within* a
+session — a hard navigation resets it — so it is never a URL knob: it is
+produced by a **priming interaction** prefix and measured on the step after,
+exactly as edge warmth is produced by one unmeasured priming request.
+_Avoid_: "warm client cache column" (it is a sequence property, not a page
+condition).
+
+**Priming interaction**:
+The unmeasured prefix of a scripted interaction sequence (a versioned bench
+registry entry, id carried in the receipt) that puts the client cache into a
+stated state before the measured step. The revisit sequence (A→B→A) measures
+the return; its fresh twin (A→B→C) measures the honest boundary where no
+cache can help.
+
+**Misapplication exhibit**:
+The fenced fifth PLP option: the same page built with a tool that is wrong
+for this data shape (Apollo Client on REST), measured with the same harness.
+Its claim is "the wrong tool works — you pay in bytes and machinery," never
+a deliberately broken UX. Fenced like the live-origin demonstration: labeled
+on-surface, excluded from the four-strategy cells.
+_Avoid_: "the Apollo strawman", "the bad variant" (it must stay idiomatic
+and fair to be evidence).
+
 ### Presentation
 
 **Canonical markup contract**:

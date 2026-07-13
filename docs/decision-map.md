@@ -18,7 +18,7 @@
 
 **Locked axes.**
 - *Render (variant switcher):* vanilla → heavy hydration (React/Next) → islands (Astro; **Svelte folded in as an Astro island framework**) → resumability (Qwik) → hypermedia (HTMX). Plus **Remix 3** as a fenced, pre-release **frontier** showcase (non-React server-HTML + "frames"; kept out of core benchmark numbers).
-- *Data strategy (technique):* cold → **TanStack Query** (REST-native client cache; the lead — Apollo cut as wrong for Discogs REST, optionally retained as a "misapplication" exhibit) → server loaders + progressive enhancement → edge/KV cache.
+- *Data strategy (technique):* cold → **TanStack Query** (REST-native client cache; the lead — Apollo cut as wrong for Discogs REST, **retained as a fenced misapplication exhibit, Rob 2026-07-12**) → server loaders + progressive enhancement → edge/KV cache.
 - *Environment (flips the winner):* network throttle × data volume × cache warmth.
 
 **Sparse matrix — the store surfaces.**
@@ -148,10 +148,20 @@ Type: Task
 
 ### data-strategy-lab: The PLP data-strategy comparison
 Blocked by: data-contract, measurement-methodology
-Status: open
+Status: resolved (2026-07-12)
 Type: Prototype + Grilling
 **Question:** The PLP comparison of cold / TanStack Query / server-loaders+PE / edge-KV across cache-warmth and network columns. Exact scenarios and what each proves.
-**Answer:** _(open)_
+**Answer:** Resolved via best-judgment grilling + a probe-verified prototype (15/15 assertions against the real local composed origin); Rob's one call: the misapplication exhibit is **in**. Rationale + rejected alternatives in [ADR-0005](adr/0005-plp-data-strategy-comparison.md); prototype + measured evidence at [`prototypes/data-strategy-lab/`](prototypes/data-strategy-lab/); vocabulary in [CONTEXT.md](../CONTEXT.md); narrative in `build-log.md` Phase 5. Eight decisions:
+1. **The strategy axis = where the data layer lives** (nowhere → browser → server → edge); each strategy differs from the cold baseline by exactly one architectural move, so the switcher IS the scenario table.
+2. **Mapping:** React/Next hosts plain + TanStack (+ fenced Apollo exhibit) as PLP routes; HTMX hosts loaders+PE; **edge-KV is byte-identical code to cold** with the bypass dropped. Strategy = path (identity); cold/edge = query (condition). Beacon: strategy rides the existing `surface` tag values (`plp-*`), no contract change.
+3. **Client warmth = a scripted priming prefix, never a URL knob** (in-memory caches can't pre-exist a hard navigation; faking one is a lab artifact). Bench registry entries grow `{ prime?, measure }`; receipts already carry the interaction id (foundation #7 precedent), so URL + registry id stays a complete receipt.
+4. **Client-cache config is published copy** (TanStack `staleTime` 5min; the library default's background-refetch-on-revisit demonstrated as the footnote — prototype-proven: default revisit = instant paint + 11.6 KB refetch; configured = 0 requests / 0 bytes).
+5. **All strategies delegate filter/sort/search to the data plane** — the Worker owes canonical `genre/style/format/sort/q` params (validated against real facet values, 400 on junk, no junk KV keys); client-side filtering over a cached superset rejected.
+6. **Six published cells, one proof each** (incl. where each wins): first contact (the lead loses its opener — anti-rigging), the revisit + fresh twin (client cache's win, honestly fenced), the edge flip (same code, tier flips — purest one-variable cell), the slow-network waterfall (loaders' win), the volume flip (verdict deliberately unwritten until measured), the forgiving environment (cold's win: fit, not leaderboard).
+7. **The misapplication exhibit is measured, fenced, fair:** Apollo 4 + `apollo-link-rest` (pre-1.0 RC, ecosystem's documented REST path) on the identical page — UX *matches* the lead (0-request revisits) while the data layer costs **+65.1 KB brotli vs +9.0 KB (7.3×, build-measured)**; "the wrong tool works — you pay in bytes and machinery."
+8. **PLP switcher control-set:** the five (path, query) presets + `n` knob + profile selector + per-interaction HUD readout + replay affordance (JS-enhanced chrome, stripped from measured KB).
+
+**Unblocks the PLP surface build** (fog → ready to ticket), which consumes the ADR-0005 §5 Worker param contract, §3 registry extension, §8 HUD additions, and the §4 published config.
 
 ### remix3-frontier: Frontier showcase scope
 Blocked by: design-system

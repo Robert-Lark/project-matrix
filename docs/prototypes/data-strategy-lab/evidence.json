@@ -1,0 +1,204 @@
+{
+  "nonce": "proto-18727-1783897241842",
+  "results": [
+    {
+      "id": "plain-cold",
+      "url": "/plain/?cache=cold&run=proto-18727-1783897241842",
+      "steps": {
+        "S1": {
+          "wallMs": 96,
+          "trayRequests": 1,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S2": {
+          "wallMs": 39,
+          "trayRequests": 1,
+          "trayBytes": 11652,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S3": {
+          "wallMs": 41,
+          "trayRequests": 1,
+          "trayBytes": 11664,
+          "cacheStates": [
+            "bypass"
+          ]
+        }
+      }
+    },
+    {
+      "id": "tanstack-cold",
+      "url": "/tanstack/?cache=cold&run=proto-18727-1783897241842",
+      "steps": {
+        "S1": {
+          "wallMs": 84,
+          "trayRequests": 1,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S2": {
+          "wallMs": 42,
+          "trayRequests": 1,
+          "trayBytes": 11652,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S3": {
+          "wallMs": 15,
+          "trayRequests": 0,
+          "trayBytes": 0,
+          "cacheStates": []
+        }
+      }
+    },
+    {
+      "id": "tanstack-default-staletime",
+      "url": "/tanstack/?cache=cold&stale=0&run=proto-18727-1783897241842",
+      "steps": {
+        "S1": {
+          "wallMs": 80,
+          "trayRequests": 1,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S2": {
+          "wallMs": 37,
+          "trayRequests": 1,
+          "trayBytes": 11652,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S3": {
+          "wallMs": 43,
+          "trayRequests": 1,
+          "trayBytes": 11664,
+          "cacheStates": [
+            "bypass"
+          ]
+        }
+      }
+    },
+    {
+      "id": "apollo-cold",
+      "url": "/apollo/?cache=cold&run=proto-18727-1783897241842",
+      "steps": {
+        "S1": {
+          "wallMs": 99,
+          "trayRequests": 1,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S2": {
+          "wallMs": 37,
+          "trayRequests": 1,
+          "trayBytes": 11652,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S3": {
+          "wallMs": 16,
+          "trayRequests": 0,
+          "trayBytes": 0,
+          "cacheStates": []
+        }
+      }
+    },
+    {
+      "id": "loaders-cold",
+      "url": "/loaders/?cache=cold&run=proto-18727-1783897241842",
+      "steps": {
+        "S1": {
+          "wallMs": 47,
+          "trayRequests": 1,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S2": {
+          "wallMs": 35,
+          "trayRequests": 1,
+          "trayBytes": 3636,
+          "cacheStates": [
+            "bypass"
+          ]
+        },
+        "S3": {
+          "wallMs": 42,
+          "trayRequests": 1,
+          "trayBytes": 3615,
+          "cacheStates": [
+            "bypass"
+          ]
+        }
+      }
+    },
+    {
+      "id": "plain-edge",
+      "url": "/plain/?run=proto-18727-1783897241842-edge",
+      "steps": {
+        "S1": {
+          "wallMs": 81,
+          "trayRequests": 1,
+          "cacheStates": [
+            "miss"
+          ]
+        },
+        "S2": {
+          "wallMs": 34,
+          "trayRequests": 1,
+          "trayBytes": 11652,
+          "cacheStates": [
+            "miss"
+          ]
+        },
+        "S3": {
+          "wallMs": 41,
+          "trayRequests": 1,
+          "trayBytes": 11664,
+          "cacheStates": [
+            "hit"
+          ]
+        }
+      }
+    },
+    {
+      "id": "loaders-edge",
+      "url": "/loaders/?run=proto-18727-1783897241842-edge-l",
+      "steps": {
+        "S1": {
+          "wallMs": 52,
+          "trayRequests": 1,
+          "cacheStates": [
+            "miss"
+          ]
+        },
+        "S2": {
+          "wallMs": 28,
+          "trayRequests": 1,
+          "trayBytes": 3636,
+          "cacheStates": [
+            "miss"
+          ]
+        },
+        "S3": {
+          "wallMs": 47,
+          "trayRequests": 1,
+          "trayBytes": 3615,
+          "cacheStates": [
+            "hit"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1181,6 +1181,68 @@ verifier pairs) · the spike itself (wrangler dev + node --import
 remix/node-tsx, one app two hosts) · chrome-devtools MCP for the browser
 leg · esbuild · the saved verify-slice workflow + inline probes.
 
+## Phase 5 — The data axis
+
+### `data-strategy-lab` — resolved (2026-07-12)
+
+The PLP's data-strategy comparison, run in the newly-standing best-judgment
+mode: one plain upfront question to Rob (the wrong-tool exhibit — **in**),
+every other decision made solo against the ADRs, the finished package
+presented as a plain-language walkthrough, one-word approval, landed.
+
+**The reframe that organized everything:** the four strategies aren't four
+libraries, they're four answers to *where the data layer lives* — nowhere,
+the browser, the server, the edge. Set the naive page as the baseline and
+each strategy differs from it by exactly one architectural move; the
+switcher's options become (path, query) presets and the switcher IS the
+scenario table. The elegant consequence: **edge-KV needs no build at all**
+— it is byte-identical code to cold with the bypass dropped, making the
+edge flip the purest one-variable cell on the site.
+
+**The hard new problem — reproducible *client* warmth — dissolved into an
+existing mechanism.** A browser-memory cache cannot pre-exist a hard
+navigation, so a `?clientcache=warm` knob would measure a thing no real
+visitor experiences; rejected as the exact lab artifact the site promises
+not to pull. Client warmth is instead *produced*, by an unmeasured
+**priming interaction** prefix inside a versioned registry sequence —
+perfectly symmetric with the edge tier's unmeasured priming request, and
+receipt-compatible by precedent (receipts have carried interaction ids
+since foundation #7). The registry grows a `{ prime?, measure }` split;
+URL + registry id stays a complete, shareable condition.
+
+**The prototype earned its keep twice.** First, the mechanics: 15/15 probe
+assertions against the real local composed origin — revisits genuinely
+free under the client cache (0 requests / 0 bytes), full round-trips
+everywhere else, `bypass`/`miss`→`hit` semantics observable through both
+client fetches AND server-side loader fetches (the x-pm-cache-state
+pass-through the real HTMX Worker now owes). Second, the traps: TanStack's
+*default* config treats cached data as stale immediately — the revisit
+paints instantly but silently refetches 11.6 KB — which would have quietly
+erased the strategy's headline win in production copy. Hence the standing
+fairness rule the ADR records: **client-cache config is published copy,
+never a silent default** (staleTime 5min, stated next to the numbers, the
+default shown as a labeled footnote).
+
+**The exhibit came out sharper than planned precisely because it's fair.**
+Apollo 4 + `apollo-link-rest` on the *identical* page delivers the
+*identical* revisit UX (0 requests, cache-first) — and costs **+65.1 KB
+brotli of data-layer JS vs TanStack's +9.0 KB (7.3×, measured from real
+builds)**, through a REST bridge that is a pre-1.0 RC and whose package
+entry (UMD `main`, no `exports` map) broke the build once en route. "The
+wrong tool *works* — you pay in bytes and machinery" is a staff-level
+verdict no horror-show rig could deliver.
+
+Six published cells, each with a stated question and a fenced win — the
+lead strategy deliberately loses its own opening cell (first contact),
+and the volume flip's verdict is left unwritten until the bench measures
+it. Fit, not leaderboard, all the way down.
+
+**Skills / tools used:** internal grilling (no fan-outs — tight budget
+session) · primary-source verification (tanstack.com, apollographql.com,
+npm registry) · the throwaway prototype (esbuild + one server + Playwright
+probe with the origin suite's system-Chrome fallback) against `pnpm dev` ·
+veto review as the verification leg, per the ticket's mode.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
