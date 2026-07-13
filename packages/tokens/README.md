@@ -6,19 +6,21 @@ lifted from [`docs/prototypes/design-system/`](../../docs/prototypes/design-syst
 here is style rules + the canonical markup contract; each paradigm re-implements
 the markup in its own idiom.
 
-> ⚠ **Placeholder aesthetic.** Every value in the primitive token tier — colors,
-> type scale, and the face itself ("PM Placeholder Sans", a subset of Inter —
-> see [`fonts/README.md`](fonts/README.md)) — is a neutral stand-in. The real
-> look is `aesthetic-direction`'s decision and pours into the primitives with
-> zero component changes. That swappability is the designed payoff.
+> **Aesthetic: "Catalogue"** (ADR-0006, poured 2026-07-12). Every value in the
+> primitive token tier — the warm-paper palette, the airy type scale, and the
+> face itself ("Familjen Grotesk", subset — see
+> [`fonts/README.md`](fonts/README.md)) — is the `aesthetic-direction` pick,
+> poured with zero component changes: exactly the swappability ADR-0003 §7
+> designed for. Candidate boards + the AA audit live in
+> [`docs/prototypes/aesthetic-direction/directions/`](../../docs/prototypes/aesthetic-direction/directions/).
 
 ## Layout
 
 - `css/tokens.css` — the two-tier token system: **primitive** (raw scale, never
   consumed by a component) → **semantic** (the one seam). Forced-colors remap
   and reduced-motion gating both live at the semantic tier (ADR-0003 §4–§5).
-- `css/fonts.css` + `fonts/` — the self-hosted, subset placeholder font: a
-  controlled constant, identical files + loading everywhere (ADR-0003 §8).
+- `css/fonts.css` + `fonts/` — the self-hosted, subset font: a controlled
+  constant, identical files + loading everywhere (ADR-0003 §8).
   Canonical loading markup: [`fonts/loading-markup.html`](fonts/loading-markup.html).
 - `css/components/*.css` — per-component modules (`release-card`, `button`,
   `field`), authored separately so each paradigm delivers them its native way

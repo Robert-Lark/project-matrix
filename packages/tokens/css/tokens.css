@@ -3,12 +3,14 @@
  * ----------------------------------------------------------------------------
  * The single CSS custom-property token system every variant consumes,
  * byte-identical. Lifted from docs/prototypes/design-system/ (ADR-0003).
- * This file proves the ARCHITECTURE, not the aesthetic.
  *
- *   ⚠ PLACEHOLDER AESTHETIC. Every value in the PRIMITIVE tier below is a
- *   neutral stand-in. The real look is decided in the `aesthetic-direction`
- *   ticket and poured into these primitives — components never change, because
- *   they reference only SEMANTIC tokens. That swappability is the point.
+ *   AESTHETIC: "Catalogue" — poured 2026-07-12 by the `aesthetic-direction`
+ *   ticket (ADR-0006). The label's own catalogue: warm paper ground,
+ *   slate-water accent, one grotesk, generous air — mat-board for the crate's
+ *   sleeves, which supply the color. Chosen from three candidate boards built
+ *   on the real components (docs/prototypes/aesthetic-direction/directions/;
+ *   AA-audited by audit-contrast.mjs there). Only this PRIMITIVE tier changed
+ *   — components reference SEMANTIC tokens only, so no component was touched.
  *
  * Tiers (ADR-0003):
  *   1. PRIMITIVE — raw scale (palette, type, space…). Never used by a component.
@@ -18,55 +20,60 @@
 
 :root {
   /* ── 1. PRIMITIVE ───────────────────────────────────────────────────────── */
-  /* Neutral palette (PLACEHOLDER) */
-  --pm-neutral-0:   #ffffff;
-  --pm-neutral-50:  #f6f7f8;
-  --pm-neutral-100: #eceef0;
-  --pm-neutral-200: #d9dde1;
-  --pm-neutral-400: #9aa2ab;
-  --pm-neutral-600: #5b636d;
-  --pm-neutral-700: #414750;
-  --pm-neutral-900: #1c2024;
-  --pm-neutral-950: #0f1113;
-  --pm-accent-500:  #3b5bdb;  /* PLACEHOLDER accent */
-  --pm-accent-700:  #2c4299;
-  --pm-danger-600:  #b42318;  /* status colour — NEVER used alone; paired w/ text+icon */
+  /* Neutral palette — warm paper (all pairs AA-audited at definition time) */
+  --pm-neutral-0:   #fdfcfa;
+  --pm-neutral-50:  #f6f4ef;
+  --pm-neutral-100: #edeae2;
+  --pm-neutral-200: #ddd8cc;
+  --pm-neutral-400: #a29a8b;
+  --pm-neutral-600: #675f52;
+  --pm-neutral-700: #4c463c;
+  --pm-neutral-900: #201c16;
+  --pm-neutral-950: #131009;
+  --pm-accent-500:  #3d5d70;  /* slate-water */
+  --pm-accent-700:  #2b4454;
+  --pm-danger-600:  #a03a2d;  /* status colour — NEVER used alone; paired w/ text+icon */
 
   /* Type scale — rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
   /* Fonts are a controlled constant (ADR-0003 §8): one self-hosted, subset,
      variable sans served identically everywhere (css/fonts.css + fonts/).
-     "PM Placeholder Sans" is a PLACEHOLDER face (subset Inter — see
-     fonts/README.md); the real pairing is `aesthetic-direction`'s call and
-     pours in here with zero component changes. Metrics (prices, HUD) use the
-     same face with tabular figures — see --pm-numeric-tabular below. */
-  --pm-font-ui: "PM Placeholder Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --pm-font-metric: "PM Placeholder Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+     The face is Familjen Grotesk (wght 400–700 — the 550 medium is real;
+     ships tnum), chosen by `aesthetic-direction` (ADR-0006; provenance in
+     fonts/README.md). Metrics (prices, HUD) use the same face with tabular
+     figures — see --pm-numeric-tabular below. The scale is deliberately airy;
+     size-3 (card titles) sits below 1.25rem so titles never fight the cover
+     art (boards critique, 2026-07-12). */
+  /* "PM Warn Glyph" is a 1-glyph (U+26A0 ⚠) fallback for the field error icon,
+     which Familjen lacks; unicode-range scopes it to that codepoint alone, so
+     it never affects letterforms. See css/fonts.css. */
+  --pm-font-ui: "Familjen Grotesk", "PM Warn Glyph", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-font-metric: "Familjen Grotesk", "PM Warn Glyph", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --pm-numeric-tabular: tabular-nums;  /* the face ships tnum; metric text opts in via --numeric-metric */
-  --pm-size-0: 0.75rem;
-  --pm-size-1: 0.875rem;
-  --pm-size-2: 1rem;
-  --pm-size-3: 1.25rem;
-  --pm-size-4: 1.5rem;
-  --pm-size-5: 2rem;
+  --pm-size-0: 0.8125rem;
+  --pm-size-1: 0.9375rem;
+  --pm-size-2: 1.0625rem;
+  --pm-size-3: 1.1875rem;
+  --pm-size-4: 1.8125rem;
+  --pm-size-5: 2.625rem;
   --pm-weight-normal: 400;
   --pm-weight-medium: 550;
   --pm-weight-bold: 700;
 
-  /* Space scale */
+  /* Space scale — airy top steps (gallery hanging room) */
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
-  --pm-space-3: 0.75rem;
-  --pm-space-4: 1rem;
-  --pm-space-5: 1.5rem;
-  --pm-space-6: 2rem;
+  --pm-space-3: 0.875rem;
+  --pm-space-4: 1.25rem;
+  --pm-space-5: 2rem;
+  --pm-space-6: 3rem;
 
   /* Radii · shadow · motion · focus · target */
-  --pm-radius-1: 4px;
-  --pm-radius-2: 8px;
-  --pm-shadow-1: 0 1px 2px rgba(15,17,19,.08), 0 2px 8px rgba(15,17,19,.06);
-  --pm-ease: cubic-bezier(.2, 0, 0, 1);
-  --pm-dur-fast: 120ms;
-  --pm-dur-base: 200ms;
+  --pm-radius-1: 5px;
+  --pm-radius-2: 14px;
+  --pm-shadow-1: 0 1px 2px rgba(19,16,9,.04), 0 10px 30px rgba(19,16,9,.07);
+  --pm-ease: cubic-bezier(.22, .06, .14, 1);
+  --pm-dur-fast: 170ms;
+  --pm-dur-base: 280ms;
   --pm-focus-width: 3px;
   --pm-focus-offset: 2px;
   --pm-target-min: 24px;  /* WCAG 2.5.8 AA floor; interactive controls meet or exceed */

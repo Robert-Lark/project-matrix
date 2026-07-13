@@ -1,0 +1,204 @@
+[
+ {
+  "id": 1937702,
+  "title": "The Words Below Limited Edition Vinyl Series Part 1",
+  "artist": "DJ Hidden",
+  "format": "Vinyl, 12\", 45 RPM, 33 \u2153 RPM, Limited Edition",
+  "year": 2009,
+  "priceFrom": {
+   "amount": 0.04,
+   "currency": "USD"
+  },
+  "numForSale": 2,
+  "styles": [
+   "Drum n Bass"
+  ],
+  "img": "1937702-primary.avif",
+  "w": 600,
+  "h": 587,
+  "alt": "DJ Hidden \u2014 The Words Below Limited Edition Vinyl Series Part 1, front cover"
+ },
+ {
+  "id": 953800,
+  "title": "And Their Refinement Of The Decline",
+  "artist": "Stars Of The Lid",
+  "format": "Vinyl, LP, Album, Stereo",
+  "year": 2007,
+  "priceFrom": {
+   "amount": 515.24,
+   "currency": "USD"
+  },
+  "numForSale": 1,
+  "styles": [
+   "Modern Classical",
+   "Ambient"
+  ],
+  "img": "953800-primary.avif",
+  "w": 600,
+  "h": 598,
+  "alt": "Stars Of The Lid \u2014 And Their Refinement Of The Decline, front cover"
+ },
+ {
+  "id": 674891,
+  "title": "Giauzar",
+  "artist": "Somatic Responses",
+  "format": "Vinyl, 12\", 33 \u2153 RPM",
+  "year": 2006,
+  "priceFrom": {
+   "amount": 10.33,
+   "currency": "USD"
+  },
+  "numForSale": 5,
+  "styles": [
+   "Industrial",
+   "IDM",
+   "Breakbeat",
+   "Experimental"
+  ],
+  "img": "674891-primary.avif",
+  "w": 500,
+  "h": 500,
+  "alt": "Somatic Responses \u2014 Giauzar, front cover"
+ },
+ {
+  "id": 1394505,
+  "title": "A Dead Sinking Story",
+  "artist": "Envy",
+  "format": "Vinyl, LP, Reissue, Remastered",
+  "year": 2008,
+  "priceFrom": {
+   "amount": 27.07,
+   "currency": "USD"
+  },
+  "numForSale": 14,
+  "styles": [
+   "Hardcore",
+   "Experimental",
+   "Post Rock"
+  ],
+  "img": "1394505-primary.avif",
+  "w": 600,
+  "h": 600,
+  "alt": "Envy \u2014 A Dead Sinking Story, front cover"
+ },
+ {
+  "id": 2747228,
+  "title": "The Lemon Of Pink",
+  "artist": "The Books",
+  "format": "Vinyl, LP, Album, Reissue, Remastered, Deluxe Edition",
+  "year": 2011,
+  "priceFrom": {
+   "amount": 32,
+   "currency": "USD"
+  },
+  "numForSale": 2,
+  "styles": [
+   "Experimental"
+  ],
+  "img": "2747228-primary.avif",
+  "w": 599,
+  "h": 598,
+  "alt": "The Books \u2014 The Lemon Of Pink, front cover"
+ },
+ {
+  "id": 5746150,
+  "title": "Spaces",
+  "artist": "Nils Frahm",
+  "format": "Vinyl, LP, Album",
+  "year": 2014,
+  "priceFrom": {
+   "amount": 23.24,
+   "currency": "USD"
+  },
+  "numForSale": 1,
+  "styles": [
+   "Modern Classical",
+   "Contemporary"
+  ],
+  "img": "5746150-primary.avif",
+  "w": 600,
+  "h": 600,
+  "alt": "Nils Frahm \u2014 Spaces, front cover"
+ },
+ {
+  "id": 10302203,
+  "title": "The Earth Is Not A Cold Dead Place",
+  "artist": "Explosions In The Sky",
+  "format": "Vinyl, LP",
+  "year": 2016,
+  "priceFrom": {
+   "amount": 22,
+   "currency": "USD"
+  },
+  "numForSale": 20,
+  "styles": [
+   "Post Rock"
+  ],
+  "img": "10302203-primary.avif",
+  "w": 600,
+  "h": 597,
+  "alt": "Explosions In The Sky \u2014 The Earth Is Not A Cold Dead Place, front cover"
+ },
+ {
+  "id": 13440919,
+  "title": "Graal (Prologue)",
+  "artist": "Christian L\u00f6ffler",
+  "format": "Vinyl, LP, Album",
+  "year": 2019,
+  "priceFrom": {
+   "amount": 23.24,
+   "currency": "USD"
+  },
+  "numForSale": 7,
+  "styles": [
+   "Deep House",
+   "Downtempo",
+   "Ambient"
+  ],
+  "img": "13440919-primary.avif",
+  "w": 600,
+  "h": 600,
+  "alt": "Christian L\u00f6ffler \u2014 Graal (Prologue), front cover"
+ },
+ {
+  "id": 23353148,
+  "title": "The Kilimanjaro Darkjazz Ensemble",
+  "artist": "The Kilimanjaro Darkjazz Ensemble",
+  "format": "Vinyl, LP, Album, Limited Edition, Reissue, Red",
+  "year": 2022,
+  "priceFrom": {
+   "amount": 24.99,
+   "currency": "USD"
+  },
+  "numForSale": 6,
+  "styles": [
+   "Downtempo",
+   "IDM",
+   "Dark Ambient",
+   "Dark Jazz"
+  ],
+  "img": "23353148-primary.avif",
+  "w": 596,
+  "h": 599,
+  "alt": "The Kilimanjaro Darkjazz Ensemble \u2014 The Kilimanjaro Darkjazz Ensemble, front cover"
+ },
+ {
+  "id": 33012294,
+  "title": "Atmospherics [30th Anniversary Edition]",
+  "artist": "James Bernard",
+  "format": "Vinyl, LP, Album, Limited Edition",
+  "year": 2025,
+  "priceFrom": {
+   "amount": 71.02,
+   "currency": "USD"
+  },
+  "numForSale": 2,
+  "styles": [
+   "Ambient"
+  ],
+  "img": "33012294-primary.avif",
+  "w": 600,
+  "h": 600,
+  "alt": "James Bernard \u2014 Atmospherics [30th Anniversary Edition], front cover"
+ }
+]

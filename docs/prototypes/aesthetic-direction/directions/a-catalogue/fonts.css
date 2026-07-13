@@ -1,0 +1,10 @@
+/* Candidate face A — Familjen Grotesk (SIL OFL 1.1), Latin subset per
+   packages/tokens/fonts/README.md recipe. wght axis 400–700: the token
+   scale's 550 medium is real. Ships tnum for metric text. */
+@font-face {
+  font-family: "Familjen Grotesk";
+  src: url("fonts/familjen.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}

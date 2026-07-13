@@ -1243,6 +1243,145 @@ npm registry) · the throwaway prototype (esbuild + one server + Playwright
 probe with the origin suite's system-Chrome fallback) against `pnpm dev` ·
 veto review as the verification leg, per the ticket's mode.
 
+## Phase 6 — The look
+
+### `aesthetic-direction` — resolved (2026-07-12)
+
+The deferred aesthetic, poured. Rationale + rejected candidates in
+[ADR-0006](adr/0006-aesthetic-direction-catalogue.md); the exploration
+artifacts at [`prototypes/aesthetic-direction/`](prototypes/aesthetic-direction/).
+
+**The constraint became the method.** The plan had been external Claude-design
+prompt exploration (the committed prompt pack); Rob ruled that out — everything
+local. That forced the realization the repo is the better design tool: the look
+is literally primitive-token values, so a "direction board" can be a real
+candidate pour rendered against the REAL component CSS and canonical markup,
+with real covers from the frozen crate — differences between boards are exactly
+and only what the production pour would change. Three boards were built that
+way (Catalogue / Faceplate / Runout, each from a different corner of the
+crate's world), presented side-by-side as an artifact, and Rob picked
+**Catalogue** by replying with the board.
+
+**Audit before eyes, principles after.** Every candidate palette had to pass
+the ADR-0003 §4 contrast pairs *programmatically* (a new `audit-contrast.mjs`,
+36/36 across the three boards) before the first screenshot existed — WCAG AA
+as a generator constraint, not a retro-check. Then each board took one
+screenshot-critique pass against the eight classic principles (per the Expo
+piece Rob sent: AI has no eyes — render, look, critique by name, revise once).
+The loop caught what the numbers couldn't: card titles at 1.25rem+ fighting
+the cover art (A's size-3 capped at 1.1875rem), maximum-contrast body cream
+sizzling on dark (B softened), Archivo's 700 too heavy at title size (C's
+bold poured as 650). Typeface candidates were disqualified by fontTools
+inspection before any board was built — Hanken Grotesk fell to a missing
+`tnum` (ADR-0003 §8 is unforgiving, correctly).
+
+**The pour proved the seam it was designed for.** Production change: primitive
+tier values + the two-file font swap (Familjen Grotesk subset, later widened
+to ~24 KB / 524 glyphs — see the coverage finding below — vs the placeholder's
+105 KB, OFL no-RFN so the real name stays) + preload filename
+in the consumers. Semantic tier, forced-colors remap, motion gate, every
+component module: byte-unchanged. The placeholder guard in
+`structure.test.ts` — which had enforced "the stand-in must be labeled
+PLACEHOLDER" since issue #2 — inverted into its mirror: the token file must
+now cite ADR-0006 and contain no placeholder language. Verification:
+audit 12/12 on the poured file · turbo lint/typecheck/test 20/20 forced ·
+`pnpm run origin-suite` twice, 120/120 both — the drift gate re-proving every
+variant against the re-poured golden master is the exact machinery ADR-0003
+§6 built for this moment. Browser probes confirmed the pipeline end-to-end
+(Familjen resolved as the rendered face, 400/550/700 all real via
+`document.fonts.check`, prices in tabular figures) and caught the one thing
+grep couldn't: the reference gallery's demo note still *claiming* placeholder
+status — prose lies after a state change; probes read pages, greps read
+strings.
+
+**The limit-resilient verification design earned its keep — literally caught
+a real bug from inside a session-limit death.** The first `verify-slice` run
+(on Fable 5) hit the model's usage limit and all four finder lenses reported
+as errored; the workflow's summary came back `findings: []`. That empty
+summary is the exact trap the standing rule names — a hollow result from a
+dead stage means *nothing ran*, not *nothing found*. Reading the disk trail
+first (the rule) surfaced that the correctness lens had **streamed one finding
+to `findings-correctness.md` before it died**: the Catalogue face (Familjen
+Grotesk) has no U+26A0, but the field component's error affordance renders its
+⚠ icon with `content: "\26A0"` — so the pour silently regressed that one glyph
+to a per-OS fallback (colour-emoji on some platforms, ignoring the
+forced-colors remap), and the new README's "plus U+26A0" claim was false for
+the shipped binary. Independently confirmed with fontTools (absent in the
+Familjen source; present in the retired Inter subset) and in-browser (the
+rendered ⚠ measured 16.4px through the real stack vs 15.1px system-only —
+proof of which glyph wins). Fixed at the font layer without touching a
+component (honouring ADR-0003 §7 and the subset's own prior commitment to
+that glyph): a 1-glyph ~1.2 KB monochrome Inter subset as a `"PM Warn Glyph"`
+`@font-face`, `unicode-range: U+26A0`, behind Familjen in the stack, shipping
+its own OFL, with a `structure.test.ts` regression guard.
+
+That fix then surfaced a *second*, latent bug — this time in the drift gate,
+and only because the origin-suite is run twice back-to-back: the field-error
+drift test began failing deterministically. `captureStablePixels`
+(`drift-gate/src/gate.ts`) waited for **every** registered `@font-face` to
+report `loaded`, but a `unicode-range` fallback that no glyph on the page
+triggers stays `unloaded` forever — so the gate timed out. The assumption was
+latent since issue #6 and would have broken for any icon/CJK subset; the fix
+relaxes the settle condition to "no face still *loading* and at least one
+*loaded*," which ignores never-triggered ranges while still refusing to shoot
+mid-swap. (The in-page probe stays synchronous — an `await` there dies on the
+JS-disabled variant, a hazard the gate comment already recorded.) Two real
+bugs from one glyph, both caught pre-commit. The sequential, stream-to-disk
+workflow shape — adopted after three earlier fan-outs died losing everything
+— is precisely why the limit death cost nothing; the run-twice rule is why
+the deterministic gate failure wasn't mistaken for flake.
+
+**The re-run (on Opus, after the model switch) found the deeper version of the
+same class.** Two more real findings, both the font's *claims* vs the *frozen
+crate*: (1) my ADR said "every consumed pair clears AA," but
+`--color-border`/surface is 1.39:1 — fine as a border, but below SC 1.4.11's
+3:1 for a control boundary; a pre-existing, deliberate airy-look choice, now
+stated honestly and flagged to `a11y-section` rather than over-claimed. (2) The
+bigger one: `⚠` was not the only glyph Familjen lacks — the crate's own data
+uses **30 codepoints no Latin face covers**, headed by `⅓` (179×, in "33⅓ RPM"
+right on the PLP card) and `℗` (74×). The CI fixture is pure Latin, so the
+drift gate could never catch it; only scanning the committed crate against the
+font's cmap did. Rob's call (asked — it touches his curated non-Latin
+releases): ship Latin-correct now, defer the fraction/symbol/script fallback to
+a new `crate-glyph-coverage` ticket. So the Latin subset was widened (Latin
+Extended-A/B; 327→524 glyphs), the "one glyph" claim corrected across
+ADR/README/map, and the gap frozen into `coverage.json` + a `repo-checks` guard
+that fails if a re-freeze adds an undocumented uncovered codepoint (across all
+three display trays — summaries, details, curation). The guard is
+dependency-free: the manifest pins each font by sha256 and records its cmap, so
+a Node test checks crate coverage without a woff2 parser. Its honest boundary
+(itself an anti-rigging-lens finding this session): the sha pins the font
+*bytes*, but the recorded codepoints are recipe-derived and NOT re-parsed from
+the woff2 in CI — so the manifest must be regenerated via the README recipe,
+never hand-edited, and the exhaustive proof the fonts actually render is the
+drift gate (real screenshots), with this manifest the cheap tripwire for the
+latent, not-yet-rendered crate. Making CI re-derive the cmap is recorded as a
+future hardening on the `crate-glyph-coverage` ticket. Net: the pour ships
+honest about exactly what its one Latin face does and does not render — and the
+anti-rigging pass also corrected stale counts (118→120) and a stale font size
+(19→24 KB) in the docs, and hardened two structure-test guards (value-level
+palette assertions so a reverted pour fails the unit test, and brace-bounded
+`@media` extraction so a future block can't cause a false pass).
+
+**Workflow friction, recorded.** Getting `verify-slice` to run took two edits:
+named-workflow args arrived as a JSON *string* (the script's `args.issue`
+guard threw instantly), and its baked-in context pinned finders to the main
+checkout with a `gh issue view` instruction — which for a worktree slice on a
+GH-issue-less ticket would have them reviewing an unchanged tree and calling a
+missing issue. Fixed the persisted run copy to relaunch, then **upstreamed both
+fixes into the saved `.claude/workflows/verify-slice.js`**: parse string args,
+a `repoDir` arg (defaulting to the main checkout), and numeric-issue detection
+that switches between `gh issue view` and a decision-map ticket. Lesson: an
+empty-or-instant workflow failure deserves a read of the persisted script
+before a retry, and a worktree slice needs `repoDir` set.
+
+**Skills / tools used:** frontend-design skill (direction vocabulary + the
+anti-default discipline) · fontTools/pyftsubset (axis + `tnum` verification,
+subsetting) · `audit-contrast.mjs` (new, committed) · chrome-devtools MCP
+screenshot-critique loop · artifacts as Rob's viewing surface (briefing,
+prompt pack, boards) · origin-suite ×2 + shimmed verify-slice · the Expo
+eight-principles critique frame.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

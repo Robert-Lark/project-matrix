@@ -96,12 +96,15 @@ DESIGN DISCIPLINE (applies to everything you produce):
 - Avoid the stock AI looks: warm-cream + big serif + terracotta; near-black +
   one acid-green accent; broadsheet hairline-rule pastiche. Derive every
   choice from THIS subject's world instead.
-- Real content only — never lorem ipsum. Sample content: releases "Kind of
-  Blue — Miles Davis · 1959 · $21.50 · 58 for sale" and "A Love Supreme —
-  John Coltrane · 1965 · $28.00 · 34 for sale"; variants vanilla / react /
-  astro / qwik / htmx; metrics like "TTFB 400 ms cold → 15 ms warm edge",
-  LCP 1.9 s, CLS 0.02, INP 140 ms; receipt stamp "commit d35c11c · captured
-  2026-07-10 · slow-4G profile · median of 9 runs".
+- Real content only — never lorem ipsum. Sample content (from the real frozen
+  crate — ambient / melodic techno / neo-classical, 2006–2026): releases
+  "And Their Refinement Of The Decline — Stars Of The Lid · 2007 · $515.24 ·
+  1 for sale" and "Spaces — Nils Frahm · 2014 · $23.24 · 1 for sale"; variants
+  vanilla / react / astro / qwik / htmx; metrics like "TTFB 400 ms cold →
+  15 ms warm edge", LCP 1.9 s, CLS 0.02, INP 140 ms; receipt stamp
+  "commit f60385f · captured 2026-07-11 · slow-4G profile · median of 9 runs".
+  _(Amended 2026-07-12: the drafted samples predated the crate capture —
+  issue #9 froze the real crate, so the samples now match it.)_
 ```
 
 ---

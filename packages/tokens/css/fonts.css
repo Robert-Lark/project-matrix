@@ -5,20 +5,39 @@
  * self-hosted, subset, variable sans — identical files, identical loading,
  * everywhere. This file is the loading half; the files live in ../fonts/.
  *
- *   ⚠ PLACEHOLDER FACE. "PM Placeholder Sans" is a Latin subset of Inter
- *   (SIL OFL 1.1 — see ../fonts/LICENSE-OFL.txt and ../fonts/README.md),
- *   renamed so the placeholder status is visible in the name itself. The real
- *   pairing is decided in `aesthetic-direction` and swaps in by replacing the
- *   font files + the --pm-font-* primitives, with zero component changes.
- *
- * The face is variable (wght 100–900, opsz 14–32) — the token scale's
- * intermediate weights (e.g. --pm-weight-medium: 550) are real, not synthesized
- * — and ships OpenType tabular figures (tnum) for the metric/price text.
+ * The face is Familjen Grotesk (SIL OFL 1.1 — see ../fonts/LICENSE-OFL.txt
+ * and ../fonts/README.md), chosen by the `aesthetic-direction` ticket
+ * (ADR-0006, the "Catalogue" pour). Variable wght 400–700, so the token
+ * scale's 550 medium is real, not synthesized — and it ships OpenType
+ * tabular figures (tnum) for the metric/price text.
  */
 @font-face {
-  font-family: "PM Placeholder Sans";
-  src: url("../fonts/PMPlaceholderSans.var.woff2") format("woff2");
-  font-weight: 100 900;
+  font-family: "Familjen Grotesk";
+  src: url("../fonts/FamiljenGrotesk.var.woff2") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
+}
+
+/*
+ * Icon-glyph fallback (ONE codepoint). Familjen Grotesk does not include
+ * U+26A0 (⚠) — the field component's error affordance (field.css
+ * `.pm-field__error::before { content: "\26A0" }`). Without this, that one
+ * glyph would fall back to the visitor's OS font: per-platform metrics, and
+ * a colour-emoji presentation on some platforms that ignores the
+ * forced-colors remap. Serving it as a 1-glyph monochrome subset of Inter,
+ * scoped by unicode-range so it is consulted ONLY for U+26A0, keeps the error
+ * icon byte-identical everywhere (ADR-0001 fairness) and forced-colors-safe
+ * by construction (ADR-0003 §5) — restoring what the interim Inter subset
+ * did before the Catalogue pour (ADR-0006). Inter is SIL OFL 1.1 too
+ * (LICENSE-OFL-Inter.txt); it is added to the --pm-font-* stacks after
+ * Familjen, never in front of it.
+ */
+@font-face {
+  font-family: "PM Warn Glyph";
+  src: url("../fonts/PMWarnGlyph.U26A0.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+26A0;
 }

@@ -11,7 +11,7 @@
        framework. This render is the drift-proof GOLDEN MASTER: every variant's
        build is diffed against it in CI (normalized-DOM equivalence + pixel
        screenshot). Never shipped to a visitor. -->
-  <link rel="preload" href="./node_modules/@pm/tokens/fonts/PMPlaceholderSans.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./node_modules/@pm/tokens/css/fonts.css">
   <link rel="stylesheet" href="./node_modules/@pm/tokens/css/tokens.css">
   <link rel="stylesheet" href="./node_modules/@pm/tokens/css/components/release-card.css">
@@ -44,11 +44,12 @@
   <main class="demo" id="main">
     <h1>Design system — reference render</h1>
     <p class="demo__note">
-      ⚠ <strong>Placeholder aesthetic.</strong> Colours, type and spacing here are
-      neutral stand-ins. This render proves the <em>architecture</em> — token tiers,
-      the semantic seam, forced-colors, and the canonical markup — not the final look
-      (that's the <code>aesthetic-direction</code> ticket). It is also the drift-proof
-      golden master every variant is measured against.
+      <strong>Aesthetic: "Catalogue"</strong> — poured into the primitive token tier by
+      the <code>aesthetic-direction</code> ticket (ADR-0006, 2026-07-12) with zero
+      component changes; the demo content below is illustrative, not the crate. This
+      render proves the <em>architecture</em> — token tiers, the semantic seam,
+      forced-colors, and the canonical markup — and is the drift-proof golden master
+      every variant is measured against.
     </p>
 
     <!-- ── PLP release card: renders ReleaseSummary trays from the data contract ── -->

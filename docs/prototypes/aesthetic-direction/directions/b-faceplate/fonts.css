@@ -1,0 +1,17 @@
+/* Candidate faces B — Public Sans (SIL OFL 1.1, variable wght 100–900,
+   tnum) for UI/prose + JetBrains Mono (SIL OFL 1.1, variable wght 100–800)
+   for metrics. Latin subsets per packages/tokens/fonts/README.md recipe. */
+@font-face {
+  font-family: "Public Sans";
+  src: url("fonts/publicsans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/jetbrainsmono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}

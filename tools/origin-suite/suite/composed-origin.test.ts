@@ -65,7 +65,7 @@ describe("the shared surface (both variants, same page)", () => {
       expect(body).toContain('id="pm-chrome-slot"');
       // Shared design system, delivered as the variant's own assets.
       expect(body).toContain("../assets/pm/css/tokens.css");
-      expect(body).toContain("PMPlaceholderSans.var.woff2");
+      expect(body).toContain("FamiljenGrotesk.var.woff2");
     });
   }
 
@@ -150,15 +150,30 @@ describe("non-HTML passthrough (byte-identical)", () => {
 
     it(`${variant}: the font arrives byte-identical to its source, typed as woff2`, async () => {
       const res = await get(
-        `/${variant}/assets/pm/fonts/PMPlaceholderSans.var.woff2`,
+        `/${variant}/assets/pm/fonts/FamiljenGrotesk.var.woff2`,
       );
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toContain("woff2");
       const source = readFileSync(
-        join(repoRoot, "packages/tokens/fonts/PMPlaceholderSans.var.woff2"),
+        join(repoRoot, "packages/tokens/fonts/FamiljenGrotesk.var.woff2"),
       );
       const wire = Buffer.from(await res.arrayBuffer());
       expect(wire.equals(source)).toBe(true);
+    });
+
+    it(`${variant}: the ⚠ warn-glyph fallback font is served too (ADR-0006 §3)`, async () => {
+      // The field error icon (U+26A0) is not in Familjen; a 1-glyph fallback
+      // supplies it via unicode-range. The drift gate can't catch a 404 here
+      // (it would fall back consistently), so assert serving explicitly.
+      const res = await get(
+        `/${variant}/assets/pm/fonts/PMWarnGlyph.U26A0.woff2`,
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("woff2");
+      const source = readFileSync(
+        join(repoRoot, "packages/tokens/fonts/PMWarnGlyph.U26A0.woff2"),
+      );
+      expect(Buffer.from(await res.arrayBuffer()).equals(source)).toBe(true);
     });
   }
 });
