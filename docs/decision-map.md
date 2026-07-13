@@ -36,6 +36,8 @@
 **The flip (thesis proof):** React/Next is the *villain* on Editorial and a *contender* on PDP — same variant, opposite verdict.
 **Contextual switcher:** the live control adapts per surface — render-switcher on spine surfaces, data-strategy switcher on PLP, device/CPU controls on Checkout, a11y-mode toggles (forced-colors / zoom / reduced-motion) on the A11y section. HUD constant.
 
+**Strategy review (2026-07-12):** adversarial staff-architect pass over the decision layer — 2 kill-shots, 11 discounts, 8 nitpicks, 14 survived attacks + an interview sheet, in [`reviews/2026-07-12-strategy-review.md`](reviews/2026-07-12-strategy-review.md); fixes unticketed, Rob's call.
+
 ---
 
 ## Tickets
