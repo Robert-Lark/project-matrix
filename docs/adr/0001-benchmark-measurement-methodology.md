@@ -125,3 +125,63 @@ run as gospel).
   for the "How this was built" surface.
 - Rate cards and captured pricing carry a date and will drift; the cost model is
   built to have its rate card swapped without touching the measured resource profile.
+
+## Addendum — strategy-review clarifications (2026-07-12)
+
+The adversarial strategy review
+([`docs/reviews/2026-07-12-strategy-review.md`](../reviews/2026-07-12-strategy-review.md))
+found gaps between what this ADR promises and what its mechanisms guarantee. No §1–§9
+decision is reversed; the following sharpen them and bind downstream builds.
+
+**A. Lab throttling, named honestly (review finding 1).** The lab's profiles are
+applied via CDP network/CPU emulation at the automation layer — request-level
+emulation above the transport stack, which does not reproduce connection setup,
+request parallelism, or TCP slow-start. That limit is not paradigm-neutral: it
+interacts with round-trip count, the very variable the slow-network cells measure.
+Resolution: (a) the limit is stated in the methodology page's limits-of-data
+tooltip and in every receipt's `methodNotes` (the sub-phase caveat there already
+demonstrates it); (b) §9's WebPageTest cross-check is now specified, not decorative
+— **any cell verdict that depends on a throttled profile is confirmed
+directionally by a packet-shaped WebPageTest run before publication, and both
+results ship with the cell.** If WPT disagrees with the runner on direction, the
+cell publishes no verdict. ADR-0004 carries the matching §6 clarification.
+
+**B. Checkout's interaction metric (finding 4).** §1 is right that field is the
+only honest *population* INP and that Lighthouse cannot measure INP. But the lab
+CAN measure real INP under **scripted interactions**: the injected `web-vitals`
+ruler (§2) emits INP from real Event Timing entries when the runner drives the
+page. The Checkout cells therefore publish **lab INP (scripted)** — named exactly
+that, produced under the CPU-throttled profile with the interaction registry id in
+the receipt — alongside the field INP spread as the reality check. TBT is never
+presented as INP.
+
+**C. A published noise rule (finding 17).** Receipts already carry raw runs; cells
+now also publish the **median with its min–max band**, and comparative verdict
+language ("faster", "wins") is permitted **only when the two bands do not
+overlap**. Overlapping bands publish as "indistinguishable at this sample size."
+No verdict adjectives ride on differences inside the noise.
+
+**D. Field display gate (finding 13).** §1's per-variant field spread displays
+only at or above a stated minimum sample (n ≥ 50 per variant/surface/profile
+segment, shown with the n); below it the HUD shows the sample count and no
+percentile — this ADR's own field-only rejection ("lacks the per-variant traffic
+to reach a stable p75") applies to display, not just ranking.
+
+**E. Cost cells (finding 11).** Three bindings on §7: (1) published cost cells
+show the $/1M-visits number at a **cache-hit-ratio grid (0.5 / 0.9 / 0.99)**,
+never a single chosen h; (2) **no cost cell publishes until CPU-ms comes from the
+deployed plane's telemetry** (`$workers.cpuTimeMs`) — local workerd sampling
+profiles are for development only, and the first armed harvest includes a one-time
+calibration of sampling-profile vs platform meter; (3) §7's "grounded
+extrapolation *validated* by that small real usage" is corrected to **anchored** —
+free-tier traffic validates meter accounting, not at-scale behavior.
+
+**F. Limits-of-data list, extended (findings 10, 16, 18, 19).** The methodology
+page's limits tooltip additionally states: the origin computes over a ~500-release
+frozen crate, so absolute server think-time and origin CPU-ms are floors, not
+production magnitudes (comparisons transfer; extrapolations don't); the injected
+chrome's *runtime* cost is measured once (with/without batch, one profile) and
+published as a stated constant — byte-stripping alone does not remove it from
+timing metrics; every lab number is a **Chromium** number (`web-vitals` + CDP);
+and the page carries a privacy paragraph naming exactly what the beacon collects
+(variant/surface/env/cache/location — no identifiers, no PII).

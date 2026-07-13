@@ -27,8 +27,10 @@ resumability, hypermedia, + the Remix 3 frontier). The thing being compared.
 _Avoid_: "framework", "stack" (we compare paradigms, not framework collections).
 
 **Surface**:
-One of the store's five pages, each proving a distinct tradeoff (Editorial, PDP,
-PLP, Checkout, "How it was built").
+One of the store's seven pages (Home gateway, Editorial, PDP, PLP, Checkout,
+the A11y section, "How it was built") — the spine/spotlight surfaces each
+prove a distinct tradeoff; Home and "How it was built" are singletons off the
+benchmarked matrix.
 _Avoid_: "lab", "page type".
 
 ### The data
@@ -75,8 +77,12 @@ Cloudflare R2 — the single source of truth holding the frozen JSON + self-host
 images.
 
 **Warm tier**:
-Cloudflare KV — the globally-replicated edge cache that makes a "warm" read
-reproducible everywhere. Contrast **cold**: bypass the edge and read the origin.
+Cloudflare KV — the edge cache tier that makes a "warm" read reproducible **at a
+stated location**: KV caches where it is read, so warm means warm where it was
+primed, and receipts carry the location label. Contrast **cold**: bypass the
+edge and read the origin.
+_Avoid_: "reproducible everywhere" (KV replication is demand-pulled, not global
+push — ADR-0002 addendum).
 
 **Canonical plane**:
 The single Cloudflare host every variant deploys to, co-located with the origin.

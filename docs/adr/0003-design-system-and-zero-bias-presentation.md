@@ -180,3 +180,21 @@ matrix's deploy. Hosting rationale:
 the carve-out's reasoning and the paradigm-noise list to register when the
 gate is wired:
 [`prototypes/remix3-frontier/FINDINGS.md`](../prototypes/remix3-frontier/FINDINGS.md) §7(b).
+
+## Addendum — "idiomatic default" gets a mechanism (2026-07-12)
+
+The strategy review
+([finding 6](../reviews/2026-07-12-strategy-review.md)) observed that §2's
+"idiomatic default, not hand-tuned" — the fairness rule the flip framing leans
+on hardest — was the only one enforced by nothing but the author's judgment:
+the drift gate proves pixel/DOM identity, not idiomatic-ness. Adopted
+mechanism, binding on every variant build:
+
+**Each variant is scaffolded from its framework's official starter, and the
+diff-to-starter ships as part of the receipt chain.** "What we changed from
+the default, and why" is published per variant (most entries will be the
+canonical markup contract, the tokens import, and the composed-origin
+adapter). A reviewer no longer audits idiomatic-ness by reading six
+codebases; they read six diffs. The diffs double as "How it was built"
+content. Same rule, now an artifact instead of a claim — the §6 "proven, not
+promised" standard applied to §2.

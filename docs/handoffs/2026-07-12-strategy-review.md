@@ -38,3 +38,30 @@ fixes (both doc edits): resolve the throttling contradiction, and re-scope `home
 as the thesis-carrier. Everything is a recommendation — nothing was ticketed or changed.
 Suggested cheap wins if you agree with them: findings 5 (backfill commitSha), 7 (language
 fix), 14 (CONTEXT.md "five pages"). Committed locally; push is yours.
+
+---
+
+## Second pass (same day): fixes applied
+
+Rob read the review and authorized fixes, excluding the homepage and design aspects
+(deferred to their own session). Applied — full per-finding table in the review's
+Outcome section:
+
+- **Addenda** on ADR-0001 (throttling named + WPT cross-check, lab-INP (scripted),
+  noise rule, field n-gate, cost h-grid + CPU gate, extended limits list), ADR-0002
+  (KV "at a stated location" with the fetched Cloudflare cite; invalidation named),
+  ADR-0003 (diff-to-starter mechanism), ADR-0004 (§6 scope clarified), ADR-0005
+  (one-move claim resized, magnitude rule, fat-tray binding).
+- **Glossary**: CONTEXT.md warm-tier and surface entries corrected.
+- **Map**: hypothesis note in Notes; ticket notes on `home-surface` (finding 2,
+  deferred per Rob), `a11y-section` (finding 21), `domain-cutover` (finding 12);
+  "five surfaces"/"400ms→15ms" fossils annotated.
+- **Provenance backfill**: `crate/manifest.json` `commitSha` → `f60385f…` (the
+  tray-landing commit, per `normalize.ts`'s own convention, now documented there).
+
+## ⚠️ One action before the next push
+
+The deployed bucket still serves the null-SHA manifest and the post-deploy smoke
+asserts served == committed. Run the one-liner in `workers/README.md` ("Pending
+remote step") to re-put `snapshot/manifest.json`, then push. Trays are unchanged —
+no KV flush needed.

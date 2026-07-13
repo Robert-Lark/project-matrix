@@ -64,7 +64,12 @@ async function imageData(dirs: Dirs, file: string, alt: string): Promise<Image> 
  * The manifest's SHA must attest a tree that actually produced the trays —
  * a dirty working tree demonstrably did not (the capture code itself may be
  * uncommitted, as it was for this crate's first freeze). Dirty tree → null;
- * the commit that lands the trays is then the provenance of record.
+ * the commit that lands the trays is then the provenance of record — and MUST
+ * be backfilled into the committed manifest (and re-put to any remote bucket
+ * serving the crate) in the immediately-following commit. A published
+ * `"commitSha": null` is a broken provenance chain in public: the strategy
+ * review (2026-07-12, finding 5) found exactly that on the live plane.
+ * Backfilled for this crate with the tray-landing commit f60385f.
  */
 function gitHead(): string | null {
   try {

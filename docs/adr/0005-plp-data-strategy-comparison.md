@@ -206,3 +206,40 @@ already is; the anchor-link core stays JS-off functional.
 - The exhibit pins exact versions (`@apollo/client`, `apollo-link-rest`
   RC) — a future bump re-runs the prototype's probe as the canary, the
   remix3 pattern.
+
+## Addendum — strategy-review qualifications (2026-07-12)
+
+Three qualifications from the strategy review
+([`docs/reviews/2026-07-12-strategy-review.md`](../reviews/2026-07-12-strategy-review.md),
+findings 3, 7, 8). The cells stand; their claims are resized.
+
+**§1's "exactly one architectural move" holds within the React/Next build
+only (finding 3).** plain → TanStack and plain → edge are genuinely
+one-variable (cells 2 and 3, the pure cells). The **loaders exemplar is not**:
+riding the HTMX variant, it changes the renderer, the client runtime
+(15.0 KB htmx vs the 52.5 KB React baseline, brotli — prototype FINDINGS),
+and the wire format (HTML partial vs JSON tray) in the same move. That bundle
+is deliberate — "move the data layer to the server" arrives as a package in
+real decisions, and hosting loaders+PE anywhere else would add a fifth PLP
+build outside the sparse matrix (the same reasoning that rejected an own-build
+edge-KV page). But cells 4/5's copy must say it: their verdicts compare
+*strategy + paradigm* against *strategy*, and part of any loaders win is the
+render axis's bundle story. A same-variant alternative (Next server-rendering
++ form-based PE) exists and was not chosen — recorded here so the choice is
+visible, not discovered.
+
+**Magnitudes travel only with their conditions (finding 7).** §6 cell 3's
+"~400 ms R2 vs ~15 ms KV" is planning shorthand from one location and one
+measure. Published cell copy quotes magnitudes only with measure (server
+think-time vs total TTFB) + location + receipt attached — the review's probe
+saw the same seam as ~236 ms vs ~119 ms total TTFB from elsewhere, and a
+visitor's HUD will happily contradict any bare number.
+
+**The tray's facet payload is resolved before byte verdicts publish
+(finding 8).** The prototype found the JSON tray (facet counts + unrendered
+fields on every page) triple the HTML partial's bytes — an API-shape choice
+of ours that taxes only the JSON-fetching strategies. Before any
+per-interaction byte cell publishes a verdict, the PLP build either splits
+the facet payload and re-measures, or the cell shows **both** numbers
+(tray-as-shipped and facets-excluded) so the payload-design share of the gap
+is visible instead of credited to the paradigm.

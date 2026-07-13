@@ -28,7 +28,7 @@
 | Home / gateway | landing: what / who / why + CTA | singleton (vanilla/static — TBD `deployment-topology`) | — | entry point; explains the site, gateway to the rest |
 | Editorial (spine) | blog / staff-pick + CTA | all core variants + Remix 3 (frontier) | network, CPU | render baseline; hydration-overkill-for-prose |
 | PDP (spine) | product detail, janky→fixed | vanilla, React/Next, Astro, Qwik (HTMX opt) | network | the flip: interactivity earns JS; CLS/LCP; Qwik shines |
-| Catalog/PLP (spotlight) | search + faceted filters + sort | React/Next + HTMX | data strategy × cache warmth × network | data axis; edge TTFB 400ms→15ms |
+| Catalog/PLP (spotlight) | search + faceted filters + sort | React/Next + HTMX | data strategy × cache warmth × network | data axis; the edge TTFB flip (magnitudes ship with measure + location, ADR-0002 addendum) |
 | Checkout (spotlight) | checkout / account form | vanilla, React/Next, HTMX (Qwik opt) | CPU | INP under load |
 | A11y section (spotlight) | store surfaces, compliant vs not | singleton (vanilla) | forced-colors, zoom, reduced-motion | ADA craft: DS-on vs DS-off; two-box A/B + mode-toggle demos |
 | How it was built | store chrome, editorial | singleton | — | process evidence |
@@ -36,7 +36,7 @@
 **The flip (thesis proof):** React/Next is the *villain* on Editorial and a *contender* on PDP — same variant, opposite verdict.
 **Contextual switcher:** the live control adapts per surface — render-switcher on spine surfaces, data-strategy switcher on PLP, device/CPU controls on Checkout, a11y-mode toggles (forced-colors / zoom / reduced-motion) on the A11y section. HUD constant.
 
-**Strategy review (2026-07-12):** adversarial staff-architect pass over the decision layer — 2 kill-shots, 11 discounts, 8 nitpicks, 14 survived attacks + an interview sheet, in [`reviews/2026-07-12-strategy-review.md`](reviews/2026-07-12-strategy-review.md); fixes unticketed, Rob's call.
+**Strategy review (2026-07-12):** adversarial staff-architect pass over the decision layer — 2 kill-shots, 11 discounts, 8 nitpicks, 14 survived attacks + an interview sheet, in [`reviews/2026-07-12-strategy-review.md`](reviews/2026-07-12-strategy-review.md). Doc-level fixes applied same-day (ADR-0001/2/3/4/5 addenda, glossary, manifest commitSha backfill — see the review's outcome section); **finding 2 (thesis on the home surface) deferred to the home-surface session per Rob**; verdict phrasing in the matrix table above is planning-time hypothesis — published verdicts are what receipts say (ADR-0005 §6).
 
 ---
 
@@ -48,7 +48,7 @@ Frontier = the foundations below. Everything downstream (the per-surface builds)
 Status: resolved
 Type: Grilling
 **Question:** What is the site's argument, who is it for, and what is the smallest matrix that proves it?
-**Answer:** See Notes above and `build-log.md` Phase 0. Staff-level FE audience; pure-evidence, solo-first; one Discogs store, five surfaces; render × data × environment axes; sparse spine/spotlight matrix.
+**Answer:** See Notes above and `build-log.md` Phase 0. Staff-level FE audience; pure-evidence, solo-first; one Discogs store, five surfaces (as decided then — later reshaped to seven by `design-system`, see the Notes matrix); render × data × environment axes; sparse spine/spotlight matrix.
 
 ### measurement-methodology: How are metrics captured fairly across paradigms?
 Blocked by: —
@@ -188,21 +188,21 @@ Type: Prototype + Grilling
 Blocked by: design-system
 Status: open
 Type: Grilling + Prototype
-**Question:** The portfolio's ADA section, hosted in the **vanilla** variant (orthogonal to the render/data axes — it compares compliant-vs-not, not paradigm-vs-paradigm). Hybrid structure: **one two-box A/B page** for element-scoped defects (focus, forms, target size, contrast, live regions) + **mode-toggle demos** for global-state defects (forced-colors, reflow/zoom, reduced-motion), each with an honesty caveat that emulation ≠ the real OS mode. Decide: per-page vs consolidated layout, the guided-walkthrough copy per defect, and which store surface hosts each demo. Consumes the DS matched compliant/stripped pairs + the comparison-layout / walkthrough / mode-emulation primitives.
+**Question:** The portfolio's ADA section, hosted in the **vanilla** variant (orthogonal to the render/data axes — it compares compliant-vs-not, not paradigm-vs-paradigm). Hybrid structure: **one two-box A/B page** for element-scoped defects (focus, forms, target size, contrast, live regions) + **mode-toggle demos** for global-state defects (forced-colors, reflow/zoom, reduced-motion), each with an honesty caveat that emulation ≠ the real OS mode. Decide: per-page vs consolidated layout, the guided-walkthrough copy per defect, and which store surface hosts each demo. Consumes the DS matched compliant/stripped pairs + the comparison-layout / walkthrough / mode-emulation primitives. **Scope note (strategy-review finding 21):** the stripped DS-off pages are deliberately inaccessible pages on a public site — noindex them, put the label *before* the defect, and keep the compliant twin one obvious link away, so a real assistive-tech user who deep-links never mistakes the exhibit for the store.
 **Answer:** _(open)_
 
 ### home-surface: Landing / gateway page
 Blocked by: design-system, deployment-topology
 Status: open
 Type: Grilling
-**Question:** The entry point opened via a blog/application link — explains what the site is, who built it, and why, and acts as a gateway to the rest (scoped simple per Rob: chrome + prose + CTA, nothing complex). _Paradigm settled by [ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md): singleton, served static on the canonical plane, no render-switcher — off the benchmarked spine._ Remaining: the actual content/structure, the gateway model to the rest, and the self-explaining copy. Surfaced during `design-system` as a gap in the original five-surface matrix.
+**Question:** The entry point opened via a blog/application link — explains what the site is, who built it, and why, and acts as a gateway to the rest (scoped simple per Rob: chrome + prose + CTA, nothing complex). _Paradigm settled by [ADR-0004](adr/0004-deployment-topology-and-contextual-switcher.md): singleton, served static on the canonical plane, no render-switcher — off the benchmarked spine._ Remaining: the actual content/structure, the gateway model to the rest, and the self-explaining copy. Surfaced during `design-system` as a gap in the original five-surface matrix. **Strategy-review finding 2 binds here (Rob deferred it to this session, 2026-07-12):** this surface is the thesis-carrier — the only place a 90-second visitor learns "fit, not leaderboard"; the copy (2–3 plain sentences: one product, several architectures, real numbers; which fits when, not which wins; a receipt behind every number) deserves grilling weight even if the page stays visually simple.
 **Answer:** _(open)_
 
 ### domain-cutover: Move roblark.com onto the canonical plane
 Blocked by: home-surface, aesthetic-direction (at minimum — cut over only when the site has real pages and its real look)
 Status: open
 Type: Task + Grilling
-**Question:** Retire the legacy portfolio and point **roblark.com** at the canonical plane (custom hostname on `pm-front`), replacing the interim `pm-front.robresearch87.workers.dev` address. Constraints and sub-decisions: (a) the legacy portfolio currently live at roblark.com must keep working untouched until the cutover moment — no DNS or domain changes before this ticket; (b) registrar/DNS today: **Netlify or Vercel per Rob (2026-07-11, exact one to be confirmed as this ticket's first step)** — decide whether to move DNS into the Cloudflare account (zone) or CNAME from the current host; (c) revisit the deferred beacon rate-limiting rule — `workers/README.md` records that a WAF/zone-level rule is the right home "once a custom hostname exists"; that hostname is now known to be roblark.com; (d) decide what, if anything, of the legacy portfolio is preserved (redirects, archive).
+**Question:** Retire the legacy portfolio and point **roblark.com** at the canonical plane (custom hostname on `pm-front`), replacing the interim `pm-front.robresearch87.workers.dev` address. Constraints and sub-decisions: (a) the legacy portfolio currently live at roblark.com must keep working untouched until the cutover moment — no DNS or domain changes before this ticket; (b) registrar/DNS today: **Netlify or Vercel per Rob (2026-07-11, exact one to be confirmed as this ticket's first step)** — decide whether to move DNS into the Cloudflare account (zone) or CNAME from the current host; (c) revisit the deferred beacon rate-limiting rule — `workers/README.md` records that a WAF/zone-level rule is the right home "once a custom hostname exists"; that hostname is now known to be roblark.com; (d) decide what, if anything, of the legacy portfolio is preserved (redirects, archive); (e) **check the Discogs API ToS/attribution terms for publicly serving the crate's data + self-hosted images and record the call** (strategy-review finding 12 — the git-exclusion caution protects the repo, not the exposure; the plane already serves 1,817 derivatives publicly).
 **Answer:** _(open)_
 
 ### (fog) per-surface builds

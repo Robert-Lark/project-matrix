@@ -163,3 +163,35 @@ out of scope here — it is the `data-strategy-lab` variable, layered on top.
   Worker secret, exercised solely by the live-origin demonstration.
 - The contract file and its guardrails double as source content for the "How it
   was built" surface.
+
+## Addendum — strategy-review corrections (2026-07-12)
+
+Two claims above were sharpened by the strategy review
+([`docs/reviews/2026-07-12-strategy-review.md`](../reviews/2026-07-12-strategy-review.md),
+findings 7 and 9). Neither reverses a decision.
+
+**"Reproducible everywhere" → "reproducible at a stated location" (§8).** KV
+replication is demand-pulled, not proactively global: "Your data is not sent
+automatically to every location's cache"; a cold read "must be read from the
+nearest regional tier, followed by a central tier, degrading finally to the
+central stores for a truly cold global read" — per
+<https://developers.cloudflare.com/kv/concepts/how-kv-works/> (fetched
+2026-07-12). A warm read is therefore warm **where it was primed**. The
+cache-warmth column's design is unaffected (the runner primes and measures from
+one location and the receipt carries the location label, ADR-0001 §4/§5), but
+the *claim* is now stated at its true size — and any published warm/cold
+magnitude must carry its measure (think-time vs total TTFB) + location + receipt
+link. The review's live probe illustrates why: the same seam that shows
+"~400 ms vs ~15 ms" as server think-time reads as ~236 ms vs ~119 ms total TTFB
+from another location.
+
+**Freezing hides two things, not one (§2).** Alongside the request-time cost of
+the dynamic slice, freezing also removes **cache invalidation and coherence** —
+TTL choice, purge-on-update, stampede control — which is the dominant real-world
+cost of the edge-cache strategy and the reason `staleTime`-style knobs exist for
+the client-cache strategy. The live-origin demonstration stages dynamic-fetch
+cost only; it does not cover invalidation. This is stated in the methodology
+page's limits-of-data list (ADR-0001 addendum §F), scoped honestly: the
+catalog/commerce split (§2) is what makes the omission production-faithful for
+*catalog* reads specifically — immutable catalog data genuinely never needs
+invalidating within a snapshot's lifetime.

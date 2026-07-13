@@ -615,3 +615,39 @@ asserted — the affected findings, 1 and 7, rest on the project's own documents
 probes); Discogs ToS text (finding 12 asks for the check, it does not presume the
 outcome); the aesthetic-direction ticket (no strategy surface to attack yet beyond its
 WCAG-at-token-time guardrail, which is sound).
+
+---
+
+## Outcome — dispositions applied same-day (2026-07-12, second session pass)
+
+Rob's call: apply what makes sense now; the homepage and all design aspects wait for
+their own session. Per-finding outcome:
+
+| # | finding | outcome |
+|---|---|---|
+| 1 | throttling self-contradiction | **fixed** — ADR-0004 addendum narrows §6's scope; ADR-0001 addendum §A names the emulation limit and binds throttled verdicts to a directional WebPageTest cross-check |
+| 2 | thesis has no on-page home | **deferred per Rob** to the `home-surface` session; a binding note now sits on that ticket so the finding can't be lost |
+| 3 | loaders breaks "exactly one move" | **fixed** — ADR-0005 addendum resizes the claim (pure cells named; the paradigm+strategy bundle owned; the same-variant alternative recorded) |
+| 4 | Checkout INP unproducible | **fixed** — ADR-0001 addendum §B: lab INP (scripted) via the injected ruler, named as such; TBT never presented as INP |
+| 5 | `commitSha: null` served publicly | **fixed locally** — manifest backfilled with the tray-landing commit `f60385f`; backfill convention documented in `normalize.ts`; ⚠️ the remote R2 object must be re-put **before the next push** (runbook block in `workers/README.md`) or the post-deploy smoke fails on manifest inequality |
+| 6 | "idiomatic" unenforced | **fixed** — ADR-0003 addendum adopts diff-to-starter receipts as the mechanism, binding on variant builds |
+| 7 | KV "everywhere" + bare magnitudes | **fixed** — ADR-0002 addendum (Cloudflare KV docs fetched and cited: replication is demand-pulled), CONTEXT.md warm-tier entry rewritten, map table cell qualified |
+| 8 | fat-tray byte confound | **fixed (bound)** — ADR-0005 addendum: no byte verdict publishes until the facet payload is split or both numbers ship |
+| 9 | invalidation hidden by freezing | **fixed** — ADR-0002 addendum names it as the second hidden cost, scoped honestly to the catalog/commerce split |
+| 10 | toy origin compute | **fixed** — ADR-0001 addendum §F (limits list: crate-scale compute stated; comparisons transfer, extrapolations don't) |
+| 11 | cost h-sensitivity / CPU gate / "validated" | **fixed** — ADR-0001 addendum §E: h grid {0.5/0.9/0.99}, deployed-telemetry-only CPU gate + calibration, "anchored" |
+| 12 | Discogs ToS unchecked | **queued** — constraint (e) added to the `domain-cutover` ticket |
+| 13 | unstable field display | **fixed** — ADR-0001 addendum §D: n ≥ 50 display gate, count shown below it |
+| 14 | "five pages" glossary fossil | **fixed** — CONTEXT.md surface entry (seven), map answer annotated |
+| 15 | open beacon, convention-only exclusion | **accepted** — posture already recorded; WAF rule stays tied to `domain-cutover` |
+| 16 | chrome runtime tax | **fixed (bound)** — ADR-0001 addendum §F: measured once, published as a stated constant |
+| 17 | no noise rule | **fixed** — ADR-0001 addendum §C: median + min–max band; verdict language only on non-overlapping bands |
+| 18 | Chromium-only ruler | **fixed** — ADR-0001 addendum §F limits line |
+| 19 | no privacy posture | **fixed (bound)** — ADR-0001 addendum §F: methodology page owes the privacy paragraph |
+| 20 | presumed-verdict shorthand | **fixed** — map Notes now carries the planning-time-hypothesis note; "400ms→15ms" cell qualified |
+| 21 | public broken a11y pages | **queued** — scope note added to the `a11y-section` ticket (noindex, label-first, compliant twin adjacent) |
+
+"Fixed (bound)" = the decision is recorded and binds a downstream build; the artifact
+itself (methodology page, chrome-tax batch, facet split) is that build's work. No ADR
+decision was reversed anywhere — every change is an addendum, a glossary correction, or
+a ticket note, in the repo's established addendum pattern.

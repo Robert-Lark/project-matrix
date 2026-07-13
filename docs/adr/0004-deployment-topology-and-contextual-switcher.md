@@ -257,3 +257,31 @@ ADR-0003 canonical-markup/shared-CSS contract** (fencing excludes numbers,
 not visual identity), and the **drift gate covers it in advisory mode** —
 drift on the remix3 Editorial surface warns but never fails CI, so a
 weekly-cadence beta can never block the benchmarked matrix's deploy.
+
+## Addendum — §6 clarified: what "synthetic throttle" rejects (2026-07-12)
+
+The strategy review
+([finding 1](../reviews/2026-07-12-strategy-review.md)) showed §6's wording
+proving too much: read literally, "a synthetic … delay does not reproduce
+connection setup, request parallelism, or TCP slow-start — so it is a lab
+artifact a skeptic rightly discounts" also condemns the bench runner's own
+CDP emulation, which produces every published throttled number. The §6
+decision stands; its scope is now stated precisely:
+
+- **What §6 rejects** is *re-throttling a live visitor's page* and letting an
+  in-page synthetic delay pose as a measurement condition — a number no one
+  can reproduce and a mechanism that misrepresents the visitor's own network.
+  `?profile=` therefore remains a snapshot selector, never a live fake.
+- **What the lab does** is CDP network/CPU emulation applied identically to
+  every variant at the automation layer, with the applied values and
+  mechanism recorded in every receipt. That is the accepted comparison
+  mechanism — but it shares the fidelity limit §6 names (request-level, above
+  the transport stack), so it is **named as a limit, not hidden**: see
+  ADR-0001's 2026-07-12 addendum §A, which binds throttle-dependent cell
+  verdicts to a packet-shaped WebPageTest directional cross-check before
+  publication.
+
+One sentence for the methodology page: *lab throttling is an emulation both
+of us can run; the HUD's RUM readout is your real network — we never fake
+slowness at you, and we never publish a throttled verdict our cross-check
+disagrees with.*

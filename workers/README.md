@@ -59,6 +59,24 @@ cannot tell (issue #11). CI never sets `PM_SEED_DIR`.
 — serving the real crate; the runbook below was executed end-to-end and is
 kept for re-arming and future re-seeds.
 
+**⚠️ Pending remote step (2026-07-12, do BEFORE the next push):** the committed
+crate manifest now carries `commitSha` `f60385f…` (the tray-landing commit —
+strategy review finding 5 backfilled a served `"commitSha": null`). The
+deployed bucket still serves the null-SHA manifest, and the post-deploy smoke
+asserts served-vs-committed manifest equality (fail-closed), so it will go red
+until the remote object is updated:
+
+```sh
+# from the repo root (cwd lands in workers/edge via --filter; do not add --config)
+pnpm --filter @pm/edge exec wrangler r2 object put \
+  pm-snapshot/snapshot/manifest.json \
+  --file ../../tools/snapshot-capture/crate/manifest.json --remote
+```
+
+A full same-crate re-seed (`pnpm capture seed --remote`) works too. Trays are
+byte-unchanged, so no KV warm-tier flush is needed either way. Delete this
+block once executed.
+
 CI deploys from `main` — variants first (service bindings must resolve), then
 the front Worker — and re-runs the integration suite against the deployed
 origin with the Brotli assertion (the post-deploy smoke, spike FINDINGS §5).
