@@ -20,6 +20,16 @@
       "dependsOn": ["topo", "^build"],
       "outputs": ["dist/**"]
     },
+    "@pm/front#build": {
+      "dependsOn": ["topo", "^build"],
+      // The home surface's receipts are substituted from the crate manifest
+      // (ADR-0007) — without this input, a crate re-freeze that touches
+      // nothing under workers/front would replay a cached dist carrying the
+      // OLD receipts, and the deploy leg would ship it before the post-deploy
+      // smoke caught the drift.
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json"],
+      "outputs": ["dist/**"]
+    },
     "dev": {
       "dependsOn": ["build"],
       "cache": false,

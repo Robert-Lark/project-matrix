@@ -287,6 +287,9 @@ importers:
       '@pm/switcher':
         specifier: workspace:*
         version: link:../../packages/switcher
+      '@pm/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
     devDependencies:
       wrangler:
         specifier: ^4.110.0

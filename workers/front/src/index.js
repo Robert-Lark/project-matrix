@@ -1,7 +1,7 @@
 // Front routing Worker — the ADR-0004 §3 composition, this slice.
 //
-// Assets-first: requests matching this Worker's own static assets (the
-// throwaway index at /) never reach this script. Everything else dispatches
+// Assets-first: requests matching this Worker's own static assets (the home
+// surface at /, ADR-0007) never reach this script. Everything else dispatches
 // by path prefix over a service binding, forwarding the ORIGINAL request
 // untouched — variant assets are nested under /{variant}/ (the documented
 // "serving a subdirectory" shape), so no path rewriting happens and

@@ -1,0 +1,446 @@
+/*
+ * Home surface — page composition (home-surface ticket, ADR-0007).
+ * ----------------------------------------------------------------------------
+ * A free-composition singleton off the benchmarked matrix (ADR-0004 §7), built
+ * FROM the Catalogue tokens (ADR-0006): every color is a shared
+ * primitive/semantic token or a color-mix() derivation of one (the disc's
+ * vinyl-surface tints and all its paper/ink alphas), so a re-pour of the
+ * primitive tier moves this page with it — page-level composition may reach
+ * primitives directly (the reference render's demo scaffolding sets the
+ * precedent); no new --pm-* primitive is minted. The fluid type ramps are
+ * page-level clamp() compositions anchored to the token scale (the hero floor
+ * dips just under --pm-size-5 so the headline balances at 320 px). The one
+ * register this page adds is the instrument register ADR-0006 §1 reserved for
+ * non-store surfaces: the dark vinyl "deadwax" (the disc figure and the
+ * Your-visit band), drawn from the primitive neutral scale's own dark end.
+ *
+ * Motion is progressive enhancement throughout: scroll-driven animations are
+ * double-gated behind @supports and prefers-reduced-motion (no JS fallback —
+ * the effects are decorative); hover/focus transitions read --motion-* tokens,
+ * which the shared reduced-motion gate collapses.
+ */
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { scroll-padding-block-start: var(--pm-space-5); }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+:root {
+  /* Vinyl-surface tints and alphas: ALL derivations of the poured neutrals,
+     so a future re-pour of the primitive tier moves the disc with it — no
+     literal hex or rgba anywhere in this file. */
+  --home-vinyl-core: color-mix(in srgb, var(--pm-neutral-950) 97%, var(--pm-neutral-0));
+  --home-deadwax: color-mix(in srgb, var(--pm-neutral-950) 98%, var(--pm-neutral-0));
+  --home-paper-05: color-mix(in srgb, var(--pm-neutral-0) 5%, transparent);
+  --home-paper-06: color-mix(in srgb, var(--pm-neutral-0) 6%, transparent);
+  --home-paper-09: color-mix(in srgb, var(--pm-neutral-0) 9%, transparent);
+  --home-paper-13: color-mix(in srgb, var(--pm-neutral-0) 13%, transparent);
+  --home-ink-08: color-mix(in srgb, var(--pm-neutral-950) 8%, transparent);
+  --home-ink-20: color-mix(in srgb, var(--pm-neutral-950) 20%, transparent);
+  --home-ink-28: color-mix(in srgb, var(--pm-neutral-950) 28%, transparent);
+  --home-ink-40: color-mix(in srgb, var(--pm-neutral-950) 40%, transparent);
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--text-body) / 1.55 var(--font-ui);
+}
+
+.shell {
+  max-inline-size: 68rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+a { color: var(--color-accent); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { color: var(--color-accent-hover); }
+a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+.quiet-link { color: inherit; }
+.quiet-link:hover { color: var(--color-accent-hover); }
+
+/* Tabular figures wherever a number carries weight */
+.num {
+  font-family: var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.skip { position: absolute; left: -9999px; z-index: 10; }
+.skip:focus { left: var(--pm-space-4); top: var(--pm-space-4); }
+
+/* ── Masthead ──────────────────────────────────────────────────────────── */
+.masthead { border-block-end: 1px solid var(--color-border); }
+.masthead__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-inline);
+  padding-block: var(--pm-space-3);
+}
+.masthead__mark {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.masthead__byline {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  margin-inline-start: var(--space-inline);
+}
+.masthead__link { margin-inline-start: auto; font-size: var(--text-small); }
+
+/* ── Hero ──────────────────────────────────────────────────────────────── */
+.hero { overflow: clip; border-block-end: 1px solid var(--color-border); }
+
+.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 42rem) minmax(16rem, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  padding-block: clamp(3rem, 7vw, 5.5rem) clamp(2rem, 4vw, 3rem);
+}
+
+.hero__title {
+  margin: 0 0 var(--pm-space-5);
+  font-size: clamp(2.4rem, 5.2vw + 0.6rem, 4.3rem);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  font-weight: var(--weight-bold);
+  text-wrap: balance;
+}
+
+.hero__lede {
+  margin: 0 0 var(--space-stack);
+  max-inline-size: 38rem;
+  font-size: var(--text-title);
+  line-height: 1.55;
+}
+
+.hero__status {
+  margin: var(--pm-space-5) 0 0;
+  max-inline-size: 38rem;
+  padding: var(--space-inset-sm) var(--space-inset);
+  background: var(--color-surface-sunk);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  font-size: var(--text-small);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+.hero__status-mark { color: var(--color-text); font-weight: var(--weight-medium); }
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-inline);
+  margin: var(--pm-space-5) 0 0;
+}
+.hero__ctas .pm-button { text-decoration: none; }
+
+/* The disc: cropped off the right edge, like a record half out of its sleeve */
+.hero__discwrap { position: relative; min-block-size: 100%; }
+.pm-disc {
+  display: block;
+  inline-size: clamp(20rem, 40vw, 38rem);
+  aspect-ratio: 1;
+  margin-inline-start: auto;
+  /* Pin the disc to the viewport's right edge with a constant overhang —
+     the record stays half out of its sleeve at every width: shell gutter
+     ((100vw − 68rem)/2, floored at 0) + shell padding + a third of the disc. */
+  margin-inline-end: calc(-1 * (max((100vw - 68rem) / 2, 0px) + clamp(1.25rem, 4vw, 2.5rem) + 12rem));
+  border-radius: 50%;
+  position: relative;
+}
+.pm-disc:focus-visible { outline: var(--focus-ring); outline-offset: 6px; }
+
+.pm-disc__rotor { position: absolute; inset: 0; display: block; }
+
+/* Geometry (fractions of radius): label 0–.34 · deadwax .34–.56 (etch at .45)
+   · grooves .56–.97 · rim .97–1 */
+.pm-disc__vinyl {
+  position: absolute; inset: 0; display: block; border-radius: 50%;
+  background:
+    radial-gradient(120% 120% at 30% 22%, var(--home-paper-13), transparent 46%),
+    radial-gradient(circle closest-side,
+      transparent 0 66%, var(--home-paper-06) 66.4% 67%, transparent 67.4% 76%,
+      var(--home-paper-06) 76.4% 77%, transparent 77.4% 87%,
+      var(--home-paper-06) 87.4% 88%, transparent 88.4% 100%),
+    repeating-radial-gradient(circle,
+      var(--home-paper-05) 0 1px, transparent 1px 3px),
+    radial-gradient(circle closest-side, var(--home-vinyl-core) 0 34%, var(--pm-neutral-950) 34% 100%);
+  box-shadow:
+    0 1px 2px var(--home-ink-20),
+    0 18px 50px var(--home-ink-28);
+}
+.pm-disc__vinyl::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle closest-side, var(--home-deadwax) 0 56%, transparent 56.8%);
+}
+.pm-disc__vinyl::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid var(--home-paper-09);
+}
+
+.pm-disc__etch { position: absolute; inset: 0; }
+.pm-disc__etch text {
+  font-family: var(--font-metric);
+  /* viewBox units. The ring is r=22.5 → circumference ≈ 141.4; the glyph run
+     must stay under it, and textLength=141 locks the fit so a longer future
+     manifest value cannot lap itself. */
+  font-size: 2.55px;
+  letter-spacing: 0.4px;
+  font-weight: var(--weight-normal);
+  text-transform: uppercase;
+  fill: var(--pm-neutral-400);
+  opacity: 0.85;
+}
+
+.pm-disc__label {
+  position: absolute; inset: 50% auto auto 50%; translate: -50% -50%;
+  inline-size: 34%; aspect-ratio: 1; border-radius: 50%; display: block;
+  background: var(--pm-neutral-50);
+  box-shadow: inset 0 0 0 1px var(--home-ink-08);
+}
+.pm-disc__wordmark {
+  position: absolute; inset: 24% 0 auto 0; display: block; text-align: center;
+  font-weight: var(--weight-bold);
+  font-size: clamp(0.72rem, 1.6vw, 1.05rem);
+  letter-spacing: 0.14em; text-indent: 0.14em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--pm-neutral-900);
+}
+.pm-disc__cat {
+  position: absolute; inset: auto 0 26% 0; display: block; text-align: center;
+  font-family: var(--font-metric);
+  font-size: clamp(0.55rem, 1.1vw, 0.72rem);
+  letter-spacing: 0.18em; text-indent: 0.18em;
+  color: var(--pm-neutral-600);
+}
+.pm-disc__hole {
+  position: absolute; inset: 50% auto auto 50%; translate: -50% -50%;
+  inline-size: 3.4%; aspect-ratio: 1; border-radius: 50%; display: block;
+  background: var(--color-surface);
+  box-shadow: inset 0 1px 2px var(--home-ink-40);
+}
+
+/* The record turns as the page is read — scroll-driven, compositor-only,
+   double-gated. Firefox (no scroll-timeline) simply gets a still disc. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .pm-disc__rotor {
+      animation: pm-spin linear both;
+      animation-timeline: scroll(root);
+    }
+    @keyframes pm-spin { to { rotate: 0.4turn; } }
+  }
+}
+
+/* ── Why “Matrix” (the one metaphor spend) ─────────────────────────────── */
+.why {
+  padding-block: 0 clamp(2.5rem, 5vw, 4rem);
+}
+.why__eyebrow,
+.section__eyebrow,
+.band__eyebrow {
+  margin: 0 0 var(--space-stack-xs);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.why__text {
+  margin: 0;
+  max-inline-size: 44rem;
+  padding-inline-start: var(--space-inset);
+  border-inline-start: 2px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.section { padding-block: clamp(3rem, 7vw, 5.5rem); border-block-end: 1px solid var(--color-border); }
+.section__title {
+  margin: 0 0 var(--space-stack);
+  font-size: clamp(1.8125rem, 3vw, 2.625rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-weight: var(--weight-bold);
+}
+.section__sub {
+  margin: 0 0 var(--pm-space-5);
+  max-inline-size: 44rem;
+  color: var(--color-text-muted);
+}
+
+/* ── The catalogue ─────────────────────────────────────────────────────── */
+.cat { list-style: none; margin: 0; padding: 0; counter-reset: none; }
+.cat__row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  gap: var(--space-inset);
+  align-items: baseline;
+  padding: var(--pm-space-4) var(--space-inset-sm);
+  margin-inline: calc(-1 * var(--space-inset-sm));
+  border-block-start: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+.cat__row:last-child { border-block-end: 1px solid var(--color-border); }
+.cat__row:hover { background: var(--color-surface-sunk); }
+
+.cat__num {
+  font-family: var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  font-size: var(--text-small);
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+.cat__body { max-inline-size: 44rem; }
+.cat__name {
+  margin: 0 0 var(--space-stack-xs);
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  line-height: 1.25;
+}
+.cat__line { margin: 0; line-height: 1.55; }
+.cat__status {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.cat__live { color: var(--color-text); font-weight: var(--weight-medium); }
+
+/* ── Method strip ──────────────────────────────────────────────────────── */
+.method {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: var(--space-gap);
+}
+.method__item { border-block-start: 2px solid var(--pm-neutral-900); padding-block-start: var(--space-inset-sm); }
+.method__name { margin: 0 0 var(--space-stack-xs); font-size: var(--text-body); font-weight: var(--weight-bold); }
+.method__line { margin: 0; font-size: var(--text-small); line-height: 1.6; color: var(--color-text-muted); }
+
+/* ── The deadwax band: your visit ──────────────────────────────────────── */
+.band {
+  background: var(--pm-neutral-950);
+  color: var(--pm-neutral-50);
+  padding-block: clamp(3rem, 7vw, 5rem);
+}
+.band__eyebrow { color: var(--pm-neutral-400); }
+.band__title {
+  margin: 0 0 var(--pm-space-5);
+  font-size: clamp(1.8125rem, 3vw, 2.625rem);
+  line-height: 1.1;
+  font-weight: var(--weight-bold);
+}
+.band a { color: var(--pm-neutral-0); }
+.band a:hover { color: var(--pm-neutral-200); }
+.band a:focus-visible { outline-color: var(--pm-neutral-0); }
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-inset) var(--space-gap);
+  margin-block-end: var(--pm-space-5);
+}
+.hud__metric { display: flex; flex-direction: column; gap: var(--space-stack-xs); }
+.hud__name {
+  font-size: var(--text-small);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--pm-neutral-400);
+}
+.hud__value {
+  font-family: var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  font-size: var(--pm-size-4);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  min-inline-size: 4.5ch;
+}
+
+.band__note {
+  margin: 0 0 var(--space-stack);
+  max-inline-size: 46rem;
+  font-size: var(--text-small);
+  line-height: 1.6;
+  color: var(--pm-neutral-400);
+}
+.band__note--vow {
+  margin-block-start: var(--space-stack);
+  font-size: var(--text-body);
+  color: var(--pm-neutral-50);
+}
+
+/* ── Built by ──────────────────────────────────────────────────────────── */
+.cares { list-style: none; margin: 0 0 var(--pm-space-5); padding: 0; max-inline-size: 44rem; }
+.cares li { margin-block-end: var(--space-stack-xs); }
+.cares li::before { content: "— "; color: var(--color-text-muted); }
+.links { display: flex; flex-wrap: wrap; gap: var(--space-inset); margin: 0; }
+
+/* ── Colophon ──────────────────────────────────────────────────────────── */
+.colophon { padding-block: var(--pm-space-6); }
+.colophon__line {
+  margin: 0;
+  max-inline-size: 46rem;
+  font-size: var(--text-small);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+/* ── Scroll-triggered reveals (decorative; double-gated, no fallback) ──── */
+@media (prefers-reduced-motion: no-preference) {
+  @supports ((animation-timeline: view()) and (animation-range: entry)) {
+    .reveal {
+      animation: pm-rise auto var(--motion-ease) backwards;
+      animation-timeline: view();
+      animation-range: entry 10% entry 55%;
+    }
+    @keyframes pm-rise {
+      from { opacity: 0; translate: 0 0.75rem; }
+    }
+  }
+}
+
+/* ── Forced colors: the disc is decorative; the semantic seam handles the
+      rest (backgrounds flatten to Canvas, text to CanvasText) ───────────── */
+@media (forced-colors: active) {
+  .pm-disc__vinyl, .pm-disc__hole { display: none; }
+  .pm-disc { border: 1px solid CanvasText; }
+  .pm-disc__label { background: Canvas; box-shadow: none; }
+  .pm-disc__wordmark, .pm-disc__cat { color: CanvasText; }
+  .pm-disc__etch text { fill: CanvasText; }
+}
+
+/* ── Narrow viewports (also the 400%-zoom reflow path) ─────────────────── */
+@media (max-width: 56rem) {
+  .hero__grid { grid-template-columns: 1fr; }
+  .hero__discwrap { order: -1; }
+  .pm-disc {
+    inline-size: clamp(13rem, 44vw, 20rem);
+    margin-inline-end: max(-16vw, -7rem);
+    margin-block-start: var(--pm-space-4);
+  }
+  .cat__row { grid-template-columns: 1fr; gap: var(--space-stack-xs); padding-inline: 0; margin-inline: 0; }
+  .cat__status { white-space: normal; }
+  .masthead__byline { display: none; }
+}

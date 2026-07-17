@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Matrix — one store, five architectures, one ruler</title>
+  <meta name="description" content="One vinyl store — %%SNAP_COUNT%% real Discogs releases, frozen %%SNAP_DATE%% — being built under five rendering architectures and measured with one pinned ruler. Fit, not a leaderboard: every published number is a URL you can re-run.">
+  <meta property="og:title" content="Project Matrix — one store, five architectures, one ruler">
+  <meta property="og:description" content="One vinyl store, five rendering architectures, one measurement ruler. Fit, not a leaderboard — a receipt behind every number.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="%%TOKEN_PAPER%%">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%%TOKEN_VINYL_URI%%'/%3E%3Ccircle cx='50' cy='50' r='17' fill='%%TOKEN_PAPER_SUNK_URI%%'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%%TOKEN_VINYL_URI%%'/%3E%3C/svg%3E">
+
+  <!-- The home surface (home-surface ticket, ADR-0007): a static singleton on
+       the canonical plane, served assets-first by the front Worker with NO
+       injected chrome (ADR-0004 §3/§7). Its render-critical CSS — the shared
+       @pm/tokens file plus this page's own composition — is inlined at build
+       time by build.mjs from the real package sources, so the page paints in
+       one round trip. Font loading below is the canonical ADR-0003 §8 markup,
+       base path adjusted per the loading-markup.html contract. The snapshot
+       fields (release count, freeze date, commit) are substituted at build
+       from tools/snapshot-capture/crate/manifest.json — the same manifest
+       served live at /api/snapshot — so the page's receipts cannot drift from
+       the plane's. -->
+  <link rel="preload" href="/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/pm/css/fonts.css">
+  <style>
+/*%%PM_TOKENS_CSS%%*/
+  </style>
+  <style>
+/*%%PM_HOME_CSS%%*/
+  </style>
+</head>
+<body>
+  <a class="skip pm-button" href="#main">Skip to content</a>
+
+  <header class="masthead">
+    <div class="shell masthead__row">
+      <span class="masthead__mark">Project&nbsp;Matrix</span>
+      <span class="masthead__byline">a live-benchmarking portfolio by Rob Lark</span>
+      <a class="masthead__link" href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="shell hero__grid">
+        <div class="hero__copy">
+          <h1 class="hero__title" id="hero-title">One store.<br>Five architectures.<br>One ruler.</h1>
+          <p class="hero__lede">
+            Project Matrix is one vinyl store — <a class="quiet-link" href="/api/snapshot">%%SNAP_COUNT%%&nbsp;real
+            Discogs releases, frozen&nbsp;<span class="num">%%SNAP_DATE%%</span></a> — being built five ways: a
+            different rendering architecture under each build, identical data and pixels
+            by construction, one pinned measurement ruler over all of it.
+          </p>
+          <p class="hero__lede">
+            The premise under test: no architecture wins everywhere. The numbers exist to
+            show where each one earns its bytes, where the same one is overkill, and what
+            both cost — in performance, UX, and infra spend.
+          </p>
+          <p class="hero__status">
+            <strong class="hero__status-mark">The instrument shipped first</strong> — no
+            verdict can be retrofitted. Live today: the frozen snapshot, the composed
+            origin, the drift gate, the bench harness. The store surfaces are in build;
+            each catalogue entry below links its decision record, and every number
+            published here will be a URL you can re-run.
+          </p>
+          <p class="hero__ctas">
+            <a class="pm-button" href="#catalogue">The catalogue</a>
+            <a class="pm-button pm-button--secondary" href="#honest">How the numbers stay honest</a>
+          </p>
+        </div>
+
+        <div class="hero__discwrap">
+          <a class="pm-disc" href="/api/snapshot" aria-label="The frozen snapshot manifest — the live receipt behind this record">
+            <span class="pm-disc__rotor" aria-hidden="true">
+              <span class="pm-disc__vinyl"></span>
+              <svg class="pm-disc__etch" viewBox="0 0 100 100">
+                <defs>
+                  <path id="pm-runout" d="M 50 50 m -22.5 0 a 22.5 22.5 0 1 1 45 0 a 22.5 22.5 0 1 1 -45 0"/>
+                </defs>
+                <text><textPath href="#pm-runout" textLength="141" lengthAdjust="spacing">%%SNAP_COUNT%% RELEASES · FROZEN %%SNAP_DATE%% · CUT %%SNAP_SHA7%% · SOURCE %%SNAP_SOURCE%% ·</textPath></text>
+              </svg>
+              <span class="pm-disc__label">
+                <span class="pm-disc__wordmark">Project<br>Matrix</span>
+                <span class="pm-disc__cat">%%SNAP_SHA7%%</span>
+              </span>
+              <span class="pm-disc__hole"></span>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <aside class="shell why" aria-label="Why the site is called Project Matrix">
+        <p class="why__eyebrow">Why “Matrix”</p>
+        <p class="why__text">
+          The matrix number is the code etched in a record’s runout groove, naming the
+          master and cut it was pressed from. Same album, different cut — which sounds
+          better depends on the system you play it on. Same store, different
+          architecture: which fits is what the numbers are for.
+        </p>
+      </aside>
+    </section>
+
+    <!-- ── The catalogue (the gateway) ──────────────────────────────────── -->
+    <section class="section" id="catalogue" aria-labelledby="catalogue-title">
+      <div class="shell">
+        <p class="section__eyebrow reveal">The gateway</p>
+        <h2 class="section__title reveal" id="catalogue-title">The catalogue</h2>
+        <p class="section__sub reveal">
+          Six pages of the store, one tradeoff each. Five architectures count the ways a
+          page is built; six entries count the pages proving something.
+        </p>
+
+        <!-- role="list" restores list semantics that Safari/VoiceOver drop
+             when list-style is none -->
+        <ol class="cat" role="list">
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑001</span>
+            <div class="cat__body">
+              <h3 class="cat__name">Editorial</h3>
+              <p class="cat__line">The render baseline: does a page with one interaction justify a runtime?</p>
+            </div>
+            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/decision-map.md" rel="noopener">decision map</a></p>
+          </li>
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑002</span>
+            <div class="cat__body">
+              <h3 class="cat__name">Product page</h3>
+              <p class="cat__line">Gallery, zoom, cart: if a runtime earns its bytes anywhere, it should be here.</p>
+            </div>
+            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/decision-map.md" rel="noopener">decision map</a></p>
+          </li>
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑003</span>
+            <div class="cat__body">
+              <h3 class="cat__name">Search + filters</h3>
+              <p class="cat__line">Where should the data layer live — nowhere, the browser, the server, or the
+                edge — and what does cache warmth do to the answer? Ships with the fenced
+                misapplication exhibit, build-measured: the wrong data tool on the same page
+                costs <span class="num">+65.1&nbsp;KB</span> brotli against <span class="num">+9.0&nbsp;KB</span>.</p>
+            </div>
+            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0005-plp-data-strategy-comparison.md" rel="noopener">ADR‑0005, 2026‑07‑12</a></p>
+          </li>
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑004</span>
+            <div class="cat__body">
+              <h3 class="cat__name">Checkout</h3>
+              <p class="cat__line">INP under load: a busy main thread against a form you’re trying to finish.</p>
+            </div>
+            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/decision-map.md" rel="noopener">decision map</a></p>
+          </li>
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑005</span>
+            <div class="cat__body">
+              <h3 class="cat__name">Accessibility</h3>
+              <p class="cat__line">The same store, compliant and stripped, side by side: what do design-system defaults change?</p>
+            </div>
+            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0003-design-system-and-zero-bias-presentation.md" rel="noopener">ADR‑0003, 2026‑07‑06</a></p>
+          </li>
+          <li class="cat__row reveal">
+            <span class="cat__num" aria-hidden="true">PM‑006</span>
+            <div class="cat__body">
+              <h3 class="cat__name">How it was built</h3>
+              <p class="cat__line">ADRs, adversarial reviews, receipts — the build log is the source material.</p>
+            </div>
+            <p class="cat__status"><strong class="cat__live">Public today</strong> · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">build log</a></p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── Method strip ─────────────────────────────────────────────────── -->
+    <section class="section" id="honest" aria-labelledby="honest-title">
+      <div class="shell">
+        <p class="section__eyebrow reveal">The method</p>
+        <h2 class="section__title reveal" id="honest-title">How the numbers stay honest</h2>
+        <ul class="method" role="list">
+          <li class="method__item reveal">
+            <h3 class="method__name">Frozen snapshot</h3>
+            <p class="method__line">Real data captured once from %%SNAP_SOURCE%%, dated,
+              pinned to commit <span class="num">%%SNAP_SHA7%%</span> — served the way
+              production serves cacheable data. <a href="/api/snapshot">The manifest is live</a>.</p>
+          </li>
+          <li class="method__item reveal">
+            <h3 class="method__name">One ruler</h3>
+            <p class="method__line">The same pinned web-vitals build measures every page,
+              lab and field, and bytes are counted off the wire.
+              <a href="/_pm/measure.js">The ruler itself</a>.</p>
+          </li>
+          <li class="method__item reveal">
+            <h3 class="method__name">The URL is the measurement condition</h3>
+            <p class="method__line">Path carries the architecture; query carries the
+              environment. A URL is a complete, reproducible receipt.
+              <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0004-deployment-topology-and-contextual-switcher.md" rel="noopener">ADR‑0004</a>.</p>
+          </li>
+          <li class="method__item reveal">
+            <h3 class="method__name">Held constant by construction</h3>
+            <p class="method__line">Same host (one plane), same data (frozen snapshot),
+              same pixels (a drift gate in CI) — so a gap can only be the paradigm.
+              <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0003-design-system-and-zero-bias-presentation.md" rel="noopener">ADR‑0003</a>.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ── Your visit (the deadwax band: live HUD off the same ruler) ───── -->
+    <section class="band" id="visit" aria-labelledby="visit-title">
+      <div class="shell">
+        <p class="band__eyebrow">Deadwax</p>
+        <h2 class="band__title" id="visit-title">Your visit</h2>
+
+        <div id="pm-chrome" class="hud" data-pm-variant="singleton" data-pm-surface="home">
+          <span class="hud__metric"><span class="hud__name">TTFB</span><span class="hud__value" data-pm-hud-live="TTFB">–</span></span>
+          <span class="hud__metric"><span class="hud__name">FCP</span><span class="hud__value" data-pm-hud-live="FCP">–</span></span>
+          <span class="hud__metric"><span class="hud__name">LCP</span><span class="hud__value" data-pm-hud-live="LCP">–</span></span>
+          <span class="hud__metric"><span class="hud__name">CLS</span><span class="hud__value" data-pm-hud-live="CLS">–</span></span>
+          <span class="hud__metric"><span class="hud__name">INP</span><span class="hud__value" data-pm-hud-live="INP">–</span></span>
+        </div>
+
+        <p class="band__note">
+          These numbers are your visit — your device, your network — measured by the same
+          pinned ruler every page gets. TTFB and first paint land right away; layout-shift
+          and interaction metrics settle as you use or leave the page. Not a lab result:
+          this page is served static and sits outside the benchmark. No published runs
+          yet — lab snapshots land with the first benchmark publication.
+        </p>
+        <noscript><p class="band__note">JavaScript is off, so the live readout stays
+          blank — everything else on this page works without it.</p></noscript>
+        <p class="band__note band__note--vow">
+          When a published number and yours disagree, trust yours — then
+          <a href="https://github.com/Robert-Lark/project-matrix/issues" rel="noopener">send me the URL</a>.
+          The URL is the whole measurement condition.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Built by ─────────────────────────────────────────────────────── -->
+    <section class="section" id="built-by" aria-labelledby="built-title">
+      <div class="shell">
+        <p class="section__eyebrow reveal">Built by</p>
+        <h2 class="section__title reveal" id="built-title">Rob Lark</h2>
+        <p class="section__sub reveal">Frontend engineer at Discogs.</p>
+        <ul class="cares reveal" role="list">
+          <li>Architectural judgment over framework fashion.</li>
+          <li>Claims proven with real numbers.</li>
+          <li>Accessibility as a default, not a bolt-on.</li>
+        </ul>
+        <p class="links reveal">
+          <a href="https://github.com/Robert-Lark" rel="noopener">GitHub</a>
+          <a href="https://roblark.com" rel="noopener">roblark.com — the previous portfolio</a>
+          <a href="https://dreamstoday14-blog.tumblr.com/" rel="noopener">photo blog</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="colophon">
+    <div class="shell">
+      <p class="colophon__line">
+        Set in Familjen Grotesk, a self-hosted 24&nbsp;KB subset. This page ships no
+        JavaScript of its own — the only script is the shared measurement ruler
+        (<a href="/_pm/measure.js">/_pm/measure.js</a>). No analytics beyond the
+        web-vitals beacon. <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">Public
+        repo</a> — ADRs, reviews, and receipts included.
+      </p>
+    </div>
+  </footer>
+
+  <script src="/_pm/measure.js" defer></script>
+</body>
+</html>

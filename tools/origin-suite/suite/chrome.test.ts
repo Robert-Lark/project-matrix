@@ -73,10 +73,16 @@ describe("chrome injection (ADR-0004 §7)", () => {
     expect(res.headers.get("x-pm-echo-probe")).toBe("rewriter-fidelity");
   });
 
-  it("the throwaway index at / stays chrome-free (assets-first)", async () => {
+  it("the home surface at / stays free of INJECTED chrome (assets-first)", async () => {
+    // Home is a singleton off the benchmarked matrix (ADR-0007): it carries
+    // its own in-page HUD (same #pm-chrome contract measure.js reads) but is
+    // served assets-first, so the front Worker's rewriter never touches it —
+    // no injected-chrome marker, no slot.
     const body = await (await get("/")).text();
-    expect(body).toContain("PM-INDEX-MARKER");
+    expect(body).toContain('data-pm-surface="home"');
+    expect(body).toContain('id="pm-chrome"');
     expect(body).not.toContain("data-pm-chrome");
+    expect(body).not.toContain("pm-chrome-slot");
   });
 });
 

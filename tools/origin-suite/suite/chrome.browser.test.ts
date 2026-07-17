@@ -83,6 +83,55 @@ describe("HUD live readout (JS on)", () => {
   }, 60_000);
 });
 
+describe("home surface HUD (ADR-0007 §5 — the live half, in-page)", () => {
+  it("populates the visitor's own web-vitals and beacons them tagged singleton/home", async () => {
+    const page = await browser.newPage();
+    const beaconResponses: number[] = [];
+    const beaconBodies: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().endsWith("/api/beacon")) beaconBodies.push(req.postData() ?? "");
+    });
+    page.on("response", (res) => {
+      if (res.url().endsWith("/api/beacon")) beaconResponses.push(res.status());
+    });
+
+    await page.goto(`${ORIGIN}/`);
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-pm-hud-live="TTFB"]')?.textContent !== "–",
+      undefined,
+      { timeout: 15_000 },
+    );
+    expect(
+      await page.locator('[data-pm-hud-live="TTFB"]').textContent(),
+    ).toMatch(/\d+ms/);
+
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", {
+        value: "hidden",
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await new Promise((r) => setTimeout(r, 1500));
+
+    expect(beaconResponses.length).toBeGreaterThan(0);
+    expect(new Set(beaconResponses)).toEqual(new Set([204]));
+
+    // Home is a singleton off the matrix: variant/surface identify it; the
+    // env/cache/location knobs honestly report unknown (no injected chrome
+    // to tag them — ADR-0007 §5).
+    const event = JSON.parse(beaconBodies[0]!) as {
+      tags: Record<string, string>;
+    };
+    expect(event.tags.variant).toBe("singleton");
+    expect(event.tags.surface).toBe("home");
+    expect(event.tags.environment).toBe("unknown");
+    expect(event.tags.cacheState).toBe("unknown");
+    await page.close();
+  }, 60_000);
+});
+
 describe("JS-off functionality (ADR-0004 §7)", () => {
   it("the page renders and the switcher swap works as a plain anchor", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });

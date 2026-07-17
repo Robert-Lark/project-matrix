@@ -1382,6 +1382,102 @@ screenshot-critique loop · artifacts as Rob's viewing surface (briefing,
 prompt pack, boards) · origin-suite ×2 + shimmed verify-slice · the Expo
 eight-principles critique frame.
 
+## Phase 7 — The front door
+
+### `home-surface` — resolved (2026-07-16)
+
+The gateway page, replacing the throwaway index at `/`. Rationale + rejected
+alternatives in [ADR-0007](adr/0007-home-surface.md); the decision-map answer
+carries the eight decisions. What the record should keep beyond those:
+
+**Words before pixels, and the panel earned its keep.** The prompt named the
+copy as the hardest problem, and recon confirmed why: the two constraints
+that bind every sentence — the page ships before the store surfaces exist,
+and no verdict may be pre-asserted (strategy-review finding 2 / ADR-0005 §6)
+— were both violated by every first-draft hero. The deck went to a six-lens
+adversarial panel (tired staff engineer, hiring manager, voice cop,
+fact-checker with repo access, thesis guard, structure editor; 60 findings).
+All six independently converged on the same two close-tabs (hero tense,
+verdict voice) — and the fact-checker and staff-engineer lenses both caught
+that the deck's short SHA `f603859` was wrong in its seventh character
+(`f60385f`): a hand-transcription error headed for the hero etch of a
+receipts-first page. The fix became architecture, not proofreading: the etch
+is now substituted at build time from the committed crate manifest, and the
+origin suite asserts the page's receipts equal it. On a site whose whole
+posture is receipts, copy that carries numbers must be *generated from* the
+receipt, never typed.
+
+**The signature spends the metaphor where it's true.** The deadwax disc —
+pure CSS/SVG, no images — is ADR-0006's own earmark (Runout's etch motif,
+reserved for instrument surfaces) rendered with real manifest fields; the
+center label's catalogue number is the commit SHA. The panel's thesis-guard
+also forced a precision the first draft missed: matrix numbers name
+pressings (variants), catalogue numbers name a label's listings (surfaces) —
+so the gateway rows carry PM-001…PM-006 and the deadwax register stays with
+the disc and the "Your visit" band. The scroll-driven rotation (the record
+turns as the page is read) is compositor-only and double-gated; Firefox gets
+a still disc, reduced-motion gets stillness everywhere via the same semantic
+gate the components use.
+
+**Honesty as the load-bearing design move.** The launch-state problem — a
+gateway where every destination is unbuilt — resolved into the page's
+strongest judgment signal instead of its apology: the hero's tense is
+progressive ("being built five ways"), the status line is an inventory
+("the instrument shipped first — no verdict can be retrofitted"), each
+catalogue row links its dated public decision record, and "How it was
+built" ships *Public today* so both status states are demonstrated on day
+one. Verdict-free tradeoff lines survive C2; the one number on the page is
+the fenced Apollo exhibit with its build-measured label.
+
+**The verify pass earned its keep again — and died mid-run doing it.** The
+standing verify-slice run completed two of four lenses before hitting the
+session limit (the other two resume after the reset — the sequential,
+stream-to-disk shape means nothing completed was lost). The two finished
+lenses returned thirteen findings; the sharpest were the receipts test's
+count assertion being **vacuously satisfiable** — `toContain("500")` matches
+`--pm-accent-500` in the page's own inlined tokens CSS, so a hand-typed
+wrong count would ship green forever (fixed: assertions anchor to the etch
+string and hero copy, e.g. `"500 RELEASES · FROZEN 2026-07-11"`) — and the
+**Turbo cache gap**: `@pm/front#build` read the crate manifest without
+declaring it an input, so a crate re-freeze touching nothing under
+`workers/front` would replay a cached dist with the old receipts onto the
+deploy path (fixed: `$TURBO_ROOT$` input). Also fixed from the same pass:
+the meta description hand-typing the release count the build exists to
+substitute, `String.replace`'s `$`-pattern injection latent in the CSS
+inlining (function replacements now), missing manifest-field validation
+(`FROZEN undefined` could have shipped green), one C2 verdict slip on the
+PM-002 row ("the article page couldn't justify"), the etched SOURCE field
+having no visible-text twin, and two literal hexes in the disc that
+contradicted the no-new-values claim (now `color-mix()` derivations of the
+poured neutrals, so a re-pour moves the disc). A home-HUD browser test
+(readout populates; beacon tagged `singleton`/`home`) joined the suite.
+The lenses resumed after the reset (all four re-ran — the amended context
+invalidated the cache — against the fixed tree) and caught a second ring of
+the same drift class: the head's `theme-color`/favicon hexes (now
+substituted from the token file at build), the disc's dozen paper/ink
+*alpha* values (now `color-mix()` derivations — no literal color remains in
+the page CSS), `list-style: none` silently stripping list semantics in
+Safari/VoiceOver (`role="list"` restored on all three lists), and the
+`/pm/*` canonical-font leg having no byte-identity coverage (now asserted
+against the package files, mirroring the variant leg).
+
+**Measured, not hoped (2026-07-16, local composed origin):** wire cost
+≈ 37.7 KB all-in (10.5 KB HTML with all CSS inlined, brotli · 1.0 KB
+fonts.css · 23.7 KB font · 2.5 KB shared ruler), zero images, zero own JS;
+LCP 70 ms desktop unthrottled and 654 ms under Slow-4G + 4× CPU, CLS 0.00;
+Lighthouse 100/100/100; 320 px reflow with no horizontal scroll; skip link,
+focus rings on both registers (paper-white ring on the dark band), forced-
+colors collapses the disc to an outline. The origin-suite `/` contract was
+updated in the same change (home marker + own-HUD + receipts-match-manifest;
+injected-chrome markers still forbidden — assets-first behavior untouched).
+
+**Skills / tools used:** modern-web-guidance (scroll-driven animation
+gating, font-swap stability) · frontend-design skill (signature-element
+discipline; the brief pinned the palette, so the boldness budget went to
+composition) · six-lens copy panel workflow · chrome-devtools MCP
+(screenshot critique, trace, Lighthouse, viewport/emulation passes) ·
+disc prototyped standalone in scratchpad before page integration.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

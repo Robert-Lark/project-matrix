@@ -34,12 +34,69 @@ function wireEncoding(path: string): string {
 }
 
 describe("front Worker: own assets + dispatch", () => {
-  it("/ serves the throwaway index assets-first, chrome-free", async () => {
+  it("/ serves the home surface assets-first, without injected chrome", async () => {
     const res = await get("/");
     expect(res.status).toBe(200);
     const body = await res.text();
-    expect(body).toContain("PM-INDEX-MARKER");
+    // The home surface (ADR-0007): receipts substituted at build from the
+    // committed crate SnapshotManifest, own in-page HUD, no injected chrome
+    // slot.
+    expect(body).toContain('data-pm-surface="home"');
+    expect(body).toContain("One store.");
     expect(body).not.toContain("pm-chrome-slot");
+    expect(body).not.toContain("%%"); // no unsubstituted build markers
+  });
+
+  it("the home surface's on-page receipts match the committed crate manifest", async () => {
+    // Home is a crate-receipt surface: its etched/inline numbers come from
+    // tools/snapshot-capture/crate/manifest.json at build time (ADR-0007) —
+    // a hand-typed SHA is how a wrong receipt ships. Asserted against the
+    // COMMITTED manifest (home's build source) rather than the served one:
+    // in CI the origin serves the fixture, while home always carries the
+    // published crate's provenance. On the deployed plane, snapshot
+    // resolution separately proves served == committed, closing the loop.
+    const manifest = JSON.parse(
+      readFileSync(
+        join(repoRoot, "tools", "snapshot-capture", "crate", "manifest.json"),
+        "utf8",
+      ),
+    ) as {
+      commitSha: string;
+      releaseCount: number;
+      capturedAt: string;
+      source: string;
+    };
+    const body = await (await get("/")).text();
+    // Context-anchored assertions: a bare number is vacuously satisfiable —
+    // "500" alone matches `--pm-accent-500` in the inlined tokens CSS, so a
+    // hand-typed wrong count could ship green. The deadwax etch string is
+    // the one place all four receipt fields appear together.
+    expect(body).toContain(
+      `${manifest.releaseCount} RELEASES · FROZEN ${manifest.capturedAt}`,
+    );
+    expect(body).toContain(`CUT ${manifest.commitSha.slice(0, 7)}`);
+    expect(body).toContain(`SOURCE ${manifest.source}`);
+    // And the hero's visible-copy receipt (entity-encoded nbsp in source).
+    expect(body).toContain(`${manifest.releaseCount}&nbsp;real`);
+  });
+
+  it("home's canonical font leg at /pm/* is byte-identical to @pm/tokens", async () => {
+    // ADR-0003 §8: fonts are a controlled constant — identical files
+    // everywhere. The variant copies are asserted elsewhere; this covers the
+    // one leg the home surface adds (base path /pm/, ADR-0007 §6).
+    const pkgFont = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "FamiljenGrotesk.var.woff2"),
+    );
+    const servedFont = Buffer.from(
+      await (await get("/pm/fonts/FamiljenGrotesk.var.woff2")).arrayBuffer(),
+    );
+    expect(servedFont.equals(pkgFont)).toBe(true);
+
+    const pkgCss = readFileSync(
+      join(repoRoot, "packages", "tokens", "css", "fonts.css"),
+      "utf8",
+    );
+    expect(await (await get("/pm/css/fonts.css")).text()).toBe(pkgCss);
   });
 
   it("unknown variant prefixes 404", async () => {

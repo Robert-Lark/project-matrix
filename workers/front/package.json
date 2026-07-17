@@ -2,7 +2,7 @@
   "name": "@pm/front",
   "version": "0.1.0",
   "private": true,
-  "description": "The front routing Worker (ADR-0004 §3, §7): composes the single origin by path-prefix dispatch over service bindings, injects the switcher/HUD chrome via HTMLRewriter, and serves the /_pm/* instrumentation path plus the throwaway chrome-free index at /.",
+  "description": "The front routing Worker (ADR-0004 §3, §7): composes the single origin by path-prefix dispatch over service bindings, injects the switcher/HUD chrome via HTMLRewriter, and serves the /_pm/* instrumentation path plus the home surface at / (ADR-0007, composed at build from home/ + the crate manifest).",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@pm/measurement": "workspace:*",
-    "@pm/switcher": "workspace:*"
+    "@pm/switcher": "workspace:*",
+    "@pm/tokens": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.110.0"
