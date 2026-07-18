@@ -1542,6 +1542,45 @@ fontTools/pyftsubset (two new subset faces) · sips (the originals scan) ·
 parallel build agents for the glyph and fixture/thumb slices with the main
 session on the chrome.
 
+### `editorial-build` — PRD'd and sliced (2026-07-18)
+
+The first per-surface variant build, PRD'd and sliced per the foundation
+precedent (issue #1 → #2–#8), committed as `docs/prds/editorial-build.md`
++ `editorial-build-issues.md`: six chained slices, vanilla → react-next →
+astro → qwik → htmx → remix3 — vanilla first because the host variant
+carries the pattern (workspace shape, snapshot-parameterized build,
+composition wiring) and the obligations with no natural owner elsewhere
+(the ADR-0008 §9 deployed re-render leg, the cart storage contract, the
+snapshot-selector minting, the NoiseSpec behavior-attribute class).
+
+Verification: four background lenses planned; adr-fact-checker (7
+findings) and seams (8) completed before the session limit killed
+zero-bias and hostile-staff — both were hand-walked inline by the main
+session per the round-three learning, finding one more real defect. With
+the two foreground probe finds, **17 distinct defects were adopted into
+the PRD before commit**. Headline finds, all seams-shaped: **no cart
+storage contract existed anywhere** (ADR-0004 §5 pins
+localStorage-cart-only but nothing names the key or shape — five variants
+inventing it independently would silently break cart-survives-the-swap);
+**the turbo cache would have shipped fixture builds to the crate plane**
+(the origin and deploy jobs share the `turbo-origin-*` cache family and
+both run `turbo run build`; the snapshot selector — which didn't exist —
+must be declared turbo `env`, exactly the failure mode turbo.json's
+`@pm/front#build` comment records for home's receipts); **the
+behavior-attribute noise class ADR-0008 demands is inexpressible in
+today's `NoiseSpec`** (attrPatterns/classPatterns only — slice A extends
+the type so B–F never touch shared gate code); and the inline zero-bias
+walk caught my own adopted fix over-reaching (an unconditional
+`[data-pm-fenced]` normalizer drop would let any core variant hide DOM
+from the gate — scoped to the fenced variant's own comparison, with a
+core-pages-fence-free assertion).
+
+One process note: the session's permission gate (correctly) declined to
+publish GitHub issues nobody had named publishing — the PRD and slice
+specs are committed in-repo instead (artifacts are the memory), with the
+publish commands in the issues file's header. The build does not wait on
+the mirror.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,
