@@ -34,8 +34,10 @@ function display(metric: Metric): string {
 
 function record(metric: Metric): void {
   pending.set(metric.name, metric);
-  const slot = chrome?.querySelector(`[data-pm-hud-live="${metric.name}"]`);
-  if (slot) slot.textContent = display(metric);
+  // querySelectorAll: the redesigned chrome carries each vital twice (the
+  // collapsed bar's mini readout + the panel's full set) — every slot updates.
+  const slots = chrome?.querySelectorAll(`[data-pm-hud-live="${metric.name}"]`) ?? [];
+  for (const slot of slots) slot.textContent = display(metric);
 }
 
 function flush(): void {

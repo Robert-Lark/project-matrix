@@ -9,7 +9,9 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/fontkit": "^2.0.9",
     "@types/node": "^24.0.0",
+    "fontkit": "^2.0.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }

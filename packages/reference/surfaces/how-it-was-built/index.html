@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How it was built — Project Matrix</title>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/shell.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/masthead.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/footer.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/prose.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/how-built.css">
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-doc">
+        <nav class="pm-doc__toc" aria-label="Contents">
+          <details open>
+            <summary>Decision records</summary>
+            <ul role="list">
+              <li><a href="#0001-benchmark-measurement-methodology">Benchmark measurement methodology</a></li>
+              <li><a href="#0002-data-contract-and-frozen-snapshot">Data contract</a></li>
+              <li><a href="#0003-design-system-and-zero-bias-presentation">Design system</a></li>
+              <li><a href="#0004-deployment-topology-and-contextual-switcher">Deployment topology</a></li>
+              <li><a href="#0005-plp-data-strategy-comparison">PLP data-strategy comparison</a></li>
+              <li><a href="#0006-aesthetic-direction-catalogue">Aesthetic direction</a></li>
+              <li><a href="#0007-home-surface">Home surface</a></li>
+              <li><a href="#0008-store-surfaces-and-instrument">Store surfaces + the instrument</a></li>
+            </ul>
+          </details>
+          <details open>
+            <summary>Build log</summary>
+            <ul role="list">
+              <li><a href="#phase-0">Phase 0 — Prep / curation</a></li>
+              <li><a href="#phase-1">Phase 1 — Foundations</a></li>
+              <li><a href="#phase-2">Phase 2 — Foundation build</a></li>
+              <li><a href="#phase-3">Phase 3 — Store data</a></li>
+              <li><a href="#phase-4">Phase 4 — Variant frontier</a></li>
+              <li><a href="#phase-5">Phase 5 — The data axis</a></li>
+              <li><a href="#phase-6">Phase 6 — The look</a></li>
+              <li><a href="#phase-7">Phase 7 — The front door</a></li>
+              <li><a href="#phase-8">Phase 8 — The store takes shape</a></li>
+            </ul>
+          </details>
+        </nav>
+        <div class="pm-doc__body">
+          <header>
+            <p class="pm-page__kicker">How it was built</p>
+            <h1 class="pm-page__title">The decision record, in the open</h1>
+          </header>
+          <div class="pm-prose">
+            <p>Every load-bearing decision behind this site — how measurement stays fair, why the data is frozen, how six rendering paradigms share one design system without sharing code — was written down when it was made, with the alternatives that lost. This page is that record, generated from the repository's own files; nothing here is retyped for presentation.</p>
+            <p>The short version of the method: decide one thing per session, record it as an architecture decision record, attack the decision with an adversarial review before building on it, and let every published number carry a receipt. The store you're browsing is the working end of that process.</p>
+            <h2 id="decision-records">Decision records</h2>
+            <ul>
+              <li id="0001-benchmark-measurement-methodology"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0001-benchmark-measurement-methodology.md" rel="noopener">Benchmark measurement methodology — fair metrics across rendering paradigms</a> — <time datetime="2026-07-06">2026-07-06</time>, accepted</li>
+              <li id="0002-data-contract-and-frozen-snapshot"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0002-data-contract-and-frozen-snapshot.md" rel="noopener">Data contract — frozen snapshot origin, zero-bias payload, R2/KV serving</a> — <time datetime="2026-07-06">2026-07-06</time>, accepted</li>
+              <li id="0003-design-system-and-zero-bias-presentation"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0003-design-system-and-zero-bias-presentation.md" rel="noopener">Design system — shared tokens/components + zero-bias presentation</a> — <time datetime="2026-07-06">2026-07-06</time>, accepted</li>
+              <li id="0004-deployment-topology-and-contextual-switcher"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0004-deployment-topology-and-contextual-switcher.md" rel="noopener">Deployment topology — single canonical plane, one-SHA monorepo, contextual switcher</a> — <time datetime="2026-07-06">2026-07-06</time>, accepted</li>
+              <li id="0005-plp-data-strategy-comparison"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0005-plp-data-strategy-comparison.md" rel="noopener">PLP data-strategy comparison — scenarios, client warmth, strategy mapping</a> — <time datetime="2026-07-12">2026-07-12</time>, accepted</li>
+              <li id="0006-aesthetic-direction-catalogue"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0006-aesthetic-direction-catalogue.md" rel="noopener">Aesthetic direction — the &quot;Catalogue&quot; pour</a> — <time datetime="2026-07-12">2026-07-12</time>, accepted</li>
+              <li id="0007-home-surface"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0007-home-surface.md" rel="noopener">Home surface — the front door as a receipt</a> — <time datetime="2026-07-16">2026-07-16</time>, accepted</li>
+              <li id="0008-store-surfaces-and-instrument"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0008-store-surfaces-and-instrument.md" rel="noopener">Store surfaces + the instrument — the canonical spec layer</a> — <time datetime="2026-07-17">2026-07-17</time>, accepted</li>
+            </ul>
+            <h2 id="build-log">Build log</h2>
+            <p>The narrative record, phase by phase — including the failures and the reviews that caught them:</p>
+            <ul>
+              <li id="phase-0"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 0 — Prep / curation</a></li>
+              <li id="phase-1"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 1 — Foundations</a></li>
+              <li id="phase-2"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 2 — Foundation build</a></li>
+              <li id="phase-3"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 3 — Store data</a></li>
+              <li id="phase-4"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 4 — Variant frontier</a></li>
+              <li id="phase-5"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 5 — The data axis</a></li>
+              <li id="phase-6"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 6 — The look</a></li>
+              <li id="phase-7"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 7 — The front door</a></li>
+              <li id="phase-8"><a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md" rel="noopener">Phase 8 — The store takes shape</a></li>
+            </ul>
+            <p>The full files — the decision map, the reviews, the prototypes with their findings — live in <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">the public repository</a>.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

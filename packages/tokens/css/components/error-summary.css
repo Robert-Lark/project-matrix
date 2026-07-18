@@ -1,0 +1,65 @@
+/*
+ * Component module — form error summary (the GOV.UK/WAI pattern, adopted by
+ * panel finding: WCAG 3.3.1 + 4.1.3). Rendered by the paradigm on an invalid
+ * submit; focus MOVES to it (tabindex="-1"); each item links its field. The
+ * canonical SERVED state is absent — the interaction registry entry
+ * (`checkout-submit-invalid`) performs identical DOM + focus work in every
+ * paradigm, so the INP comparison compares like work.
+ *
+ * Canonical (post-submit) markup:
+ *   <section class="pm-error-summary" tabindex="-1"
+ *            aria-labelledby="err-title">
+ *     <h2 class="pm-error-summary__title" id="err-title">
+ *       Before you place the order</h2>
+ *     <ul class="pm-error-summary__list" role="list">
+ *       <li><a href="#email">Enter an email address</a></li> …
+ *     </ul>
+ *   </section>
+ */
+
+.pm-error-summary {
+  border: 2px solid var(--color-danger);
+  border-radius: var(--radius-control);
+  padding: var(--space-inset-sm) var(--space-inset);
+  margin-block-end: var(--space-stack);
+}
+
+.pm-error-summary:focus-visible,
+.pm-error-summary:focus {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-error-summary__title {
+  margin: 0 0 var(--space-stack-xs);
+  font: var(--weight-bold) var(--text-body) / 1.3 var(--font-ui);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline);
+}
+
+/* The redundant non-color cue (same glyph discipline as the field module). */
+.pm-error-summary__title::before {
+  content: "\26A0";
+  color: var(--color-danger);
+}
+
+.pm-error-summary__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-stack-xs);
+}
+
+.pm-error-summary__list a {
+  font: var(--text-small) / 1.4 var(--font-ui);
+  color: var(--color-danger);
+  font-weight: var(--weight-medium);
+}
+
+.pm-error-summary__list a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

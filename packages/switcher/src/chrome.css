@@ -1,74 +1,385 @@
 /*
- * Chrome styles (ADR-0004 §7) — served from /_pm/chrome.css, injected into
- * every variant identically, EXCLUDED from measured KB by its known path.
- * Consumes the page's SEMANTIC tokens only (every variant loads the shared
- * tokens.css by contract), so the chrome matches the design system — and the
- * HUD metrics get the tabular-figures font — without shipping any of it.
+ * Chrome styles (ADR-0004 §7; redesigned by the surface-design session,
+ * 2026-07-17) — served from /_pm/chrome.css, head-appended by the front
+ * Worker into every variant identically, EXCLUDED from measured KB by its
+ * known path.
+ *
+ * The instrument register (ADR-0006 §1 reserved it for exactly this): the
+ * deadwax band home established, extended to every surface as a compact
+ * strip. The etch grammar is the signature — uppercase, letterspaced,
+ * interpunct-separated, hairline rules, radius-0, nothing floats — set in
+ * the chrome-owned instrument mono served from /_pm/fonts/ (the excluded
+ * path; the store's --pm-font-metric is untouched, ADR-0006 §3 honored).
+ *
+ * Geometry rules (panel kill, hostile lens): the collapsed strip is
+ * GEOMETRICALLY INERT — fixed block-size, fixed-width live-value slots — so
+ * no post-load mutation (streamed vitals, font swap) can shift the store
+ * below. The expanded panel is a positioned overlay: opening it occludes,
+ * never reflows, the specimen.
+ *
+ * Color rule (home §7 precedent): every chrome color is a color-mix()
+ * derivation of the poured neutrals — no literal hex — so a re-pour of the
+ * primitive tier moves the instrument with it. The semantic accent is NOT
+ * used on the dark ground (it fails contrast there: 2.71:1, audited);
+ * paper-white ink carries links and focus.
  */
+
+@font-face {
+  font-family: "PM Instrument Mono";
+  src: url("/_pm/fonts/PMInstrumentMono.var.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Metric-matched local fallback (DRAFT §6): while the woff2 races first
+   paint, system monos render with JetBrains Mono's vertical metrics
+   (fontTools-read from the shipped file: ascent 1020/1000, descent 300/1000,
+   line-gap 0) so the swap is height-stable; the fixed bar + 7ch slots pin
+   the rest. Both faces are ~0.6em-advance monos, so size-adjust stays 100%. */
+@font-face {
+  font-family: "PM Instrument Mono Fallback";
+  src: local("Menlo"), local("Consolas"), local("Liberation Mono");
+  ascent-override: 102%;
+  descent-override: 30%;
+  line-gap-override: 0%;
+}
+
 #pm-chrome {
+  /* Ground + inks: derived, never literal (audited by chrome-contrast) */
+  --pm-chrome-ground: color-mix(in srgb, var(--pm-neutral-950) 98%, var(--pm-neutral-0));
+  --pm-chrome-ink: var(--pm-neutral-0);
+  --pm-chrome-ink-muted: color-mix(in srgb, var(--pm-neutral-0) 72%, var(--pm-neutral-950));
+  --pm-chrome-etch: color-mix(in srgb, var(--pm-neutral-0) 24%, transparent);
+  --pm-chrome-mono: "PM Instrument Mono", "PM Instrument Mono Fallback", ui-monospace, "SF Mono", Menlo, monospace;
+  --pm-chrome-bar-h: 44px;
+
+  position: relative;
+  z-index: 100;
+  display: block;
+  background: var(--pm-chrome-ground);
+  color: var(--pm-chrome-ink);
+  font: 400 0.6875rem / 1.45 var(--pm-chrome-mono);
+  letter-spacing: 0.08em;
+  border-block-end: 1px solid var(--pm-chrome-etch);
+}
+
+/* Visually-hidden utility (accessible names, table caption) */
+.pm-chrome__sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── The collapsed bar: one fixed-height line ─────────────────────────────── */
+
+.pm-chrome__bar {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-stack-xs);
-  padding: var(--space-inset-xs) var(--space-inset-sm);
-  background: var(--color-surface-sunk);
-  border-block-end: 1px solid var(--color-border);
-  font: var(--text-small) / 1.4 var(--font-ui);
-  color: var(--color-text);
+  align-items: center;
+  gap: var(--pm-space-3);
+  block-size: var(--pm-chrome-bar-h);
+  padding-inline: var(--pm-space-4);
+  overflow: hidden; /* geometric inertness: nothing may grow the bar */
+}
+
+.pm-chrome__mark {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  padding-inline-end: var(--pm-space-3);
+  border-inline-end: 1px solid var(--pm-chrome-etch);
+}
+
+.pm-chrome__key {
+  color: var(--pm-chrome-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.9em;
+}
+
+/* The switcher: etched matrix-number grammar — caps, tracking, interpunct
+   separators, no boxes, no radius. The anchors stay ≥24px targets via
+   padding (WCAG 2.5.8) without visual chrome. */
+.pm-chrome__switch {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.pm-chrome__cell {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+  padding-inline: var(--pm-space-2);
+  color: var(--pm-chrome-ink);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pm-chrome__switch .pm-chrome__cell + .pm-chrome__cell::before {
+  content: "·";
+  color: var(--pm-chrome-ink-muted);
+  padding-inline-end: var(--pm-space-2);
+}
+
+a.pm-chrome__cell:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+.pm-chrome__cell:focus-visible {
+  outline: var(--pm-focus-width) solid var(--pm-chrome-ink);
+  outline-offset: calc(-1 * var(--pm-focus-width)); /* inset: the bar clips overflow */
+}
+
+.pm-chrome__cell--current {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+  text-decoration-color: var(--pm-chrome-ink-muted);
+}
+
+.pm-chrome__cell--fenced {
+  border: 1px dashed var(--pm-chrome-etch);
+  padding-inline: var(--pm-space-2);
+}
+
+/* Live vitals: fixed-width value slots — the swap/stream cannot move a pixel */
+.pm-chrome__mini {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pm-space-3);
+  margin-inline-start: auto;
+}
+
+.pm-chrome__vital {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--pm-space-1);
+}
+
+.pm-chrome__vital-name {
+  color: var(--pm-chrome-ink-muted);
+  font-size: 0.9em;
+  letter-spacing: 0.16em;
+}
+
+.pm-chrome__vital-value {
+  display: inline-block;
+  /* 7ch: a floor is only inert if it covers the worst value — "12345ms" on a
+     throttled load is 7ch, and a growing slot would shift the bar it lives
+     in (verify-slice: the chrome must not manufacture the CLS it reports). */
+  min-inline-size: 7ch;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/* ── The instrument disclosure ────────────────────────────────────────────── */
+
+.pm-chrome__instrument {
+  flex: 0 0 auto;
+}
+
+.pm-chrome__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  min-block-size: var(--target-min);
+  cursor: pointer;
+  list-style: none;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--pm-chrome-ink);
+  border-block-end: 1px solid var(--pm-chrome-etch);
+}
+
+.pm-chrome__summary::-webkit-details-marker { display: none; }
+
+.pm-chrome__summary::after {
+  content: "▾" / "";
+  color: var(--pm-chrome-ink-muted);
+}
+
+.pm-chrome__instrument[open] .pm-chrome__summary::after {
+  content: "▴" / "";
+}
+
+.pm-chrome__summary:focus-visible {
+  outline: var(--pm-focus-width) solid var(--pm-chrome-ink);
+  outline-offset: calc(-1 * var(--pm-focus-width));
+}
+
+/* The panel overlays the specimen (opening occludes, never reflows). */
+.pm-chrome__panel {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  max-block-size: min(80vh, 42rem);
+  overflow: auto;
+  background: var(--pm-chrome-ground);
+  border-block-end: 1px solid var(--pm-chrome-etch);
+  padding: var(--pm-space-4) var(--pm-space-4) var(--pm-space-5);
+  display: grid;
+  gap: var(--pm-space-4);
+}
+
+.pm-chrome__section {
+  border-block-start: 1px solid var(--pm-chrome-etch);
+  padding-block-start: var(--pm-space-3);
+  max-inline-size: 72rem;
+}
+
+.pm-chrome__section > p { margin: 0 0 var(--pm-space-2); }
+.pm-chrome__section > p:last-child { margin-block-end: 0; }
+
+.pm-chrome__h {
+  margin: 0 0 var(--pm-space-2);
+  font: 400 0.9em / 1.2 var(--pm-chrome-mono);
+  color: var(--pm-chrome-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.pm-chrome__note {
+  color: var(--pm-chrome-ink-muted);
+  letter-spacing: 0.04em;
+}
+
+.pm-chrome__vow { font-weight: 700; }
+
+/* Prose/receipt links live in the PANEL; the bar's etched cells manage their
+   own underline (hover + the current marker) — scoping here keeps the id
+   selector from flattening that distinction (caught on the live probe). */
+.pm-chrome__panel a {
+  color: var(--pm-chrome-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+  text-decoration-color: var(--pm-chrome-ink-muted);
+}
+
+.pm-chrome__panel a:focus-visible {
+  outline: var(--pm-focus-width) solid var(--pm-chrome-ink);
+  outline-offset: var(--focus-offset);
 }
 
 .pm-chrome__row {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: var(--space-inline);
+  gap: var(--pm-space-2) var(--pm-space-3);
 }
 
-.pm-chrome__label {
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.85em;
+/* ── The reading table ────────────────────────────────────────────────────── */
+
+.pm-chrome__scroll {
+  overflow-x: auto; /* 320px reflow: the 2-D table scrolls, the page never does */
 }
 
-.pm-chrome__cell {
-  min-height: var(--target-min);
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--space-inset-xs);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.pm-chrome__cell:focus-visible {
-  outline: var(--focus-ring);
+.pm-chrome__scroll:focus-visible {
+  outline: var(--pm-focus-width) solid var(--pm-chrome-ink);
   outline-offset: var(--focus-offset);
 }
 
-.pm-chrome__cell--current {
-  color: var(--color-text);
-  background: var(--color-surface);
-  font-weight: var(--weight-bold);
+.pm-chrome__table {
+  border-collapse: collapse;
+  min-inline-size: 28rem;
 }
 
-.pm-chrome__empty {
+.pm-chrome__table th,
+.pm-chrome__table td {
+  text-align: start;
+  padding: var(--pm-space-1) var(--pm-space-3) var(--pm-space-1) 0;
+  border-block-end: 1px solid var(--pm-chrome-etch);
+  font-weight: 400;
+}
+
+.pm-chrome__th {
+  color: var(--pm-chrome-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.9em;
+}
+
+.pm-chrome__th--planned .pm-chrome__note { display: block; letter-spacing: 0.04em; text-transform: none; }
+
+.pm-chrome__td {
+  font-variant-numeric: tabular-nums;
+}
+
+.pm-chrome__none { color: var(--pm-chrome-ink-muted); }
+
+.pm-chrome__vitals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-4);
+}
+
+.pm-chrome__vitals .pm-chrome__vital-value {
+  font-size: 1.5em;
+  min-inline-size: 4ch;
+  text-align: start;
+}
+
+/* ── The condition ────────────────────────────────────────────────────────── */
+
+.pm-chrome__cond {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-2) var(--pm-space-4);
   margin: 0;
-  color: var(--color-text-muted);
 }
 
-.pm-chrome__metric {
-  display: inline-flex;
-  gap: var(--space-stack-xs);
-  align-items: baseline;
+.pm-chrome__cond-item { display: inline-flex; gap: var(--pm-space-1); align-items: baseline; }
+
+.pm-chrome__cond dt {
+  color: var(--pm-chrome-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.9em;
 }
 
-.pm-chrome__metric-name {
-  color: var(--color-text-muted);
+.pm-chrome__cond dt::after { content: ""; }
+.pm-chrome__cond dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.pm-chrome__cond-item + .pm-chrome__cond-item::before {
+  content: "·";
+  color: var(--pm-chrome-ink-muted);
+  align-self: baseline;
+  margin-inline-end: var(--pm-space-2);
 }
 
-.pm-chrome__metric-value {
-  font: var(--weight-medium) 1em / 1 var(--font-metric);
-  font-variant-numeric: var(--numeric-metric);
+/* ── One line at 320px (asserted in the origin suite's browser leg): the
+      bar keeps its fixed height; the switcher SCROLLS instead of hiding —
+      display:none anchors would make variant switching unreachable to
+      mobile, keyboard, and AT users (verify-slice, a11y direction). */
+
+@media (max-width: 40em) {
+  .pm-chrome__bar { gap: var(--pm-space-2); padding-inline: var(--pm-space-3); }
+  .pm-chrome__switch { overflow-x: auto; scrollbar-width: none; }
+  .pm-chrome__key { display: none; }
+  .pm-chrome__mini { display: none; }
+}
+
+/* ── Forced colors: the dark ground flattens; structure survives on borders,
+      links on LinkText, the current cell on its underline ─────────────────── */
+
+@media (forced-colors: active) {
+  #pm-chrome {
+    --pm-chrome-ground: Canvas;
+    --pm-chrome-ink: CanvasText;
+    --pm-chrome-ink-muted: CanvasText;
+    --pm-chrome-etch: CanvasText;
+  }
+  .pm-chrome__cell:focus-visible,
+  .pm-chrome__summary:focus-visible,
+  .pm-chrome__scroll:focus-visible,
+  #pm-chrome a:focus-visible {
+    outline-color: Highlight;
+  }
 }

@@ -1,0 +1,50 @@
+/*
+ * Surface module — the A11y section (vanilla singleton). A reading page that
+ * hosts the compare frames and mode demos; the page SHELL stays compliant by
+ * construction — defects live only inside opt-in <details> boxes
+ * (compare.css), so a real assistive-tech user passing through never falls
+ * into an exhibit (strategy-review finding 21).
+ *
+ * Skeleton (three pages):
+ *   /vanilla/a11y/                index: what this section is, how to use it
+ *   /vanilla/a11y/element-demos/  five pm-compare blocks (noindex)
+ *   /vanilla/a11y/mode-demos/     three pm-mode blocks
+ *
+ *   <div class="pm-a11y">
+ *     <header>…kicker + h1 + intro (pm-prose)…</header>
+ *     <nav class="pm-a11y__toc" aria-label="Demos on this page">…</nav>
+ *     …pm-compare / pm-mode sections…
+ *   </div>
+ */
+
+.pm-a11y {
+  max-width: 72rem;
+}
+
+.pm-a11y__intro {
+  max-width: 65ch;
+}
+
+.pm-a11y__toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-inline) var(--space-inset);
+  padding: var(--space-inset-sm) 0;
+  margin-block: var(--space-stack);
+  border-block: 1px solid var(--color-border);
+}
+
+.pm-a11y__toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  font: var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-accent);
+}
+
+.pm-a11y__toc a:hover { color: var(--color-accent-hover); }
+
+.pm-a11y__toc a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

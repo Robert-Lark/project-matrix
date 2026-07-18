@@ -44,10 +44,14 @@
      size-3 (card titles) sits below 1.25rem so titles never fight the cover
      art (boards critique, 2026-07-12). */
   /* "PM Warn Glyph" is a 1-glyph (U+26A0 ⚠) fallback for the field error icon,
-     which Familjen lacks; unicode-range scopes it to that codepoint alone, so
-     it never affects letterforms. See css/fonts.css. */
-  --pm-font-ui: "Familjen Grotesk", "PM Warn Glyph", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --pm-font-metric: "Familjen Grotesk", "PM Warn Glyph", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+     which Familjen lacks; "PM Crate Symbols" covers the nine crate text
+     symbols Familjen lacks (⅓ ℗ ˙ π ρ φ Я ∂ √ — crate-glyph-coverage,
+     DRAFT §4.1). Both are unicode-range-scoped Inter subsets, consulted only
+     for their own codepoints, so they never affect letterforms; the crate's
+     Arabic/CJK stay on a documented per-OS system fallback (see
+     fonts/coverage.json `crateSystemFallback`). See css/fonts.css. */
+  --pm-font-ui: "Familjen Grotesk", "PM Warn Glyph", "PM Crate Symbols", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pm-font-metric: "Familjen Grotesk", "PM Warn Glyph", "PM Crate Symbols", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --pm-numeric-tabular: tabular-nums;  /* the face ships tnum; metric text opts in via --numeric-metric */
   --pm-size-0: 0.8125rem;
   --pm-size-1: 0.9375rem;
@@ -93,10 +97,12 @@
   --font-ui:     var(--pm-font-ui);
   --font-metric: var(--pm-font-metric);
   --numeric-metric: var(--pm-numeric-tabular);  /* tabular figures for aligned prices + HUD */
-  --text-small:   var(--pm-size-1);
-  --text-body:    var(--pm-size-2);
-  --text-title:   var(--pm-size-3);
-  --text-display: var(--pm-size-5);
+  --text-caption:  var(--pm-size-0);   /* kickers, tags, figure captions */
+  --text-small:    var(--pm-size-1);
+  --text-body:     var(--pm-size-2);
+  --text-title:    var(--pm-size-3);
+  --text-headline: var(--pm-size-4);   /* surface H1s — below display */
+  --text-display:  var(--pm-size-5);
   --weight-normal: var(--pm-weight-normal);
   --weight-medium: var(--pm-weight-medium);
   --weight-bold:   var(--pm-weight-bold);
@@ -109,6 +115,8 @@
   --space-stack-xs: var(--pm-space-1);   /* tight text stack */
   --space-inline:   var(--pm-space-2);
   --space-gap:      var(--pm-space-5);   /* grid gap between cards */
+  --space-block:    var(--pm-space-5);   /* between blocks within a section */
+  --space-section:  var(--pm-space-6);   /* between a surface's major sections */
 
   --radius-card:    var(--pm-radius-2);
   --radius-control: var(--pm-radius-1);

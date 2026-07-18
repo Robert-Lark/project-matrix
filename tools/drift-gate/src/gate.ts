@@ -67,8 +67,10 @@ export function extractNormalizedDom(
  * normal document flow, so masking its region cannot compensate for the
  * layout shift it causes below (packages/switcher/README.md); removing the
  * slot reflows the variant page into exactly the reference render's layout.
- * Removing the slot also detaches the chrome's own stylesheet link and
- * script, so no chrome byte can influence the shot.
+ * Removing the slot also detaches the measurement script; chrome.css stays
+ * head-appended (surface-design session) but is scoped entirely to
+ * #pm-chrome/.pm-chrome__* selectors, so with the subtree gone no chrome
+ * byte can influence the shot.
  *
  * Returns the number of slots removed so callers can assert the exclusion
  * was exercised (1 on a contract-conforming variant page, 0 on the

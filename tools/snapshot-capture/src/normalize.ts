@@ -222,7 +222,14 @@ export async function normalizePhase(
   // Orphaned derivatives (from releases tombstoned after an earlier derive
   // pass) must not ride into the frozen artifact — remove, loudly. Raw
   // listing on purpose: stale atomic-write leftovers (*.tmp) are orphans too.
-  const orphans = readdirSync(paths.crateImgDir(dirs)).filter((f) => !referenced.has(f));
+  // A thumb (`X.thumb.avif`, derive's 160px tier) is referenced exactly when
+  // its parent derivative `X.avif` is — the trays never name thumbs (renders
+  // derive the src by convention), so referenced-set membership is inherited.
+  const isLiveThumb = (f: string) =>
+    f.endsWith(".thumb.avif") && referenced.has(f.replace(/\.thumb\.avif$/, ".avif"));
+  const orphans = readdirSync(paths.crateImgDir(dirs)).filter(
+    (f) => !referenced.has(f) && !isLiveThumb(f),
+  );
   for (const f of orphans) unlinkSync(paths.derivative(dirs, f));
   if (orphans.length > 0) log(`[normalize] removed ${orphans.length} orphaned derivatives`);
 
@@ -231,8 +238,12 @@ export async function normalizePhase(
   // originalSha256 chains each derivative to the retained Discogs original;
   // the chain necessarily ends there — the live URLs are signed, auth-gated,
   // and not byte-stable, so no public hash of Discogs's own bytes can exist.
+  // Thumbs (derive's 160px tier) are indexed artifacts like any other: each
+  // `X.thumb.avif` entry chains to the SAME original as its parent `X.avif`
+  // (both are derived from it), with its own bytes/sha256 and its true
+  // measured dimensions (thumbs are convention-derived, never tray data).
   const originals = originalsByKey(dirs);
-  const imagesIndex = [...referenced].sort().map((file) => {
+  const parentEntries = [...referenced].sort().map((file) => {
     const bytes = readFileSync(paths.derivative(dirs, file));
     const detail = details.find((d) => d.images.some((i) => i.src === `/assets/img/${file}`));
     const image = detail?.images.find((i) => i.src === `/assets/img/${file}`);
@@ -252,6 +263,30 @@ export async function normalizePhase(
       height: image?.height ?? null,
     };
   });
+  const thumbEntries = await Promise.all(
+    parentEntries.map(async (parent) => {
+      const file = parent.file.replace(/\.avif$/, ".thumb.avif");
+      const path = paths.derivative(dirs, file);
+      // derive always mints the thumb beside the derivative — a missing one
+      // here is a pipeline bug (stale img dir), not a data gap. Fail loudly.
+      if (!exists(path)) throw new Error(`[normalize] missing thumb ${file} — re-run derive`);
+      const bytes = readFileSync(path);
+      const meta = await sharp(path).metadata();
+      if (!meta.width || !meta.height) throw new Error(`[normalize] no dimensions in ${file}`);
+      return {
+        file,
+        releaseId: parent.releaseId,
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        originalSha256: parent.originalSha256,
+        width: meta.width,
+        height: meta.height,
+      };
+    }),
+  );
+  const imagesIndex = [...parentEntries, ...thumbEntries].sort((a, b) =>
+    a.file < b.file ? -1 : 1,
+  );
 
   // The committed curation receipt (ADR-0001 §9): the spec, per-label stats,
   // and every tombstone with its reason — enough to audit how the crate was

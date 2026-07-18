@@ -1,0 +1,134 @@
+/*
+ * Component module — PDP gallery. Appearance shared, BEHAVIOR per paradigm
+ * (ADR-0003 consequences: PDP interactivity is the render-axis variable).
+ *
+ * Canonical markup:
+ *   <div class="pm-gallery">
+ *     <figure class="pm-gallery__stage">
+ *       <img class="pm-gallery__main" src="…" width="…" height="…" alt="…"
+ *            fetchpriority="high">                  (the LCP element)
+ *       <button class="pm-gallery__zoom" type="button" aria-pressed="false">
+ *         Zoom</button>
+ *     </figure>
+ *     <ul class="pm-gallery__thumbs" role="list">   (omitted when 1 image)
+ *       <li><button class="pm-gallery__thumb" type="button"
+ *            aria-current="true">                   (selected thumb; name =
+ *            <img src="{thumb src}" width="160" height="160" alt=""            "View image N of M: {alt}"
+ *                 loading="lazy" fetchpriority="low">  via visually-hidden text)
+ *            <span class="pm-sr-only">View image 1 of 5: …</span></button></li>
+ *     </ul>
+ *   </div>
+ *
+ * Geometry: the stage is a FIXED 1:1 mat (296/500 crate covers are exactly
+ * square, 456/500 within 2% — tool-derived 2026-07-17); non-square images
+ * letterbox on the sunk mat with object-fit: contain — the mat-board IS the
+ * Catalogue aesthetic, and a fixed frame means switching images can never
+ * shift the buy panel (zero CLS by construction). The per-release frame
+ * alternative is recorded in the session ADR.
+ *
+ * Thumb srcs use the 160px thumb derivative (`….thumb.avif`, issue #9
+ * follow-up settled this session); selection state rides aria-current on the
+ * selected thumb — an exclusive-selection semantic, managed identically by
+ * every paradigm. JS-off: the main image and all content are visible;
+ * switching is the enhancement this surface exists to price.
+ */
+
+.pm-gallery {
+  display: grid;
+  gap: var(--space-stack);
+}
+
+.pm-gallery__stage {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 1 / 1;
+  background: var(--color-surface-sunk);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.pm-gallery__main {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Zoomed state rides the button's aria-pressed (state off native attributes,
+   never JS classes — ADR-0003 §5); the transform is compositor-only and
+   collapses under reduced motion via the semantic gate. */
+.pm-gallery__main {
+  transition: transform var(--motion-base) var(--motion-ease); /* compositor-only */
+}
+
+.pm-gallery__stage:has(.pm-gallery__zoom[aria-pressed="true"]) .pm-gallery__main {
+  transform: scale(1.8);
+  cursor: zoom-out;
+}
+
+.pm-gallery__zoom {
+  position: absolute;
+  inset-block-end: var(--space-inset-xs);
+  inset-inline-end: var(--space-inset-xs);
+  min-height: var(--target-min);
+  min-width: var(--target-min);
+  padding: var(--space-inset-xs) var(--space-inset-sm);
+  font: var(--weight-medium) var(--text-small) / 1 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  cursor: zoom-in;
+}
+
+.pm-gallery__zoom:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-gallery__thumbs {
+  display: flex;
+  gap: var(--space-inline);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pm-gallery__thumb {
+  display: block;
+  inline-size: 72px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  background: var(--color-surface-sunk);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.pm-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pm-gallery__thumb[aria-current="true"] {
+  border-color: var(--color-text);
+  border-width: 2px;
+}
+
+.pm-gallery__thumb:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Visually-hidden accessible-name text (thumb names, etc.) */
+.pm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

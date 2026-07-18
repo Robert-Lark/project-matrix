@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Records — Long Decay Records</title>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/shell.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/masthead.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/footer.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/release-card.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/facets.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/toolbar.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/pagination.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/plp.css">
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/" aria-current="page">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-plp">
+        <header class="pm-plp__head">
+          <h1 class="pm-page__title">Records</h1>
+          <div class="pm-toolbar">
+            <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">1–24</span> of <span class="pm-toolbar__n">240</span> releases</p>
+            <form class="pm-toolbar__search" method="get" action="">
+              <div>
+                <label class="pm-toolbar__label" for="plp-q">Search the crate</label>
+                <input class="pm-toolbar__input" id="plp-q" name="q" type="search" autocomplete="off">
+              </div>
+              <button class="pm-button pm-button--secondary" type="submit">Search</button>
+            </form>
+            <form class="pm-toolbar__sort" method="get" action="">
+              <div>
+                <label class="pm-toolbar__label" for="plp-sort">Sort</label>
+                <select class="pm-toolbar__select" id="plp-sort" name="sort">
+                  <option value="" selected>Popularity</option>
+                  <option value="year-desc">Year — newest first</option>
+                  <option value="year-asc">Year — oldest first</option>
+                  <option value="price-asc">Price — low to high</option>
+                  <option value="price-desc">Price — high to low</option>
+                  <option value="title">Title — A to Z</option>
+                </select>
+              </div>
+              <button class="pm-button pm-button--secondary" type="submit">Apply</button>
+            </form>
+          </div>
+        </header>
+        <div class="pm-plp__body">
+          <nav class="pm-facets" aria-label="Filters">
+            <section class="pm-facets__group">
+          <h3 class="pm-facets__title">Genre</h3>
+          <ul class="pm-facets__list" role="list">
+            <li><a class="pm-facets__facet" href="?genre=Jazz">
+              <span class="pm-facets__value">Jazz</span>
+              <span class="pm-facets__count">210</span></a></li>
+            <li><a class="pm-facets__facet" href="?genre=Electronic">
+              <span class="pm-facets__value">Electronic</span>
+              <span class="pm-facets__count">30</span></a></li>
+            <li><a class="pm-facets__facet" href="?genre=Classical">
+              <span class="pm-facets__value">Classical</span>
+              <span class="pm-facets__count">15</span></a></li>
+          </ul>
+        </section>
+            <section class="pm-facets__group">
+          <h3 class="pm-facets__title">Style · top 12 of 13</h3>
+          <ul class="pm-facets__list" role="list">
+            <li><a class="pm-facets__facet" href="?style=Free%20Jazz">
+              <span class="pm-facets__value">Free Jazz</span>
+              <span class="pm-facets__count">60</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Modal">
+              <span class="pm-facets__value">Modal</span>
+              <span class="pm-facets__count">58</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Bossa%20Nova">
+              <span class="pm-facets__value">Bossa Nova</span>
+              <span class="pm-facets__count">57</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Cool%20Jazz">
+              <span class="pm-facets__value">Cool Jazz</span>
+              <span class="pm-facets__count">53</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Soul-Jazz">
+              <span class="pm-facets__value">Soul-Jazz</span>
+              <span class="pm-facets__count">51</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Fusion">
+              <span class="pm-facets__value">Fusion</span>
+              <span class="pm-facets__count">50</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Hard%20Bop">
+              <span class="pm-facets__value">Hard Bop</span>
+              <span class="pm-facets__count">50</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Post%20Bop">
+              <span class="pm-facets__value">Post Bop</span>
+              <span class="pm-facets__count">50</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Downtempo">
+              <span class="pm-facets__value">Downtempo</span>
+              <span class="pm-facets__count">19</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Minimal">
+              <span class="pm-facets__value">Minimal</span>
+              <span class="pm-facets__count">18</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Ambient">
+              <span class="pm-facets__value">Ambient</span>
+              <span class="pm-facets__count">11</span></a></li>
+            <li><a class="pm-facets__facet" href="?style=Modern%20Classical">
+              <span class="pm-facets__value">Modern Classical</span>
+              <span class="pm-facets__count">10</span></a></li>
+          </ul>
+        </section>
+            <section class="pm-facets__group">
+          <h3 class="pm-facets__title">Format</h3>
+          <ul class="pm-facets__list" role="list">
+            <li><a class="pm-facets__facet" href="?format=Album">
+              <span class="pm-facets__value">Album</span>
+              <span class="pm-facets__count">240</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=LP">
+              <span class="pm-facets__value">LP</span>
+              <span class="pm-facets__count">240</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=Reissue">
+              <span class="pm-facets__value">Reissue</span>
+              <span class="pm-facets__count">88</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=Stereo">
+              <span class="pm-facets__value">Stereo</span>
+              <span class="pm-facets__count">47</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=33%20%E2%85%93%20RPM">
+              <span class="pm-facets__value">33 ⅓ RPM</span>
+              <span class="pm-facets__count">36</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=180%20Gram">
+              <span class="pm-facets__value">180 Gram</span>
+              <span class="pm-facets__count">34</span></a></li>
+            <li><a class="pm-facets__facet" href="?format=Mono">
+              <span class="pm-facets__value">Mono</span>
+              <span class="pm-facets__count">31</span></a></li>
+          </ul>
+        </section>
+          </nav>
+          <div class="pm-plp__results">
+            <ul class="pm-grid" role="list">
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Dummy Duo — Quiet Variations No. 001, front cover (placeholder)" src="/assets/img/ph-00-primary.avif"
+       fetchpriority="high" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000001-dummy-duo-quiet-variations-no-001/">Quiet Variations No. 001</a></h3>
+    <p class="pm-release-card__artist">Dummy Duo</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue, 180 Gram · 1971</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">—</span>
+      <span class="pm-release-card__stock">none for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Test-Tone Unit — Modal Excursions No. 002, front cover (placeholder)" src="/assets/img/ph-01-primary.avif"
+       sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000002-test-tone-unit-modal-excursions-no-002/">Modal Excursions No. 002</a></h3>
+    <p class="pm-release-card__artist">Test-Tone Unit</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Mono · 1957</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$125.27</span>
+      <span class="pm-release-card__stock">66 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Stand-In Septet — Midnight Fragments No. 003, front cover (placeholder)" src="/assets/img/ph-02-primary.avif"
+       sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000003-stand-in-septet-midnight-fragments-no-003/">Midnight Fragments No. 003</a></h3>
+    <p class="pm-release-card__artist">Stand-In Septet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Mono · 1964</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$34.24</span>
+      <span class="pm-release-card__stock">11 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Prototype Big Band — Golden Variations No. 004, front cover (placeholder)" src="/assets/img/ph-03-primary.avif"
+       sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000004-prototype-big-band-golden-variations-no-004/">Golden Variations No. 004</a></h3>
+    <p class="pm-release-card__artist">Prototype Big Band</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue, 180 Gram · 1976</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">—</span>
+      <span class="pm-release-card__stock">none for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Prototype Big Band — Analog Variations No. 005, front cover (placeholder)" src="/assets/img/ph-04-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000005-prototype-big-band-analog-variations-no-005/">Analog Variations No. 005</a></h3>
+    <p class="pm-release-card__artist">Prototype Big Band</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$119.99</span>
+      <span class="pm-release-card__stock">54 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Specimen Combo — Electric Fragments No. 006, front cover (placeholder)" src="/assets/img/ph-05-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000006-specimen-combo-electric-fragments-no-006/">Electric Fragments No. 006</a></h3>
+    <p class="pm-release-card__artist">Specimen Combo</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1968</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$51.19</span>
+      <span class="pm-release-card__stock">21 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Scaffold Collective — Blue Impressions No. 007, front cover (placeholder)" src="/assets/img/ph-06-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000007-scaffold-collective-blue-impressions-no-007/">Blue Impressions No. 007</a></h3>
+    <p class="pm-release-card__artist">Scaffold Collective</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album · 1968</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$88.93</span>
+      <span class="pm-release-card__stock">72 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Dummy Duo — Blue Impressions No. 008, front cover (placeholder)" src="/assets/img/ph-07-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000008-dummy-duo-blue-impressions-no-008/">Blue Impressions No. 008</a></h3>
+    <p class="pm-release-card__artist">Dummy Duo</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Stereo · 1972</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$139.77</span>
+      <span class="pm-release-card__stock">40 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Sample Ensemble — Analog Excursions No. 009, front cover (placeholder)" src="/assets/img/ph-08-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000009-sample-ensemble-analog-excursions-no-009/">Analog Excursions No. 009</a></h3>
+    <p class="pm-release-card__artist">Sample Ensemble</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1973</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$108.90</span>
+      <span class="pm-release-card__stock">35 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Synthetic Quartet — Cool Sketches No. 010, front cover (placeholder)" src="/assets/img/ph-09-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000010-synthetic-quartet-cool-sketches-no-010/">Cool Sketches No. 010</a></h3>
+    <p class="pm-release-card__artist">Synthetic Quartet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1970</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$49.56</span>
+      <span class="pm-release-card__stock">77 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Fixture Quintet — Blue Variations No. 011, front cover (placeholder)" src="/assets/img/ph-10-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000011-fixture-quintet-blue-variations-no-011/">Blue Variations No. 011</a></h3>
+    <p class="pm-release-card__artist">Fixture Quintet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Mono · 1971</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$8.77</span>
+      <span class="pm-release-card__stock">55 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Fixture Quintet — Electric Dialogues No. 012, front cover (placeholder)" src="/assets/img/ph-11-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000012-fixture-quintet-electric-dialogues-no-012/">Electric Dialogues No. 012</a></h3>
+    <p class="pm-release-card__artist">Fixture Quintet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album · 1975</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$45.10</span>
+      <span class="pm-release-card__stock">49 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Sample Ensemble — Cool Variations No. 013, front cover (placeholder)" src="/assets/img/ph-00-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000013-sample-ensemble-cool-variations-no-013/">Cool Variations No. 013</a></h3>
+    <p class="pm-release-card__artist">Sample Ensemble</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, 33 ⅓ RPM · 1957</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$42.78</span>
+      <span class="pm-release-card__stock">79 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="298"
+       alt="Scaffold Collective — Quiet Excursions No. 014, front cover (placeholder)" src="/assets/img/ph-land-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000014-scaffold-collective-quiet-excursions-no-014/">Quiet Excursions No. 014</a></h3>
+    <p class="pm-release-card__artist">Scaffold Collective</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album · 1975</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$10.47</span>
+      <span class="pm-release-card__stock">1 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="337" height="450"
+       alt="Sample Ensemble — Electric Impressions No. 015, front cover (placeholder)" src="/assets/img/ph-port-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000015-sample-ensemble-electric-impressions-no-015/">Electric Impressions No. 015</a></h3>
+    <p class="pm-release-card__artist">Sample Ensemble</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1966</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">—</span>
+      <span class="pm-release-card__stock">none for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Fixture Quintet — Modal Excursions No. 016, front cover (placeholder)" src="/assets/img/ph-03-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000016-fixture-quintet-modal-excursions-no-016/">Modal Excursions No. 016</a></h3>
+    <p class="pm-release-card__artist">Fixture Quintet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Reissue · 1966</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$62.05</span>
+      <span class="pm-release-card__stock">55 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Stand-In Septet — Cool Dialogues No. 017, front cover (placeholder)" src="/assets/img/ph-04-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000017-stand-in-septet-cool-dialogues-no-017/">Cool Dialogues No. 017</a></h3>
+    <p class="pm-release-card__artist">Stand-In Septet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, 33 ⅓ RPM · 1974</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$43.07</span>
+      <span class="pm-release-card__stock">19 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Interim Orchestra — Golden Impressions No. 018, front cover (placeholder)" src="/assets/img/ph-05-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000018-interim-orchestra-golden-impressions-no-018/">Golden Impressions No. 018</a></h3>
+    <p class="pm-release-card__artist">Interim Orchestra</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Stereo · 1964</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$40.71</span>
+      <span class="pm-release-card__stock">44 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Fixture Quintet — Midnight Sketches No. 019, front cover (placeholder)" src="/assets/img/ph-06-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000019-fixture-quintet-midnight-sketches-no-019/">Midnight Sketches No. 019</a></h3>
+    <p class="pm-release-card__artist">Fixture Quintet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Mono · 1976</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">—</span>
+      <span class="pm-release-card__stock">none for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Synthetic Quartet — Electric Excursions No. 020, front cover (placeholder)" src="/assets/img/ph-07-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000020-synthetic-quartet-electric-excursions-no-020/">Electric Excursions No. 020</a></h3>
+    <p class="pm-release-card__artist">Synthetic Quartet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, Mono · 1973</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">—</span>
+      <span class="pm-release-card__stock">none for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Sample Ensemble — Quiet Sessions No. 021, front cover (placeholder)" src="/assets/img/ph-08-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000021-sample-ensemble-quiet-sessions-no-021/">Quiet Sessions No. 021</a></h3>
+    <p class="pm-release-card__artist">Sample Ensemble</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album · 1963</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$35.04</span>
+      <span class="pm-release-card__stock">78 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Mock Sextet — Blue Excursions No. 022, front cover (placeholder)" src="/assets/img/ph-09-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000022-mock-sextet-blue-excursions-no-022/">Blue Excursions No. 022</a></h3>
+    <p class="pm-release-card__artist">Mock Sextet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, 33 ⅓ RPM · 1957</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$109.64</span>
+      <span class="pm-release-card__stock">22 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Test-Tone Unit — Golden Excursions No. 023, front cover (placeholder)" src="/assets/img/ph-10-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000023-test-tone-unit-golden-excursions-no-023/">Golden Excursions No. 023</a></h3>
+    <p class="pm-release-card__artist">Test-Tone Unit</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album · 1966</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$114.91</span>
+      <span class="pm-release-card__stock">71 for sale</span>
+    </div>
+  </div>
+</li>
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width="600" height="600"
+       alt="Fixture Quintet — Quiet Sketches No. 024, front cover (placeholder)" src="/assets/img/ph-11-primary.avif"
+       loading="lazy" decoding="async" sizes="(max-width: 40em) 50vw, (max-width: 52em) 33vw, 240px">
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href="/vanilla/pdp/9000024-fixture-quintet-quiet-sketches-no-024/">Quiet Sketches No. 024</a></h3>
+    <p class="pm-release-card__artist">Fixture Quintet</p>
+    <p class="pm-release-card__meta">Vinyl, LP, Album, 33 ⅓ RPM · 1958</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">$104.01</span>
+      <span class="pm-release-card__stock">77 for sale</span>
+    </div>
+  </div>
+</li>
+            </ul>
+            <nav class="pm-pagination" aria-label="Pages">
+              <span class="pm-pagination__link pm-pagination__link--current" aria-current="page">1</span>
+              <a class="pm-pagination__link" href="?page=2">2</a>
+              <a class="pm-pagination__link" href="?page=3">3</a>
+              <a class="pm-pagination__link" href="?page=4">4</a>
+              <a class="pm-pagination__link" href="?page=5">5</a>
+              <a class="pm-pagination__link" href="?page=2" rel="next">Next</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

@@ -41,3 +41,29 @@
   font-display: swap;
   unicode-range: U+26A0;
 }
+
+/*
+ * Crate text symbols (NINE codepoints). The frozen crate's display text uses
+ * glyphs Familjen Grotesk does not carry — chiefly U+2153 ⅓ (179×, the
+ * "33 ⅓ RPM" card meta) and U+2117 ℗ (74×, PDP notes) — so, like the warn
+ * glyph above, they are served as a scoped subset of Inter (SIL OFL 1.1,
+ * LICENSE-OFL-Inter.txt): identical letterforms on every platform (ADR-0003
+ * §8 held for everything we cover). unicode-range scopes it to exactly the
+ * nine, so it never touches Familjen's letterforms; it sits in the
+ * --pm-font-* stacks after "PM Warn Glyph", never in front.
+ *
+ * DELIBERATELY NOT HERE: the crate's Arabic and CJK codepoints (plus four
+ * one-occurrence stragglers) stay on a documented per-OS system fallback —
+ * subsetting isolated Arabic forms breaks shaping, and CJK Han-unification
+ * variant choice (JP vs SC forms) is a locale call a webfont would get wrong
+ * for someone. Decided, not deferred — surface-design session (DRAFT §4.1);
+ * the list lives in ../fonts/coverage.json `crateSystemFallback`.
+ */
+@font-face {
+  font-family: "PM Crate Symbols";
+  src: url("../fonts/PMCrateSymbols.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+02D9, U+03C0, U+03C1, U+03C6, U+042F, U+2117, U+2153, U+2202, U+221A;
+}

@@ -110,7 +110,13 @@ export const PROFILES: Readonly<Record<ProfileId, TestProfile>> = {
 
 export const PROFILE_IDS = Object.keys(PROFILES) as readonly ProfileId[];
 
-/** Lookup that tolerates arbitrary strings (e.g. a raw `?profile=` value). */
+/** Lookup that tolerates arbitrary strings (e.g. a raw `?profile=` value).
+ *  Object.hasOwn: a bare record lookup resolves prototype keys —
+ *  `?profile=constructor` returned the inherited Object constructor (truthy)
+ *  and crashed the chrome renderer into a 502 on every variant HTML page
+ *  (verify-slice correctness lens, 2026-07-17). */
 export function getProfile(id: string): TestProfile | undefined {
-  return (PROFILES as Record<string, TestProfile>)[id];
+  return Object.hasOwn(PROFILES, id)
+    ? (PROFILES as Record<string, TestProfile>)[id]
+    : undefined;
 }

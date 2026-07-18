@@ -104,17 +104,26 @@ cpSync(join(tokensRoot, "css", "fonts.css"), join(dist, "pm", "css", "fonts.css"
 for (const f of [
   "FamiljenGrotesk.var.woff2",
   "PMWarnGlyph.U26A0.woff2",
+  "PMCrateSymbols.woff2",
   "LICENSE-OFL.txt",
   "LICENSE-OFL-Inter.txt",
 ]) {
   cpSync(join(tokensRoot, "fonts", f), join(dist, "pm", "fonts", f));
 }
 
-// ── /_pm/* instrumentation (unchanged) ──────────────────────────────────
+// ── /_pm/* instrumentation ──────────────────────────────────────────────
 cpSync(
   require.resolve("@pm/switcher/chrome.css"),
   join(dist, "_pm", "chrome.css"),
 );
+// The chrome-owned instrument mono (surface-design session): served from the
+// /_pm/* excluded path — chrome bytes, never variant bytes (ADR-0001 §6).
+for (const f of ["PMInstrumentMono.var.woff2", "LICENSE-OFL-JetBrainsMono.txt"]) {
+  cpSync(
+    join(dirname(require.resolve("@pm/switcher/package.json")), "fonts", f),
+    join(dist, "_pm", "fonts", f),
+  );
+}
 // The measurement bundle is a built artifact; resolve the package root via
 // its manifest, then take dist/measure.js (built by @pm/measurement's build,
 // ordered ahead of this one by turbo's ^build).

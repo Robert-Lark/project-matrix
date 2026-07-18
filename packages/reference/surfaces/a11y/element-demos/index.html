@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Element demos — Accessibility, shown — Long Decay Records</title>
+  <meta name="robots" content="noindex">
+  <link rel="preload" href="../../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/surfaces/shell.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/masthead.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/footer.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/prose.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/compare.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/field.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/surfaces/a11y.css">
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-a11y">
+        <header>
+          <p class="pm-page__kicker">Accessibility, shown · element demos</p>
+          <h1 class="pm-page__title">Five defaults, on and off</h1>
+        </header>
+        <div class="pm-prose pm-a11y__intro">
+          <p>Each demo below pairs a shipped component with its stripped twin. The label comes first, the compliant version is adjacent, and the broken one stays closed until you open it. This page is deliberately kept out of search indexes — the twins are real failures.</p>
+        </div>
+        <nav class="pm-a11y__toc" aria-label="Demos on this page">
+          <a href="#demo-focus">Focus</a>
+          <a href="#demo-forms">Forms</a>
+          <a href="#demo-target">Target size</a>
+          <a href="#demo-contrast">Contrast</a>
+          <a href="#demo-live">Live regions</a>
+        </nav>
+        <section class="pm-compare" aria-labelledby="demo-focus">
+          <h2 class="pm-compare__title" id="demo-focus">Focus, visible</h2>
+          <div class="pm-compare__walkthrough"><p>Press <kbd>Tab</kbd> until the button below has focus. The shipped default draws a 3-pixel ring that survives Windows High Contrast; the stripped twin sets <code>outline: none</code> — keyboard users simply lose their place.</p></div>
+          <div class="pm-compare__pair">
+            <div class="pm-compare__box">
+              <p class="pm-compare__tag">DS-on — the shipped default</p>
+              <button class="pm-button" type="button">Add to cart</button>
+            </div>
+            <details class="pm-compare__off">
+              <summary class="pm-compare__summary">Open the stripped twin (deliberately fails)</summary>
+              <div class="pm-compare__box pm-compare__box--off">
+                <p class="pm-compare__tag">DS-off — what ships without the system</p>
+                <button class="pm-button" type="button" style="outline: none;">Add to cart</button>
+              </div>
+            </details>
+          </div>
+        </section>
+        <section class="pm-compare" aria-labelledby="demo-forms">
+          <h2 class="pm-compare__title" id="demo-forms">Forms that announce themselves</h2>
+          <div class="pm-compare__walkthrough"><p>With a screen reader, focus each field. The default has a real <code>&lt;label&gt;</code>, an <code>autocomplete</code> token, and an error tied in with <code>aria-describedby</code> + <code>aria-invalid</code> — read as one sentence. The twin uses a placeholder as its only label: it vanishes on type, and the error is a red word nothing points to.</p></div>
+          <div class="pm-compare__pair">
+            <div class="pm-compare__box">
+              <p class="pm-compare__tag">DS-on — the shipped default</p>
+              <div class="pm-field">
+                <label class="pm-field__label" for="a11y-email-on">Email address</label>
+                <input class="pm-field__control" id="a11y-email-on" name="email" type="email" autocomplete="email" aria-describedby="a11y-email-on-err" aria-invalid="true">
+                <span class="pm-field__error" id="a11y-email-on-err">Enter a valid email address.</span>
+              </div>
+            </div>
+            <details class="pm-compare__off">
+              <summary class="pm-compare__summary">Open the stripped twin (deliberately fails)</summary>
+              <div class="pm-compare__box pm-compare__box--off">
+                <p class="pm-compare__tag">DS-off — what ships without the system</p>
+                <div class="pm-field">
+                <input class="pm-field__control" type="text" placeholder="Email address" style="border-color: var(--color-danger); border-width: 2px;">
+                <span style="color: var(--color-danger); font-size: var(--text-small);">Invalid</span>
+              </div>
+              </div>
+            </details>
+          </div>
+        </section>
+        <section class="pm-compare" aria-labelledby="demo-target">
+          <h2 class="pm-compare__title" id="demo-target">Targets you can hit</h2>
+          <div class="pm-compare__walkthrough"><p>The default control clears the WCAG 2.5.8 minimum (24×24 CSS px) with generous padding that is all part of the target. The twin is the same action as a bare 13-pixel text link: try it on a phone, or with a tremor, or on a train.</p></div>
+          <div class="pm-compare__pair">
+            <div class="pm-compare__box">
+              <p class="pm-compare__tag">DS-on — the shipped default</p>
+              <button class="pm-button pm-button--secondary" type="button">Save for later</button>
+            </div>
+            <details class="pm-compare__off">
+              <summary class="pm-compare__summary">Open the stripped twin (deliberately fails)</summary>
+              <div class="pm-compare__box pm-compare__box--off">
+                <p class="pm-compare__tag">DS-off — what ships without the system</p>
+                <a href="#demo-target" style="font-size: 13px;">save</a>
+              </div>
+            </details>
+          </div>
+        </section>
+        <section class="pm-compare" aria-labelledby="demo-contrast">
+          <h2 class="pm-compare__title" id="demo-contrast">Contrast that survives sunlight</h2>
+          <div class="pm-compare__walkthrough"><p>The default muted text still clears WCAG AA (our worst shipped pair measures 6.14:1). The twin is the same sentence at a contrast that disappears on a bright screen or a cheap panel — and it is exactly what "light grey looks refined" ships.</p></div>
+          <div class="pm-compare__pair">
+            <div class="pm-compare__box">
+              <p class="pm-compare__tag">DS-on — the shipped default</p>
+              <p style="margin:0;">Shipping is free on orders over $50 — <span style="color: var(--color-text-muted);">rates update at checkout.</span></p>
+            </div>
+            <details class="pm-compare__off">
+              <summary class="pm-compare__summary">Open the stripped twin (deliberately fails)</summary>
+              <div class="pm-compare__box pm-compare__box--off">
+                <p class="pm-compare__tag">DS-off — what ships without the system</p>
+                <p style="margin:0;">Shipping is free on orders over $50 — <span style="color: #c9c4b8;">rates update at checkout.</span></p>
+              </div>
+            </details>
+          </div>
+        </section>
+        <section class="pm-compare" aria-labelledby="demo-live">
+          <h2 class="pm-compare__title" id="demo-live">Updates that get announced</h2>
+          <div class="pm-compare__walkthrough"><p>Press the button with a screen reader running. The default writes into a <code>role="status"</code> region — announced without stealing focus. The twin updates the same text in a plain element: visually identical, silent to assistive tech. (The buttons need JavaScript; this page's build wires them.)</p></div>
+          <div class="pm-compare__pair">
+            <div class="pm-compare__box">
+              <p class="pm-compare__tag">DS-on — the shipped default</p>
+              <p style="margin:0 0 var(--space-stack);"><button class="pm-button pm-button--secondary" type="button" data-pm-demo="status-on">Add to cart</button></p>
+              <p role="status" data-pm-demo-out="status-on" style="margin:0;"></p>
+            </div>
+            <details class="pm-compare__off">
+              <summary class="pm-compare__summary">Open the stripped twin (deliberately fails)</summary>
+              <div class="pm-compare__box pm-compare__box--off">
+                <p class="pm-compare__tag">DS-off — what ships without the system</p>
+                <p style="margin:0 0 var(--space-stack);"><button class="pm-button pm-button--secondary" type="button" data-pm-demo="status-off">Add to cart</button></p>
+              <p data-pm-demo-out="status-off" style="margin:0;"></p>
+              </div>
+            </details>
+          </div>
+        </section>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

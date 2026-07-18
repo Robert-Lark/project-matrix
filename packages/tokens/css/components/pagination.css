@@ -1,0 +1,55 @@
+/*
+ * Component module — pagination. Plain anchors preserving the FULL condition
+ * (n, filters, sort ride the query — the URL is the measurement condition,
+ * ADR-0004 §5). Works JS-off everywhere.
+ *
+ * Canonical markup:
+ *   <nav class="pm-pagination" aria-label="Pages">
+ *     <a class="pm-pagination__link" href="?page=1" rel="prev">Previous</a>
+ *     <a class="pm-pagination__link" href="?page=1">1</a>
+ *     <span class="pm-pagination__link pm-pagination__link--current"
+ *           aria-current="page">2</span>
+ *     …
+ *     <a class="pm-pagination__link" href="?page=3" rel="next">Next</a>
+ *   </nav>
+ */
+
+.pm-pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-inline);
+  margin-block-start: var(--space-block);
+}
+
+.pm-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--target-min);
+  min-width: var(--target-min);
+  padding: var(--space-inset-xs) var(--space-inset-sm);
+  font: var(--text-small) / 1 var(--font-ui);
+  font-variant-numeric: var(--numeric-metric);
+  color: var(--color-accent);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+
+a.pm-pagination__link:hover {
+  color: var(--color-accent-hover);
+  border-color: var(--color-border);
+}
+
+.pm-pagination__link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-pagination__link--current {
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+  border-color: var(--color-border);
+  background: var(--color-surface-sunk);
+}

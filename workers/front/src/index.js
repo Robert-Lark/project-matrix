@@ -38,7 +38,11 @@ export default {
     // The data plane (ADR-0002 §8): trays + beacons under /api/*, the frozen
     // self-hosted images under /assets/* — both served by the edge Worker.
     const bindingName =
-      prefix === "api" || prefix === "assets" ? "EDGE" : VARIANTS[prefix];
+      prefix === "api" || prefix === "assets"
+        ? "EDGE"
+        : Object.hasOwn(VARIANTS, prefix) // bare lookups resolve prototype keys
+          ? VARIANTS[prefix]              // ("constructor" 502'd instead of 404)
+          : undefined;
     const variant = bindingName === "EDGE" ? "edge" : prefix;
 
     if (!bindingName) {
@@ -78,6 +82,21 @@ export default {
       // Logs makes it observable (verified failure modes in workerd).
       let slotCount = 0;
       return new HTMLRewriter()
+        // chrome.css rides in <head> (surface-design session): an in-body
+        // stylesheet at the top of every measured page either blocks paint of
+        // everything after it or flashes an unstyled strip — head placement
+        // kills both, and the preload starts the instrument mono without a
+        // late 3-hop chain. Both files live on /_pm/* (stripped from measured
+        // KB by known path, ADR-0001 §6).
+        .on("head", {
+          element(el) {
+            el.append(
+              `<link rel="preload" href="/_pm/fonts/PMInstrumentMono.var.woff2" as="font" type="font/woff2" crossorigin>` +
+                `<link rel="stylesheet" href="/_pm/chrome.css">`,
+              { html: true },
+            );
+          },
+        })
         .on("div#pm-chrome-slot", {
           element(el) {
             slotCount += 1;

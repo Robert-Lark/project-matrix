@@ -15,21 +15,61 @@ const fontsCss = readFileSync(join(pkgRoot, "css/fonts.css"), "utf8");
 const componentFiles = readdirSync(join(pkgRoot, "css/components")).filter(
   (f) => f.endsWith(".css"),
 );
+const surfaceFiles = readdirSync(join(pkgRoot, "css/surfaces")).filter((f) =>
+  f.endsWith(".css"),
+);
 
 describe("two-tier token seam (ADR-0003 §3)", () => {
   it("ships the expected component modules", () => {
+    // The store component set (surface-design session, 2026-07-17): the three
+    // foundation modules + the surface components the six store surfaces
+    // compose from. Every addition joins the reference render and the drift
+    // gate (the ADR-0003 toll).
     expect(componentFiles.sort()).toEqual([
       "button.css",
+      "cart-summary.css",
+      "compare.css",
+      "error-summary.css",
+      "facets.css",
       "field.css",
+      "footer.css",
+      "format-switch.css",
+      "gallery.css",
+      "masthead.css",
+      "mode-demo.css",
+      "pagination.css",
+      "plaque.css",
+      "prose.css",
+      "qty.css",
       "release-card.css",
+      "toolbar.css",
+      "tracklist.css",
     ]);
   });
 
-  it("component modules consume SEMANTIC tokens only — never a --pm-* primitive", () => {
+  it("ships the expected surface modules (page compositions, same contract)", () => {
+    expect(surfaceFiles.sort()).toEqual([
+      "a11y.css",
+      "checkout.css",
+      "editorial.css",
+      "how-built.css",
+      "pdp.css",
+      "plp.css",
+      "shell.css",
+    ]);
+  });
+
+  it("component and surface modules consume SEMANTIC tokens only — never a --pm-* primitive", () => {
     for (const file of componentFiles) {
       const css = readFileSync(join(pkgRoot, "css/components", file), "utf8");
       // Primitives (--pm-*) may only be referenced inside tokens.css itself.
-      expect(css, `${file} references a primitive token`).not.toMatch(
+      expect(css, `components/${file} references a primitive token`).not.toMatch(
+        /var\(--pm-/,
+      );
+    }
+    for (const file of surfaceFiles) {
+      const css = readFileSync(join(pkgRoot, "css/surfaces", file), "utf8");
+      expect(css, `surfaces/${file} references a primitive token`).not.toMatch(
         /var\(--pm-/,
       );
     }
@@ -94,10 +134,16 @@ describe("reduced-motion gating is intact (ADR-0003 §5)", () => {
 });
 
 describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
-  it("the @font-face file exists and is self-hosted in this package", () => {
-    const src = fontsCss.match(/src:\s*url\("([^"]+)"\)/)?.[1];
-    expect(src).toBeDefined();
-    expect(existsSync(join(pkgRoot, "css", src!))).toBe(true);
+  it("every @font-face file exists and is self-hosted in this package", () => {
+    // Three faces: Familjen Grotesk + the two scoped Inter-subset fallbacks
+    // ("PM Warn Glyph" U+26A0, "PM Crate Symbols" — crate-glyph-coverage).
+    const srcs = [...fontsCss.matchAll(/src:\s*url\("([^"]+)"\)/g)].map(
+      (m) => m[1]!,
+    );
+    expect(srcs).toHaveLength(3);
+    for (const src of srcs) {
+      expect(existsSync(join(pkgRoot, "css", src)), `${src} missing`).toBe(true);
+    }
   });
 
   it("the Catalogue values are poured into the primitive tier (not the placeholder)", () => {
@@ -147,6 +193,33 @@ describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
       // its OFL travels with it (a second font family = a second licence)
       expect(existsSync(join(pkgRoot, "fonts/LICENSE-OFL-Inter.txt"))).toBe(true);
     }
+  });
+
+  it("the crate text symbols (⅓ ℗ …) are wired to a scoped self-hosted face", () => {
+    // crate-glyph-coverage decision (surface-design DRAFT §4.1): nine crate
+    // codepoints Familjen lacks — chiefly U+2153 ⅓ ("33 ⅓ RPM") and U+2117 ℗
+    // — ship as "PM Crate Symbols", an Inter subset like the warn glyph,
+    // unicode-range-scoped so it never touches Familjen's letterforms. The
+    // crate's Arabic/CJK stay on a DECIDED per-OS system fallback (see
+    // fonts/coverage.json `crateSystemFallback` + fonts/README.md). This
+    // checks the CSS WIRING; that the woff2 CONTAINS exactly the nine is
+    // pinned by tools/repo-checks/test/font-covers-crate.test.ts, which
+    // re-derives the cmap from the font bytes.
+    expect(fontsCss).toMatch(/font-family:\s*"PM Crate Symbols"/);
+    expect(fontsCss).toMatch(
+      /unicode-range:\s*U\+02D9,\s*U\+03C0,\s*U\+03C1,\s*U\+03C6,\s*U\+042F,\s*U\+2117,\s*U\+2153,\s*U\+2202,\s*U\+221A/i,
+    );
+    expect(existsSync(join(pkgRoot, "fonts/PMCrateSymbols.woff2"))).toBe(true);
+    // The FULL stacks, in order: Familjen first, the two scoped fallback
+    // faces behind it (never in front), then the generic system tail.
+    expect(tokensCss).toMatch(
+      /--pm-font-ui:\s*"Familjen Grotesk",\s*"PM Warn Glyph",\s*"PM Crate Symbols",\s*system-ui/,
+    );
+    expect(tokensCss).toMatch(
+      /--pm-font-metric:\s*"Familjen Grotesk",\s*"PM Warn Glyph",\s*"PM Crate Symbols",\s*system-ui/,
+    );
+    // same source family as the warn glyph — the Inter OFL covers both
+    expect(existsSync(join(pkgRoot, "fonts/LICENSE-OFL-Inter.txt"))).toBe(true);
   });
 });
 

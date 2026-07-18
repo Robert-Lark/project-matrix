@@ -1478,6 +1478,70 @@ composition) · six-lens copy panel workflow · chrome-devtools MCP
 (screenshot critique, trace, Lighthouse, viewport/emulation passes) ·
 disc prototyped standalone in scratchpad before page integration.
 
+## Phase 8 — The store takes shape
+
+### `surface-design` — resolved (2026-07-17)
+
+Every store surface plus the instrument, designed as the spec layer the
+variant builds consume. Rationale + rejected alternatives in
+[ADR-0008](adr/0008-store-surfaces-and-instrument.md); the decision-map
+answer carries the twelve decisions. What the record should keep beyond
+those:
+
+**The panel caught the author with his own rule.** The draft justified the
+gallery's 1:1 mat with "1,022 of 1,817 at 600×600" — a hand-typed number
+that was a mislabeled different query (width-600-any-height). Three of
+seven lenses independently reran the jq and got 653; the same pass caught a
+second typed number ("max 1,762 s" — really 3,816) sitting in a code
+comment. This is the ADR-0007 SHA lesson recurring at the next scale: the
+discipline now extends past receipts into design justifications — the
+numbers that argue a decision get derived and recorded with their query, or
+they don't get written. Both wrong numbers were unforced; the corrected
+data argued the same conclusions.
+
+**Boards on the real system, again.** No mockups: the six surfaces were
+rendered from the real crate through the real tokens and screenshotted for
+critique — which is how the release card's silent distortion bug surfaced
+(204 of 500 primary covers are non-square; the forced 1:1 box had only
+ever been proven on square placeholder art; `object-fit: cover` joined the
+contract). The boards also proved the two-register system at first
+glance: the deadwax strip over the warm store reads as instrument-holding-
+specimen, exactly as home promised.
+
+**Receipts before decisions.** The issue-#9 derivative call waited on a
+sips scan of all 1,838 retained originals (zero exceed 600 px on either
+side) — the "600 is the ceiling" claim went from assumption to receipt
+before the ADR asserted it. The 160 px thumb tier that scan justified was
+generated through the derive phase whose own comment anticipated the
+re-derivation ("re-derivation starts here, never at Discogs").
+
+**Two limit deaths, zero lost work.** The seven-lens panel died whole on
+its first launch (all lenses, session limit) and was resumed byte-identical
+after the reset per the standing runbook — second run 7/7. The fixture/
+thumb build agent died mid-verification hours later; its on-disk work was
+complete through the index step, and the remaining probes ran inline in the
+foreground. The artifacts-are-the-state discipline priced both deaths at
+minutes.
+
+**Measured, not hoped (reference renders, 2026-07-17):** a Slow-4G + 4×-CPU
+trace of the crate PLP board — the heaviest surface, 24 real covers —
+reads **CLS 0.00** (zero by construction holds where it matters most) with
+LCP image-bound and its load delay at 627 ms (the pinned
+`fetchpriority="high"` doing its job). Absolute LCP on the board server is
+a floor-check only: it serves uncompressed, uncached, HTTP/1.1 — the
+variants' delivery on the composed plane is the measured variable, and
+those numbers belong to the variant builds' receipts. The chrome held one
+line at 320 px with the reading table scrolling inside its own labelled
+container; the strip's collapsed box never moved while vitals streamed.
+
+**Skills / tools used:** frontend-design skill (the boldness budget went to
+the etch grammar — the named risk) · modern-web-guidance (LCP priority,
+disclosure patterns) · seven-lens panel workflow + inline refutation ·
+chrome-devtools MCP (board screenshots, the throttled trace) ·
+fontTools/pyftsubset (two new subset faces) · sips (the originals scan) ·
+parallel build agents for the glyph and fixture/thumb slices with the main
+session on the chrome.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

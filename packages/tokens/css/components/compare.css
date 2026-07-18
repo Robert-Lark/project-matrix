@@ -1,0 +1,93 @@
+/*
+ * Component module — the two-box A/B compare frame (a11y section). Ordering
+ * is the contract (strategy-review finding 21, panel a11y kill): the
+ * walkthrough label comes FIRST, then the compliant DS-ON box, then the
+ * stripped DS-OFF twin INSIDE a collapsed <details> — content in a closed
+ * details is natively unfocusable and hidden from AT, so the page's default
+ * keyboard path never enters a deliberate defect; the visitor opens it on
+ * purpose, label already read. Works JS-off; vanilla singleton, so
+ * cross-variant byte-identity is not in play here.
+ *
+ * Canonical markup:
+ *   <section class="pm-compare" aria-labelledby="…">
+ *     <h3 class="pm-compare__title" id="…">Focus, visible</h3>
+ *     <div class="pm-compare__walkthrough">…what to try, what AT announces…</div>
+ *     <div class="pm-compare__pair">
+ *       <div class="pm-compare__box">
+ *         <p class="pm-compare__tag">DS-ON — the shipped default</p>
+ *         …compliant component…
+ *       </div>
+ *       <details class="pm-compare__off">
+ *         <summary class="pm-compare__summary">Open the stripped twin
+ *           (deliberately fails)</summary>
+ *         <div class="pm-compare__box pm-compare__box--off">
+ *           <p class="pm-compare__tag">DS-OFF — what ships without the system</p>
+ *           …stripped twin…
+ *         </div>
+ *       </details>
+ *     </div>
+ *   </section>
+ */
+
+.pm-compare {
+  margin-block: var(--space-section);
+  padding-block-start: var(--space-inset);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.pm-compare__title {
+  margin: 0 0 var(--space-stack-sm);
+  font: var(--weight-bold) var(--text-title) / 1.3 var(--font-ui);
+}
+
+.pm-compare__walkthrough {
+  max-width: 65ch;
+  font: var(--text-body) / 1.6 var(--font-ui);
+  margin-block-end: var(--space-stack);
+}
+
+.pm-compare__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-gap);
+  align-items: start;
+}
+
+.pm-compare__box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-inset);
+}
+
+.pm-compare__box--off {
+  border-style: dashed;
+}
+
+.pm-compare__tag {
+  margin: 0 0 var(--space-stack);
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.pm-compare__summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  cursor: pointer;
+  font: var(--weight-medium) var(--text-body) / 1.3 var(--font-ui);
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.pm-compare__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-compare__off[open] .pm-compare__summary {
+  margin-block-end: var(--space-stack-sm);
+}

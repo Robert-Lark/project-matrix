@@ -1,0 +1,79 @@
+/*
+ * Component module — plaque: the ONE labeling system for everything that
+ * needs a stated boundary (surface-design session, 2026-07-17). Register:
+ * pressing-plant stamp — a rule line and tracked small caps, never a siren
+ * (the store stays quiet, ADR-0006 §1; the covers must win).
+ *
+ * Two forms:
+ *   base    — a stated fact (e.g. checkout's "Simulated checkout…" notice;
+ *             checkout IS measured, so it is NOT fenced).
+ *   --fenced — a true number-exclusion (Remix 3 exhibit, the Apollo
+ *             misapplication exhibit, the live-origin demonstration, the
+ *             a11y DS-OFF exhibits). Carries data-pm-fenced="true" (the
+ *             machine hook the harness and tests key on) and the exclusion
+ *             rule line.
+ *
+ * Canonical markup:
+ *   <aside class="pm-plaque [pm-plaque--fenced]" [data-pm-fenced="true"]>
+ *     <p class="pm-plaque__kicker">Fenced exhibit</p>       (uppercase via CSS,
+ *                                                            never typed caps)
+ *     <p class="pm-plaque__name"><strong>…</strong></p>     (a <p> by default —
+ *                                                            heading level is a
+ *                                                            per-placement call,
+ *                                                            outlines stay sane)
+ *     <p class="pm-plaque__claim">…</p>
+ *     <p class="pm-plaque__rule">measured with the same harness · excluded
+ *        from every benchmark number</p>                    (--fenced only)
+ *   </aside>
+ */
+
+.pm-plaque {
+  border: 1px solid var(--color-border);
+  border-inline-start: 3px solid var(--color-text-muted);
+  padding: var(--space-inset-sm) var(--space-inset);
+  margin-block: var(--space-stack);
+  max-width: 60ch;
+}
+
+.pm-plaque > p { margin: 0 0 var(--space-stack-xs); }
+.pm-plaque > p:last-child { margin-block-end: 0; }
+
+.pm-plaque__kicker {
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.pm-plaque__name {
+  font: var(--text-body) / 1.4 var(--font-ui);
+  color: var(--color-text);
+}
+
+.pm-plaque__claim {
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text);
+}
+
+.pm-plaque__claim a { color: var(--color-accent); }
+.pm-plaque__claim a:hover { color: var(--color-accent-hover); }
+.pm-plaque__claim a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* The fence: the exclusion is carried by TEXT (the rule line), reinforced by
+   the dashed boundary — never by color alone (forced-colors safe). */
+.pm-plaque--fenced {
+  border-style: dashed;
+  border-inline-start-style: solid;
+}
+
+.pm-plaque__rule {
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-stack-xs);
+}

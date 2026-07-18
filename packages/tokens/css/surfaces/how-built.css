@@ -1,0 +1,80 @@
+/*
+ * Surface module — How it was built (front-Worker static singleton, the home
+ * precedent). The decision record as a reading surface: a sticky table of
+ * contents beside long-form prose. Content is GENERATED at build from docs/
+ * (ADR excerpts, decision-map rows, build-log phases) — never re-typed.
+ *
+ * Skeleton:
+ *   <div class="pm-doc">
+ *     <nav class="pm-doc__toc" aria-label="Contents">
+ *       <details open><summary>Phase 7 — the front door</summary>
+ *         <ul role="list">…</ul></details> …
+ *     </nav>
+ *     <div class="pm-doc__body">
+ *       <header>…kicker + h1 + intro…</header>
+ *       <div class="pm-prose">…generated sections…</div>
+ *     </div>
+ *   </div>
+ */
+
+.pm-doc {
+  display: grid;
+  grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
+  gap: var(--space-section);
+  align-items: start;
+}
+
+@media (max-width: 52em) {
+  .pm-doc { grid-template-columns: 1fr; }
+}
+
+.pm-doc__toc {
+  position: sticky;
+  top: var(--space-inset);
+  display: grid;
+  gap: var(--space-stack-sm);
+  font: var(--text-small) / 1.5 var(--font-ui);
+  max-block-size: calc(100vh - var(--space-section));
+  overflow-y: auto;
+}
+
+@media (max-width: 52em) {
+  .pm-doc__toc { position: static; max-block-size: none; }
+}
+
+.pm-doc__toc summary {
+  cursor: pointer;
+  min-height: var(--target-min);
+  display: flex;
+  align-items: center;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.pm-doc__toc summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-doc__toc ul {
+  list-style: none;
+  margin: 0;
+  padding-inline-start: var(--space-inset-sm);
+  display: grid;
+}
+
+.pm-doc__toc a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  color: var(--color-accent);
+}
+
+.pm-doc__toc a:hover { color: var(--color-accent-hover); }
+
+.pm-doc__toc a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-doc__body { min-width: 0; }

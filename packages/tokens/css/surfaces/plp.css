@@ -1,0 +1,40 @@
+/*
+ * Surface module — PLP (catalogue). The facet rail + the grid; the covers
+ * supply the color, the mat-board holds — at n=24 and at n=240 alike
+ * (density is a stated condition, ADR-0002 §5).
+ *
+ * Skeleton:
+ *   <div class="pm-plp">
+ *     <header class="pm-plp__head">
+ *       <h1 class="pm-page__title">Records</h1>
+ *       <div class="pm-toolbar">…count · search · sort…</div>
+ *     </header>
+ *     <div class="pm-plp__body">
+ *       <nav class="pm-facets" aria-label="Filters">…</nav>
+ *       <div class="pm-plp__results">
+ *         <ul class="pm-grid" role="list">…pm-release-card × n…</ul>
+ *         <nav class="pm-pagination" aria-label="Pages">…</nav>
+ *       </div>
+ *     </div>
+ *   </div>
+ *
+ * Image loading contract (pinned — a fuzzy rule here moves a published
+ * metric): the first 4 card images are eager, card 1 carries
+ * fetchpriority="high" (the LCP candidate on every viewport), the rest are
+ * loading="lazy" decoding="async". The tradeoff (slight mobile over-fetch,
+ * correct desktop LCP) is recorded in the session ADR.
+ */
+
+.pm-plp__body {
+  display: grid;
+  grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr);
+  gap: var(--space-section);
+  align-items: start;
+}
+
+@media (max-width: 52em) {
+  .pm-plp__body { grid-template-columns: 1fr; }
+  /* The rail folds under the grid on small screens — filters stay reachable,
+     records stay first (the store leads). */
+  .pm-plp__body .pm-facets { order: 2; }
+}

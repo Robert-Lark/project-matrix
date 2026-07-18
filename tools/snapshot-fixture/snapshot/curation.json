@@ -1,0 +1,87 @@
+{
+  "spec": {
+    "slug": "synthesized-placeholder-fixture",
+    "description": "Deterministic synthesized fixture crate — obviously-fake ensembles on four placeholder labels, branch-covering every rendering path the real crate contains (surface-design DRAFT §6).",
+    "decidedBy": "generate.mjs — fixed PRNG seed 20260709, pinned capture date",
+    "labels": [
+      "Placeholder Records",
+      "Fixture Sound",
+      "Synthetic Groove",
+      "Interim Audio"
+    ],
+    "format": "Vinyl",
+    "yearMin": 1950,
+    "yearMax": 1979,
+    "targetReleases": 240,
+    "maxImagesPerRelease": 5,
+    "searchPerPage": 100,
+    "maxSearchPagesPerLabel": 1
+  },
+  "planGeneratedAt": "2026-07-17T00:00:00.000Z",
+  "perLabel": {
+    "Placeholder Records": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 60,
+      "matched": 60,
+      "uniqueNew": 60,
+      "chosen": 60,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 0,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Fixture Sound": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 62,
+      "matched": 62,
+      "uniqueNew": 62,
+      "chosen": 62,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 0,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Synthetic Groove": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 61,
+      "matched": 61,
+      "uniqueNew": 61,
+      "chosen": 61,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 0,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    },
+    "Interim Audio": {
+      "pagesFetched": 1,
+      "capped": false,
+      "rawItems": 57,
+      "matched": 57,
+      "uniqueNew": 57,
+      "chosen": 57,
+      "rejected": {
+        "type": 0,
+        "format": 0,
+        "year": 0,
+        "image": 0,
+        "labelMismatch": 0
+      }
+    }
+  },
+  "reserveSize": 0,
+  "tombstones": [],
+  "featured": 9000016,
+  "featuredNote": "The editorial/PDP reference renders read `featured`: a committed release id whose detail tray is multi-format (3 formats), priced, and carries a 5-image gallery. Field introduced by the fixture; the crate's frozen curation.json predates it — treat as optional."
+}

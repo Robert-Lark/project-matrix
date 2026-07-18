@@ -35,12 +35,18 @@
 }
 
 /* Dimensions come from DATA (Image.width/height) → space reserved before the
-   image loads → honest CLS. aspect-ratio backs it up if attrs are absent. */
+   image loads → honest CLS. aspect-ratio backs it up if attrs are absent.
+   object-fit: cover — 204 of the crate's 500 primary covers are non-square
+   (296 exactly square, tool-derived 2026-07-17); without it the forced 1:1
+   box DISTORTS them (the default is `fill`). A square thumb crop is what
+   real stores ship; the PDP gallery letterboxes instead (contain) because
+   you don't crop the product photo on its own page. */
 .pm-release-card__media {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
+  object-fit: cover;
   background: var(--color-surface-sunk);
 }
 
@@ -55,6 +61,24 @@
   margin: 0;
   font: var(--weight-bold) var(--text-title) / 1.25 var(--font-ui);
   color: var(--color-text);
+}
+
+/* Linked form (grid/feature contexts): the title links to the PDP's
+   designated host (cross-surface links are absolute — session ADR). The
+   sample surface keeps the unlinked form; both are contract. */
+.pm-release-card__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pm-release-card__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.pm-release-card__link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .pm-release-card__artist {

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mode demos — Accessibility, shown — Long Decay Records</title>
+  <link rel="preload" href="../../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/surfaces/shell.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/masthead.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/footer.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/prose.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/mode-demo.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/components/release-card.css">
+  <link rel="stylesheet" href="../../../node_modules/@pm/tokens/css/surfaces/a11y.css">
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-a11y">
+        <header>
+          <p class="pm-page__kicker">Accessibility, shown · mode demos</p>
+          <h1 class="pm-page__title">Three global modes, honored</h1>
+        </header>
+        <div class="pm-prose pm-a11y__intro">
+          <p>Some accessibility is a property of the whole page: what happens under forced colors, at 400% zoom, when the user asks for less motion. These demos emulate each mode inside a stage so you can watch the mechanism work — and each one tells you how to flip the real switch.</p>
+        </div>
+        <section class="pm-mode" aria-labelledby="mode-fc">
+          <h2 class="pm-mode__title" id="mode-fc">Forced colors</h2>
+          <div class="pm-mode__walkthrough"><p>Windows High Contrast replaces every author color with the user's system palette. The design system survives because ALL its color flows through one semantic seam that remaps to system colors — and because no meaning rides on color alone. Turn the real thing on (Windows: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>PrtScn</kbd>) and the whole store adapts.</p></div>
+          <p class="pm-mode__caveat">This button emulates the mode with CSS so you can watch the mechanism; your OS setting is the real thing — these demos never override it.</p>
+          <button class="pm-mode__toggle" type="button" aria-pressed="false" data-pm-mode-toggle="forced-colors">Emulate forced colors</button>
+          <div class="pm-mode__stage" data-pm-mode="forced-colors">
+            <ul class="pm-grid" role="list" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));">
+              <li class="pm-release-card">
+                <div class="pm-release-card__body">
+                  <h3 class="pm-release-card__title">A sample card</h3>
+                  <p class="pm-release-card__artist">The design system</p>
+                  <div class="pm-release-card__foot">
+                    <span class="pm-release-card__price">$21.50</span>
+                    <span class="pm-release-card__stock">58 for sale</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <p style="margin: var(--space-stack) 0 0;"><button class="pm-button" type="button">Add to cart</button></p>
+          </div>
+        </section>
+        <section class="pm-mode" aria-labelledby="mode-zoom">
+          <h2 class="pm-mode__title" id="mode-zoom">Zoom and reflow</h2>
+          <div class="pm-mode__walkthrough"><p>WCAG 1.4.10 asks pages to reflow at 400% zoom (a 320px-wide viewport) with no horizontal scrolling. Everything here is sized in <code>rem</code> and laid out to wrap — zoom your browser to 400% right now and check; the emulation below just narrows the stage so you can see the wrap happen.</p></div>
+          <p class="pm-mode__caveat">This button emulates the mode with CSS so you can watch the mechanism; your OS setting is the real thing — these demos never override it.</p>
+          <button class="pm-mode__toggle" type="button" aria-pressed="false" data-pm-mode-toggle="reflow">Emulate a 320px viewport</button>
+          <div class="pm-mode__stage" data-pm-mode="reflow">
+            <ul class="pm-grid" role="list" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));">
+              <li class="pm-release-card">
+                <div class="pm-release-card__body">
+                  <h3 class="pm-release-card__title">A sample card</h3>
+                  <p class="pm-release-card__artist">The design system</p>
+                  <div class="pm-release-card__foot">
+                    <span class="pm-release-card__price">$21.50</span>
+                    <span class="pm-release-card__stock">58 for sale</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <p style="margin: var(--space-stack) 0 0;"><button class="pm-button" type="button">Add to cart</button></p>
+          </div>
+        </section>
+        <section class="pm-mode" aria-labelledby="mode-motion">
+          <h2 class="pm-mode__title" id="mode-motion">Reduced motion</h2>
+          <div class="pm-mode__walkthrough"><p>The OS "reduce motion" setting collapses every transition in the store to nothing — gated once, at the token tier, so no component needs its own media query. Hover the button below with the emulation on and off to see the difference; your OS setting always wins.</p></div>
+          <p class="pm-mode__caveat">This button emulates the mode with CSS so you can watch the mechanism; your OS setting is the real thing — these demos never override it.</p>
+          <button class="pm-mode__toggle" type="button" aria-pressed="false" data-pm-mode-toggle="reduced-motion">Emulate reduced motion</button>
+          <div class="pm-mode__stage" data-pm-mode="reduced-motion">
+            <ul class="pm-grid" role="list" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));">
+              <li class="pm-release-card">
+                <div class="pm-release-card__body">
+                  <h3 class="pm-release-card__title">A sample card</h3>
+                  <p class="pm-release-card__artist">The design system</p>
+                  <div class="pm-release-card__foot">
+                    <span class="pm-release-card__price">$21.50</span>
+                    <span class="pm-release-card__stock">58 for sale</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <p style="margin: var(--space-stack) 0 0;"><button class="pm-button" type="button">Add to cart</button></p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

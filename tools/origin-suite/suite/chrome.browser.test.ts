@@ -39,7 +39,8 @@ describe("HUD live readout (JS on)", () => {
     });
 
     await page.goto(`${ORIGIN}/placeholder-ssr/sample/`);
-    // TTFB reports as soon as the page settles.
+    // TTFB reports as soon as the page settles (panel slot — the collapsed
+    // bar's mini readout carries LCP + CLS only).
     await page.waitForFunction(
       () =>
         document.querySelector('[data-pm-hud-live="TTFB"]')?.textContent !== "–",
@@ -50,6 +51,33 @@ describe("HUD live readout (JS on)", () => {
       .locator('[data-pm-hud-live="TTFB"]')
       .textContent();
     expect(ttfb).toMatch(/\d+ms/);
+
+    // Finalize LCP with a TRUSTED interaction: the pinned web-vitals build
+    // (5.3.0) reports LCP only on a keydown/click/visibilitychange whose
+    // `isTrusted` is true — the synthetic hidden dispatch below can never
+    // finalize it (only our own flush listener, which doesn't gate on
+    // isTrusted). Playwright input rides CDP, so it IS trusted.
+    await page.keyboard.press("Shift");
+
+    // The redesigned chrome carries LCP twice — the collapsed bar's mini
+    // readout + the panel's full set — and measure.js updates every slot
+    // (querySelectorAll, the panel's one-line deliverable). BOTH slots must
+    // populate with the same rendered value.
+    await expect
+      .poll(
+        async () => {
+          const texts = await page
+            .locator('[data-pm-hud-live="LCP"]')
+            .allTextContents();
+          return (
+            texts.length === 2 &&
+            texts.every((t) => /\d+ms/.test(t)) &&
+            new Set(texts).size === 1
+          );
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(true);
 
     // Flush: the library reports final values when the page goes hidden.
     await page.evaluate(() => {
@@ -130,6 +158,29 @@ describe("home surface HUD (ADR-0007 §5 — the live half, in-page)", () => {
     expect(event.tags.cacheState).toBe("unknown");
     await page.close();
   }, 60_000);
+});
+
+describe("the collapsed strip at 320px (ADR-0008 §1 — one line, switching reachable)", () => {
+  it("keeps the bar one fixed line and the switcher anchors reachable", async () => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 720 },
+    });
+    const page = await context.newPage();
+    await page.goto(`${ORIGIN}/placeholder-static/sample/`, { waitUntil: "load" });
+    const bar = page.locator(".pm-chrome__bar");
+    const box = await bar.boundingBox();
+    expect(box).not.toBeNull();
+    // One line: the bar's rendered height equals its fixed block-size (44px).
+    expect(box!.height).toBeLessThanOrEqual(44.5);
+    // Switching stays reachable: the other variant's anchor exists, is in the
+    // a11y tree (not display:none), and is keyboard-focusable — the mobile
+    // contract scrolls the row instead of hiding it (verify-slice).
+    const swap = page.locator('a.pm-chrome__cell[href^="/placeholder-ssr/"]');
+    expect(await swap.count()).toBe(1);
+    await swap.focus();
+    expect(await swap.evaluate((el) => el === document.activeElement)).toBe(true);
+    await context.close();
+  });
 });
 
 describe("JS-off functionality (ADR-0004 §7)", () => {

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout — Long Decay Records</title>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/tokens.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/shell.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/masthead.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/footer.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/button.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/field.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/format-switch.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/cart-summary.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/error-summary.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/plaque.css">
+  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/checkout.css">
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-checkout">
+        <h1 class="pm-page__title">Checkout</h1>
+        <aside class="pm-plaque">
+          <p class="pm-plaque__kicker">Simulated commerce</p>
+          <p class="pm-plaque__name"><strong>This checkout is a demonstration.</strong></p>
+          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser — this page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
+        </aside>
+        <div class="pm-checkout__body">
+          <form class="pm-checkout__form" method="post" action="">
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Contact</legend>
+              <div class="pm-field">
+              <label class="pm-field__label" for="email">Email address</label>
+              <input class="pm-field__control" id="email" name="email" type="email" autocomplete="email" aria-describedby="email-hint">
+              <span class="pm-field__hint" id="email-hint">Used only to render the demo confirmation in this page — nothing is ever sent.</span>
+            </div>
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Shipping address</legend>
+              <div class="pm-field">
+              <label class="pm-field__label" for="name">Full name</label>
+              <input class="pm-field__control" id="name" name="name" type="text" autocomplete="name">
+            </div>
+              <div class="pm-field">
+              <label class="pm-field__label" for="address1">Address</label>
+              <input class="pm-field__control" id="address1" name="address1" type="text" autocomplete="address-line1">
+            </div>
+              <div class="pm-field">
+              <label class="pm-field__label" for="address2">Apartment, suite, etc. (optional)</label>
+              <input class="pm-field__control" id="address2" name="address2" type="text" autocomplete="address-line2">
+            </div>
+              <div class="pm-checkout__row">
+                <div class="pm-field">
+              <label class="pm-field__label" for="city">City</label>
+              <input class="pm-field__control" id="city" name="city" type="text" autocomplete="address-level2">
+            </div>
+                <div class="pm-field">
+              <label class="pm-field__label" for="postal">Postal code</label>
+              <input class="pm-field__control" id="postal" name="postal" type="text" autocomplete="postal-code" inputmode="numeric">
+            </div>
+              </div>
+              <div class="pm-checkout__row">
+                <div class="pm-field">
+              <label class="pm-field__label" for="region">State / region</label>
+              <input class="pm-field__control" id="region" name="region" type="text" autocomplete="address-level1">
+            </div>
+                <div class="pm-field">
+                  <label class="pm-field__label" for="country">Country</label>
+                  <select class="pm-field__control" id="country" name="country" autocomplete="country-name">
+                    <option selected>United States</option>
+                    <option>Canada</option>
+                    <option>United Kingdom</option>
+                    <option>Germany</option>
+                    <option>Japan</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Shipping method</legend>
+              <label class="pm-format__option">
+                <input class="pm-format__input" type="radio" name="shipping" value="standard" checked>
+                <span class="pm-format__label">Standard — free, 5–8 days</span>
+              </label>
+              <label class="pm-format__option">
+                <input class="pm-format__input" type="radio" name="shipping" value="express">
+                <span class="pm-format__label">Express — $12.00, 2 days</span>
+              </label>
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Payment</legend>
+              <p class="pm-checkout__jsoff">Demo card fields — type anything; nothing you enter is stored or sent.</p>
+              <div class="pm-field">
+              <label class="pm-field__label" for="card">Card number</label>
+              <input class="pm-field__control" id="card" name="card" type="text" autocomplete="cc-number" inputmode="numeric" aria-describedby="card-hint">
+              <span class="pm-field__hint" id="card-hint">Formats as you type — that formatting is part of what this page measures.</span>
+            </div>
+              <div class="pm-field">
+              <label class="pm-field__label" for="cardname">Name on card</label>
+              <input class="pm-field__control" id="cardname" name="cardname" type="text" autocomplete="cc-name">
+            </div>
+              <div class="pm-checkout__row">
+                <div class="pm-field">
+              <label class="pm-field__label" for="expiry">Expiry (MM/YY)</label>
+              <input class="pm-field__control" id="expiry" name="expiry" type="text" autocomplete="cc-exp" inputmode="numeric">
+            </div>
+                <div class="pm-field">
+              <label class="pm-field__label" for="cvc">Security code</label>
+              <input class="pm-field__control" id="cvc" name="cvc" type="text" autocomplete="cc-csc" inputmode="numeric">
+            </div>
+              </div>
+            </fieldset>
+            <div><button class="pm-button" type="submit">Place order</button></div>
+            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, native validation. Placing the order is the page's JavaScript moment; that cost is the comparison.</p>
+          </form>
+          <section class="pm-cart" aria-label="Order summary">
+            <h2 class="pm-cart__title">Order summary</h2>
+            <p class="pm-cart__empty">Your cart is empty — items appear here as you add them from the store.</p>
+            <ul class="pm-cart__lines" role="list"></ul>
+            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>—</span></p>
+          </section>
+        </div>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

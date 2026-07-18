@@ -1,0 +1,78 @@
+/*
+ * Component module — mode demo (a11y section, global-state modes). The
+ * emulation toggle is ADDITIVE-ONLY and scoped to the demo stage: it applies
+ * a CSS emulation INSIDE the stage so the mechanism is visible, and the real
+ * OS media query always continues to apply — the honesty caveat is a promise
+ * the implementation keeps ("your OS setting is the real thing — these demos
+ * never override it"). Toggle state rides aria-pressed (page JS; vanilla
+ * singleton). The chrome carries no mode toggles — recorded ADR-0004 §7
+ * amendment.
+ *
+ * Canonical markup:
+ *   <section class="pm-mode" aria-labelledby="…">
+ *     <h3 class="pm-mode__title" id="…">Forced colors</h3>
+ *     <div class="pm-mode__walkthrough">…</div>
+ *     <p class="pm-mode__caveat">This button emulates the mode with CSS so
+ *        you can watch the mechanism; your OS setting is the real thing —
+ *        these demos never override it.</p>
+ *     <button class="pm-mode__toggle" type="button" aria-pressed="false">
+ *        Emulate forced colors</button>
+ *     <div class="pm-mode__stage" data-pm-mode="forced-colors">…store
+ *        components…</div>
+ *   </section>
+ */
+
+.pm-mode {
+  margin-block: var(--space-section);
+  padding-block-start: var(--space-inset);
+  border-block-start: 1px solid var(--color-border);
+}
+
+.pm-mode__title {
+  margin: 0 0 var(--space-stack-sm);
+  font: var(--weight-bold) var(--text-title) / 1.3 var(--font-ui);
+}
+
+.pm-mode__walkthrough {
+  max-width: 65ch;
+  font: var(--text-body) / 1.6 var(--font-ui);
+  margin-block-end: var(--space-stack-sm);
+}
+
+.pm-mode__caveat {
+  max-width: 65ch;
+  margin: 0 0 var(--space-stack);
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.pm-mode__toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: var(--space-inset-xs) var(--space-inset);
+  font: var(--weight-medium) var(--text-body) / 1 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  margin-block-end: var(--space-stack);
+}
+
+.pm-mode__toggle[aria-pressed="true"] {
+  background: var(--color-surface-sunk);
+  border-color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+.pm-mode__toggle:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-mode__stage {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-inset);
+}

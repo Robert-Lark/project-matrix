@@ -1,0 +1,738 @@
+[
+  {
+    "lens": "Hostile staff engineer (view-source: \"of course it's slow — look how this page is engineered\")",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "1.1 / 1.3",
+        "claim_attacked": "\"in-flow (server-injected into the slot, so zero CLS by construction)\" (DRAFT.md:32-34) combined with the collapsed row streaming live vitals: \"your visit: LCP 654ms CLS 0.00\" (DRAFT.md:65)",
+        "evidence": "measure.js mutates strip text post-load: packages/measurement/src/client.ts:37-38 `const slot = chrome?.querySelector(`[data-pm-hud-live=\"${metric.name}\"]`); if (slot) slot.textContent = display(metric);`. The strip row is a wrapping flex container: packages/switcher/src/chrome.css:22 `flex-wrap: wrap;`. The strip is in-flow ABOVE the masthead (DRAFT.md:148 \"The chrome slot sits above the masthead\"). Mechanism: \"–\" → \"654ms\" / \"0.00\" widens the row after load; at wrap-boundary viewport widths the row gains a line, the strip grows, and every store byte below shifts — a non-user-initiated layout shift that web-vitals counts into the visitor CLS the strip itself displays.",
+        "why_it_matters": "The instrument perturbs the number it reports. A skeptic who catches the strip reflowing while its own CLS readout ticks up has the whole credibility story in one screenshot — and it falsifies the draft's zero-CLS-by-construction claim on every measured page.",
+        "fix": "Make the collapsed row geometrically inert: fixed block-size on the collapsed strip (overflow controlled), and fixed-width value slots (mono + tabular figures make `min-inline-size` in ch exact — e.g. reserve 6ch per vital). State in the draft: no post-load mutation of the strip may change its box."
+      },
+      {
+        "severity": "kill",
+        "section": "2 / 2.4",
+        "claim_attacked": "Shared shell \"cart link with count slot\" (DRAFT.md:145-146) and checkout \"Order summary (cart lines + totals, tabular prices)\" (DRAFT.md:224-225), presented as canonical markup with no client-rendering contract",
+        "evidence": "ADR-0004:110: \"**`localStorage`** holds the **cart only**\" — the server/edge physically cannot render cart lines or the count. So on EVERY paradigm: (a) the masthead count pops in post-load (\"Cart\" → \"Cart (3)\" shift at the top of every measured page), (b) checkout's entire order-summary section (lines + totals) materializes via client JS after first paint — a non-user-initiated layout shift of unknown height (line count varies) on the surface whose axis is INP, plus a JS-off checkout that shows an empty summary, plus golden masters (§4.3) that can never contain the section's real content. Draft §0.1 claims \"zero CLS by construction\" and \"the paradigm must be the only possible explanation for any gap\" (DRAFT.md:16-19) — this design builds a paradigm-independent CLS source into all six columns.",
+        "why_it_matters": "The hostile engineer opens checkout, watches the summary pop in, and says \"of course — the page assembles itself after load.\" It contaminates checkout's vitals identically everywhere (so no variant wins), but it hands the exact 'look how this page is engineered' quote the draft's kill-condition #1 exists to prevent, and it leaves the byte-identical/golden-master contract silently covering only an empty shell.",
+        "fix": "Give the draft an explicit cart-rendering contract: canonical markup ships the summary container with reserved geometry (fixed-height region with internal scroll, or per-line skeleton rows count-capped), masthead count gets a reserved fixed-width badge slot (tabular figures); specify that population must be pre-paint where the paradigm allows (vanilla: tiny sync inline read of localStorage) and document the residual per-paradigm difference as part of the measured story, not an accident. State the JS-off checkout behavior explicitly."
+      },
+      {
+        "severity": "discount",
+        "section": "1.2 / 1.4",
+        "claim_attacked": "\"Injection contract unchanged: ... `<link href=\\\"/_pm/chrome.css\\\">` first\" (DRAFT.md:118-120) with a new `@font-face` for the mono voice declared \"*inside chrome.css*\" (DRAFT.md:44-47)",
+        "evidence": "The link is emitted as the first element of the injected fragment inside the body slot: packages/switcher/src/chrome.ts:93 `` `<link rel=\"stylesheet\" href=\"/_pm/chrome.css\">` `` — a body stylesheet at the very top of every measured page. Browsers either block paint of all subsequent content until it loads (Chromium behavior for in-body links) or paint the strip unstyled then restyle it (FOUC of a dark strip = visible flash + possible height change). Adding @font-face inside chrome.css creates a 3-hop chain (HTML → chrome.css → woff2) discovered late; the house pattern is `font-display: swap` (packages/tokens/css/fonts.css:19), so the strip's mono renders in fallback then swaps — another post-load width change feeding the finding-1 wrap mechanism. On the headline Slow-4G profile this instrument-owned chain sits in front of the specimen's first paint on every page.",
+        "why_it_matters": "\"Your measurement chrome delays the page's own FCP/LCP\" is precisely the view-source sentence this lens exists to write. It's equal across variants (comparisons survive) but it inflates every absolute number and the swap flash is user-visible in the hero component.",
+        "fix": "Options with tradeoffs, pick in the ADR: (a) inline the strip-critical CSS into the injected fragment as `<style data-pm-chrome>` (zero extra request; exclude from measured KB by marker instead of path; loses cross-page cache), (b) HTMLRewriter-append the link into `<head>` so the preload scanner starts the fetch immediately, (c) split: inline collapsed-row CSS, load panel CSS normally. For the font: `font-display: optional` or a `size-adjust` metrics-matched fallback plus a preload in the fragment; combined with finding-1's fixed slots the swap becomes shift-free."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2",
+        "claim_attacked": "\"a fixed aspect frame (1:1, the dominant crate shape — 1,022 of 1,817 at 600×600)\" (DRAFT.md:192-193)",
+        "evidence": "jq over tools/snapshot-capture/crate/details.json: exactly 600×600 = 653 images; square-any-size = 771; aspect within 2% of 1:1 = 1,377 of 1,817. The draft's 1,022 is a different query mislabeled: `[.[] | .images[]? | select(.width==600)] | length` = 1,022 — width-600 regardless of height (includes 600×450 etc.). Also present in the data: aspect ratios from 0.095 to 6.98 (a ~7:1 image renders ~86px tall inside a 600px 1:1 contain frame), and 18 of 500 releases have a non-near-square FIRST image (the LCP element letterboxed on those PDPs).",
+        "why_it_matters": "A project whose C2 discipline is \"no verdict without a published receipt\" and whose §4.3 rule is \"numbers... never typed (ADR-0007's lesson)\" has a hand-typed, wrong number justifying a design decision in its own design record. A hostile engineer reruns the jq and gets 653. The 1:1 conclusion itself still holds via the honest cut (1,377/1,817 = 76% within 2% of square), so the error is unforced.",
+        "fix": "Replace the stat with the correct cut (near-square 1,377/1,817; exact 600×600 = 653) and record the jq alongside. Consider the variant: frame aspect-ratio taken from the FIRST image's data per page (constant per page → still zero shift on thumb switch, contain for the rest) — removes letterboxing from the LCP image on the 18 non-square-first PDPs. Note the extreme-aspect (≤0.1 / ≥7) gallery images as a known letterbox case."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3–1.5 / 1.4",
+        "claim_attacked": "The expanded panel (lab table with a receipt-link per populated cell, fit line, condition strip, per-surface knob rows, self-explanation) shipping as in-flow injected HTML on every measured page, with \"Injection contract unchanged\" (DRAFT.md:74-114, 117-118)",
+        "evidence": "ADR-0001 addendum F (docs/adr/0001-benchmark-measurement-methodology.md:183-185): \"the injected chrome's *runtime* cost is measured once (with/without batch, one profile) and published as a stated constant — byte-stripping alone does not remove it from timing metrics.\" That constant was calibrated for the current two-row strip (chrome.ts renders ~2 KB); the draft multiplies the fragment (panel sections 1–6, a 6-row × 5-column table where every cell href carries `profile · date · commit · location · URL`, knob presets, copy) plus a font fetch and a larger chrome.css — and never mentions re-measuring the constant or bounding the fragment. `<details>`-collapsed content still downloads and parses before the store content on Slow 4G.",
+        "why_it_matters": "\"Every page carries a hidden dashboard ahead of the store\" is a view-source gift, and publishing a stale chrome-cost constant after doubling the chrome quietly breaks ADR-0001 F's honesty mechanism.",
+        "fix": "Add to the draft: a chrome fragment byte budget (state it, test it in repo-checks like the module list), and an explicit re-run of the ADR-0001 F chrome-cost measurement as a gate on shipping the redesigned strip. Consider trimming per-cell receipt hrefs to a receipt id resolved on the receipt page."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.3",
+        "claim_attacked": "\"Images: `loading=\\\"lazy\\\"` + `decoding=\\\"async\\\"` below the first grid row; the first row eager (LCP candidates)\" (DRAFT.md:208-209)",
+        "evidence": "\"First grid row\" is not a static-markup concept: the grid's column count is responsive, so a server-rendered canonical page cannot know which cards form row one (1–2 cards on mobile, 4–6 on desktop). Whatever N the markup eagers is wrong on some viewport: too many = eager offscreen loads on mobile Slow 4G; too few = the desktop LCP candidate lazy-loads (a known LCP penalty).",
+        "why_it_matters": "The LCP element's loading attribute is the one place a fuzzy spec directly moves a published metric; a reviewer will ask \"how does your server know your row width?\"",
+        "fix": "Specify a fixed eager count in the markup contract (e.g. first 4 cards eager, `fetchpriority=\"high\"` on card 1 only) and record the tradeoff (slight mobile over-fetch accepted for desktop LCP correctness), matching how the `sizes` breakpoint map is already pinned to the grid."
+      }
+    ],
+    "survived": [
+      "2.3 facet-rail-as-links: plain GET anchors with canonical params is the crawlable, JS-off, perf-honest MPA baseline (what a perf-obsessed engineer ships); paradigm enhancement per ADR-0003 'behavior per paradigm' is the measured axis, not an HTMX excuse.",
+      "2.4 the 'honest INP work' list: validate-on-blur, card formatting, summary recalc are what real checkouts genuinely do — no busy loops, survives view-source; the per-paradigm cost of that same work IS the experiment.",
+      "2.2 the fixed-frame direction itself: a constant gallery frame beats per-image frame heights for thumb-switch stability (zero shift by geometry) — only the justifying stat and the frame-aspect choice needed correction (see finding).",
+      "1.1/1.3 native <details> for the panel: expansion is user-initiated (CLS-exempt), works JS-off, no fetch on open.",
+      "1.5 plaques set in the store face, not the chrome mono — correctly keeps instrument font bytes out of measured KB on every variant.",
+      "2.3 n=240 with loading=lazy + decoding=async: standard browser-managed behavior, no decode-storm mechanism I could demonstrate; 240-card HTML re-download per facet click is the data axis being measured, not waste.",
+      "1.1 rejecting the fixed bottom dock: the 'chrome.css must not restyle body' leak argument is sound — an overlay dock would either obscure content or force chrome bytes into page layout.",
+      "4.2 the 600px derivative ceiling: confirmed against the crate — no source image in details.json exceeds 600px wide, so larger derivatives cannot exist upstream."
+    ]
+  },
+  {
+    "lens": "Design critic — eight classic principles + distinctiveness calibration",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "2.2 / 4.2",
+        "claim_attacked": "\"the figure gets a fixed aspect frame (1:1, the dominant crate shape — 1,022 of 1,817 at 600×600)\" (DRAFT.md:192-193) — the letterbox decision is justified by a statistic the data does not contain.",
+        "evidence": "jq against tools/snapshot-capture/crate: images-index.json has 1,817 entries; exactly 600×600 = 653 (jq '[.[] | select(.width==600 and .height==600)] | length' → 653); exactly square = 771; within ±5% of square = 1,537/1,817. No tolerance I tried reproduces 1,022 (595–605 square box → 1,029). The number that actually carries the design is the main-figure distribution: 482 of 500 first images are within ±5% of square, only 14 landscape/2 portrait (jq on details.json .images[0]).",
+        "why_it_matters": "This is the exact failure ADR-0007 §3 institutionalized against (the panel-caught hand-typed SHA), and the draft itself makes \"numbers… never typed\" structural (§4.3). §4.2 says issue #9 \"closes with this rationale recorded,\" and §2.6 generates the How-it-was-built surface from docs/ — a fabricated-looking count in the rationale of record is one build step from being published verbatim on a site whose whole thesis is receipt-verified numbers.",
+        "fix": "Replace with tool-derived stats and record the jq derivation beside them: 653/1,817 exact 600×600; 1,537/1,817 within ±5% of square; 482/500 PDP main figures near-square. The corrected numbers argue the 1:1 frame more strongly (initial paint letterboxes visibly on ~3% of PDPs; only thumbnail-switching hits the 247 clearly non-square images)."
+      },
+      {
+        "severity": "discount",
+        "section": "1.2",
+        "claim_attacked": "The strip's specified visual identity is dark neutrals + JetBrains Mono + paper-white text (DRAFT.md:44-59) — which is, in full, the AI-default \"dark ground + mono terminal\" look; no signature move is named.",
+        "evidence": "Everything §1.2 specifies (self-hosted mono, color-mix dark neutrals, paper-white text) describes a thousand devtools bars. The proprietary vocabulary exists and is unspent: home's disc etch grammar — uppercase interpunct receipt text \"%%SNAP_COUNT%% RELEASES · FROZEN … · CUT %%SNAP_SHA7%% ·\" (workers/front/home/index.html:83) and the catalogue-number center label (:87); c-runout's reserved register \"structure carried by rule and tone, nothing floats… square corners, no shadow\" (directions/c-runout/tokens.css:5-6, noted for instrument surfaces in ADR-0006 alternatives); and ADR-0007 §4's own axis rule: \"matrix numbers belong to pressings/variants.\" The variant cells ARE the pressings — the one place the project's namesake metaphor has never been spent — yet §1.3 renders them as generic bracketed anchors and chrome.css today gives cells rounded boxed styling (packages/switcher/src/chrome.css:34-43, border + radius).",
+        "why_it_matters": "Kill condition 2 of the whole aesthetic program is reading as templated default. The chrome is §1's declared hero; if the hero is the one element in the system a competent skeptic can call \"the AI look,\" the register's specialness — and the claim that personality was deliberately reserved for it — is discounted.",
+        "fix": "Name the signature move in §1.2: variant cells etched as matrix numbers in the disc's established grammar (uppercase, letterspaced, interpunct-separated; the current cell carrying its cut, e.g. VANILLA · CUT f60385f), structure carried by hairline etch rules — radius 0, no boxes, nothing floats — inside the strip (the c-runout vocabulary ADR-0006 reserved for exactly this). Zero new primitives, consistent with ADR-0007 §7 precedent."
+      },
+      {
+        "severity": "discount",
+        "section": "2 (shared shell)",
+        "claim_attacked": "Store brand \"Matrix Records — the store needs a believable name; the matrix number is the project's own metaphor spent on the right axis (the pressing identifies the variant)\" (DRAFT.md:150-152).",
+        "evidence": "The justification contradicts itself: it states the metaphor's right axis is the pressing/variant, then spends the name on the store — a third axis. ADR-0007 §4 already litigated this: \"matrix numbers belong to pressings/variants, catalogue numbers to a label's listing — the metaphor spent on the right axis\"; a store is a label's listing. And the instrument wordmark is already \"Project Matrix\" (workers/front/home/index.html:86) — specimen and bench would share a name, the precise register blur the two-register system exists to prevent. A benchmark harness's fictional shop named after the harness is also the least believable name available, failing the stated goal.",
+        "why_it_matters": "Unity/distinctiveness: every screenshot would show \"Matrix Records\" (store, warm paper) under a PM instrument strip — readers conclude one brand sloppily applied, not two registers deliberately held apart. It also spends the pressing metaphor where it blocks the stronger use (matrix numbers on variant cells, finding above).",
+        "fix": "Give the store a scene-plausible name with no \"matrix\" in it (the crate's world — ambient/techno/neo-classical label-shop fiction — or lean on ADR-0006's own noun: the store as a label's Catalogue). Let the chrome alone carry the Project Matrix identity; the connection is the strip sitting above the masthead, not a shared name."
+      },
+      {
+        "severity": "discount",
+        "section": "1.1 / 1.3",
+        "claim_attacked": "\"one collapsed row tall\" (DRAFT.md:33-34) — the specified collapsed row cannot be one row on most viewports.",
+        "evidence": "The row at DRAFT.md:65 is 151 characters (wc -m). In the chrome's mono at small size (~13px, mono advance ≈ 0.6em ≈ 7.8px/char) the text alone is ~1,180px before cell padding/borders (chrome.css:34-43 adds padding + 24px min target per cell, five cells). On a 375px phone that is 3+ wrapped lines of near-black above the masthead; the draft rejected the side rail because it \"dies on mobile\" (DRAFT.md:39-40) but specifies no mobile degradation for its own choice.",
+        "why_it_matters": "Hierarchy and balance: wrapped, the strip becomes a dark block — the first ~100+px of every store page on the device class the Slow-4G/mid-phone thesis targets is instrument, not specimen. The store must lead; a block-height chrome also erodes the scale contrast that keeps the strip from diluting home's full-bleed band.",
+        "fix": "Specify the collapsed row's responsive contract in §1.3: below a stated breakpoint the row shows PM mark · current variant cell + count (\"vanilla · 1 of 5\") · [instrument ▾]; the full variant row, profile, and live mini-readout live inside the expanded panel. Assert \"one line at 320px\" as a testable property alongside zero-CLS."
+      },
+      {
+        "severity": "discount",
+        "section": "2 (shared shell) / 1.4",
+        "claim_attacked": "\"skip link → masthead … The chrome slot sits above the masthead\" (DRAFT.md:144-148) — the DOM order of skip link vs chrome slot is unstated, and the natural reading puts the instrument before the bypass.",
+        "evidence": "If div#pm-chrome-slot precedes the shell's skip link, the first ~7 tab stops on every page are chrome (5 variant anchors + summary toggle + readout links, DRAFT.md:65-72) before a keyboard/AT user can bypass anything. §2.5 makes \"skip link and landmarks stay compliant\" a load-bearing promise for the a11y section (DRAFT.md:254); the site teaching skip-link discipline must not itself bury the skip link behind instrumentation.",
+        "why_it_matters": "Proximity/hierarchy in the accessibility sense: the a11y section's credibility (and Lighthouse-100 continuity from home, ADR-0007 §6) is undercut if the first focusable on every store page is a benchmark control.",
+        "fix": "State the order explicitly in §2: skip link is the first element in body, before the chrome slot; give the skip link a second target or a companion \"skip instrument\" link if the panel is expanded. One sentence in the markup contract now saves an ADR-0003 matched-pair retrofit later."
+      },
+      {
+        "severity": "discount",
+        "section": "0-4 (whole draft)",
+        "claim_attacked": "The brief demands the ONE aesthetic risk be named crisply; the draft scatters four \"panel: attack this\" invitations (DRAFT.md:152, 194, 223, 251) and names no risk.",
+        "evidence": "grep for a stated risk finds none; §0 lists two kill conditions (engineering honesty), not the aesthetic bet. Home's ADR recorded its bet explicitly (the disc as signature, ADR-0007 §3); this draft's equivalent slot is empty.",
+        "why_it_matters": "Delegating risk-naming to the panel is equivocation the brief forbids; without a named bet, revisions have no criterion for what must survive them.",
+        "fix": "Add one line to §1: \"The aesthetic risk: a permanent dark mono strip is the most imitable element in the system — it stands or falls on the matrix-number/etch signature; if that move is cut in build, the hero of this design is the one AI-default in an otherwise proprietary system.\""
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.5",
+        "claim_attacked": "The fenced plaque's \"EXCLUDED FROM EVERY BENCHMARK NUMBER\" rule line (DRAFT.md:132-133) has no loudness budget in the quiet Catalogue register.",
+        "evidence": "ADR-0006 §1: \"The store register stays quiet and credible.\" An all-caps full clause is typographically louder than any store H1 treatment; five distinct users ride this component (DRAFT.md:134-137), so it recurs across surfaces.",
+        "why_it_matters": "Contrast calibration: the fence should be unmissable without becoming the loudest element on pages whose covers are supposed to win (ADR-0006 §4's card-title cap logic).",
+        "fix": "Specify the plaque's voice: small size (size-0/1) + letterspacing carries the caps; normal weight; rule line, not heavy border or shadow — stamp, not siren."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.4",
+        "claim_attacked": "\"order numbers are theater; use a static designed string\" (DRAFT.md:224-226) — a hand-designed static number sits oddly in a system where §4.3 makes \"numbers… never typed\" structural.",
+        "evidence": "DRAFT.md:312-314: \"Numbers/dates in any render come from tray/manifest fields — never typed (ADR-0007's lesson, now structural for all six surfaces)\" — then §2.4 mints exactly one typed number.",
+        "why_it_matters": "Repetition/unity of the honesty system: an obviously static \"order number\" repeated across runs reads as broken to a tester, and the one typed number invites the \"which other numbers are typed?\" question.",
+        "fix": "Either derive it from data already in the condition (surface + variant + SNAP_SHA7 — the confirmation becomes another receipt, on-register) or record in the draft why theater is exempt from the §4.3 rule; don't leave the exception silent."
+      }
+    ],
+    "survived": [
+      "1.1 always-dark strip on every page: survives my best attack. Scale contrast answers the dilution worry — home's band is a full-bleed destination with display type (home.css:342-357, clamp to 2.625rem); the strip is a hairline of the same material, which is repetition-as-unity, not repetition-as-furniture. The paper-strip alternative creates a worse proximity failure (a paper link-row directly above the paper masthead nav reads as one nav — switcher cells masquerade as store links, the register blur the system exists to prevent); dark-only-on-instrument-heavy-surfaces flickers the register across the store and invites per-surface chrome drift against ADR-0004 §7's byte-identical contract.",
+      "1.2 two-voices font architecture: survives — chrome-owned JetBrains Mono on the excluded path with --pm-font-metric untouched is exactly the route ADR-0006 left open ('reachable through the --pm-font-metric slot and chrome CSS'), and re-pouring the metric slot would indeed change every store price.",
+      "1.5 plaques in the store face, not chrome mono: survives — shipping the instrument font into measured page bytes would tax every variant; paper+border+uppercase is distinct from dark+mono chrome while staying Catalogue (modulo the loudness nitpick).",
+      "2.2 the 1:1 letterbox frame itself: survives (only its cited statistic fails) — letterboxing on the mat is literally the mat-board metaphor, and verified data (482/500 near-square main figures) supports it; the max-heights alternative leaves variable dead space and the per-image frame shifts the buy panel.",
+      "2.1 editorial composition: survives — ~65ch measure, one figure, one interaction; the size-3 cap is a card-vs-cover rule (ADR-0006 §4) and doesn't bind the article H1, which has --text-display = --pm-size-5 (2.625rem, tokens.css:57/99).",
+      "2.3 PLP at 240: survives — density is the declared condition, the space-gap mat holds it, and the result line states volume plainly.",
+      "2.4 checkout single-column rhythm and plaque-before-payment-fields ordering: survives — the disclosure lands before the user types, honest and well-sequenced.",
+      "2.5 a11y walkthrough-first two-box blocks with defects scoped to boxes: survives — label-before-defect ordering and compliant page shell are the right proximity calls."
+    ]
+  },
+  {
+    "lens": "Accessibility auditor (WCAG 2.1/2.2 AA; forced-colors; reduced-motion; reflow; keyboard; SR semantics)",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "2.4",
+        "claim_attacked": "Checkout's a11y story is complete with per-field `aria-describedby`/`aria-invalid` wiring, while `checkout-submit-invalid` ships as a published scripted interaction",
+        "evidence": "DRAFT.md:227-228 wires only per-field error slots; DRAFT.md:232-234 publishes `checkout-submit-invalid` as an interaction-registry measurement. The draft says nothing about what happens AFTER an invalid submit: no error-summary container, no focus destination, no announcement. WCAG 3.3.1 (Error Identification) and 4.1.3 (Status Messages) bind here — an SR user pressing Place order hears nothing. Worse for the benchmark: ADR-0003 §1 requires canonical byte-identical markup, and the draft's own kill condition 2 (DRAFT.md:20-23) forbids designs that bias a paradigm — but the invalid-submit response is DOM + focus work whose shape is unspecified, so vanilla could ride free native constraint validation while React builds a custom summary. The published INP numbers for `checkout-submit-invalid` would then compare different work.",
+        "why_it_matters": "This is the surface whose thesis is 'INP under pressure' — if the heaviest scripted interaction has an unpinned response contract, the flagship INP comparison is rigged-by-omission, and the SR-silent failure is exactly what a skeptical a11y-literate reviewer will try first on a portfolio that ships an accessibility section.",
+        "fix": "Pin the error-response pattern into the canonical markup contract: an error-summary region (the GOV.UK/WAI pattern — container with a heading, list of links to each invalid field) rendered on invalid submit, focus moved to it, plus the existing per-field wiring; record it in the interaction registry entry so every paradigm performs identical DOM + focus work. Also specify the confirmation state's focus/announcement (same mechanism)."
+      },
+      {
+        "severity": "kill",
+        "section": "2.5",
+        "claim_attacked": "\"defects are scoped to the box, never the page shell\" makes the five-defect element-demos page safe for a real AT user passing through",
+        "evidence": "DRAFT.md:243-247 (five two-box A/B blocks: focus · forms · target size · contrast · live regions, DS-OFF box after the label) and DRAFT.md:252-254 (scoping claim). Mechanism: scoping a defect to a box does not scope it out of the tab order. A keyboard user tabbing the page enters the DS-OFF focus box and the focus indicator vanishes (live 2.4.7 failure on the page); an SR user in forms mode hits the DS-OFF unlabeled fields (4.1.2); the contrast box is a live 1.4.3 failure. 'Label FIRST' (DRAFT.md:244-245) helps cognition but restores no indicator. `noindex` (DRAFT.md:247) affects crawlers, not visitors.",
+        "why_it_matters": "The a11y section is the credibility centerpiece. An accessibility showcase whose default keyboard path passes through invisible-focus controls and unlabeled fields is the screenshot that sinks the site with exactly its target audience.",
+        "fix": "Make each DS-OFF box opt-in: wrap it in a collapsed `<details><summary>Open the stripped twin</summary>`. Content inside closed `<details>` is natively unfocusable and hidden from AT, works JS-off, and this is a vanilla singleton so byte-identity across variants is not in play. Default page state is then fully conformant; the defect is entered deliberately, walkthrough label already read."
+      },
+      {
+        "severity": "discount",
+        "section": "1.1/1.4",
+        "claim_attacked": "The entire expanded instrument panel (lab table, fit line, live vitals, receipt strip, knob forms, self-explanation prose) lives inside `nav#pm-chrome`",
+        "evidence": "DRAFT.md:31-34 (strip expandable 'to the full instrument panel via a native `<details>`') + DRAFT.md:118-121 ('Injection contract unchanged: … `nav#pm-chrome`'). Current code: packages/switcher/src/chrome.ts:94-97 renders `<nav id=\"pm-chrome\" … aria-label=\"Project Matrix instrumentation\">` and already wraps the HUD rows. A `nav` landmark is for groups of links (ARIA APG landmark guidance); the redesign stuffs a data table, paragraphs, and per-surface form controls into it on every page. SR users navigating by landmark get a 'navigation' region that is mostly not navigation, and many skip nav landmarks entirely — hiding the receipts.",
+        "why_it_matters": "Landmark misuse on every single page, on a site whose pitch includes an accessibility section, is a standing discount a reviewer applies to the whole a11y claim (WCAG 1.3.1 / ARIA landmark semantics).",
+        "fix": "Scope `<nav>` to the switcher cells only; wrap the panel in `<section aria-label=\"Instrument readings\">` (or role=region) with the `<details>` inside it. The `#pm-chrome` id can move to the outer container without breaking measure.js — packages/measurement/src/client.ts:18 uses `document.getElementById(\"pm-chrome\")`, tag-agnostic; update origin-suite chrome.test.ts assertions in the same change."
+      },
+      {
+        "severity": "discount",
+        "section": "1.2",
+        "claim_attacked": "Dark-strip colors via `color-mix()` derivations of poured neutrals, with 'paper-white text/focus rings', settles contrast — implying home §7 precedent covers it",
+        "evidence": "Computed against packages/tokens/css/tokens.css:24-35: neutral-0 on neutral-950 = 18.52 (fine), but neutral-600 (the current muted token) on 950 = 3.02 — fails 4.5:1 — and accent-500 on 950 = 2.71 — fails even the 3:1 non-text minimum. Today's chrome uses exactly those semantics: chrome.css:28 `color: var(--color-text-muted)` for labels, chrome.css:41 `color: var(--color-accent)` for cells; reused on the dark strip they both fail. Home passed by hand-picking neutral-400 (6.81) for muted-on-dark (workers/front/home/home.css:348,370). No tool audits any of this: audit-contrast.mjs:36 parses only literal hex tokens (`/(--pm-[\\w-]+):\\s*(#…)/`), its pair list (lines 41-56) is light-surface only, it cannot resolve `color-mix()` or alpha-over-950 compositing, and it lives in docs/prototypes/aesthetic-direction/directions/ — not wired into repo-checks (tools/repo-checks/test/ contains four tests, none contrast).",
+        "why_it_matters": "The draft mandates derived colors ('no literal hex in composition CSS', DRAFT.md:54-56) on a ground where the poured palette demonstrably fails in its default pairings — with zero audit coverage. WCAG 1.4.3/1.4.11 regressions would ship silently on every page's chrome.",
+        "fix": "Enumerate the dark-ground pair set in the draft (body text, muted labels/metric names, receipt-link cells, borders, em-dash empty states, focus ring ≥3:1 on 950) and extend audit-contrast.mjs to resolve color-mix()/alpha compositing over neutral-950, then wire it into repo-checks — the same anti-rigging hardening move §4.1 already applies to font coverage."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3",
+        "claim_attacked": "`[instrument ▾]` as the `<details><summary>` toggle is an adequate name for the panel disclosure",
+        "evidence": "DRAFT.md:72. A summary is exposed roughly as a button/disclosure with expanded state; its accessible name here is the word 'instrument' — on a record store, where 'instrument' means a musical instrument to every SR user who hasn't read the site's conceit. WCAG 2.4.6 (Headings and Labels: descriptive). The `▾` glyph, if left in text, is announced ('black down-pointing small triangle') on some SR/browser pairs.",
+        "why_it_matters": "The single control that unlocks all the evidence has a name that actively misleads on this specific site's domain; SR users hear 'instrument, collapsed' and reasonably skip it.",
+        "fix": "Name it for what it opens — e.g. 'Measurements: lab + your visit' — or keep the visible 'instrument' word but supply the fuller accessible name via visually-hidden text; make the triangle a CSS marker or `aria-hidden` so it is never announced."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (§6) / 1.1",
+        "claim_attacked": "'Solo-first self-explanation' is served by a one-liner placed LAST inside a collapsed-by-default panel",
+        "evidence": "DRAFT.md:110-114: 'This surface' is section 6 of 6 in the expanded panel; DRAFT.md:33-34: the panel is collapsed by default. So the only copy that explains what the visitor is looking at sits behind a disclosure named 'instrument', below a lab table of em-dashes, a verdict slot, vitals, and a receipt strip. The collapsed row a first-time visitor actually sees (DRAFT.md:64-66) is pure jargon: 'variant · profile: Slow 4G · your visit: LCP 654ms'. For SR users this is worse: unexplained metric fragments announced with no context, explanation six sections deep.",
+        "why_it_matters": "This defeats the draft's own stated goal (solo-first) and the 90-second-skeptic model from ADR-0007; discoverability of the one orienting sentence is near zero for both sighted and SR visitors.",
+        "fix": "Reorder the panel so 'This surface' is section 1 (orientation before readings), and consider echoing its first clause in the collapsed row (it is one line by design). No mechanics change — purely panel order and one collapsed-row text node."
+      },
+      {
+        "severity": "discount",
+        "section": "2 (shared shell)",
+        "claim_attacked": "'skip link → masthead … The chrome slot sits above the masthead' pins a compliant focus order",
+        "evidence": "DRAFT.md:143-148 leaves the skip-link-vs-chrome-slot order ambiguous, and the shipped precedent resolves it the wrong way: variants/placeholder-static/pages/sample.html:20 places `div#pm-chrome-slot` as the first element in `<body>` (no skip link at all), while home puts the skip link first (workers/front/home/index.html:35). If variant builds follow the placeholder precedent, the skip link lands AFTER the injected chrome, and a keyboard user must tab through 4 variant anchors + the summary toggle (more once knobs exist) on every page before reaching the bypass mechanism — a WCAG 2.4.1 failure in spirit and, across six surfaces × five variants, in effect.",
+        "why_it_matters": "The chrome is injected identically everywhere; get the order wrong once in the canonical shell and it is wrong on every measured page.",
+        "fix": "Make the draft explicit: the skip link is the first focusable element in `<body>`, before `div#pm-chrome-slot`; encode it in the reference golden masters (§4.3) and assert it in the origin suite so injection can never precede it."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2",
+        "claim_attacked": "Gallery thumbnails as `<button>` elements with 'behavior per paradigm' — selection semantics left unspecified",
+        "evidence": "DRAFT.md:171-173 specifies `<button>` thumbs and (line 174) `[aria-pressed]` only for the zoom toggle. Thumbnail selection is one-of-N (mutually exclusive); if the implicit answer is `aria-pressed` per thumb, an SR user hears five independent toggle buttons — the APG reserves toggle buttons for independent state, not exclusive selection. And because kill condition 2 (DRAFT.md:20-23) + ADR-0003 demand byte-identical DOM, the selected-state attribute and the thumbs' accessible names ('View image 2 of 5') MUST live in the markup contract — 'behavior per paradigm' cannot cover name/state without letting variants diverge.",
+        "why_it_matters": "Unspecified name/role/value on an interactive component that ships on the PDP in five paradigms means five different SR experiences and a drift-gate blind spot (WCAG 4.1.2).",
+        "fix": "Pin the pattern in the contract: either a radiogroup (fits exclusive selection; JS-off degrade is harder) or buttons with contract-fixed accessible names plus a single exclusive selected-state attribute the paradigms all manage identically; state which one, and add gallery to the matched-pair question in §3 with an answer."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2/2.4",
+        "claim_attacked": "Add-to-crate, quantity change, and order-summary recalculation need no announced feedback — the draft specifies the controls but no status-message slot",
+        "evidence": "DRAFT.md:159-160 (Add-to-crate CTA, cart state), DRAFT.md:145-146 ('cart link with count slot'), DRAFT.md:230-232 ('recalculate the summary on quantity change'). In client-runtime paradigms these update the page without navigation, which triggers WCAG 4.1.3 (Status Messages): the count/summary change must be programmatically announced. ADR-0003 §5 explicitly promises 'accessible form wiring (… live regions)' as a DS default — but the draft's canonical markup nowhere places a live-region/status slot, and byte-identical DOM means a variant cannot add one unilaterally.",
+        "why_it_matters": "Without a contract-level `role=\"status\"` slot, every hydrating variant either fails 4.1.3 or breaks byte-identity — the same trap as the checkout finding, on the site's most-repeated interaction.",
+        "fix": "Add a status slot to the canonical shell (e.g. a visually-hidden `role=\"status\"` element adjacent to the cart count) and specify the message text per interaction in the markup contract; full-navigation paradigms leave it inert (new page announces itself)."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.2/2.4",
+        "claim_attacked": "Radio groups (PDP format switch, checkout shipping-method radio cards) specified without a group label",
+        "evidence": "DRAFT.md:176-177 ('format switch (radio group segmented control … JS-off native radios)') and DRAFT.md:222-223 ('Shipping method (radio cards …)') — neither mentions `fieldset`/`legend`. Radios without a group name fail WCAG 1.3.1/3.3.2 in practice: SR hears 'Vinyl, radio, 1 of 3' with no 'Format' context. Segmented-control styling with visually-hidden inputs must also keep a visible focus indicator on the label and survive forced-colors (a hidden radio's forced-colors affordance disappears).",
+        "why_it_matters": "Cheap to specify now, expensive to retrofit into a byte-identical contract later.",
+        "fix": "Add `fieldset` + `legend` (visually styled, not hidden) to both patterns in the component inventory; note the focus-visible + forced-colors treatment for the hidden-input segmented control in the `format-switch` module."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.2",
+        "claim_attacked": "Quantity stepper: 'label + input type=number + stepper buttons' is complete",
+        "evidence": "DRAFT.md:177-178. The +/- buttons have no specified accessible names, and their effect (value change) is only perceivable if focus stays on the input or the value is announced. Standard fix is well-documented (buttons named 'Decrease quantity'/'Increase quantity', value change reflected in the labelled spinbutton).",
+        "why_it_matters": "Unnamed icon buttons are a 4.1.2 miss the a11y section itself will be demonstrating as a DS-OFF defect — awkward to fail it live in the PDP.",
+        "fix": "Specify the two button names in the `qty` module contract and require the buttons to update the input's value (native spinbutton announces itself)."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.2 / 1.3",
+        "claim_attacked": "Both tables (PDP tracklist; the instrument's 'reading' table) specified without caption/scope, and the reading table without a reflow plan",
+        "evidence": "DRAFT.md:183-184 (tracklist 'table: position · title · duration') and DRAFT.md:76-82 (reading table) name columns/rows but no `<caption>`/`aria-label` or `th scope`; the em-dash empty cells (DRAFT.md:83-85) announce as nothing to SR users; and at 320 px CSS width (WCAG 1.4.10 — data tables get the 2-D exception but must scroll) the reading table needs an `overflow-x` container that is keyboard-reachable (`tabindex=\"0\"` + role=region + label — the documented pattern).",
+        "why_it_matters": "1.3.1 header association is what makes 'the comparison is the interface' legible to SR users at all — value-links like '654ms' only carry meaning via their `th`s.",
+        "fix": "Add caption + `th scope=\"col\"/\"row\"` to both table specs; give em-dash cells visually-hidden text ('no published run'); wrap the reading table in a focusable labelled scroll container."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.3 / 2.3",
+        "claim_attacked": "`aria-current=\"true\"` on the current variant cell (the facet usage is correct; the variant usage picks the wrong token)",
+        "evidence": "DRAFT.md:66-67 (variant cell `aria-current=\"true\"`) vs DRAFT.md:204-205 (selected facet `aria-current=\"true\"`). Variant cells are a set of page URLs of which one IS the current page — the precise ARIA token is `aria-current=\"page\"`; `\"true\"` is the generic fallback. For facets (selected filter, not the page) `\"true\"` is right. Current code renders the marked cell as a `<span aria-current>` (chrome.ts:68) — announced support for aria-current on a non-interactive span is weaker than on a link; the draft should say which element carries it.",
+        "why_it_matters": "Token precision is exactly the kind of detail this audience checks in view-source.",
+        "fix": "Use `aria-current=\"page\"` for the variant cell; keep `\"true\"` for facets; state in §1.3 whether the current cell stays a span (and accept the support caveat) or becomes a self-referencing anchor."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.5",
+        "claim_attacked": "The `pm-plaque` family ('kicker · name · claim · link') with no heading-level rule",
+        "evidence": "DRAFT.md:132-137. Plaques land mid-document on surfaces with different outline depths (PDP below a tracklist h2, checkout inside a form section, a11y exhibits). If 'name' is a hardcoded heading the outline breaks somewhere (WCAG 1.3.1 / heading hierarchy); the draft also styles the kicker uppercase — that must be CSS `text-transform`, not typed capitals, or some SRs spell it out.",
+        "why_it_matters": "A DS component used on all six surfaces either parameterizes its heading level or corrupts at least one surface's outline.",
+        "fix": "Specify: plaque name is a `<p><strong>` by default with an optional heading-level parameter per placement; kicker uppercase via CSS only."
+      }
+    ],
+    "survived": [
+      "§1.2 forced-colors plan: giving chrome.css its own forced-colors block is required and correct — the dark strip composes PRIMITIVE tokens, and tokens.css:147-160 remaps only the SEMANTIC tier, so the seam alone would never remap it.",
+      "§1.2 paper-white text/focus rings on the dark ground: neutral-0 on neutral-950 computes to 18.52:1 (text) and clears 3:1 (ring) — home.css:355-357 precedent holds.",
+      "§1.4 anchors-only core: variant swap and ?profile= as plain links keeps the whole instrument keyboard-operable and JS-off functional (2.1.1) — survived my best attack.",
+      "§2.5 mode-demo emulation toggles: honest per the caveat — CSS-class emulation through the semantic seam demonstrates the actual mechanism, and 'your OS setting always wins' is true; noindex on that page is indeed unnecessary (nothing nonconformant there once element-demo defects are opt-in).",
+      "§2.5 live-region demo: no ambient SR noise as specced — announcements are user-triggered inside the demo block; keep regions empty at load and it holds.",
+      "§2.4 field anatomy (label-for, autocomplete tokens, inputmode, aria-describedby/aria-invalid slots) matches WCAG 1.3.5/3.3.2 best practice and ADR-0003 §5 exactly.",
+      "§2.2 zoom toggle with [aria-pressed]: correct toggle-button semantics for a genuine binary state.",
+      "Reduced-motion: the semantic --motion-* collapse (tokens.css:130-135) covers any chrome/panel animation for free, provided chrome.css reads the semantic durations — no draft change needed.",
+      "Target size: the 24px --pm-target-min floor (tokens.css:79) already applied to chrome cells (chrome.css:35) meets WCAG 2.5.8 for the strip's anchors.",
+      "§2.1 Editorial structure (kicker before a real h1, ~65ch measure, one figure with data dimensions) is clean against 1.3.1/1.4.8 concerns — no finding."
+    ]
+  },
+  {
+    "lens": "Voice cop + C2 fact-checker (ADR-0007 phrasing discipline, CONTEXT.md vocabulary, every quoted copy string, every number)",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "1.3 (item 6) + 1.4/4.4",
+        "claim_attacked": "PDP self-explanation line: \"One product page, built five ways.\" shipped as fixed copy in SURFACE_CONTROLS",
+        "evidence": "DRAFT.md:112 quotes the line; DRAFT.md:122-127 says the self-explanation copy lands in the typed config NOW while \"Surface keys register when a variant actually serves the surface\"; DRAFT.md:317-319 confirms \"each surface's `variants` array stays empty until a variant build actually serves it\". packages/switcher/src/config.ts:16-19 shows only the placeholder registered today. ADR-0007 (docs/adr/0007-home-surface.md:29-30) already adjudicated this exact string: \"Any present-tense 'built five ways' is false on publication day\", and :53 prescribes the honest fix (\"'being built' flips to 'built' as surfaces land\"). Mechanism: the moment PDP registers its first variant, the chrome prints \"built five ways\" directly beside a sparse switcher rendering fewer than five cells — the instrument visibly falsifies its own copy in one glance.",
+        "why_it_matters": "The chrome is the trust-carrier; a factual count in instrument copy that the adjacent control contradicts is the close-tab moment for the exact audience home's six-lens panel designed against. It also breaks the draft's own §4.3 rule (DRAFT.md:312-314: numbers \"come from tray/manifest fields — never typed\") — the count five is a typed number.",
+        "fix": "Derive the line from the config it lives in: render the variant count from the `variants` array (\"One product page. Three pressings so far — interactivity is the variable...\"), or use ADR-0007's progressive tense with a one-word flip. Since the line is already config-borne, the count is computable for free; add it to the same never-typed discipline as §4.3."
+      },
+      {
+        "severity": "discount",
+        "section": "2.4 + 1.5",
+        "claim_attacked": "Checkout plaque copy: \"Simulated checkout — no payment is processed, nothing ships, nothing you type leaves this page\"",
+        "evidence": "DRAFT.md:222-224 (the plaque string, placed BEFORE the card fields). packages/measurement/src/client.ts:48 — `navigator.sendBeacon(\"/api/beacon\", JSON.stringify(event))` — with :57 `onINP(record)` and :61-65 flushing on visibilitychange/pagehide. INP on checkout is produced by the visitor's own keystrokes (that is the surface's thesis, DRAFT.md:229-235, and ADR-0001 addendum B needs the field INP spread, 0001:153-156). So while the user types into \"fields that never leave the page\", the network tab shows a POST leaving the page carrying timing data derived from those keystrokes — on the one surface the draft says \"must survive 'view source'\" (DRAFT.md:234). Secondary: the draft carries TWO different canonical strings for the same plaque — DRAFT.md:137 (\"simulated — no payment, nothing ships, no PII\") vs DRAFT.md:222-223.",
+        "why_it_matters": "The plaque is the trust artifact; an absolute claim a skeptic can 'falsify' with devtools open discounts every other plaque in the labeling system. Suppressing beacons instead would kill the field-INP reality check ADR-0001 B requires, so the copy must move, not the mechanism.",
+        "fix": "Scope the sentence to content, not traffic: \"no payment is processed, nothing ships, what you type never leaves your browser — this page sends only the same anonymous timing beacons every page sends\" (or point at the Your-visit panel which already explains beacons). Pick ONE canonical plaque string and use it in both §1.5 and §2.4."
+      },
+      {
+        "severity": "discount",
+        "section": "2 (store brand)",
+        "claim_attacked": "\"Matrix Records\" justified as \"the project's own metaphor spent on the right axis (the pressing identifies the variant)\"",
+        "evidence": "DRAFT.md:150-152. The justification inverts ADR-0007's own axis rule: docs/adr/0007-home-surface.md:84-85 — \"matrix numbers belong to pressings/variants, catalogue numbers to a label's listing — the metaphor spent on the right axis\" — and :163-165 rejected matrix codes for catalogue rows as \"The metaphor's wrong axis\". A store NAME is the label's name (ADR-0006 §1: the store register is \"the label's own catalogue\"), i.e. the catalogue/label axis — precisely where ADR-0007 ruled matrix does NOT belong. Also collides with ADR-0007 §8 (0007:145-146): \"the pressing metaphor appears in exactly one prose location\" — a masthead brand repeats the word on every page of every surface.",
+        "why_it_matters": "Home spent three sentences teaching visitors that 'matrix' = the pressing/variant axis; a store named Matrix Records immediately reteaches it as the label axis, muddying the site's one carefully-budgeted metaphor. The draft's stated rationale is a non sequitur, so the decision currently rests on nothing.",
+        "fix": "Options (user picks): (a) keep the name but re-justify honestly — the store is named after the project, not the metaphor — and accept the §8 dilution consciously; (b) a scene-plausible fiction name with no metaphor collision (avoid 'Runout'/'deadwax' words — ADR-0006 reserved that motif for instrument surfaces, 0006:141-143); (c) brand the masthead as the label the aesthetic already is (\"the catalogue\" register) — coherent but overloads internal vocabulary; (d) an anonymous wordmark, letting the footer fiction line carry the disclosure. Whatever wins, delete the 'right axis' sentence."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2 + 4.2",
+        "claim_attacked": "\"the dominant crate shape — 1,022 of 1,817 at 600×600\"",
+        "evidence": "DRAFT.md:192-193. jq against tools/snapshot-capture/crate/images-index.json: total = 1,817 ✓, but exactly 600×600 = 653, NOT 1,022. 1,022 is the count of images with width==600 at ANY height (jq '[.[] | select(.width==600)] | length' → 1022) — the draft ran the wrong query and labeled it 600×600. Correct support for the 1:1 frame: 771 exactly square, 1,372 of 1,817 (75.5%) within 2% of 1:1, top bucket 600×600 at 653. Max dimension is 600 in both axes with zero images over it, so §4.2's 600-ceiling claim independently verifies ✓.",
+        "why_it_matters": "This is the exact failure class the home panel treated as decisive (the transcribed SHA wrong in its seventh character, 0007:37-39), and the draft's own §4.3 rule exists because of it. If 1,022 lands in the ADR or on-page rationale, the first skeptic with jq finds it wrong and discounts every other number on a site whose entire premise is checkable numbers. The design decision itself survives — 75.5% near-square supports the 1:1 mat frame better than the wrong stat did.",
+        "fix": "Replace with the tool-verified figures (653 of 1,817 exactly 600×600; 1,372 within 2% of square) and record the jq expressions beside them, or better: generate the stat at build from images-index.json per §4.3's own never-typed rule."
+      },
+      {
+        "severity": "discount",
+        "section": "2.1 + 4.3",
+        "claim_attacked": "Editorial essay premise hard-codes $515.24 in prose with no stated build-time source",
+        "evidence": "DRAFT.md:163-166. The facts verify: jq on crate/summaries.json — Stars Of The Lid, \"And Their Refinement Of The Decline\", 2007, priceFrom {amount:515.24, currency:USD}, and it IS the crate max (next: 451.96) ✓; details.json confirms Kranky/KRANK100 ✓. But priceFrom is commerce data — CONTEXT.md:47-49: \"The mutable slice... the only thing the live-origin demonstration shows changing\" — and ADR-0001:126: \"captured pricing carry a date and will drift\". §4.3 (DRAFT.md:312-314) makes \"numbers... come from tray/manifest fields — never typed\" structural for all six surfaces, yet the essay is prose that will contain this number, and the draft never says how it gets there. Drift is already visible in the draft itself: it types the title \"And Their Refinement of the Decline\" where the tray says \"Of The Decline\".",
+        "why_it_matters": "The essay sits one click from a PDP rendering priceFrom from data and one button from the live-origin demonstration fetching today's (different) price. A typed $515.24 goes stale on any re-freeze and undated it reads as a current price — the C2 discipline attaches conditions/dates to captured numbers.",
+        "fix": "State in the draft that the essay's price (and the featured card's title/artist) are build-time tray-field interpolations — the same substitution mechanism home uses for manifest fields (ADR-0007 consequences) — with the freeze date riding the number in the prose (\"$515.24 at the freeze, 2026-06-xx\"), and an assertion (reference build or origin suite) that essay numbers equal tray fields, mirroring home's \"on-page receipts must equal the committed manifest\"."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (collapsed row)",
+        "claim_attacked": "Collapsed row places the lab profile chip adjacent to the live vitals while the lab table is hidden — and the mock uses a lab number as the live example",
+        "evidence": "DRAFT.md:65 mock: \"profile: Slow 4G · mid phone   ·   your visit: LCP 654ms CLS 0.00\". 654 ms is home's LAB trace under that profile (ADR-0007:119: \"654 ms on Slow-4G + 4× CPU\"), pasted as the example of a LIVE readout. The draft's own rule two lines down (DRAFT.md:71): live vitals are \"Never mixed with lab numbers.\" ADR-0001:27: \"Lab and field have split, non-overlapping roles.\" Mechanism: collapsed, the ONLY numbers visible are live ones, and the only condition label visible is the lab profile — a first-time visitor reads \"profile: Slow 4G ... your visit: LCP 654ms\" as their visit having been measured under Slow 4G, which is false (the profile is a snapshot selector for the hidden lab panel, DRAFT.md:120-121).",
+        "why_it_matters": "The instrument's headline row teaches the lab/field distinction wrong; when the skeptic later learns the profile never touched their number, the live readout's labeling — the evidence the falsifiability line depends on — gets discounted.",
+        "fix": "In the collapsed row, bind the chip to its panel (\"lab profile: Slow 4G\") or move the profile display into the expanded reading section, leaving collapsed = variants · your visit · expander. And swap the draft's example value for a non-lab-colliding one so the ADR this becomes doesn't circulate a lab number as a live sample."
+      },
+      {
+        "severity": "nitpick",
+        "section": "0 + 2.6",
+        "claim_attacked": "\"Every surface is the page a performance-obsessed senior engineer would build\" — self-assigned quality with a live leak path on-page",
+        "evidence": "DRAFT.md:15-17 (the phrase), DRAFT.md:257-259: the how-it-was-built surface is \"generated at build from docs/ (ADR excerpts...) — never re-typed\", so draft/ADR framing is excerptable verbatim onto a public page. ADR-0007 §8 (0007:141-144): \"no self-assigned seniority... the site argues the level so the bio doesn't have to.\"",
+        "why_it_matters": "The voice rule home adopted exists precisely for this audience; 'performance-obsessed senior engineer' rendered on the how-built surface via the excerpt pipeline is the bio problem re-shipped through a side door.",
+        "fix": "Rephrase the kill condition behaviorally (the draft's own follow-on clauses — sized image slots, no main-thread abuse, no decorative weight — already do the work; drop the persona sentence), or constrain §2.6's excerpt selection to Decision/Consequences sections."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.5",
+        "claim_attacked": "Emulation caveat: \"your OS setting is the real thing and always wins\"",
+        "evidence": "DRAFT.md:249-250. \"Always wins\" is mode-dependent: true for forced-colors (UA overrides author colors) and designable for reduced-motion (gate emulation behind the media query), but for the reflow/400%-zoom demo (DRAFT.md:247-248) OS/browser zoom and a CSS viewport emulation compose rather than conflict — \"wins\" is not a coherent claim there, and the copy is presented as one caveat for all three demos.",
+        "why_it_matters": "The caveat is itself an honesty device on the a11y surface; an overclaim inside the honesty copy is the one place a11y reviewers will poke.",
+        "fix": "Either per-mode caveat text, or soften the shared line to a promise the implementation can keep for all three: \"...your OS setting is the real thing — these demos never override it\", then make that true (emulations additive-only, gated behind the real media queries)."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.2",
+        "claim_attacked": "ADR-0006 quotation: \"reachable through the `--pm-font-metric` slot **and chrome CSS**\" presented in quote marks",
+        "evidence": "DRAFT.md:50-52 vs docs/adr/0006-aesthetic-direction-catalogue.md:130-131, which reads \"Its receipt/mono language remains reachable later through the `--pm-font-metric` slot and chrome CSS without touching a component.\" The draft trims \"remains/later\" and adds emphasis inside quotation marks. The argument survives verbatim; the quote is inexact.",
+        "why_it_matters": "A fact-checking site's decision record should not train readers to distrust its quotation marks; this draft will be excerpted onto the how-built surface (§2.6).",
+        "fix": "Quote the sentence exactly (it is stronger: \"remains reachable later\" IS the reservation being claimed) or drop the quote marks and paraphrase."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.3 (panel headers)",
+        "claim_attacked": "Internal section names (\"Fit line (verdict slot)\", \"The reading (lab panel)\") with no pinned on-page headings",
+        "evidence": "DRAFT.md:74-114 names six panel sections but never fixes their user-facing labels; \"verdict slot\" (DRAFT.md:87) and \"lab panel\" (DRAFT.md:76) are drafting shorthand. CONTEXT.md's HUD/chrome vocabulary has avoid-lists the on-page labels must clear, and a heading containing \"verdict\" above the pre-publication empty state (\"No verdict — nothing is published...\") pre-frames a verdict the C2 discipline says doesn't exist yet.",
+        "why_it_matters": "Draft-internal names have already leaked once in this project's history (ADR-0006's \"33⅓\" prose diverges from the crate's actual \"33 ⅓\" — the draft, correctly, matches the data); pinning the strings now is how the copy stays attackable.",
+        "fix": "Add the literal on-page heading strings for all six panel sections to the draft (e.g. \"The reading · Fit · Your visit · The condition · Controls · This surface\") so the panel can attack them as copy, and keep \"verdict slot\"/\"lab panel\" as ADR-only vocabulary."
+      }
+    ],
+    "survived": [
+      "§1.3.1 lab-table empty state — honest tense, C2-clean, extends home's empty-state precedent (ADR-0007 §5) without a pre-asserted verdict.",
+      "§1.3.2 overlapping-bands state — \"Indistinguishable at this sample size\" is verbatim ADR-0001 addendum C (0001:161); 'never a global ranking' matches home's 'fit, not a leaderboard'.",
+      "§1.3.3 falsifiability line — exact reuse of ADR-0007 §5 (0007:102-103), placed next to the readout it refers to as home requires.",
+      "§1.3.4 'The URL is the whole measurement condition — share it and you share the experiment' — matches CONTEXT.md's measurement-condition definition exactly.",
+      "§2.3 '33 ⅓ RPM' — byte-verified against the crate (hexdump: 33 0x20 U+2153 0x20 RPM; 57 summary format fields, 179 total ⅓ occurrences); the draft matches the data exactly, including the space ADR-0006's prose omits.",
+      "§1.5 +65.1 KB — consistent with ADR-0005:148 and decision-map.md:163, already published on home with the same fence; riding a receipted plaque is C2-compliant.",
+      "§2.1 crate facts — $515.24 / Stars Of The Lid / 2007 / Kranky all verify in summaries.json+details.json, and it IS the crate's max price, so 'outlier' holds (the finding above is about provenance-at-build, not truth).",
+      "§4.1 codepoint arithmetic — the 13 listed Inter-covered codepoints plus 17 Arabic/CJK equal exactly coverage.json's 30-entry crateDeferredI18n list (jq-verified).",
+      "§4.2 600px ceiling — verified: max width and height in images-index.json are both 600, zero images exceed it.",
+      "§1.3 variant cell names (vanilla/react-next/astro/qwik/htmx) — match ADR-0004:66 verbatim; labeling the row 'variant' honors CONTEXT.md's avoid-list ('framework').",
+      "Footer store-fiction line — vocabulary-clean: 'frozen' is canon, no avoid-list term used, and the disclosure protects rather than undermines 'one store, real data'.",
+      "§2.4 'INP (scripted)' chrome label with registry id in the receipt — exactly ADR-0001 addendum B (0001:153-156).",
+      "§1.3.5 A11y: chrome carries no mode toggles, demos own them in-page — consistent with byte-identical chrome (ADR-0004) and CONTEXT.md's switcher definition, which explicitly places a11y-mode toggles on the section."
+    ]
+  },
+  {
+    "lens": "Seams/structure editor — what a variant build actually consumes, and which requirements every draft section assumes a neighbor owns",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "4.3",
+        "claim_attacked": "\"CI builds from the committed fixture (CI never reads the crate trays — ADR-0007 consequence honored)\" as the complete drift-extension plan for six content-bearing surfaces",
+        "evidence": "The post-deploy smoke runs drift against the CRATE-serving deployed plane (docs/decision-map.md:139 \"snapshot-aware post-deploy smoke (118 assertions incl. drift...) gating every push to main\"). The normalizer compares text runs and attribute values verbatim (tools/drift-gate/src/normalize.ts:40-41 \"Everything else — elements, nesting, attributes and their values, class names, text — must match the reference render exactly\"). The current sample surface only survives both planes because it is data-independent (hard-coded \"Kind Of Blue\" + data: URI images, packages/reference/surfaces/sample/index.html:30-32; asserted at tools/origin-suite/suite/drift.browser.test.ts:154). A fixture-rendered PDP/PLP master vs a crate-serving deployed page differs in every title/price/track — guaranteed DOM-check failure. And the draft's own parenthetical misstates ADR-0007: the actual consequence is scoped to the front BUILD (docs/adr/0007-home-surface.md:182-184 \"the front build reads the committed crate manifest ... (manifest only; CI still never reads the crate's trays or images)\"), while the smoke ALREADY reads committed crate trays in CI (tools/origin-suite/suite/snapshot.ts:20-22 \"CI running the post-deploy smoke against a crate-seeded bucket\", :145-146 reads summaries.json/details.json from the resolved crate root).",
+        "why_it_matters": "The built-masters plan is the draft's structural centerpiece; as written it either breaks the existing 118-assertion deploy gate on the first content surface, or forces the gate to skip content surfaces on the deployed plane — and the stated constraint forbidding the fix is a misquote of the ADR.",
+        "fix": "Spec masters as renderable at suite time from the RESOLVED snapshot root (fixture in CI, committed crate trays in the post-deploy smoke — the exact loadServedSnapshot() precedent, snapshot.ts:41-44); correct the parenthetical to ADR-0007's real scope (front build, manifest only; image BYTES stay out of git)."
+      },
+      {
+        "severity": "kill",
+        "section": "4.3 / 2.2 / 2.3",
+        "claim_attacked": "Fixture-rendered masters can be drift-compared (DOM + pixels) against variants for image-bearing surfaces, with no statement about how master-side images resolve",
+        "evidence": "Fixture tray image srcs are absolute: tools/snapshot-fixture/generate.mjs:77 `src: \\`/assets/img/ph-${imgSet}-primary.avif\\`` (jq-confirmed in snapshot/details.json: \"/assets/img/ph-00-primary.avif\"). The gate's static server maps URL path to repo path 1:1 (tools/drift-gate/src/server.ts:50 `let filePath = join(rootDir, ...segments)`) and the repo has NO root assets/ directory (ls: No such file or directory) — the fixture's bytes live at tools/snapshot-fixture/snapshot/img/. Masters load from that server (drift.browser.test.ts:57-58 REFERENCE_URL = statics.origin + /packages/reference/surfaces/...; pixel master screenshot at :232) while variants load through the composed origin whose edge Worker serves /assets/img/ from R2 (workers/edge/src/index.js:282). So the master renders a broken-image box, the variant renders the real cover → pixel drift on every image-bearing surface. The src attribute cannot diverge to dodge this: attribute values are contract (normalize.ts:40-41).",
+        "why_it_matters": "Four of the six surfaces carry tray images (PLP grid, PDP gallery, editorial figure, checkout summary thumbs); the drift extension fails mechanically on all of them the day the first master lands, and nothing in the draft owns the resolution.",
+        "fix": "Own it in the ADR: either an alias in server.ts (/assets/img/* → tools/snapshot-fixture/snapshot/img/, and → ORIGIN on the deployed smoke — openTracked already permits both origins, drift.browser.test.ts:80), or a committed repo-root assets/img symlink (the server deliberately follows in-repo symlinks, server.ts:60-62)."
+      },
+      {
+        "severity": "kill",
+        "section": "2 (shared shell) / 2.1 / 2.2 / 2.4 / 1.3.6",
+        "claim_attacked": "Cart state is consumed by four sections (masthead count slot, editorial Add-to-crate CTA, PDP Add-to-crate, checkout \"Order summary (cart lines + totals)\") and the chrome copy promises \"the cart survives; the paradigm doesn't\" — but no section owns the cart mechanism",
+        "evidence": "ADR-0004's binding answer: docs/decision-map.md:117 \"`localStorage` = **cart only**\" — cart is client state. Therefore no paradigm can SERVE cart contents in HTML, and the drift gate proves the SERVED DOM only, JS-off (normalize.ts:66-67 \"the gate proves the SERVED DOM only (contexts are JS-off)\"). Yet DRAFT.md:224 puts \"Order summary (cart lines + totals, tabular prices)\" in checkout's canonical structure, DRAFT.md:145-147 puts a \"cart link with count slot\" in every surface's shared shell, and DRAFT.md:113-114 promises \"the cart survives\" a swap. The §3 component inventory (DRAFT.md:263-269) has no cart module and §5 out-of-scope (DRAFT.md:322-326) doesn't defer cart wiring either.",
+        "why_it_matters": "This is the requirement every slice assumes its neighbor owns: if the checkout master is rendered with cart lines, every variant fails the JS-off drift gate (localStorage is empty in a fresh gate context); if masters pin the empty state, the draft never says so, and each variant team will invent its own served-empty markup and drift against each other.",
+        "fix": "Add a cart section to the draft/ADR: cart = localStorage (ADR-0004), the CANONICAL SERVED state of every cart-bound region is the empty state (count slot em-dash/zero, summary's empty-cart markup) pinned in the masters, cart rendering is per-paradigm client enhancement, and the JS-on second drift pass (normalize.ts:66-67) is where populated-cart divergence will eventually be policed."
+      },
+      {
+        "severity": "discount",
+        "section": "4.3 / 2.2 / 2.3",
+        "claim_attacked": "The committed fixture has the fields the six surfaces need, so \"CI builds from the committed fixture\" suffices",
+        "evidence": "jq-verified gaps: fixture snapshot dir has NO curation.json (ls: details.json, img, manifest.json, summaries.json) while the crate has one — the PLP fenced-exhibit preset (ADR-0005 §2) and editorial featured-release selection have no fixture analogue. All 480 fixture images are square (jq group_by: {square:true, n:480}), so the §2.2 letterbox decision (1:1 frame + object-fit contain, DRAFT.md:190-194) is never exercised by a fixture-rendered master or pixel check. Every release has exactly 2 images (jq: image-count histogram = {\"[2,2,...]\":240}), so the \"thumbnail row (up to 5)\" (DRAFT.md:171) is never rendered past 2. Genres are uniformly [\"Jazz\"] (jq unique), so the facet rail's Genre group (DRAFT.md:200-206) renders one degenerate link.",
+        "why_it_matters": "The whole point of built masters is that CI proves the contract; a variant that letterboxes wrong, breaks the 5-thumb layout, or mis-renders multi-genre facets passes CI because the fixture never exercises those states.",
+        "fix": "Extend tools/snapshot-fixture/generate.mjs alongside the templates: at least one non-square image set, one release with 5+ images, a second genre, and a curation.json with a featured id — a one-file change the draft should list as a §4.3 prerequisite."
+      },
+      {
+        "severity": "discount",
+        "section": "2.1 vs 4.3",
+        "claim_attacked": "\"A real staff-pick essay on a crate release (Stars of the Lid ... the crate's $515.24 outlier is itself the story hook)\" coexists with \"CI builds from the committed fixture\" and \"Numbers/dates in any render come from tray/manifest fields — never typed\"",
+        "evidence": "Crate release verified (jq on tools/snapshot-capture/crate/summaries.json: id 953800, \"And Their Refinement Of The Decline\", priceFrom 515.24, year 2007) — but the fixture contains only synthetic \"Dummy Duo\" Jazz releases (jq: artists unique = 12 synthetic names). The fixture-rendered editorial master therefore either can't resolve the hardcoded release id, or renders a fixture card whose tray-rendered price contradicts the hand-authored prose about $515.24 — and DRAFT.md:313-314 says numbers in ANY render are never typed.",
+        "why_it_matters": "Editorial is the render BASELINE (first surface built in all variants); an unresolved content-vs-fixture story stalls the first variant-build ticket and forces an ad-hoc call that belongs in this design.",
+        "fix": "Decide it in the draft: designate a fixture featured-release id (curation.json, finding above), define the essay prose as committed CONTENT (with an explicit recorded carve-out: prose may narrate crate facts; component-rendered numbers still come from the tray), and have the template render the card/figure/price from whichever tray is resolved."
+      },
+      {
+        "severity": "discount",
+        "section": "1.4 / 4.3 (markup contract home)",
+        "claim_attacked": "\"the full planned control-sets are recorded in the ADR as the spec the variant builds consume\" — but the markup contract's serialization rules have no documented home a React dev can follow",
+        "evidence": "The freedoms live only in code: attribute order free (normalize.ts:126 `return attrs.sort()`), class-token order free (:117 `.sort()`), ASCII-whitespace runs collapse / NBSP compared verbatim (:99-101), comments free (:158), script/style/link/template are delivery (:93,160), head dropped but html/body OWN attributes are contract (:174-179), hydration attrs/scoping hashes must be REGISTERED by editing PERMITTED_NOISE (:69-75) — a drift-gate source change. ADR-0003 §6 (docs/adr/0003:100-107) says the master \"IS the contract\" and names the noise classes but none of the serialization rules. packages/reference/README.md describes serving, not authoring freedoms.",
+        "why_it_matters": "The draft's outputs feed variant-build tickets; a React/Astro dev consuming \"the master is the spec\" without the freedoms list will either over-constrain (byte-matching whitespace) or under-constrain (unregistered hydration attrs) and burn a CI cycle discovering normalize.ts by archaeology.",
+        "fix": "The session's ADR gets a normative \"what a variant may vary\" section (the seven rules above + the PERMITTED_NOISE registration step + the JS-off/JS-on gate boundary), and names packages/reference/surfaces/{surface}/ as each surface's spec of record."
+      },
+      {
+        "severity": "discount",
+        "section": "1.4 / 4.4",
+        "claim_attacked": "\"Surface keys register when a variant actually serves the surface\" (§1.4) vs \"Config module grows the typed shape now ... variants array stays empty\" (§4.4) — and nobody owns the registration moment",
+        "evidence": "renderChrome renders an empty-variants surface as \"singleton surface\" (packages/switcher/src/chrome.ts:65 `(controls?.variants ?? [])`, :99-101 empty switcherCells → singleton label) — indistinguishable from a true singleton, and the unit test pins that label for unmapped surfaces (packages/switcher/test/chrome.test.ts:34-36). Shipping the first real variant requires three uncoupled edits: workers/front/src/index.js:21-24 VARIANTS map (+ wrangler service binding), SURFACE_CONTROLS variants (packages/switcher/src/config.ts:16-20), and PERMITTED_NOISE if hydrating (normalize.ts:69). No test ties the VARIANTS routing map or deployed routes to the config.",
+        "why_it_matters": "A missed registration renders a five-variant surface as \"singleton surface\" — sparse honesty inverted (a cell that EXISTS isn't offered), silently, with no failing check; the draft assigns this to no ticket.",
+        "fix": "Make registration part of each variant-build ticket's definition-of-done in the ADR, and add one origin-suite assertion: every served variant page's chrome must mark the serving variant aria-current in the switcher row (fails automatically when variants:[] mislabels a served surface)."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (The reading / fit line)",
+        "claim_attacked": "The reading table and fit line render from \"published receipt bundles\" — a data source that is designed but unowned",
+        "evidence": "Receipts are gitignored: tools/bench-runner/README.md:15-16 \"Receipts land in tools/bench-runner/receipts/ (gitignored — published numbers ship as dated snapshots downstream, ADR-0001 §9)\" — \"downstream\" names no owner. renderChrome is a synchronous per-request function taking only the request context (packages/switcher/src/chrome.ts:59) with the lab panel hard-coded as an empty state (:83). Nothing in the draft names the snapshot bundle's format, its committed location, or its serving path (e.g. /_pm/lab/{surface}.json from the front Worker's dist).",
+        "why_it_matters": "The hero panel's populated state has no pipe: when the first benchmark publishes, someone must invent the bundle schema, the commit home, and how a sync renderer gets it (front-build import vs client fetch) — three decisions that shape the chrome markup being designed NOW (a client-fetched table needs slot markup; a build-imported one doesn't).",
+        "fix": "One line in the ADR: published snapshots are committed under a named path, built into the front Worker's dist as /_pm/lab/*.json (chrome-owned excluded path, ADR-0001 §6), owner workers/front; the chrome renders table SLOTS now and measure.js (or the front build) populates from that path."
+      },
+      {
+        "severity": "discount",
+        "section": "2.5 / 4.3",
+        "claim_attacked": "Three pages designed under /vanilla/a11y/ with no statement of what serves them, and §4.3's renderer model (\"golden masters render from tray JSON, template per surface\") doesn't describe two of the six surfaces",
+        "evidence": "The front Worker 404s any prefix outside its map (workers/front/src/index.js:21-24 VARIANTS = placeholder-static/placeholder-ssr only; :44-47 `return new Response(\"not found\")`); no vanilla service binding exists. docs/decision-map.md:33 assigns the a11y section to \"singleton (vanilla)\". The a11y pages render from DS matched pairs and the how-built surface from docs/ (DRAFT.md:256-261) — neither is \"tray JSON\", the only input §4.3 names (DRAFT.md:307-308).",
+        "why_it_matters": "A follow-on ticket reader can't tell that /vanilla/a11y/ is unreachable until the entire vanilla variant lands (routing + binding + build), or which renderer input a11y/how-built masters use — the two surfaces most likely to be scoped as \"quick singletons\" are the two the plan's stated machinery doesn't cover.",
+        "fix": "State the dependency explicitly (a11y section ships inside the vanilla variant-build ticket; until then it exists only as unreachable reference renders) and widen §4.3 to name the three renderer inputs: tray JSON (store surfaces), DS pairs (a11y), docs/ (how-built)."
+      },
+      {
+        "severity": "discount",
+        "section": "2.6",
+        "claim_attacked": "\"Content generated at build from docs/\" — whose build? No package owns the how-built surface",
+        "evidence": "docs/decision-map.md:34 lists it as \"singleton\" with no variant assigned (unlike a11y's \"singleton (vanilla)\"); home's \"Public today\" token currently points at the GitHub build-log, not a surface (workers/front/home/index.html:165-168); packages/reference's §4.3 renderer is tray-driven; workers/front's build does manifest substitution for home only (docs/adr/0007-home-surface.md:178-181).",
+        "why_it_matters": "An unowned build target can't be ticketed; the surface silently stays a GitHub link while the draft treats it as one of the six designed surfaces.",
+        "fix": "Assign it in the ADR — the natural precedent is the workers/front build (it already composes home from committed sources at build, ADR-0007 consequence), serving how-built as front static assets like home; mint the ticket with that owner."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.4",
+        "claim_attacked": "Naming `checkout-type-card`, `checkout-submit-invalid`, `checkout-fix-and-submit` in prose without touching the registry",
+        "evidence": "The registry is INTERACTIONS in tools/bench-runner/src/collect.ts:26-36 — exactly `none` and `body-click`; an unknown id throws (:144-145). Precedent: ADR-0005 records its planned ids in the ADR itself (docs/adr/0005:96-98 \"Planned registry entries: plp-revisit, plp-fresh, plp-facet-toggle, plp-sort-change, plp-paginate, plp-search-type\").",
+        "why_it_matters": "Ids named only in a design draft aren't reserved anywhere a checkout-build ticket will look; the ADR-0005 pattern (planned-entries list in the ADR, owner = bench-runner) exists and the draft should follow it rather than mint a third convention.",
+        "fix": "Add the checkout ids to the session ADR's planned-registry-entries list, naming tools/bench-runner as the owning module."
+      },
+      {
+        "severity": "nitpick",
+        "section": "4.1",
+        "claim_attacked": "\"Recorded in coverage.json as a decided fallback list (renamed from 'deferred'), README, and the ADR\" — the rename's consumer list omits the enforcing test and the regeneration recipe",
+        "evidence": "grep-verified consumers of `crateDeferredI18n`: tools/repo-checks/test/font-covers-crate.test.ts ×4 (:44 type, :84 use, :107 the error message instructing contributors to use the old key, :115 minimality check), packages/tokens/fonts/README.md:86 (the fontTools recipe that REGENERATES the file — miss it and the next regeneration reinstates the old key), coverage.json:436, plus prose in decision-map.md:191, build-log.md, ADR-0006. The 13 named codepoints are all present in the 30-entry list (jq: 13/13 matched, 30 total) — the arithmetic itself is sound.",
+        "why_it_matters": "A rename that skips the recipe or the test's error copy leaves the repo self-contradictory: the guard tells contributors to add codepoints under a key that no longer exists.",
+        "fix": "List font-covers-crate.test.ts (all four refs) and the README recipe line as rename targets in §4.1."
+      }
+    ],
+    "survived": [
+      "§1.2 chrome-owned mono via chrome.css: ADR-0006 explicitly leaves the route open (docs/adr/0006:129-130 'remains reachable later through the --pm-font-metric slot and chrome CSS') and /_pm/ is the excluded path — the two-voices split survives.",
+      "§1.4 injection mechanics: the description matches the shipped contract exactly (chrome.css link first / single deferred measure.js last / nav#pm-chrome — packages/switcher/src/chrome.ts:92-110; slot cardinality logging workers/front/src/index.js:79-97).",
+      "§1.3 C2 empty states: the shipped chrome already hard-codes the no-published-runs empty state (chrome.ts:83) and the test pins it (chrome.test.ts:51,58) — extending that register is continuous, not new risk.",
+      "§2.1 crate facts: Stars of the Lid id 953800, 'And Their Refinement Of The Decline', $515.24, 2007 — jq-verified against the crate summaries tray; the story hook is real data.",
+      "§4.1 arithmetic: 30 deferred codepoints total, all 13 named Inter-coverable ones present in the list, 17 Arabic/CJK remaining — jq-verified; the subset/fallback split itself holds.",
+      "§4.3's committed-masters direction (vs build-time-generated): the drift test already serves COMMITTED files from the repo server (drift.browser.test.ts:57-58), so committed + regeneration-checked is the shape the gate expects — my attacks are the data/asset/plane gaps, not the committed-master choice.",
+      "§4.2 derivative sizing rationale: consistent with fixture/crate 600px assets and the sizes-attribute plan; no seam found in the no-new-derivatives close."
+    ]
+  },
+  {
+    "lens": "zero-bias auditor (byte-identical DOM + identical assets as the controls; paradigm delivery as the only measured variable)",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "4.3 (with 2.2)",
+        "claim_attacked": "\"Reference renders are BUILT... CI builds from the committed fixture\" closes the drift question — while §2.2 mandates \"duration mm:ss formatted in render\", i.e. five independent per-paradigm formatting implementations.",
+        "evidence": "Comparison path traced: drift.browser.test.ts:58 sets REFERENCE_URL to the statically-served master; :177-186 compares each variant's served DOM against it — in CI BOTH sides render the same fixture, and no check anywhere runs against crate-rendered variant pages (ADR-0007 consequence: \"CI still never reads the crate's trays\"). The crate guarantees divergent branches the fixture may never exercise: tool-verified via jq — 2,288 of 4,516 tracks have durationSeconds:null (half the crate), 2 tracks are >=3600s (max 3,816s -> \"63:36\" vs \"1:03:36\" is a fork five templaters answer independently), 439 releases have exactly one format (the format-switch radio group's single-item branch). normalize.ts:40-41: \"Everything else — elements, nesting, attributes and their values... text — must match exactly\", so any branch/formatting difference IS DOM drift — in production, where nothing gates it.",
+        "why_it_matters": "This is the seam where \"identical by construction\" silently becomes \"identical by intention\": the gate proves fixture-equivalence, the site claims production-equivalence. One skeptic diffing a production PDP where React renders a null duration as an empty cell and vanilla omits the row defeats the project's core control while CI is green — and the draft itself sets \"drift is proven, not promised\" (ADR-0003 §6) as the standard.",
+        "fix": "Three moves, cheapest first: (1) put display strings in the frozen tray (data is frozen, so \"63:36\" is data, not render logic) — this deletes the per-paradigm formatting surface entirely; (2) make the committed fixture adversarially branch-covering by construction (null duration, >=1h track, single-format release, non-square cover, 0-and-5-thumb galleries, NBSP/U+2153 text) and record the branch checklist; (3) add a required LOCAL pre-publish drift run pointing the gate at crate-built variants (local reads the crate fine) before any number publishes."
+      },
+      {
+        "severity": "discount",
+        "section": "2.4 + 2 (shell) vs 4.3",
+        "claim_attacked": "Canonical checkout markup includes \"Order summary (cart lines + totals)\" and the shared masthead carries a \"cart link with count slot\" — with golden masters that \"render from tray JSON\".",
+        "evidence": "ADR-0004:110 is binding: \"localStorage holds the cart only\" — client-only state, so NO variant's served DOM can ever contain real cart lines or a count. Fork: if the checkout master renders fixture cart lines (tray JSON has no cart anyway), every variant fails the DOM gate forever (normalize.ts:40-41 exact-match); if the master renders the empty-cart skeleton, the populated summary and count are post-hydration DOM the gate never checks — normalize.ts:66-68: \"a hydrating variant's post-hydration mutations are unchecked until the JS-on second pass lands\". The draft specifies neither.",
+        "why_it_matters": "The served-DOM contract for every cart-dependent region is currently unwritable, and whichever default gets coded first either bricks the gate or silently exempts checkout's most visible region from the drift guarantee.",
+        "fix": "Pin it in the draft/ADR: canonical served DOM = the empty-cart state (empty count slot, summary skeleton with reserved dimensions); populated cart states are explicitly declared per-paradigm behavior, ungated until the JS-on pass, with the count slot width-reserved so client population can't shift layout."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (collapsed row) + 1.2",
+        "claim_attacked": "\"Live mini-readout: the two most legible vitals stream in via measure.js\" on a chrome whose sketch reads \"CLS 0.00\" — with no width-reservation design; plus a growing render-blocking chrome payload.",
+        "evidence": "client.ts:35-39 writes textContent into the live slots as each metric settles; chrome.css:19-24 lays the row out flex-wrap and chrome.css:71-74 gives .pm-chrome__metric-value no min-width — replacing \"–\" with \"654ms\" widens the span and shifts siblings (possibly rewrapping the strip) seconds after load, with no qualifying recent input, so the SAME onCLS (client.ts:56) that feeds the beacon counts the instrument's own shifts on every measured page. Separately: index.js:80-84 injects chrome.ts:93's `<link href=\"/_pm/chrome.css\">` into a body slot the draft places ABOVE the masthead (draft line 148) — excluded from measured KB (collect.ts:91-95) but not from the throttled wire or render-blocking path, and the redesign grows it (panel styles + forced-colors block + a new self-hosted mono).",
+        "why_it_matters": "\"Your instrument manufactures the CLS it reports\" is a one-tweet debunk of \"zero CLS by construction\"; and the hero-chrome growth silently raises the constant wall-clock tax on every variant's FCP/LCP that ADR-0004:187 justified when the chrome was 75 lines of CSS.",
+        "fix": "Design the reservation into the component spec: ch-fixed metric-value widths (tabular figures already guarantee stable digits), fixed collapsed-row height, em-dash placeholder same width class; set an explicit chrome.css+font byte budget and a font-display strategy for the mono; publish a measured before/after of the chrome tax so the \"constant, not a variable\" argument is a receipt, not a claim."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3.1 vs 4.4",
+        "claim_attacked": "\"Empty state (ships now, C2): the table renders with all cells em-dash\" while \"each surface's variants array stays empty until a variant build actually serves it\" and \"the planned lineups live in the ADR table\".",
+        "evidence": "The lab table's \"columns = the variants this surface is built in (sparse)\" (draft lines 76-78) has ZERO columns when variants is empty — there are no cells to render em-dashes into; the column source the empty state needs lives only in a doc (draft lines 318-320), unreachable by the renderer. Worse, chrome.ts:99-101 falls back to `\"singleton surface\"` whenever a surface has no registered variants — so on day one PDP, PLP, and Checkout would all be labeled singleton, which is false (they are planned multi-variant, just unbuilt).",
+        "why_it_matters": "The two sections contradict each other, and the shipped mechanism resolves the contradiction in the worst direction: the chrome renders a wrong statement (\"singleton\") instead of the designed empty state, on every surface, for the entire pre-variant period.",
+        "fix": "Grow the typed SurfaceControls shape with `plannedVariants` (rendered as dead, non-anchor column headers labeled \"not built yet\") distinct from `variants` (live anchors). Sparse honesty holds — a dead labeled cell is a disclosure, not an offer — and the em-dash table becomes renderable from config on day one."
+      },
+      {
+        "severity": "discount",
+        "section": "4.2",
+        "claim_attacked": "\"Thumbnails reuse the gallery images (same URLs — browser cache, zero extra bytes)\".",
+        "evidence": "Images 2-5 appear nowhere else on the PDP: the thumbnail row is their FIRST fetch, at full 600px derivative transferSize, and collect.ts:230 books every non-instrumentation resource-timing entry into the buckets — so the receipt's images bucket carries ~4 full-size images the visitor may never enlarge. Only thumb #1 (same URL as the main figure) is genuinely zero extra transfer. These fetches are above the fold, so loading=\"lazy\" won't defer them, and on the Slow 4G profile they contend with the fetchpriority=\"high\" LCP image.",
+        "why_it_matters": "The claim is falsifiable by the project's own receipt (image-bucket bytes), and eager full-size thumbnails are kill-condition-1 surface: \"of course it's slow — the page front-loads five product shots\" — identical across paradigms, so not bias, but it taxes every absolute number and the claim as written reads as bookkeeping sleight-of-hand.",
+        "fix": "Restate honestly: \"no thumb derivative set is minted; SWAPPING costs zero additional bytes; the thumbnail row itself costs N full-size fetches, identical in every variant and counted in every receipt.\" Then decide eager-vs-alternatives with a measured LCP-contention check on Slow 4G before fixing the markup contract."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2 (CLS / letterbox)",
+        "claim_attacked": "\"a fixed aspect frame (1:1, the dominant crate shape — 1,022 of 1,817 at 600×600)\".",
+        "evidence": "Tool-verified against tools/snapshot-capture/crate/details.json: 653 of 1,817 gallery images are exactly 600×600 (not 1,022); 771/1,817 (42.4%) are square at all; landscape is 676 and portrait 370. Among the 500 covers (the default main-figure population) 296 (59.2%) are square. The frame's swap population is ALL gallery images, so the MAJORITY of swapped-in images letterbox.",
+        "why_it_matters": "The stat is typed, wrong on both numbers, and cited as the design's justification — in a draft whose own §4.3 rule is \"numbers... come from tray/manifest fields — never typed (ADR-0007's lesson)\". A panelist or reader with jq falsifies it in one line.",
+        "fix": "Correct the figures (296/500 covers square is the honest support for a 1:1 default frame; 42.4% square overall is the honest letterbox rate), cite the covers population explicitly, and derive the numbers in the doc build from the crate rather than typing them. The fixed-frame zero-shift mechanism itself survives — keep it."
+      },
+      {
+        "severity": "discount",
+        "section": "0.2",
+        "claim_attacked": "\"Every component is expressible idiomatically in vanilla, React, Astro, Qwik, and HTMX with byte-identical DOM.\"",
+        "evidence": "Idiomatic HTMX and Qwik put load-bearing attributes IN the served HTML (hx-get/hx-target on the sort form and gallery thumbs; Qwik's on:*/q:* on every interactive element) — these must ride the PERMITTED_NOISE registry (normalize.ts:69-75) to pass the gate, but ADR-0003 §6 enumerates the permitted classes as \"hydration markers, comment nodes, and the scoping hashes\" — behavior attributes are semantics, not noise. View-source on any HTMX page falsifies \"byte-identical\" as literally stated.",
+        "why_it_matters": "The kill condition is the draft's own headline control; overclaiming it hands a skeptic the cheapest possible discount (\"the allowlist means it's not byte-identical, so what else is allowlisted?\"). The registry design is sound — the phrasing isn't.",
+        "fix": "State the precise claim: \"identical modulo a per-variant, audited noise registry (one file, PERMITTED_NOISE)\" — and decide now whether behavior attributes (hx-*, on:*, q:*) get their own declared registry class distinct from inert noise, since they are the paradigm's mechanism, not its residue."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.3.5 (a11y)",
+        "claim_attacked": "\"the chrome carries NO mode toggles — the demos own them in-page\".",
+        "evidence": "ADR-0004:144 assigns \"a11y-mode toggles on the A11y section\" to the contextual switcher's control-set. The draft reverses this (with a better argument — chrome must stay byte-identical while toggles are page-state) but never names it as a reversal.",
+        "why_it_matters": "A binding ADR contradicted silently is exactly the drift-in-docs the project polices elsewhere.",
+        "fix": "One line in the coming ADR: \"amends ADR-0004 §7 — a11y-mode toggles move in-page; rationale: chrome byte-identity + emulation-honesty caveat colocation.\""
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.3",
+        "claim_attacked": "\"the first row eager (LCP candidates)\" for PLP grid images.",
+        "evidence": "Row membership is breakpoint-dependent (2-up mobile vs 4-up desktop) but loading attributes are static markup fixed by the canonical contract — \"first row\" is unimplementable as written.",
+        "why_it_matters": "The markup contract must pin an exact eager count or five builds will pick five different ones — which IS DOM drift under normalize.ts:40-41.",
+        "fix": "Pin the number in the contract (e.g., first 4 images eager, rest lazy) and say why."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.4",
+        "claim_attacked": "Checkout is the only surface without a stated JS-off story (PDP gets one at draft lines 175-176).",
+        "evidence": "With the cart in localStorage (ADR-0004:110) and validation/summary-recalc being the measured JS work, JS-off checkout is an empty summary plus a submit that goes nowhere — unstated in the draft.",
+        "why_it_matters": "Every other surface pre-empts the honesty question; leaving checkout's silent invites \"what happens JS-off?\" as a gotcha on the surface whose thesis is JS load.",
+        "fix": "Add the one-line JS-off statement using the same \"interactivity earns JS\" honesty framing PDP uses."
+      }
+    ],
+    "survived": [
+      "1.1 top-strip in-flow placement: the pixel gate already handles an in-flow chrome by removal+reflow (gate.ts:69-83) — no body restyle needed, rejected placements correctly rejected",
+      "1.2 chrome-owned mono: /_pm/fonts rides the instrumentation boundary and is genuinely excluded from measured KB (collect.ts:91-95); ADR-0006:130 does leave the chrome-CSS route open exactly as the draft quotes",
+      "1.4 injection contract: matches the shipped worker verbatim (workers/front/src/index.js:80-95, chrome.ts:93-109), slot-cardinality logging included",
+      "2.2 form-state DOM (checked radios, value on qty, aria-pressed): the gate compares the browser-PARSED served DOM JS-off (gate.ts:38, normalize.ts:106 clones the parsed document), so boolean-attribute and entity-escaping serialization differences between paradigms vanish at parse — no new normalizer permission needed for the served DOM",
+      "1.5 plaques as page bytes in the store face: correct side of the instrumentation boundary; shipping the chrome mono into plaques would indeed tax measured KB",
+      "4.1 glyph subset + fontkit cmap re-derivation guard: closes the coverage.json hand-fake hole",
+      "4.2 first half (600px derivative ceiling): the sizing arithmetic holds — originals cap near 600, so no variant could be advantaged by a derivative that doesn't exist upstream",
+      "2.4 no-artificial-busy-loops INP design: the interaction registry work is real checkout work and survives view-source"
+    ]
+  },
+  {
+    "lens": "ADR fact-checker with repo access",
+    "findings": [
+      {
+        "severity": "kill",
+        "section": "2",
+        "claim_attacked": "Shared shell masthead with nav 'Records / Editorial / Checkout' as canonical markup on all store surfaces (DRAFT.md:144-148)",
+        "evidence": "The sparse matrix makes this shell unbuildable as canonical markup: decision-map.md:31 — PLP is 'Built in: React/Next + HTMX' only; decision-map.md:32 — Checkout is 'vanilla, React/Next, HTMX (Qwik opt)'. So on /vanilla/pdp/... the masthead's 'Records' link has no same-variant target (vanilla serves no PLP), and on /astro/... 'Checkout' has none. ADR-0003 §1 (0003:37-48) requires every variant to emit identical DOM per surface, and the drift gate compares the whole page minus ONLY the chrome slot (tools/drift-gate/src/normalize.ts:107 `root.querySelectorAll(\"div#pm-chrome-slot\")` — the masthead is page bytes, diffed). ADR-0004 §7 (0004:145-148) enshrines 'the switcher can never offer a cell that does not exist'; the draft applies that to the switcher (§1.4) but ships a masthead that offers cells that don't exist.",
+        "why_it_matters": "As drafted the store shell must either ship 404 links on most measured pages (a credibility kill on 'the page a performance-obsessed senior engineer would build') or emit per-variant nav DOM, which fails the drift gate / violates the binding canonical-markup contract.",
+        "fix": "Decide the mechanism before build and record it in the ADR. Options: (a) masthead carries brand + cart only; cross-surface navigation lives in the chrome/home gateway (cheapest, zero new contract); (b) variant-relative hrefs kept identical + the front Worker 307s an unbuilt {variant}/{surface} to a variant that serves it (DOM identity preserved; the redirect silently swaps variants — must be labeled); (c) nav hrefs pinned to each surface's designated host variant (honest, but a link from /vanilla/ into /react-next/ is a variant swap outside the switcher and needs the same labeling). Each option's tradeoff should be argued in the ADR."
+      },
+      {
+        "severity": "kill",
+        "section": "4.2 (+2.2)",
+        "claim_attacked": "'correct by data: Discogs originals cap near 600px, so 600 is the ceiling regardless' and '1:1, the dominant crate shape — 1,022 of 1,817 at 600×600' (DRAFT.md:296-304, 192-194)",
+        "evidence": "Both numbers fail against the committed crate. (1) jq over tools/snapshot-capture/crate/details.json: exactly 600×600 = 653 of 1,817 (images-index.json agrees: 653); exact square any size = 771; no tolerance sweep (|w−h| ≤ 1..12, aspect ±2%) produces 1,022. (2) 'originals cap near 600px' is unverifiable from committed data: tools/snapshot-capture/src/derive.ts:44 `.resize({ width: 600, height: 600, fit: \"inside\", withoutEnlargement: true })` censors every derivative at 600 — 1,196/1,817 derivatives sit AT the ceiling, so their originals are only known to be ≥600; images-index.json records originalSha256 but no original dimensions. Issue #9's follow-up (comment, item 6) says sizing 'may be refined when aesthetic-direction/the PDP build fix final dimensions — originals are retained, so re-derivation never touches Discogs' — retained originals make the claim checkable in one local pass, and the draft doesn't take it.",
+        "why_it_matters": "§4.2 closes a tracked GitHub follow-up with the phrase 'correct by data' on one number that is false and one that is unproven — the exact failure ADR-0007's method section memorializes (the panel catching a hand-typed SHA 'is how a wrong receipt ships'). If this lands in the issue-closure comment it is a published wrong receipt on a receipts-credibility project.",
+        "fix": "Before closing #9: run a one-command dimension scan over the retained originals and record the distribution in the closure comment; replace 1,022 with the tool-derived count (653 at exactly 600×600 / 771 square / 1,196 at the ceiling) and restate the 1:1-dominance claim from the main-figure population (296/500 first images exactly square; 454/500 within 2%). If originals genuinely cap near 600, the closure stands — with the receipt attached."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (controls, A11y)",
+        "claim_attacked": "'the chrome carries NO mode toggles — the demos own them in-page' (DRAFT.md:105-108) vs ADR-0004 §7's decided control-set",
+        "evidence": "ADR-0004 §7 (0004:142-144) is a Decision clause: 'device/CPU controls on Checkout, a11y-mode toggles on the A11y section' — echoed in decision-map.md:37. The draft reverses the a11y allocation without an addendum. Its stated rationale partly misfires: 'the chrome must stay byte-identical while toggles are page-state' — §7's byte-identity is ACROSS VARIANTS by construction (0004:133-135), and the a11y section is a single-variant singleton, so that clause isn't threatened. The load-bearing argument is elsewhere in the same §7: 'JS enhances only the HUD's live readout' (0004:139-141) — a chrome-hosted emulation toggle is impossible without new chrome JS mutating page state across the instrumentation/store boundary, or a URL knob. The a11y-section ticket (decision-map.md:198) already assigns 'mode-emulation primitives' to the DS/page side, supporting the draft.",
+        "why_it_matters": "Silently contradicting an accepted ADR's letter is exactly what this project's record exists to prevent; and the draft's weaker rationale invites a reviewer to reject the right decision for the wrong reason.",
+        "fix": "Keep the page-owned toggles, but (a) record an explicit ADR-0004 §7 amendment in the new surface-design ADR grounded in §7's own JS clause, (b) name the rejected alternative — mode as a query-param anchor (JS-off-clean, chrome-hostable) — and why it loses (emulation state is not a measurement condition and would pollute URL-as-receipt), and (c) fix the byte-identical justification in the draft."
+      },
+      {
+        "severity": "discount",
+        "section": "1.2",
+        "claim_attacked": "Chrome-owned mono @font-face in chrome.css, with the strip in-flow at the top of every measured page (DRAFT.md:44-53, 31-34)",
+        "evidence": "The route itself is authorized (ADR-0006 alternatives, 0006:129-132: the mono 'remains reachable later through the `--pm-font-metric` slot and chrome CSS'; ADR-0003 §8 even names 'tabular/mono figures for metrics (aligned prices, HUD)'). Two unaddressed mechanisms: (1) CLS — the draft claims 'zero CLS by construction' for the in-flow strip (DRAFT.md:33-34), but the collapsed row's height now depends on a late-arriving webfont's metrics; a fallback→JetBrains Mono swap that changes line box height shifts the ENTIRE store document below the strip, on measured pages, during measured runs. (2) ADR-0001 addendum F (0001:183-186): the chrome's runtime cost 'is measured once (with/without batch, one profile) and published as a stated constant — byte-stripping alone does not remove it from timing metrics'; adding a font download (plus a much larger panel DOM) grows that constant, and the draft never schedules the re-measure. Current chrome.css deliberately ships no fonts (packages/switcher/src/chrome.css:1-6).",
+        "why_it_matters": "Instrumentation-induced CLS lands identically on every variant (fair) but destroys the 'zero CLS by construction' headline and hands a skeptic 'the benchmark site's own pages shift'.",
+        "fix": "Pin the collapsed row's block-size in font-independent units (or use `size-adjust`/metric-override fallback so swap is reflow-free), `font-display: swap` with matched metrics; and record in the ADR that the addendum-F with/without-chrome batch re-runs after the redesign, with the new constant published."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3",
+        "claim_attacked": "Collapsed-row live mini-readout PLUS the expanded panel's five-vital 'Your visit' — two sets of data-pm-hud-live slots (DRAFT.md:65, 71, 92-94)",
+        "evidence": "packages/measurement/src/client.ts:37 — `const slot = chrome?.querySelector(`[data-pm-hud-live=\"${metric.name}\"]`)` — querySelector (singular) writes the FIRST matching slot only. With the mini-readout first in DOM order, the panel's LCP/CLS slots stay em-dash forever while the collapsed row updates (or vice versa).",
+        "why_it_matters": "The expanded instrument would visibly show stale/empty vitals next to a live collapsed row — on the surface whose whole job is measurement credibility. Fixing it means changing measure.js, which is 'the one ruler' (ADR-0001 §2) injected everywhere and used by the bench harness.",
+        "fix": "Either give the mini-readout distinct hooks (e.g. data-pm-hud-live-mini) mirrored by a small extension, or switch client.ts to querySelectorAll — in both cases name the measure.js change in the draft and fold it into the addendum-F chrome-constant re-measure."
+      },
+      {
+        "severity": "discount",
+        "section": "1.4",
+        "claim_attacked": "'Mechanics preserved' lists only `nav#pm-chrome` id + data-pm-hud-live hooks — omitting the rest of the load-bearing marker/dataset contract, and the origin-suite assertions the new anatomy breaks (DRAFT.md:117-125)",
+        "evidence": "Beacon tags are read off the #pm-chrome dataset (packages/measurement/src/client.ts:20-26: data-pm-variant/surface/environment/cache-state/location) and asserted end-to-end (tools/origin-suite/suite/chrome.browser.test.ts:75-81). Assertions the redesign breaks or silently depends on, none named by the draft: chrome.test.ts:19/:70 (`data-pm-chrome=\"1\"` exactly once); chrome.test.ts:40-50 (the byte-identical check strips a FLAT `<div class=\"pm-chrome__row\" data-pm-switcher>…</div>` via a non-greedy regex to the first `</div>` — a details/summary panel or any nested div inside the switcher row poisons the strip and the cell extraction); chrome.test.ts:139-141 (hud region regex + EXACTLY one aria-current — the profile selector moves into panel section 4 and the collapsed row adds a variant aria-current); chrome.test.ts:107 (`count(body, \"<script\")).toBe(1)` — the replay affordance and per-interaction readout JS must ride inside measure.js or this breaks); chrome.browser.test.ts:146 (`[data-pm-hud-lab]` must move onto the new reading table); chrome.browser.test.ts:151 (`a.pm-chrome__cell` class). Survivors, for the record: slot+link-first regex (chrome.test.ts:21), extract bounds (:35), swap-href (:115), the 'No published runs yet' prefix (:138/:145 — the new copy keeps it), and the drift normalizer (normalize.ts:107 keys on the preserved div#pm-chrome-slot).",
+        "why_it_matters": "The dataset contract is the beacon pipeline; dropping an attribute the draft never names ships 'unknown'-tagged RUM. And the suite-update surface is real work the session plan should size.",
+        "fix": "Extend §1.4's preserved-mechanics list to the full contract (data-pm-chrome, the five dataset tags, data-pm-switcher/data-pm-hud/data-pm-hud-lab or their successors) and enumerate the chrome.test.ts / chrome.browser.test.ts rewrites as an explicit deliverable of the chrome build."
+      },
+      {
+        "severity": "discount",
+        "section": "1.5",
+        "claim_attacked": "Checkout's 'simulated — no payment, nothing ships, no PII' notice listed as a `pm-plaque--fenced` user, whose variant 'adds… the \"EXCLUDED FROM EVERY BENCHMARK NUMBER\" rule line' (DRAFT.md:133-138)",
+        "evidence": "Checkout is a measured spotlight surface: ADR-0001 addendum B (0001:149-158) — 'The Checkout cells therefore publish lab INP (scripted)'; decision-map.md:32 spotlights 'INP under load'. The fence semantics are reserved for number-excluded exhibits (remix3-frontier finding 5, decision-map.md:178: `data-pm-fenced=\"true\"` + 'excluded from every benchmark number'; CONTEXT.md live-origin/misapplication definitions). A fenced plaque on the checkout form asserts the surface's numbers don't exist — while the chrome one panel up publishes its INP row.",
+        "why_it_matters": "A skeptic reading 'EXCLUDED FROM EVERY BENCHMARK NUMBER' above the card fields concludes checkout isn't benchmarked — directly contradicting the surface's published INP story, on-page.",
+        "fix": "The checkout simulation notice is a base `pm-plaque` (claim: simulated commerce, no PII), not `--fenced`. Reserve `--fenced` for the four true number-exclusions (Remix 3, Apollo exhibit, live-origin demonstration, and — vacuously but harmlessly — the a11y DS-OFF exhibits)."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (reading panel)",
+        "claim_attacked": "The lab table + 'When a number lands here it carries its receipt… or it doesn't land at all' empty state rendering on ALL surfaces, singletons included (DRAFT.md:76-85, 68-69)",
+        "evidence": "ADR-0007 §5 (0007:99-101): the home lab panel is omitted 'because no lab snapshot will ever exist for a surface off the benchmarked matrix.' The a11y section and how-it-was-built are singletons off the matrix (CONTEXT.md:29-33; decision-map.md:33-34). The draft differentiates singletons only in the collapsed row ('show the surface name instead of a switcher', DRAFT.md:68-69); the reading table + 'when a number lands here' line renders everywhere.",
+        "why_it_matters": "On singleton surfaces the empty state promises numbers that are never coming — a C2 phrasing-discipline failure by ADR-0007's own reasoning, on the instrument itself.",
+        "fix": "Branch the reading section on matrix membership: matrix surfaces get the sparse table + receipt empty state; singletons get home's plain sentence (no lab panel will exist for this surface — here's why), reusing ADR-0007 §5's precedent."
+      },
+      {
+        "severity": "discount",
+        "section": "1.3 (controls, Checkout)",
+        "claim_attacked": "'Checkout: profile selector foregrounded (CPU is the axis)' as the fulfillment of ADR-0004 §7's 'device/CPU controls on Checkout' (DRAFT.md:103-104)",
+        "evidence": "The profile selector is the constant HUD control every surface already owns (ADR-0005 §8, 0005:156-159: 'the profile selector the HUD already owns'), and ADR-0004 §6 makes it a snapshot selector that never re-throttles (0004:121-129). So 'foregrounded' leaves Checkout with an empty contextual control-set — §7's 'device/CPU controls on Checkout' (0004:143) reduced to reordering a control that exists everywhere. §6 names the only honest live form such a control could take: 'A synthetic throttle survives only as a clearly-fenced \"feel the difference\" demo, never fed into a number' (0004:128-129). Not owed (permissive wording), but the draft neither ships it nor records the descoping.",
+        "why_it_matters": "The per-surface contextual-switcher story ('the control-set is a function of the surface') is one of ADR-0004's headline decisions; quietly hollowing one of its four named allocations weakens it without a recorded reason.",
+        "fix": "Decide explicitly: either add a fenced in-page CPU 'feel the difference' demo to Checkout (plaqued `--fenced`, per §6's carve-out) or record in the new ADR that Checkout's contextual controls collapse to profile-foregrounding and why (the honest device/CPU axis lives only in the lab profiles)."
+      },
+      {
+        "severity": "discount",
+        "section": "4.2",
+        "claim_attacked": "'Thumbnails reuse the gallery images (same URLs — browser cache, zero extra bytes)' (DRAFT.md:300-302)",
+        "evidence": "The thumbnail row renders up to 5 buttons above the fold (DRAFT.md:171-173). Reusing gallery URLs means up to 4 NOT-yet-viewed 600px AVIFs (~25-28 KB each per images-index.json `bytes`; e.g. 27,689 / 28,417 for release 10098948) download eagerly to paint ~64-80 CSS px thumbs — roughly +100 KB of image bytes on the measured PDP, competing with the fetchpriority-high LCP figure on the slow-4G profile. 'Zero extra bytes' is only true retrospectively, for a visitor who eventually views all five full images. The alternative is cheap: issue #9 comment (follow-up 6) — 'originals are retained, so re-derivation never touches Discogs' — a thumb derivative set costs one local re-derivation.",
+        "why_it_matters": "Kill-condition 1 (DRAFT.md:14-19) is exactly this: 600px assets as thumbnails is an engineering choice a skeptic can blame for the gap instead of the paradigm.",
+        "fix": "Either mint a small thumb derivative (from retained originals; update images-index) or make the honest tradeoff explicit in §4.2 (eager 2×-gallery preload as a deliberate choice, with the byte figure) — and state the thumbs' loading attributes either way."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2",
+        "claim_attacked": "Buy panel designed as format-switch radio group + price + numForSale + quantity, with no degenerate states (DRAFT.md:176-183)",
+        "evidence": "The frozen crate mostly lacks the data this design assumes. jq over crate/details.json: 439/500 releases have exactly ONE `formats[]` entry (the capture was vinyl-only by spec, issue #9), so the 'format switch (radio group segmented control — the release's formats[])' is a one-option radio on 88% of PDPs — including the draft's own featured release (Refinement of the Decline: formats = [Vinyl 3LP], one entry). And 44/500 releases have `priceFrom: null` + `numForSale: 0` — the price line, stock line, quantity, and Add-to-crate CTA have no defined state for them.",
+        "why_it_matters": "The format switch is named Product interactivity (CONTEXT.md:94-97) backing the render-axis thesis; a single-segment control is no interaction to measure and odd UI. The canonical markup contract must define both shapes or variants will improvise divergently and fail the drift gate.",
+        "fix": "Specify the n=1 formats state (static meta line, no radio group) and the unpriced/zero-stock state (CTA disabled or 'currently unavailable' line) in the canonical markup contract; pick the reference-render PDP release deliberately (a multi-format, priced one) so the golden master exercises the rich path."
+      },
+      {
+        "severity": "discount",
+        "section": "2.2",
+        "claim_attacked": "Fixed 1:1 aspect frame with object-fit: contain letterboxing as the CLS answer, with the rejected per-release reservation dismissed unargued (DRAFT.md:187-194)",
+        "evidence": "First-image aspect ratios in the crate run 0.75 (portrait) to 2.01 (a 2:1 landscape/gatefold) — jq over details.json; 454/500 are within 2% of square but the extremes letterbox to half the mat's height. The alternative the draft raises and drops ('the gallery column reserves max(image heights)?') is fully available under the zero-bias rules: every image's width/height already rides as data (issue #9 AC; release-card.css:37-38 precedent 'Dimensions come from DATA'), so the frame can be sized per RELEASE (max over its ≤5 images at column width) server-side, identically in every paradigm — zero CLS on thumbnail switching AND minimal letterbox. The draft invites this attack explicitly.",
+        "why_it_matters": "The 1:1 frame is defended with the falsified 1,022 statistic (see the §4.2 kill); with the real numbers (296/500 first images exactly square) the choice may still win — squares are the record-store norm — but it currently rests on wrong data and an unargued rejection.",
+        "fix": "Argue both options with the true distribution: fixed 1:1 mat (uniform gallery geometry, worst case ~50% letterbox on 2:1 covers) vs per-release max-height frame (data-driven, no letterbox, geometry varies per PDP). Record the pick and its tradeoff in the ADR."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2",
+        "claim_attacked": "Store brand 'Matrix Records' justified as 'the metaphor spent on the right axis (the pressing identifies the variant)' (DRAFT.md:150-152)",
+        "evidence": "ADR-0007 §4 (0007:86-88) spent this exact distinction the other way: 'matrix numbers belong to pressings/variants, catalogue numbers to a label's listing — the metaphor spent on the right axis'. The store is the label/catalogue side of that mapping; naming the STORE 'Matrix' puts the pressing-side word on the label-side entity — the inversion ADR-0007 §4's considered-alternatives explicitly rejected for the gateway rows. It also collapses the two-register separation: the specimen (store fiction) now carries the instrument's (project's) name.",
+        "why_it_matters": "The metaphor discipline is a recorded decision with reasoning; the brand contradicts its own cited justification.",
+        "fix": "Pick a fiction-side name from the crate's world (a plausible label-shop name), or if 'Matrix Records' stays, rewrite the justification honestly (brand recall trumps axis purity) instead of citing the axis argument it inverts."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.1 / 2.2",
+        "claim_attacked": "'Add-to-crate' as the cart CTA (DRAFT.md:157-158, 181-182)",
+        "evidence": "CONTEXT.md:51-54 reserves **Crate** for 'the curated snapshot scope — one coherent slice of records'; the cart is separately defined as application state (CONTEXT.md:197-199). The draft itself uses 'a crate cover' (snapshot sense, line 156) and 'Add-to-crate CTA (cart state)' (cart sense, line 157-158) in adjacent lines.",
+        "why_it_matters": "Every future ADR, registry id (`checkout-*`, cart interactions), and panel discussion now has two meanings of the project's most-used noun.",
+        "fix": "Rename the CTA in the store fiction ('Add to bag', 'Add to cart') or, if the crate-digging pun is wanted, add an explicit CONTEXT.md entry disambiguating store-crate (cart) from the frozen crate — the ubiquitous language file must not silently fork."
+      },
+      {
+        "severity": "nitpick",
+        "section": "4.1",
+        "claim_attacked": "'Recorded in coverage.json as a decided fallback list (renamed from \"deferred\")' + fontkit guard hardening, without naming the test churn or the Inter-coverage receipt (DRAFT.md:288-295)",
+        "evidence": "The counts check out (verified: coverage.json `crateDeferredI18n` = 30 codepoints = the draft's 13 Latin-adjacent + 8 Arabic + 9 CJK), and the split is within the crate-glyph-coverage ticket's decision space (decision-map.md:191: 'or accept a documented per-OS fallback for rare scripts'). But the rename touches tools/repo-checks/test/font-covers-crate.test.ts:44 (interface key), :84, :115 (usages) and the 'deferred i18n' copy at :105-108/:111 — and the :111-117 'stays minimal' test will automatically force the 13 newly-covered codepoints OFF the list once PM Crate Symbols lands (works in the draft's favor; worth stating). 'the Latin-adjacent deferred set that Inter covers' is asserted, not receipted — the build must verify all 13 against Inter v4.1's cmap with fontTools before the ADR records it.",
+        "why_it_matters": "Small, but the draft claims the guard 'can no longer be hand-faked' while not naming the guard edits its own rename requires.",
+        "fix": "List the test-file changes as build deliverables; add 'fontTools-verify Inter covers the 13' as an acceptance criterion; note the stays-minimal test enforces the list migration automatically."
+      },
+      {
+        "severity": "nitpick",
+        "section": "1.1 / 1.4",
+        "claim_attacked": "The bench-strip register 'extends to every surface' with no statement about home's own in-page HUD (DRAFT.md:30-34, 117-120)",
+        "evidence": "Home renders its own HUD from page-inlined CSS, not /_pm/chrome.css (ADR-0007 §5-§6; chrome.test.ts:76-86 asserts home has `id=\"pm-chrome\"` but no injected chrome). After the redesign, home's band and the variants' strip share the id + measure.js contract but not the new anatomy/typeface — two instrument identities on adjacent pages.",
+        "why_it_matters": "The instrument register is the draft's hero; visible divergence between the front door's band and every other page's strip reads as drift on the one element claimed to be constant.",
+        "fix": "State the decision: home's band adopts the collapsed-row look (a home rebuild task) or deliberately keeps its wider ADR-0007 composition — recorded either way."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.5 / 2.6",
+        "claim_attacked": "How-it-was-built gets a doc layout but no URL/registration decision, and the a11y section is unreachable from the shell (DRAFT.md:144-148, 255-261)",
+        "evidence": "ADR-0004 §3 path scheme is /{variant}/{surface}/; the a11y section resolves this (/vanilla/a11y/, DRAFT.md:239) but §2.6 never places how-it-was-built (decision-map.md:34 calls it a singleton whose form is 'store chrome, editorial' — the draft's TOC-doc layout departs from that row unrecorded). The shell's masthead lists Records/Editorial/Checkout and its footer 'what is this? · how it was built · GitHub' (DRAFT.md:146-148) — the a11y section appears in neither; only home's gateway links it.",
+        "why_it_matters": "Chrome registration (§4.4) needs surface keys, so the how-built path is load-bearing; and a spotlight surface with no in-store route contradicts solo-first discoverability.",
+        "fix": "Decide how-built's path (and record the departure from the decision-map row's 'store chrome, editorial' form); add the a11y section to the footer link set."
+      },
+      {
+        "severity": "nitpick",
+        "section": "2.1 vs 4.3",
+        "claim_attacked": "Editorial prose built around '$515.24' and a dated byline, under §4.3's rule 'Numbers/dates in any render come from tray/manifest fields — never typed' (DRAFT.md:161-166, 312-314)",
+        "evidence": "The $515.24 figure is real (verified: max priceFrom in summaries.json = 515.24, Stars Of The Lid, 'And Their Refinement Of The Decline', 2007, Kranky — draft facts all check out) but the essay is hand-written copy; if the price appears in prose as typed text it is exempt from §4.3's own mechanism and goes stale on any re-freeze. The byline date has no tray/manifest source at all.",
+        "why_it_matters": "§4.3 states the rule as 'now structural for all six surfaces'; Editorial is the surface where it's least structural as drafted.",
+        "fix": "Render the price via the featured-release card (which reads the tray) and keep the typed prose allusive ('north of five hundred dollars' — or interpolate the tray field through the reference renderer); define the byline date's source (fiction constant, exempted explicitly, or manifest date)."
+      }
+    ],
+    "survived": [
+      "§1.1 bench-strip placement + native <details> panel: anchors-only core, in-flow injection, and the unchanged div#pm-chrome-slot contract keep the drift normalizer (normalize.ts:107) and gate slot-removal (gate.ts:79) working untouched; the rejected-placement reasoning is sound.",
+      "§1.2 chrome-owned mono AUTHORIZATION: ADR-0006's alternatives explicitly reserve the mono 'through the --pm-font-metric slot and chrome CSS' (0006:129-132) and ADR-0003 §8 itself names mono figures for the HUD — the draft's quote is accurate and --pm-font-metric staying untouched is the right read of 'one face for UI and metrics'.",
+      "§1.3 empty states' C2 compliance on matrix surfaces: the new lab copy keeps the exact 'No published runs yet' prefix (chrome.test.ts:138/:145 stay green) and the verdict slot's 'Indistinguishable at this sample size' matches ADR-0001 addendum C verbatim.",
+      "§1.3.5 PLP slots-without-wiring: ADR-0005's consequences assign the §8 HUD additions to the downstream PLP build ticket, and §4.4's sparse registration means no 404 preset anchors can render before a variant serves the surface — shipping labeled slots now is consistent, not a violation.",
+      "§4.1 glyph split arithmetic and legitimacy: 13 + 17 = 30 verified against coverage.json crateDeferredI18n; per-OS fallback for Arabic/CJK is inside the crate-glyph-coverage ticket's recorded decision space, preserves cross-variant zero-bias (the OS fallback is constant across variants on any given machine), and the fontkit hardening matches the ticket's own recorded future hardening.",
+      "§4.3 built reference renders: the no-component-runtime guard checks package.json entry fields only (no-component-runtime.test.ts:40-57) — a build script violates neither its letter nor its spirit; reference.test.ts's script-free and asset-resolution assertions hold on committed built masters; CI-builds-from-fixture honors ADR-0007's crate rule.",
+      "§2.1 factual spine: Stars Of The Lid / 'And Their Refinement Of The Decline' / 2007 / Kranky / $515.24 all verified against the committed trays (it is the crate's maximum priceFrom).",
+      "§2.4 checkout INP story: real-work-only interactions (no busy loops), 'INP (scripted)' labeling, and registry-id receipts match ADR-0001 addendum B exactly.",
+      "§4.2's PLP-card leg: pm-grid minmax(220px,1fr) (release-card.css:16) puts cards at ~220-300 CSS px, so the 600px derivative ≈ the 2× asset — that half of the sizing rationale is data-supported."
+    ]
+  }
+]

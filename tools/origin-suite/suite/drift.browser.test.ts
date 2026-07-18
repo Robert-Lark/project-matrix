@@ -222,6 +222,87 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
   }, 60_000);
 });
 
+describe("the new surface masters are healthy (surface-design session)", () => {
+  // The eight fixture-rendered masters (packages/reference/render/build.mjs).
+  // No variant comparisons yet — no variant serves these surfaces; each
+  // follow-on build adds its own gate leg. What IS proven now:
+  //  (a) the DOM normalizer runs clean against each master (self-equivalence
+  //      across two independent loads — the existing reference-vs-self
+  //      pattern), so the master is deterministic raw material for the gate;
+  //  (b) captureStablePixels succeeds under the avg-broadband-desktop
+  //      profile: fonts settle, every asset — images through the server's
+  //      /assets/img/* fixture alias included — loads, and the full-page
+  //      shot stays within sane bounds (an unsized-image dimension explosion
+  //      would blow the height).
+  const NEW_MASTERS = [
+    "editorial",
+    "pdp",
+    "plp",
+    "checkout",
+    "a11y",
+    "a11y/element-demos",
+    "a11y/mode-demos",
+    "how-it-was-built",
+  ] as const;
+  const profile = PROFILES["avg-broadband-desktop"];
+  let context: BrowserContext;
+
+  beforeAll(async () => {
+    // profileContextOptions is JS-off, like every gate context — one context
+    // serves both the DOM and the pixel leg.
+    context = await browser.newContext(profileContextOptions(profile));
+  });
+  afterAll(async () => {
+    await context?.close();
+  });
+
+  for (const surface of NEW_MASTERS) {
+    const url = () =>
+      `${statics.origin}/packages/reference/surfaces/${surface}/`;
+
+    it(`${surface}: the normalizer extracts identically across independent loads`, async () => {
+      const first = await openTracked(context, url());
+      const dom = await extractNormalizedDom(first, NO_NOISE);
+      await first.close();
+      const second = await openTracked(context, url());
+      const again = await extractNormalizedDom(second, NO_NOISE);
+      await second.close();
+      expect(dom).not.toBe("");
+      expect(dom.split("\n")[0]).toBe('<html lang="en">');
+      assertDomEqual(`dom-${surface.replaceAll("/", "-")}-self`, dom, again);
+    }, 60_000);
+
+    it(`${surface}: pixels stabilize — fonts settle, assets load through the /assets/img alias`, async () => {
+      const page = await openTracked(context, url());
+      // Every same-origin response must succeed: a 404 under the image
+      // alias would render a broken page whose pixels still "stabilize".
+      const failures: string[] = [];
+      page.on("response", (res) => {
+        if (res.url().startsWith(statics.origin) && res.status() >= 400) {
+          failures.push(`${res.status()} ${res.url()}`);
+        }
+      });
+      await page.reload({ waitUntil: "load" });
+      expect(failures, `failed asset loads on ${surface}`).toEqual([]);
+
+      const shot = await captureStablePixels(page);
+      // PNG IHDR: width/height at byte offsets 16/20. Sized-from-data image
+      // slots mean layout cannot explode — a runaway full-page height is a
+      // broken master, not a long page.
+      const width = shot.readUInt32BE(16);
+      const height = shot.readUInt32BE(20);
+      expect(width).toBe(
+        profile.viewport.width * profile.viewport.deviceScaleFactor,
+      );
+      expect(height).toBeGreaterThan(0);
+      expect(height, `${surface} rendered ${height}px tall`).toBeLessThan(
+        16_000,
+      );
+      await page.close();
+    }, 90_000);
+  }
+});
+
 describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
   const profile = PROFILES[profileId];
   let context: BrowserContext;

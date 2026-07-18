@@ -258,6 +258,27 @@ not visual identity), and the **drift gate covers it in advisory mode** —
 drift on the remix3 Editorial surface warns but never fails CI, so a
 weekly-cadence beta can never block the benchmarked matrix's deploy.
 
+## Addendum — §7 qualified by the surface-design session (2026-07-17)
+
+[ADR-0008](0008-store-surfaces-and-instrument.md) redesigned the chrome and
+qualified two of §7's per-surface control-set allocations; recorded here so
+this ADR cannot be read against the shipped instrument:
+
+- **A11y-mode toggles move in-page** (out of the chrome): mode emulation is
+  page presentation state, not a measurement condition — putting it in the
+  chrome would either pollute URL-as-receipt (a query-mode knob) or separate
+  the toggle from the emulation-honesty caveat that must sit beside the
+  demo. The a11y section's pages own their toggles (ADR-0008 §4/§8).
+- **Checkout's "device/CPU controls" collapse to profile-foregrounding**:
+  the honest device/CPU axis IS the lab profile system (§6 — a snapshot
+  selector, never a live throttle); a live CPU knob would fake slowness at
+  a visitor. The fenced "feel the difference" demo remains the checkout
+  build's option, per §6's own carve-out.
+
+Everything else in §7 stands and is now implemented: sparse per-surface
+control-sets (with planned-cell disclosures), anchor-link core, edge
+injection into the known slot, chrome bytes on the excluded path.
+
 ## Addendum — §6 clarified: what "synthetic throttle" rejects (2026-07-12)
 
 The strategy review

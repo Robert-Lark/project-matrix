@@ -41,6 +41,14 @@
     "test": {
       "dependsOn": ["topo"]
     },
+    "@pm/reference#test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/**",
+        "$TURBO_ROOT$/docs/adr/*.md",
+        "$TURBO_ROOT$/docs/build-log.md"
+      ]
+    },
     "@pm/repo-checks#test": {
       "cache": false
     }

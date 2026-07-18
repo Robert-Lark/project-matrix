@@ -11,8 +11,9 @@
 // concurrent `wrangler r2 object put --local` processes were probed to
 // corrupt state (3 of 8 objects byte-mismatched — miniflare persistence is
 // not multi-process-safe), and serial per-object puts cost ~0.7s each, which
-// the fixture's 27 objects tolerate but the crate's ~1,800 do not. One
-// workerd process = one writer = fast AND safe.
+// the fixture's few dozen objects tolerate but the crate's thousands (600px
+// derivatives + their .thumb.avif twins) do not. One workerd process = one
+// writer = fast AND safe.
 //
 // REMOTE mode keeps per-object `wrangler r2 object put --remote` (distinct
 // keys against the real API are concurrency-safe; modest pool of 4).

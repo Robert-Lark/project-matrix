@@ -6,7 +6,11 @@ export {
   type NoiseSpec,
 } from "./normalize";
 export { comparePixels, type PixelComparison } from "./pixels";
-export { startRepoServer, type StaticServer } from "./server";
+export {
+  startRepoServer,
+  type StaticServer,
+  type RepoServerOptions,
+} from "./server";
 export {
   profileContextOptions,
   extractNormalizedDom,

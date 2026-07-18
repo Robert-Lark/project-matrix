@@ -1,0 +1,69 @@
+/*
+ * Component module — quantity stepper. A labelled native spinbutton with two
+ * named buttons; the input works JS-off, the buttons are per-paradigm
+ * behavior (they update the input's value, which announces itself).
+ *
+ * Canonical markup:
+ *   <div class="pm-qty">
+ *     <label class="pm-qty__label" for="qty">Quantity</label>
+ *     <div class="pm-qty__group">
+ *       <button class="pm-qty__step" type="button">−<span class="pm-sr-only">
+ *         Decrease quantity</span></button>
+ *       <input class="pm-qty__input" id="qty" name="qty" type="number"
+ *              inputmode="numeric" min="1" max="99" value="1">
+ *       <button class="pm-qty__step" type="button">+<span class="pm-sr-only">
+ *         Increase quantity</span></button>
+ *     </div>
+ *   </div>
+ */
+
+.pm-qty {
+  display: grid;
+  gap: var(--space-stack-xs);
+  margin-block-end: var(--space-stack);
+}
+
+.pm-qty__label {
+  font: var(--weight-medium) var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-text);
+}
+
+.pm-qty__group {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.pm-qty__step {
+  min-width: 44px;
+  min-height: 44px;
+  font: var(--weight-medium) var(--text-body) / 1 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.pm-qty__step:first-child { border-start-start-radius: var(--radius-control); border-end-start-radius: var(--radius-control); }
+.pm-qty__step:last-child { border-start-end-radius: var(--radius-control); border-end-end-radius: var(--radius-control); }
+
+.pm-qty__step:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-qty__input {
+  width: 4.5ch;
+  min-height: 44px;
+  text-align: center;
+  font: var(--text-body) / 1.3 var(--font-ui);
+  font-variant-numeric: var(--numeric-metric);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-block: 1px solid var(--color-border);
+  border-inline: 0;
+}
+
+.pm-qty__input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-offset));
+}

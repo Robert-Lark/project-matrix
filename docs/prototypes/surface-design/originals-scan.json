@@ -1,0 +1,11 @@
+{
+  "what": "Dimension scan of the retained capture originals (tools/snapshot-capture/.capture/img-original \u2014 git-excluded, local to the capture machine), backing ADR-0008 \u00a711's 600px-ceiling claim.",
+  "command": "for f in .capture/img-original/*; do sips -g pixelWidth -g pixelHeight \"$f\"; done  # aggregated: max per file",
+  "scannedAt": "2026-07-17",
+  "originals": 1838,
+  "maxWidth": 600,
+  "maxHeight": 600,
+  "maxSide": 600,
+  "exceeding600": 0,
+  "note": "1,838 originals vs 1,817 served derivatives: the difference is originals retained for releases dropped at curation/tombstoned during capture (issue #9) \u2014 kept for provenance, never served."
+}

@@ -170,6 +170,21 @@ a **DS-off** (stripped) counterpart, byte-identical except the accessibility
 treatment. The pair makes a side-by-side comparison differ *only* in accessibility;
 the DS-off form is what a rushed team ships without the design system.
 
+**Plaque**:
+The one labeling system for anything needing a stated boundary: a bordered
+block (kicker · name · claim) in the store's quiet register. The **fenced**
+form adds `data-pm-fenced="true"` and the exclusion rule line, and is reserved
+for true number-exclusions (Remix 3, the misapplication exhibit, the
+live-origin demonstration, the a11y DS-off exhibits). Checkout's simulation
+notice is a base plaque — checkout is measured.
+_Avoid_: "banner", "warning" (a plaque states a boundary; it never alarms).
+
+**Designated host**:
+The variant a cross-surface link targets (masthead nav, card titles, the cart
+link). Cross-surface links are absolute because the sparse matrix makes
+same-variant links 404 where a variant lacks the surface; the chrome on
+arrival offers the swap. Recorded per surface in the switcher config.
+
 ### Controls & instrumentation
 
 **Contextual switcher** (or just **switcher**):

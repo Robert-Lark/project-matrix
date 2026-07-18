@@ -1,0 +1,87 @@
+/*
+ * Component module — cart / order summary. Cart is CLIENT state (ADR-0004
+ * §5: localStorage, cart only) — so the CANONICAL SERVED state of this
+ * region is the designed empty state below, pinned in the golden masters
+ * (the JS-off drift gate can only ever see it). Population is per-paradigm
+ * client enhancement into the same markup shapes; the region reserves
+ * min-block-size so population never shifts the form beside it, and changes
+ * announce through the shell's `.pm-status` live region (WCAG 4.1.3).
+ *
+ * Canonical served markup:
+ *   <section class="pm-cart" aria-label="Order summary">
+ *     <h2 class="pm-cart__title">Order summary</h2>
+ *     <p class="pm-cart__empty">Your cart is empty — items appear here as
+ *        you add them from the store.</p>
+ *     <ul class="pm-cart__lines" role="list"></ul>          (client-populated:
+ *       <li class="pm-cart__line"><img …>                    each line = thumb,
+ *         <span class="pm-cart__what">…</span>               title × qty, price)
+ *         <span class="pm-cart__price">…</span></li>
+ *     <p class="pm-cart__total"><span>Total</span>
+ *        <span class="pm-cart__price" data-pm-cart-total>—</span></p>
+ *   </section>
+ */
+
+.pm-cart {
+  background: var(--color-surface-sunk);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-inset);
+  min-block-size: 12rem; /* reserved geometry: population cannot shift layout */
+  display: grid;
+  gap: var(--space-stack-sm);
+  align-content: start;
+}
+
+.pm-cart__title {
+  margin: 0;
+  font: var(--weight-bold) var(--text-body) / 1.3 var(--font-ui);
+}
+
+.pm-cart__empty {
+  margin: 0;
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text-muted);
+}
+
+.pm-cart__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-stack-sm);
+  max-block-size: 18rem;
+  overflow-y: auto; /* long carts scroll inside the reserved region */
+}
+
+.pm-cart__line {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: var(--space-inline);
+  align-items: center;
+  font: var(--text-small) / 1.4 var(--font-ui);
+}
+
+.pm-cart__line img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.pm-cart__price {
+  font: var(--weight-medium) var(--text-small) / 1 var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  color: var(--color-text);
+}
+
+.pm-cart__total {
+  margin: 0;
+  padding-block-start: var(--space-stack-sm);
+  border-block-start: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  font: var(--weight-medium) var(--text-body) / 1.3 var(--font-ui);
+}
+
+.pm-cart__total .pm-cart__price { font-size: var(--text-title); }

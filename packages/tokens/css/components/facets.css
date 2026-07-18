@@ -1,0 +1,82 @@
+/*
+ * Component module — facet rail. Filters are NAVIGATION (every strategy
+ * delegates filter/sort/search to the data plane, ADR-0005 §5): each facet is
+ * a plain link carrying the canonical query params (?genre= / ?style= /
+ * ?format=), so the rail works JS-off in every paradigm and enhancement is
+ * the paradigm's own business. Counts come from the tray's facet buckets.
+ *
+ * Canonical markup:
+ *   <nav class="pm-facets" aria-label="Filters">
+ *     <section class="pm-facets__group">
+ *       <h3 class="pm-facets__title">Style</h3>
+ *       <ul class="pm-facets__list" role="list">
+ *         <li><a class="pm-facets__facet" href="?style=Ambient"
+ *                [aria-current="true"]>
+ *           <span class="pm-facets__value">Ambient</span>
+ *           <span class="pm-facets__count">213</span></a></li> …
+ *       </ul>
+ *     </section> …
+ *   </nav>
+ *
+ * aria-current="true" marks the SELECTED facet (a filter state, not a page —
+ * the variant switcher's "page" token is the other, deliberate case). A
+ * selected facet's href REMOVES its param — the same link toggles it off.
+ */
+
+.pm-facets {
+  display: grid;
+  gap: var(--space-stack);
+  align-content: start;
+}
+
+.pm-facets__group { display: grid; gap: var(--space-stack-xs); }
+
+.pm-facets__title {
+  margin: 0;
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pm-facets__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.pm-facets__facet {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-inline);
+  min-height: var(--target-min);
+  align-items: center;
+  font: var(--text-small) / 1.3 var(--font-ui);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.pm-facets__facet:hover .pm-facets__value {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.pm-facets__facet[aria-current="true"] .pm-facets__value {
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  text-decoration-color: var(--color-accent);
+}
+
+.pm-facets__facet:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.pm-facets__count {
+  font: var(--text-caption) / 1 var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  color: var(--color-text-muted);
+}
