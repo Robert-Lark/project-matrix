@@ -39,6 +39,26 @@ export default tseslint.config(
         TextDecoder: "readonly",
         AbortController: "readonly",
         Buffer: "readonly",
+        crypto: "readonly",
+        btoa: "readonly",
+        atob: "readonly",
+        structuredClone: "readonly",
+        FormData: "readonly",
+        File: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+      },
+    },
+  },
+  {
+    // The blog admin's client code runs in the browser (ADR-0009 §3).
+    files: ["workers/blog/src/admin/editor/**/*.js"],
+    languageOptions: {
+      globals: {
+        document: "readonly",
+        window: "readonly",
+        localStorage: "readonly",
+        navigator: "readonly",
       },
     },
   },

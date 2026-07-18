@@ -1,0 +1,33 @@
+// Blog plane Worker — ADR-0009. Reachable ONLY through pm-front's BLOG
+// service binding (workers_dev false); requests arrive with the original
+// /blog/* path untouched, so static assets nest under /blog/ in dist.
+// run_worker_first: the script is the wall — auth and routing decide, and
+// static bytes are served by explicit env.ASSETS.fetch delegation.
+{
+  "name": "pm-blog",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pm-blog",
+      "database_id": "61f77cf8-8924-4e15-bf1c-508442436016"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "pm-blog-media"
+    }
+  ],
+  // Workers Logs — structured logs queryable in the dashboard (PRD story 42).
+  "observability": {
+    "enabled": true
+  }
+}

@@ -23,6 +23,13 @@ const VARIANTS = {
   "placeholder-ssr": "PLACEHOLDER_SSR",
 };
 
+// Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass
+// through byte-identical like EDGE — no chrome, no HUD, no receipts. The
+// blog is outside every measurement fence.
+const SIBLINGS = {
+  blog: "BLOG",
+};
+
 // Structured JSON logs (Workers Logs ingests console output; PRD story 42).
 function log(level, event, fields) {
   const line = JSON.stringify({ level, worker: "pm-front", event, ...fields });
@@ -40,9 +47,11 @@ export default {
     const bindingName =
       prefix === "api" || prefix === "assets"
         ? "EDGE"
-        : Object.hasOwn(VARIANTS, prefix) // bare lookups resolve prototype keys
-          ? VARIANTS[prefix]              // ("constructor" 502'd instead of 404)
-          : undefined;
+        : Object.hasOwn(SIBLINGS, prefix)
+          ? SIBLINGS[prefix]
+          : Object.hasOwn(VARIANTS, prefix) // bare lookups resolve prototype keys
+            ? VARIANTS[prefix]              // ("constructor" 502'd instead of 404)
+            : undefined;
     const variant = bindingName === "EDGE" ? "edge" : prefix;
 
     if (!bindingName) {
@@ -58,11 +67,15 @@ export default {
         status: upstream.status,
       });
 
-      // Chrome injection: variant HTML only. The edge Worker's JSON/images
-      // and every non-HTML response pass through byte-identical — the
-      // content-type guard IS the non-HTML guarantee.
+      // Chrome injection: variant HTML only. The edge Worker's JSON/images,
+      // sibling planes (the blog), and every non-HTML response pass through
+      // byte-identical — the content-type guard IS the non-HTML guarantee.
       const contentType = upstream.headers.get("content-type") ?? "";
-      if (bindingName === "EDGE" || !contentType.includes("text/html")) {
+      if (
+        bindingName === "EDGE" ||
+        bindingName === "BLOG" ||
+        !contentType.includes("text/html")
+      ) {
         return upstream;
       }
 

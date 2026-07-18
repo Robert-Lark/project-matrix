@@ -1,0 +1,470 @@
+/* The CMS skin: a quiet room. The chrome recedes (small, low-contrast UI
+ * type), the text is the loudest thing on screen, and dark mode is a real
+ * night surface, not an inversion. UI face: system; prose face: the
+ * editor's serif (set as --prose, shared with CM via theme vars). */
+
+:root {
+  --ink: #21201c;
+  --faint: #8a8779;
+  --paper: #f7f6f1;
+  --pane: #fffefb;
+  --line: #e2e0d5;
+  --accent-ui: #3d6b54;
+  --danger: #a4443a;
+  --prose: "Charter", "Iowan Old Style", Georgia, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --ui: system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #d8d6cc;
+    --faint: #85826f;
+    --paper: #191813;
+    --pane: #201f19;
+    --line: #33322a;
+    --accent-ui: #7fae94;
+    --danger: #cf7a70;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font: 0.875rem/1.5 var(--ui);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ui);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--pane);
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--faint);
+}
+
+button.primary {
+  background: var(--accent-ui);
+  border-color: var(--accent-ui);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.linkish {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent-ui);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+/* ---------------------------------------------------------------- login */
+
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.login form {
+  display: grid;
+  gap: 0.75rem;
+  width: min(320px, 90vw);
+}
+
+.login h1 {
+  font-family: var(--prose);
+  font-weight: 400;
+  margin: 0;
+}
+
+.login input {
+  padding: 0.6rem;
+  font-size: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--pane);
+  color: inherit;
+}
+
+.error {
+  color: var(--danger);
+}
+
+/* ----------------------------------------------------------------- desk */
+
+.desk {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 5rem;
+}
+
+.desk-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-block-end: 1.5rem;
+}
+
+.desk-head h1 {
+  margin: 0;
+  font: 400 1.4rem var(--prose);
+}
+
+.new-post {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.new-post form {
+  display: contents;
+}
+
+.logout {
+  margin-inline-start: auto;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.logout button {
+  border: none;
+  background: none;
+  color: var(--faint);
+  text-decoration: underline;
+  padding: 0;
+}
+
+.continue {
+  display: grid;
+  gap: 0.2rem;
+  padding: 1.1rem 1.25rem;
+  margin-block-end: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--pane);
+  text-decoration: none;
+  color: inherit;
+}
+
+.continue:hover {
+  border-color: var(--accent-ui);
+}
+
+.continue-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ui);
+}
+
+.continue-title {
+  font: 600 1.2rem var(--prose);
+}
+
+.continue-meta {
+  color: var(--faint);
+}
+
+.desk h2 {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  margin: 2rem 0 0.5rem;
+}
+
+.count {
+  font-weight: 400;
+}
+
+.post-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.post-rows .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding-block: 0.55rem;
+  border-block-end: 1px solid var(--line);
+}
+
+.row-title {
+  color: inherit;
+  text-decoration: none;
+  font-family: var(--prose);
+  font-size: 1rem;
+}
+
+.row-title:hover {
+  color: var(--accent-ui);
+}
+
+.row-meta {
+  color: var(--faint);
+  white-space: nowrap;
+  font-size: 0.8125rem;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.desk-foot {
+  margin-block-start: 3rem;
+  color: var(--faint);
+}
+
+.desk-foot a {
+  color: var(--faint);
+}
+
+/* --------------------------------------------------------------- editor */
+
+.editor {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-block-end: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.back {
+  color: var(--faint);
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.title-input {
+  flex: 1;
+  min-width: 8rem;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font: 600 1.05rem var(--prose);
+  padding: 0.3rem 0.2rem;
+}
+
+.title-input::placeholder {
+  color: var(--faint);
+}
+
+.word-count,
+.save-state {
+  color: var(--faint);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.restore-bar {
+  margin: 0;
+  padding: 0.6rem 1rem;
+  background: color-mix(in oklab, var(--accent-ui) 12%, var(--paper));
+  border-block-end: 1px solid var(--line);
+}
+
+.editor-split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pane-write {
+  background: var(--pane);
+}
+
+#cm-host,
+.cm-editor {
+  height: 100%;
+}
+
+.pane-preview {
+  border-inline-start: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.pane-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .editor.split .pane-write {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ meta panel */
+
+.meta-panel {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: min(24rem, 92vw);
+  overflow-y: auto;
+  background: var(--paper);
+  border-inline-start: 1px solid var(--line);
+  box-shadow: -12px 0 32px rgb(0 0 0 / 0.12);
+  padding: 1.25rem 1.25rem 3rem;
+  z-index: 10;
+}
+
+.meta-panel h2 {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  margin: 1.75rem 0 0.5rem;
+}
+
+.meta-panel h2:first-child {
+  margin-block-start: 0;
+}
+
+.meta-panel label {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--faint);
+  margin: 0.9rem 0 0.25rem;
+}
+
+.meta-panel input,
+.meta-panel select {
+  width: 100%;
+  font: inherit;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--pane);
+  color: inherit;
+}
+
+.meta-panel input[type="color"] {
+  width: 3rem;
+  height: 2rem;
+  padding: 0.1rem;
+}
+
+.accent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--faint);
+  margin: 0.25rem 0 0;
+}
+
+.hint-inline {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.panel-block code {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  word-break: break-all;
+  padding: 0.4rem;
+  background: var(--pane);
+  border-radius: 6px;
+  margin-block-end: 0.4rem;
+}
+
+.revision-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+}
+
+.revision-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.35rem;
+  border-block-end: 1px solid var(--line);
+  color: var(--faint);
+}
+
+.danger-zone button {
+  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 40%, var(--line));
+}
+
+/* --------------------------------------------------------- CM chrome bits */
+
+.cm-tooltip.cm-tooltip-autocomplete {
+  border: 1px solid var(--line);
+  background: var(--pane);
+  border-radius: 8px;
+  font-family: var(--ui);
+  font-size: 0.8125rem;
+}
+
+.cm-tooltip-autocomplete ul li[aria-selected] {
+  background: var(--accent-ui);
+  color: var(--paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

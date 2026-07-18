@@ -1,0 +1,534 @@
+/* ============================================================
+   MARGINALIA — working-notes register for roblark.com/blog
+   A text that talks to itself: the outer margin is a live
+   gutter for asides, dates, and notes, hung on the margin rule.
+   ============================================================ */
+
+:root {
+  /* paper & ink */
+  --paper: #FBFAF7;   /* cool near-white, not cream */
+  --ink: #211E1A;     /* iron-gall ink, 15.9:1 */
+  --pencil: #6B665E;  /* graphite meta, 5.46:1 */
+  --rule: #DFDCD4;    /* hairlines */
+  --pen: #2447A8;     /* ballpoint blue — site default annotation ink, 7.92:1 */
+  --a: var(--pen);    /* resolved accent (per-post override below) */
+  --codepaper: #FFFFFF;
+
+  /* geometry */
+  --measure: 41rem;   /* ~67ch at 19px Source Serif 4 */
+  --gap: 2.75rem;     /* gutter between text and margin column */
+  --mcol: 16rem;      /* margin column width */
+  --pad: 1.25rem;
+
+  /* voices */
+  --display: 'Fraunces', Georgia, serif;
+  --body: 'Source Serif 4', Georgia, serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1C1B1E;   /* lamp-lit desk, cool */
+    --ink: #E7E4DE;     /* 13.5:1 */
+    --pencil: #A39D92;  /* 6.36:1 */
+    --rule: #37353A;
+    --pen: #9FB3F5;     /* 8.36:1 */
+    --a: var(--pen);
+    --codepaper: #121212;
+  }
+}
+
+/* Per-post art direction: the worker stamps --accent on the article. */
+.post { --a: var(--accent, var(--pen)); }
+@media (prefers-color-scheme: dark) {
+  /* Lift any authored accent toward the dark ink; verified >=6.3:1 for the house accents. */
+  .post { --a: color-mix(in srgb, var(--accent, #2447A8) 45%, #E7E4DE); }
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1.0625rem;      /* 17px floor */
+  line-height: 1.68;
+  font-optical-sizing: auto;
+  -webkit-text-size-adjust: 100%;
+}
+@media (min-width: 768px) { body { font-size: 1.1875rem; } } /* 19px */
+
+img { max-width: 100%; height: auto; display: block; }
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--a) 75%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: color 120ms ease, text-decoration-color 120ms ease;
+}
+a:hover { color: var(--a); text-decoration-thickness: 1.5px; }
+:focus-visible { outline: 2px solid var(--a); outline-offset: 3px; border-radius: 1px; }
+
+::selection { background: color-mix(in srgb, var(--a) 22%, transparent); }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.skip {
+  position: absolute; left: var(--pad); top: -3rem;
+  background: var(--paper); color: var(--a); padding: 0.4rem 0.8rem;
+  border: 1px solid var(--a); z-index: 10; transition: top 120ms ease;
+}
+.skip:focus-visible { top: 0.75rem; }
+
+/* ---------- shared column geometry ---------- */
+main, .site-head, .site-foot { padding-inline: var(--pad); }
+.post > *,
+main > h1,
+ol.contents,
+.site-head > .masthead,
+.site-foot > p {
+  display: block;
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+@media (min-width: 1140px) {
+  :root { --off: max(3rem, calc((100vw - (var(--measure) + var(--gap) + var(--mcol))) / 2)); }
+  main, .site-head, .site-foot { padding-inline: 0; }
+  .post > *,
+  main > h1,
+  ol.contents,
+  .site-head > .masthead,
+  .site-foot > p {
+    margin-left: var(--off);
+    margin-right: 0;
+    width: var(--measure);
+    max-width: none;
+  }
+
+  /* THE MARGIN RULE — the signature. A notebook margin line in the
+     post's own ink, separating text from the live gutter. */
+  .post { position: relative; }
+  .post::before,
+  ol.contents::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: color-mix(in srgb, var(--a) 34%, transparent);
+    pointer-events: none;
+  }
+  .post::before { left: calc(var(--off) + var(--measure) + var(--gap) / 2); }
+  ol.contents { position: relative; }
+  ol.contents::before { left: calc(var(--measure) + var(--gap) / 2); }
+}
+
+/* ---------- site chrome ---------- */
+.site-head { padding-block: 1.75rem 0.5rem; }
+.masthead {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.375rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  width: fit-content;
+}
+.masthead:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--a); text-decoration-thickness: 2px; }
+
+.site-foot {
+  margin-top: 6rem;
+  padding-block: 2rem 2.5rem;
+}
+.site-foot p {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.25rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--pencil);
+}
+
+/* ---------- post headers ---------- */
+.post-head { position: relative; margin-top: 4rem; margin-bottom: 2.75rem; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--a);
+  margin: 0 0 1rem;
+}
+.eyebrow::before { content: "※ "; }
+
+.post-head h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2.05rem, 4.4vw, 2.9rem);
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.9rem;
+  text-wrap: balance;
+}
+.dek {
+  font-style: italic;
+  font-size: clamp(1.15rem, 2vw, 1.3rem);
+  line-height: 1.5;
+  color: var(--pencil);
+  margin: 0 0 1.1rem;
+  text-wrap: pretty;
+}
+.post-meta {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--pencil);
+  margin: 0;
+}
+@media (min-width: 1140px) {
+  /* the date is the first annotation: it lives in the margin */
+  .post-head--standard .post-meta,
+  .post-head--photo .post-meta {
+    position: absolute;
+    left: calc(100% + var(--gap));
+    top: 0.5em;
+    width: var(--mcol);
+  }
+}
+
+/* display: for big statements — oversized title crossing the rule */
+.post-head--display h1 {
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-weight: 500;
+  line-height: 1.05;
+}
+@media (min-width: 1140px) {
+  .post-head--display h1 { width: calc(var(--measure) + var(--gap) + var(--mcol)); }
+}
+
+/* photo: quiet small-caps slug — the photographs carry the page */
+.post-head--photo { margin-bottom: 1rem; }
+.post-head--photo h1 {
+  font-family: var(--body);
+  font-variant: all-small-caps;
+  font-weight: 500;
+  font-size: 1.2rem;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.4rem;
+}
+
+/* bare: no title at all — a ledger line and straight into the text */
+.post-head--bare { margin-bottom: 1.5rem; }
+.post-head--bare .post-meta::before { content: "※ "; color: var(--a); }
+
+/* ---------- post body ---------- */
+.post-body { position: relative; }
+.post-body > * { margin-block: 0 1.4em; }
+
+.post-body h2 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.55rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 2.6em 0 0.8em;
+}
+.post-body h3 {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.25rem;
+  margin: 2.2em 0 0.7em;
+}
+
+/* margin notes — asides live in the gutter on wide screens */
+.bp-aside {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: var(--pencil);
+  border-left: 2px solid var(--a);
+  padding-left: 1rem;
+  margin-block: 1.8em;
+}
+.bp-aside p { margin: 0 0 0.6em; }
+.bp-aside p:last-child { margin-bottom: 0; }
+.bp-aside p::before { content: "※ "; color: var(--a); font-style: normal; }
+.bp-aside p + p::before { content: none; }
+@media (min-width: 1140px) {
+  .bp-aside {
+    float: right;
+    clear: right;
+    width: var(--mcol);
+    margin-right: calc(-1 * (var(--mcol) + var(--gap)));
+    margin-block: 0.2em 1.2em;
+    border-left: 0;
+    padding-left: 0;
+    font-size: 0.875rem;
+    border-top: 2px solid var(--a);
+    padding-top: 0.55em;
+  }
+}
+
+/* pullquote — crosses the margin rule */
+.bp-pullquote {
+  margin: 2.2em 0;
+  padding: 0;
+}
+.bp-pullquote p {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  line-height: 1.3;
+  margin: 0;
+  color: var(--ink);
+}
+.bp-pullquote p::before { content: "“"; color: var(--a); }
+.bp-pullquote p::after { content: "”"; color: var(--a); }
+@media (min-width: 1140px) {
+  .bp-pullquote { width: calc(var(--measure) + var(--gap) + var(--mcol)); }
+}
+
+/* wide & bleed */
+@media (min-width: 1140px) {
+  .bp-wide { width: calc(var(--measure) + var(--gap) + var(--mcol)); }
+  .bp-bleed { width: 100vw; margin-left: calc(-1 * var(--off)); }
+}
+@media (max-width: 1139.98px) {
+  .bp-bleed { width: calc(100% + 2 * var(--pad)); margin-inline: calc(-1 * var(--pad)); }
+}
+
+/* galleries */
+.bp-gallery { display: grid; gap: 0.9rem; margin-block: 2.2em; }
+.bp-gallery p { display: contents; }
+.bp-gallery[data-layout="grid"] { grid-template-columns: repeat(2, 1fr); }
+.bp-gallery[data-layout="side-by-side"] { grid-template-columns: 1fr 1fr; }
+.bp-gallery[data-layout="bleed"] { grid-template-columns: 1fr 1fr; }
+@media (min-width: 1140px) {
+  .bp-gallery[data-layout="bleed"] { width: 100vw; margin-left: calc(-1 * var(--off)); }
+}
+@media (max-width: 1139.98px) {
+  .bp-gallery[data-layout="bleed"] { width: calc(100% + 2 * var(--pad)); margin-inline: calc(-1 * var(--pad)); }
+}
+
+/* figures — essay captions hang in the margin */
+.post-body figure { margin: 2.2em 0; position: relative; }
+.post-body figcaption {
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--pencil);
+  margin-top: 0.7em;
+}
+@media (min-width: 1140px) {
+  .post--essay .post-body > figure:not(.bp-pullquote) figcaption {
+    position: absolute;
+    left: calc(100% + var(--gap));
+    bottom: 0.2em;
+    width: var(--mcol);
+    margin-top: 0;
+    border-top: 1px solid var(--rule);
+    padding-top: 0.5em;
+  }
+}
+
+/* code — shiki dual theme */
+pre.shiki {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  margin-block: 2em;
+}
+pre.shiki code { font-family: inherit; }
+code { font-family: var(--mono); font-size: 0.88em; }
+p code, li code { background: color-mix(in srgb, var(--pencil) 10%, transparent); padding: 0.08em 0.3em; border-radius: 2px; }
+@media (prefers-color-scheme: dark) {
+  .shiki, .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+    font-style: var(--shiki-dark-font-style, inherit) !important;
+  }
+}
+
+/* quotes */
+.post-body blockquote {
+  margin: 2em 0;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--rule);
+  color: var(--ink);
+}
+.post-body blockquote p { margin: 0 0 0.8em; }
+
+/* footnotes — the notes register at the foot of the text */
+sup { line-height: 0; }
+sup a[data-footnote-ref], sup a {
+  font-family: var(--mono);
+  font-size: 0.78em;
+  color: var(--a);
+  text-decoration: none;
+  padding-inline: 0.1em;
+}
+sup a:hover { text-decoration: underline; }
+.footnotes {
+  margin-top: 4rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.1rem;
+  font-size: 0.9375rem;
+  color: var(--pencil);
+}
+.footnotes::before {
+  content: "Notes";
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--a);
+  margin-bottom: 0.8rem;
+}
+.footnotes ol { margin: 0; padding-left: 1.4rem; }
+.footnotes li { margin-bottom: 0.6em; }
+.footnotes li::marker { font-family: var(--mono); font-size: 0.8em; color: var(--a); }
+.footnotes p { margin: 0; }
+.data-footnote-backref { text-decoration: none; color: var(--a); }
+
+/* series nav */
+.series-nav {
+  margin-top: 3.5rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.1rem;
+  font-size: 0.9375rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 2rem;
+}
+.series-nav p {
+  grid-column: 1 / -1;
+  margin: 0 0 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--pencil);
+}
+.series-nav a { font-style: italic; }
+.series-nav a[rel="next"] { text-align: right; }
+
+/* post foot / tags */
+.post-foot { margin-top: 2rem; }
+.tag-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  align-items: baseline;
+}
+.tag-list::before {
+  content: "filed under —";
+  font-style: italic;
+  font-size: 0.875rem;
+  color: var(--pencil);
+}
+.tag-list a {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--pencil);
+  text-decoration-color: color-mix(in srgb, var(--a) 55%, transparent);
+}
+.tag-list a:hover { color: var(--a); }
+
+/* ---------- moods ---------- */
+.mood--contemplative .post-body figure { margin-block: 4.5rem; }
+.mood--contemplative .post-body > p { color: var(--pencil); font-style: italic; font-size: 1.0625rem; }
+
+/* ---------- note posts ---------- */
+.post--note .post-head { margin-top: 3rem; }
+.post--note .post-body p { font-size: 1.25rem; line-height: 1.62; }
+.post--note .post-foot { margin-top: 1.5rem; }
+
+/* ---------- photo posts ---------- */
+.post--photo .post-body figure { position: static; }
+.post--photo .post-body figcaption { position: static; width: auto; border: 0; padding: 0; }
+@media (min-width: 1140px) {
+  .post--photo .post-body figure { width: calc(var(--measure) + var(--gap) + var(--mcol)); margin-block: 4.5rem; }
+  .post--photo .post-body figure figcaption { width: var(--measure); }
+}
+
+/* ---------- contents page ---------- */
+main > h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2.05rem, 4.4vw, 2.9rem);
+  letter-spacing: -0.015em;
+  margin-top: 4rem;
+  margin-bottom: 2.5rem;
+}
+ol.contents { list-style: none; padding: 0; margin-top: 0; padding-bottom: 0.5rem; }
+
+.contents-year {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.4rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.35rem;
+  margin: 3rem 0 1.4rem;
+}
+.contents-year:first-child { margin-top: 0; }
+
+.entry { position: relative; padding-block: 0.55rem; }
+.entry a { text-decoration: none; }
+.entry a:hover { text-decoration: underline; }
+.entry time {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--pencil);
+  margin-top: 0.1rem;
+}
+.entry time::after {
+  content: " · " attr(data-kind);
+  letter-spacing: 0.05em;
+}
+
+.entry--essay a { font-family: var(--display); font-weight: 500; font-size: 1.3rem; line-height: 1.3; }
+.entry--essay { padding-block: 0.7rem; }
+.entry--note a { font-style: italic; color: var(--pencil); }
+.entry--note a::before { content: "※ "; color: var(--a); font-style: normal; }
+.entry--photo a::before { content: "▤ "; color: var(--a); font-size: 0.85em; }
+.entry--link a::after { content: " ↗"; color: var(--a); }
+
+@media (min-width: 1140px) {
+  .entry time {
+    position: absolute;
+    left: calc(100% + var(--gap));
+    top: 0.75em;
+    width: var(--mcol);
+    margin-top: 0;
+  }
+  .entry--essay time { top: 1em; }
+}
+
+/* ---------- motion & print ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+@media print {
+  :root { --paper: #fff; --ink: #000; --pencil: #444; --a: #000; }
+  .site-head, .site-foot, .skip, .series-nav { display: none; }
+  body { font-size: 11pt; }
+  .post > * { max-width: none; margin-left: 0; width: auto; }
+  .post::before { display: none; }
+  .bp-aside { float: right; clear: right; width: 30%; margin: 0 0 1em 1em; border-top: 1pt solid #000; }
+  a { text-decoration: none; color: #000; }
+  .post-body a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+  pre.shiki { border: 1pt solid #999; }
+}

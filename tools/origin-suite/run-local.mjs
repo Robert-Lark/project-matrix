@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 const suiteDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(suiteDir, "..", "..");
 const ORIGIN = "http://127.0.0.1:8787";
-const PORTS = [8787, 8788, 8789, 8790, 9230, 9231, 9232, 9233];
+const PORTS = [8787, 8788, 8789, 8790, 8791, 9230, 9231, 9232, 9233, 9234];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
 
@@ -134,6 +134,20 @@ const seed = spawnSync(
 );
 if (seed.status !== 0) process.exit(seed.status ?? 1);
 
+// Fresh blog plane per run (ADR-0009): wipe local D1/R2 state, re-apply
+// migrations. The blog suite writes through its own admin API using the
+// committed fixture credential (workers/blog/.dev.vars).
+rmSync(join(repoRoot, "workers/blog/.wrangler/state"), {
+  recursive: true,
+  force: true,
+});
+const migrate = spawnSync(
+  "pnpm",
+  ["exec", "wrangler", "d1", "migrations", "apply", "pm-blog", "--local"],
+  { cwd: join(repoRoot, "workers/blog"), stdio: "inherit" },
+);
+if (migrate.status !== 0) process.exit(migrate.status ?? 1);
+
 let suiteStatus;
 try {
   await assertPortsFree();
@@ -141,6 +155,7 @@ try {
   startWorker("workers/edge", "edge");
   startWorker("variants/placeholder-static", "placeholder-static");
   startWorker("variants/placeholder-ssr", "placeholder-ssr");
+  startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
   console.log(`waiting for the composed origin at ${ORIGIN}`);
@@ -148,6 +163,7 @@ try {
   await waitFor(`${ORIGIN}/placeholder-static/sample/`, 60_000);
   await waitFor(`${ORIGIN}/placeholder-ssr/sample/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
+  await waitFor(`${ORIGIN}/blog/`, 60_000);
 
   // A worker that lost a port race exits while something stale answers in
   // its place — readiness alone cannot tell the difference. Every spawned
@@ -163,7 +179,13 @@ try {
   const suite = spawnSync("pnpm", ["exec", "vitest", "run"], {
     cwd: suiteDir,
     stdio: "inherit",
-    env: { ...process.env, PM_ORIGIN: ORIGIN },
+    // PM_BLOG_CREDENTIAL unlocks the blog write-path tests — local only;
+    // the post-deploy smoke omits it so the suite never writes to prod.
+    env: {
+      ...process.env,
+      PM_ORIGIN: ORIGIN,
+      PM_BLOG_CREDENTIAL: "local-dev-credential",
+    },
   });
   suiteStatus = suite.status ?? 1;
 } finally {

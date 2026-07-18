@@ -146,6 +146,23 @@ jobs:
           pnpm --filter @pm/placeholder-ssr run deploy
           pnpm --filter @pm/edge run deploy
 
+      # The blog plane (ADR-0009): resources, then schema, then the Worker —
+      # and all of it before the front Worker, whose BLOG binding must
+      # resolve. Create-guards follow the pm-snapshot pattern above.
+      - name: Deploy blog Worker (resources + migrations first)
+        if: steps.creds.outputs.present == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # No d1-create guard: wrangler.jsonc pins the database id, so a
+          # freshly-created db could never satisfy the binding — the migrate
+          # step below is the loud failure if the database is missing.
+          pnpm --filter @pm/blog exec wrangler r2 bucket create pm-blog-media \
+            || echo "bucket exists (a real auth failure would fail the deploy below)"
+          pnpm --filter @pm/blog run migrate:remote
+          pnpm --filter @pm/blog run deploy
+
       - name: Deploy front Worker
         if: steps.creds.outputs.present == 'true'
         id: front

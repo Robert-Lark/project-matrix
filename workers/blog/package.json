@@ -1,0 +1,47 @@
+{
+  "name": "@pm/blog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The blog plane (ADR-0009): Rob's writing home + its CMS. A sibling Worker behind pm-front at /blog/* — outside every measurement fence, no Catalogue, no chrome, no receipts.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev --port 8791 --inspector-port 9234",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply pm-blog --local",
+    "migrate:remote": "wrangler d1 migrations apply pm-blog --remote",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/lang-markdown": "^6.5.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/search": "^6.7.1",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
+    "@lezer/highlight": "^1.2.3",
+    "codemirror": "^6.0.2",
+    "esbuild": "^0.28.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource-variable/literata": "^5.2.8",
+    "@fontsource/fragment-mono": "^5.2.8",
+    "@shikijs/langs": "^4.3.1",
+    "@shikijs/themes": "^4.3.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-directive": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "shiki": "^4.3.1",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
+  }
+}

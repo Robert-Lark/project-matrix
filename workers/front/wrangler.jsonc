@@ -17,7 +17,8 @@
   "services": [
     { "binding": "PLACEHOLDER_STATIC", "service": "pm-placeholder-static" },
     { "binding": "PLACEHOLDER_SSR", "service": "pm-placeholder-ssr" },
-    { "binding": "EDGE", "service": "pm-edge" }
+    { "binding": "EDGE", "service": "pm-edge" },
+    { "binding": "BLOG", "service": "pm-blog" }
   ],
   // Workers Logs — structured logs queryable in the dashboard (PRD story 42).
   "observability": {

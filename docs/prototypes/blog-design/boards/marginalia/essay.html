@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Goldmine Scale for Legacy Code — Rob Lark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="marginalia.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head"><a class="masthead" href="/blog/">Rob Lark</a></header>
+  <main id="main">
+    <article class="post post--essay mood--default" style="--accent:#2447A8">
+      <header class="post-head post-head--standard">
+        <p class="eyebrow">Essay</p>
+        <h1>A Goldmine Scale for Legacy Code</h1>
+        <p class="dek">Record collectors solved honest condition reporting fifty years ago. Most engineering teams are still grading sleeve-only.</p>
+        <p class="post-meta"><time datetime="2026-07-17">July 17, 2026</time></p>
+      </header>
+      <div class="post-body">
+        <p>I have spent the better part of a decade building the website where record collectors argue about condition, and I have come to believe the arguing is the product. Not the search index, not the checkout flow — the argument. A seller in Osaka and a buyer in Cleveland, who will never meet, agree that a fifty-year-old piece of vinyl is <em>Very Good Plus</em>, and money moves between strangers on the strength of three characters. That agreement is held up by the Goldmine Standard, a grading scale so unglamorous that most people using it have never wondered where it came from.<sup><a href="#user-content-fn-1" id="user-content-fnref-1" data-footnote-ref aria-describedby="user-content-footnote-label">1</a></sup></p>
+
+        <aside class="bp-aside"><p>Goldmine started in 1974 as a fanzine for record traders in Wisconsin. The grading scale outlived the classified ads it was invented to police.</p></aside>
+
+        <p>Meanwhile, in my day job, I regularly watch senior engineers describe a codebase to each other with the precision of a shrug. “It’s fine.” “It’s a bit crufty.” “It’s legacy, but it works.” We have no scale. We have vibes, and the vibes are always calibrated to whoever is trying to avoid being assigned the rewrite.</p>
+
+        <p>So here is a modest proposal I have been running on my own team for a year: grade your modules the way Goldmine grades records. Not as a metaphor you gesture at in a retro, but literally — a grade, written down, next to the module’s name, reviewed when the module changes hands.</p>
+
+        <h2>Six grades, no flattery</h2>
+
+        <p>The Goldmine scale runs Mint, Near Mint, Very Good Plus, Very Good, Good, Poor.<sup><a href="#user-content-fn-2" id="user-content-fnref-2" data-footnote-ref aria-describedby="user-content-footnote-label">2</a></sup> What makes it work is not the vocabulary — it’s the discipline around the top of the scale. The scale is designed to make optimism expensive and pessimism cheap. You are punished, reputationally and financially, for grading up. Nobody has ever been punished for grading down.</p>
+
+        <figure class="bp-pullquote"><p>Nobody sells a record as “basically Mint.” The scale has no room for the word basically, and that is the entire point.</p></figure>
+
+        <p>Map that onto code and the grades fall out almost by themselves. Near Mint is a module you would hand to a new hire without a warning label: tests you trust, types that mean what they say, no load-bearing comments apologizing for anything. Very Good Plus has visible wear that does not affect play — an awkward abstraction, a dependency one major version behind — but you can ship changes to it on a Friday. Very Good plays through with surface noise: you can work in it, but you budget extra time and you keep the diff small. Good is “plays, with distortion”: changes here get a second reviewer by policy. Poor is only honest when you say it out loud: this module is for parts.</p>
+
+        <h3>Mint is a lie</h3>
+
+        <p>Collectors will tell you Mint barely exists. A sealed record might be Mint; the moment it touches a stylus it is at best Near Mint, and Goldmine dealers will roll their eyes at anyone who claims otherwise. This is the first thing the scale teaches you about software: <em>the top grade is for code that has never been played</em>. The service that just shipped, green across every dashboard, zero incidents — it is not Mint because it is excellent; it is Mint because nothing has happened to it yet. Every codebase you respect is Near Mint at best, and that should read as praise.</p>
+
+        <h2>Play-grading</h2>
+
+        <p>The Goldmine guide draws a distinction that I think about constantly: <em>visual grading</em> versus <em>play-grading</em>. A visual grade is what the record looks like under a good light. A play grade is what it sounds like, needle down, all the way through both sides. The guide is blunt that a visual grade is an estimate and a play grade is the truth, and that the two diverge in exactly one direction.</p>
+
+        <p>Code review is visual grading. The diff under good light: names are tidy, the types line up, the tests are green. Play-grading is running the thing — the whole side, not thirty seconds of the first track. Exercise the hot paths end to end, under something shaped like production traffic, and listen for the pops.</p>
+
+<pre class="shiki shiki-themes vitesse-light vitesse-dark" style="background-color:#ffffff;--shiki-dark-bg:#121212;color:#393a34;--shiki-dark:#dbd7ca" tabindex="0"><code><span class="line"><span style="color:#A0ADA0;--shiki-dark:#758575">// The sleeve is what the code looks like. The play is what it does.</span></span>
+<span class="line"><span style="color:#AB5959;--shiki-dark:#CB7676">type</span><span style="color:#2E8F82;--shiki-dark:#5DA994"> Grade</span><span style="color:#999999;--shiki-dark:#666666"> = </span><span style="color:#B56959;--shiki-dark:#C98A7D">'NM'</span><span style="color:#999999;--shiki-dark:#666666"> | </span><span style="color:#B56959;--shiki-dark:#C98A7D">'VG+'</span><span style="color:#999999;--shiki-dark:#666666"> | </span><span style="color:#B56959;--shiki-dark:#C98A7D">'VG'</span><span style="color:#999999;--shiki-dark:#666666"> | </span><span style="color:#B56959;--shiki-dark:#C98A7D">'G'</span><span style="color:#999999;--shiki-dark:#666666"> | </span><span style="color:#B56959;--shiki-dark:#C98A7D">'P'</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#AB5959;--shiki-dark:#CB7676">function</span><span style="color:#59873A;--shiki-dark:#80A665"> playGrade</span><span style="color:#999999;--shiki-dark:#666666">(</span><span style="color:#B07D48;--shiki-dark:#BD976A">module</span><span style="color:#999999;--shiki-dark:#666666">: </span><span style="color:#2E8F82;--shiki-dark:#5DA994">Module</span><span style="color:#999999;--shiki-dark:#666666">): </span><span style="color:#2E8F82;--shiki-dark:#5DA994">Grade</span><span style="color:#999999;--shiki-dark:#666666"> {</span></span>
+<span class="line"><span style="color:#AB5959;--shiki-dark:#CB7676">  const</span><span style="color:#B07D48;--shiki-dark:#BD976A"> sleeve</span><span style="color:#999999;--shiki-dark:#666666"> = </span><span style="color:#59873A;--shiki-dark:#80A665">visualGrade</span><span style="color:#999999;--shiki-dark:#666666">(</span><span style="color:#B07D48;--shiki-dark:#BD976A">module</span><span style="color:#999999;--shiki-dark:#666666">)   </span><span style="color:#A0ADA0;--shiki-dark:#758575">// reads clean under good light</span></span>
+<span class="line"><span style="color:#AB5959;--shiki-dark:#CB7676">  const</span><span style="color:#B07D48;--shiki-dark:#BD976A"> play</span><span style="color:#999999;--shiki-dark:#666666"> = </span><span style="color:#59873A;--shiki-dark:#80A665">exercise</span><span style="color:#999999;--shiki-dark:#666666">(</span><span style="color:#B07D48;--shiki-dark:#BD976A">module</span><span style="color:#999999;--shiki-dark:#666666">.</span><span style="color:#B07D48;--shiki-dark:#BD976A">hotPaths</span><span style="color:#999999;--shiki-dark:#666666">)  </span><span style="color:#A0ADA0;--shiki-dark:#758575">// needle down, whole side</span></span>
+<span class="line"><span style="color:#AB5959;--shiki-dark:#CB7676">  return</span><span style="color:#B07D48;--shiki-dark:#BD976A"> play</span><span style="color:#999999;--shiki-dark:#666666">.</span><span style="color:#B07D48;--shiki-dark:#BD976A">surfaceNoise</span><span style="color:#999999;--shiki-dark:#666666"> &gt; </span><span style="color:#B07D48;--shiki-dark:#BD976A">sleeve</span><span style="color:#999999;--shiki-dark:#666666">.</span><span style="color:#B07D48;--shiki-dark:#BD976A">allows</span><span style="color:#999999;--shiki-dark:#666666"> ? </span><span style="color:#59873A;--shiki-dark:#80A665">downgrade</span><span style="color:#999999;--shiki-dark:#666666">(</span><span style="color:#B07D48;--shiki-dark:#BD976A">sleeve</span><span style="color:#999999;--shiki-dark:#666666">) : </span><span style="color:#B07D48;--shiki-dark:#BD976A">sleeve</span><span style="color:#999999;--shiki-dark:#666666">.</span><span style="color:#B07D48;--shiki-dark:#BD976A">grade</span></span>
+<span class="line"><span style="color:#999999;--shiki-dark:#666666">}</span></span></code></pre>
+
+        <p>Every team has a module that visual-grades Near Mint and play-grades Good. The types are beautiful. The tests are green because they test the beautiful types. And twice a quarter it pages someone at 3 a.m. for reasons the beautiful types cannot express. The Goldmine rule for that divergence is simple: the play grade wins, always, and the listing gets corrected. Not the story we tell about the module — the grade next to its name.</p>
+
+        <figure>
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23837C72'/%3E%3Crect width='1200' height='800' fill='%23000' opacity='.08'/%3E%3Ccircle cx='600' cy='400' r='310' fill='%232B2925'/%3E%3Ccircle cx='600' cy='400' r='300' fill='none' stroke='%23504B44' stroke-width='2'/%3E%3Ccircle cx='600' cy='400' r='250' fill='none' stroke='%23504B44' stroke-width='1'/%3E%3Ccircle cx='600' cy='400' r='200' fill='none' stroke='%23504B44' stroke-width='1'/%3E%3Ccircle cx='600' cy='400' r='104' fill='%238F8577'/%3E%3Ccircle cx='600' cy='400' r='8' fill='%23262421'/%3E%3Crect y='690' width='1200' height='110' fill='%236E6A61'/%3E%3C/svg%3E" width="1200" height="800" alt="A record on a felt mat under warm lamp light, tilted toward the bulb for visual grading.">
+          <figcaption>Grading under the lamp. The light finds the scuffs; only the needle finds the noise.</figcaption>
+        </figure>
+
+        <h2>Grading is a contract</h2>
+
+        <p>Here is the part that makes the scale more than taxonomy. A Goldmine grade is not a description — it is a warranty. When a seller writes VG+, they are not sharing a feeling; they are accepting liability for a specific, bounded set of defects. The guide’s own language is striking:</p>
+
+        <blockquote>
+          <p>A record’s grade is a promise about what the buyer will and will not find. When in doubt, grade conservatively; the grade you can defend is the grade the record has.</p>
+        </blockquote>
+
+        <p>Substitute “on-call engineer” for “buyer” and this is the best one-sentence definition of technical documentation I know. A module grade is a promise about what the next person will and will not find. Grade conservatively, because they will play-grade your work at 3 a.m. whether you invited them to or not.</p>
+
+        <h3>VG+ is where you live</h3>
+
+        <p>The other gift the scale gives you is permission. In the record world, VG+ is not an insult — it is the working grade, the one most records that get played actually hold. Collectors buy VG+ on purpose, pay real money for it, and are happy. A team that can say “this service is VG+ and that is the correct grade for what it earns us” has escaped the two lies that eat roadmaps: that everything must become Near Mint, and that anything below Near Mint is an emergency. Most production software is VG+. The scandal is not the grade. The scandal is pretending there is no scale.</p>
+
+        <h2>What this changes on a team</h2>
+
+        <p>Practically, we keep the grade in each module’s README, one line, with a date and the grader’s initials — the same way a dealer initials a sleeve. Regrading happens when ownership changes or after any incident that touched the module. The grade gates process, not pride: Good and below means pairing on changes and no Friday deploys; VG and above means go.</p>
+
+        <p>Two quarters of unglamorous honesty later, the surprising result is not better code. It is better <em>arguments</em>. Disputes about “tech debt” used to be status contests. Now they sound like collectors at a record fair: specific, bounded, resolvable by playing the thing. You put the needle down together, you listen, and one of you says — fine, VG. And the listing gets corrected.</p>
+
+        <div class="bp-gallery" data-layout="side-by-side">
+          <p><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 900'%3E%3Crect width='900' height='900' fill='%23A39A8B'/%3E%3Crect x='60' y='60' width='780' height='780' fill='%23968C7C'/%3E%3Crect x='60' y='60' width='780' height='110' fill='%23837868'/%3E%3Ccircle cx='450' cy='495' r='210' fill='%238C8272' opacity='.7'/%3E%3C/svg%3E" width="900" height="900" alt="A worn record sleeve, ring wear showing through the front."></p>
+          <p><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 900'%3E%3Crect width='900' height='900' fill='%237E8578'/%3E%3Crect x='60' y='60' width='780' height='780' fill='%23747C6E'/%3E%3Crect x='60' y='680' width='780' height='160' fill='%23636A5E'/%3E%3Crect x='120' y='120' width='420' height='36' fill='%23596052'/%3E%3C/svg%3E" width="900" height="900" alt="A clean sleeve from the same crate, graded a full step higher."></p>
+        </div>
+
+        <section data-footnotes class="footnotes"><h2 class="sr-only" id="user-content-footnote-label">Footnotes</h2><ol>
+          <li id="user-content-fn-1"><p>Roughly three characters. The scale’s abbreviations run from M down to P, with VG+ doing most of the work in between — the marketplace’s entire trust model fits in a tweet. <a href="#user-content-fnref-1" class="data-footnote-backref" aria-label="Back to reference 1">↩</a></p></li>
+          <li id="user-content-fn-2"><p>Some dealers use half-steps (VG++, G+). Purists consider this grade inflation with extra steps, which is also my position on “mostly done” in a standup. <a href="#user-content-fnref-2" class="data-footnote-backref" aria-label="Back to reference 2">↩</a></p></li>
+        </ol></section>
+      </div>
+      <nav class="series-nav" aria-label="Series"><p>Part of <a href="/blog/series/shelf-notes/">Shelf Notes</a></p><a rel="prev" href="/blog/sleeves-dust-jackets-readmes/">← Sleeves, dust jackets, and READMEs</a><a rel="next" href="/blog/the-dead-format-problem/">The dead format problem →</a></nav>
+      <footer class="post-foot"><ul class="tag-list"><li><a href="/blog/tags/engineering/">engineering</a></li><li><a href="/blog/tags/records/">records</a></li><li><a href="/blog/tags/legacy-code/">legacy-code</a></li><li><a href="/blog/tags/grading/">grading</a></li></ul></footer>
+    </article>
+  </main>
+  <footer class="site-foot"><p><a href="/blog/feed.xml">RSS</a></p></footer>
+</body>
+</html>

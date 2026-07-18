@@ -1581,6 +1581,92 @@ specs are committed in-repo instead (artifacts are the memory), with the
 publish commands in the issues file's header. The build does not wait on
 the mirror.
 
+## Phase 9 — The writing home (blog + CMS)
+
+The domain grew its second inhabitant: Rob's personal blog and the CMS he
+writes it with — 1000% separate from the benchmark by construction
+(ADR-0009, ticket `blog`). Kickoff was a live interview (web CMS from any
+device · drafts-over-days · essay/photo/note/link with series as grouping ·
+curated art-direction knobs · the Tumblr as photo-post mood reference only ·
+secret preview links · login identity robresearch87@gmail.com · masthead
+"Rob Lark"); every remaining call was made autonomously and recorded.
+
+**The plane.** A sibling Worker `pm-blog` behind pm-front at the single
+claimed prefix `/blog/*` — the complete production diff to the benchmark is
+a SIBLINGS table entry, one service binding, and a byte-identical
+passthrough guard (BLOG responses skip chrome injection exactly like EDGE).
+First D1 database in the repo (`pm-blog`: posts, revisions, post_tags,
+media, sessions, login_attempts, redirects) and a second R2 bucket
+(`pm-blog-media`). Markdown is the source of truth; body_html is a cache
+column recomputed on save by the ONE unified pipeline (remark-gfm +
+remark-directive + rehype-sanitize + Shiki/Everforest) that also renders
+the admin live preview, the preview-link page, and the full-content RSS —
+the preview cannot drift from the blog because it is the same function.
+Words are never locked in: one-request JSON export of every post/revision,
+plus `wrangler d1 export` out-of-band.
+
+**The wall (ADR-0009 §5).** Cloudflare Access can't path-scope on the
+workers.dev hostname without walling the benchmark, so the blog carries its
+own: one 256-bit credential stored only as a SHA-256 hash in a Worker
+secret (constant-time compare, no username dimension to enumerate),
+server-side revocable sessions hashed in D1 under an HttpOnly/Secure/
+SameSite=Lax cookie scoped to /blog, custom-header CSRF on every mutation
+(+ Sec-Fetch-Site check; login/logout forms carry the token as a field),
+D1-backed per-IP login lockout, no state change on GET anywhere, and an
+admin that renders a login wall and nothing else to unauthenticated eyes.
+Access joins in FRONT of this wall at `domain-cutover`, not instead of it.
+
+**The CMS.** CodeMirror 6 markdown editor built for re-entry: dirty-tracked
+autosave (1.5 s idle + 15 s heartbeat + keepalive flush on tab-hide),
+localStorage mirror with a restore bar for the crash case, revisions with
+one-click restore (a restore snapshots first), cursor/scroll position saved
+per post and put back on open. Slash commands at line start insert the
+directive vocabulary; paste/drop uploads straight to R2 with dimensions
+sniffed at upload time so plain markdown yields zero-CLS pages; the split
+preview iframe renders the real public page. The desk leads with a
+"Continue writing" card — the drafts-over-days front door.
+
+**The look ("Sleeve & Shelf", `docs/prototypes/blog-design/NOTES.md`).**
+Liner-notes typography as the identity: every post carries a SPINE — the
+record-sleeve edge, colored by the per-post accent knob — and a Fragment
+Mono catalog line; the contents page is the shelf (Fraunces year numerals,
+spine ticks, mono dates). Fraunces + Literata + Fragment Mono, self-hosted
+latin subsets, zero face overlap with the store. The accent discipline is
+load-bearing: an arbitrary per-post accent may never color text (two leaks
+caught in critique and repaired), so AA holds under any knob value —
+measured 6.05:1 muted / 15.56:1 ink light, 6.28:1 / 12.97:1 dark,
+Everforest code 5.18:1+. Honest method note: the planned four-board
+adversarial exploration died wholesale on a session limit; the direction
+was designed single-handed with the same screenshot-critique loop (six
+concrete defects found and fixed on screen evidence — sanitize stripping
+data: images, the gallery paragraph collapse, the margin-aside overflow
+math, two accent leaks, dot geometry).
+
+**Proof.** `pnpm run check` 21/21; the FULL origin suite green with the
+blog composed in (8 files, 164 tests — blog write-path tests gated on
+`PM_BLOG_CREDENTIAL` so the deployed smoke never writes to production);
+20 unit tests on the pipeline/slug/dimension contracts; editor exercised
+in a real browser (login → desk → editor → slash menu → autosave →
+publish); Lighthouse accessibility 100 on contents + essay, CLS 0.00 on
+the trace. The first real post — "A quiet room", on why this room exists —
+flowed CMS → publish → public page → feed end to end. The standing
+verify-slice pass ran all four lenses (surviving one session-limit death
+mid-run; completed lenses replayed from the journal): 35 raw findings, and
+the adopted set closed two real data-loss paths (restore snapshotting the
+wrong text; the publish/autosave race), three gates that existed only in
+the browser bundle (draft-slug publish, art-direction whitelists,
+original_date shape), the unpublished-rename redirect gap, gallery-hoist
+word loss, excerpt double-escaping, DOM-clobbering protection restored
+with collapsed footnote prefixes, the editor bundle moved behind the wall,
+sign-out-everywhere, and smoke assertions decoupled from author prose.
+Known limit, recorded in ADR-0009 §8: CI can prove the wall refuses, not
+that it accepts — verifying login after arming is a runbook step.
+
+**Skills / tools used:** grilling (the kickoff interview) ·
+frontend-design skill (the spine is the boldness budget) · chrome-devtools
+MCP (editor drive + dark-mode pass) · headless-Chrome screenshot loop ·
+Fontsource subsets · the origin suite as the non-contamination gate.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

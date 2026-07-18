@@ -1,0 +1,479 @@
+/* ==========================================================================
+   FIELD NOTEBOOK — shared tokens for the Rob Lark blog boards
+   Paper: pale surveyor green (the Rite-in-the-Rain field book, not cream).
+   Signature: the margin rule — one vertical line of ink down every page;
+   chronology (dates, section marks, years) hangs on it.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* palette — light */
+  --paper: #ECEEE3;        /* surveyor-green paper */
+  --card:  #F4F5EC;        /* pasted-in card */
+  --ink:   #23241D;        /* iron-gall ink        13.35:1 on paper */
+  --muted: #565948;        /* pencil               6.14:1 on paper */
+  --rule:  #C9CCB9;        /* printed grid line    (non-text) */
+  --accent: #3D6647;       /* moss ink (default)   5.61:1 on paper */
+  --codebg: #FFFFFF;       /* shiki vitesse-light card (server-inlined) */
+
+  /* layout */
+  --railw: 8rem;
+  --textw: 40rem;
+  --gap: 2rem;
+  --line-x: calc(50% - (var(--railw) + var(--gap) + var(--textw)) / 2
+                 + var(--railw) + var(--gap) / 2);
+
+  /* type */
+  --serif: 'Literata', Georgia, 'Times New Roman', serif;
+  --sans: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1A1C16;      /* the notebook under the desk lamp */
+    --card:  #20231B;
+    --ink:   #DCDFD0;      /* 12.70:1 on dark paper */
+    --muted: #A3A794;      /* 6.97:1 on dark paper */
+    --rule:  #3B3E31;
+  }
+}
+
+/* Accent plumbing: --accent arrives on the <article> via inline style.
+   --accent-ui is declared on the same elements that can carry the override
+   so per-post ink resolves correctly; in dark it is lifted toward paper. */
+body, .post {
+  --accent-ui: var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  body, .post {
+    --accent-ui: color-mix(in oklab, var(--accent), #DCDFD0 45%);
+  }
+}
+
+/* per-post mood knobs */
+.mood--overcast { --paper: #E8EBE3; --card: #F0F3EA; }
+@media (prefers-color-scheme: dark) {
+  .mood--overcast { --paper: #181B17; --card: #1E211C; }
+}
+
+/* ---------- reset-ish ---------- */
+* { box-sizing: border-box; }
+html { height: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 1.125rem/1.65 var(--serif);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+img { display: block; max-width: 100%; height: auto; }
+::selection { background: color-mix(in oklab, var(--accent-ui), var(--paper) 72%); }
+
+a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent-ui); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+a:hover { color: var(--accent-ui); }
+:focus-visible { outline: 2px solid var(--accent-ui); outline-offset: 2px; border-radius: 1px; }
+
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ink); color: var(--paper);
+  font: 500 0.875rem var(--sans); padding: 0.5rem 1rem; z-index: 10;
+}
+.skip:focus-visible { left: 0.5rem; top: 0.5rem; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- the page grid: margin rail | rule | text ---------- */
+.site-head, .site-foot, .post-head, .post-body,
+.series-nav, .post-foot, main:has(> .contents) {
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(1.25rem, 1fr)
+    [rail-start] var(--railw)
+    [rail-end text-start] minmax(0, var(--textw))
+    [text-end] minmax(1.25rem, 1fr)
+    [full-end];
+  column-gap: var(--gap);
+}
+.site-head > *, .site-foot > *, .post-head > *, .post-body > *,
+.series-nav > *, .post-foot > *, main:has(> .contents) > * {
+  grid-column: text;
+  min-width: 0;
+}
+
+/* ---------- the margin rule (signature) ---------- */
+.post, main:has(> .contents) { position: relative; }
+.post::before, main:has(> .contents)::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: var(--line-x);
+  width: 2px;
+  background: var(--accent-ui);
+}
+
+/* things allowed to cross or cover the rule */
+.bp-wide  { grid-column: rail-start / text-end; }
+.bp-bleed, .bp-gallery[data-layout="bleed"] { grid-column: full; width: 100%; }
+
+/* ---------- masthead / site footer ---------- */
+.site-head { padding: 2.25rem 0 0.5rem; }
+.masthead {
+  justify-self: start;
+  font: 600 0.9375rem/1 var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink);
+  padding-block: 0.25rem;
+}
+.masthead:hover { color: var(--accent-ui); }
+
+.site-foot { padding: 3.5rem 0 2.5rem; }
+.site-foot p { margin: 0; font: 400 0.75rem/1.6 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ---------- stamps (rail typography) ---------- */
+.post-eyebrow, .post-meta {
+  margin: 0;
+  font: 400 0.75rem/1.7 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.post-eyebrow .no { color: var(--accent-ui); font-weight: 500; }
+
+/* ---------- post header treatments ---------- */
+.post-head { padding-top: 3.25rem; row-gap: 0.25rem; }
+.post-head .post-eyebrow { grid-column: rail; grid-row: 1; text-align: right; margin-top: 0.5rem; }
+.post-head .post-meta    { grid-column: rail; grid-row: 2; text-align: right; align-self: start; }
+.post-head h1 { grid-row: 1 / span 2; margin: 0; }
+.post-head .dek { grid-row: 3; }
+
+.post-head h1 {
+  font: 600 clamp(1.75rem, 3vw, 2.25rem)/1.15 var(--sans);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.dek {
+  margin: 0.75rem 0 0;
+  font: italic 400 1.1875rem/1.5 var(--serif);
+  color: var(--muted);
+}
+
+/* display — for the big essays */
+.post-head--display h1 {
+  font-size: clamp(2.25rem, 4.5vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+
+/* photo — quiet title, the photographs carry the page */
+.post-head--photo h1 {
+  font: 500 1.25rem/1.3 var(--sans);
+  letter-spacing: 0.02em;
+}
+.post-head--photo .dek { font-size: 1.0625rem; }
+
+/* bare — no title at all (notes) */
+.post-head--bare { padding-top: 3.25rem; }
+.post-head--bare .post-eyebrow { grid-row: 1; }
+.post-head--bare .post-meta { grid-row: 2; }
+
+/* ---------- body rhythm ---------- */
+.post-body { padding-top: 2.25rem; }
+.post-body > * { margin-block: 0; }
+.post-body > * + * { margin-block-start: 1.375rem; }
+.post-body > h2 { margin-block-start: 3.25rem; }
+.post-body > h3 { margin-block-start: 2.25rem; }
+.post-body > h2 + h3, .post-body > h2 + p, .post-body > h3 + p { margin-block-start: 1rem; }
+
+.post-body h2 {
+  font: 600 1.375rem/1.25 var(--sans);
+  letter-spacing: -0.005em;
+  position: relative;
+  counter-increment: section;
+}
+.post-body { counter-reset: section; }
+.post-body h2::before {
+  content: "\00a7\2009" counter(section);   /* § 1 — real sequence, hangs on the rule */
+  position: absolute;
+  right: calc(100% + var(--gap));
+  top: 0.3em;
+  width: var(--railw);
+  text-align: right;
+  font: 500 0.75rem/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--accent-ui);
+}
+.post-body h3 { font: 600 1.0625rem/1.3 var(--sans); }
+
+/* aside — the pencil note */
+.bp-aside {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.875rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-block: 2rem;
+}
+.bp-aside::before {
+  content: "N.B.";
+  display: block;
+  font: 500 0.6875rem/1 var(--mono);
+  letter-spacing: 0.1em;
+  color: var(--accent-ui);
+  margin-bottom: 0.5rem;
+}
+.bp-aside p { margin: 0; }
+.bp-aside p + p { margin-top: 0.625rem; }
+
+/* pullquote — set in the display voice, accent ink */
+.bp-pullquote {
+  margin: 2.5rem 0;
+  padding: 0;
+}
+.bp-pullquote p {
+  margin: 0;
+  font: 600 1.4375rem/1.35 var(--sans);
+  letter-spacing: -0.005em;
+  color: var(--accent-ui);
+  text-wrap: balance;
+}
+
+/* blockquote — quoted matter, italic, hanging bar of paper not ink */
+.post-body blockquote {
+  margin: 1.75rem 0 1.75rem 1.75rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.post-body blockquote p { margin: 0; }
+.post-body blockquote p + p { margin-top: 0.75rem; }
+
+/* figures */
+.post-body figure { margin: 2rem 0; }
+.post-body figure img { width: 100%; }
+.post-body figcaption {
+  margin-top: 0.625rem;
+  font: italic 400 0.875rem/1.55 var(--serif);
+  color: var(--muted);
+}
+
+/* galleries */
+.bp-gallery { display: grid; gap: 0.75rem; margin-block: 2rem; }
+.bp-gallery p { display: contents; }
+.bp-gallery img { width: 100%; }
+.bp-gallery[data-layout="side-by-side"] { grid-template-columns: 1fr 1fr; }
+.bp-gallery[data-layout="grid"] { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.bp-gallery[data-layout="bleed"] { max-width: 76rem; justify-self: center; }
+
+/* code — the taped-in printout */
+.post-body pre.shiki {
+  font: 400 0.8125rem/1.65 var(--mono);
+  padding: 1.125rem 1.375rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  overflow-x: auto;
+  margin-block: 2rem;
+}
+.post-body :not(pre) > code {
+  font: 400 0.875em var(--mono);
+  background: var(--card);
+  padding: 0.1em 0.3em;
+  border-radius: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  .shiki, .shiki span { color: var(--shiki-dark) !important; }
+  .shiki { background-color: var(--shiki-dark-bg, #121212) !important; border-color: #2E3126; }
+}
+
+/* footnotes */
+[data-footnote-ref] { text-decoration: none; font: 500 0.75em var(--mono); color: var(--accent-ui); }
+section.footnotes {
+  margin-top: 3.25rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+section.footnotes ol { margin: 0; padding-left: 1.25rem; }
+section.footnotes li + li { margin-top: 0.625rem; }
+section.footnotes li:target { color: var(--ink); }
+section.footnotes p { margin: 0; }
+.data-footnote-backref { text-decoration: none; color: var(--accent-ui); }
+
+/* series nav */
+.series-nav {
+  margin-top: 3rem;
+  row-gap: 0.625rem;
+}
+.series-nav p {
+  margin: 0;
+  font: 400 0.75rem/1.7 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  padding-top: 1.25rem;
+}
+.series-nav a { font: 500 0.9375rem/1.4 var(--sans); text-decoration: none; }
+.series-nav a:hover { text-decoration: underline; text-decoration-color: var(--accent-ui); }
+.series-nav p { grid-row: 1; }
+.series-nav a[rel="prev"] { grid-row: 2; justify-self: start; }
+.series-nav a[rel="next"] { grid-row: 2; justify-self: end; text-align: right; }
+
+.bp-wide > figure { margin: 0; }
+
+/* tags */
+.post-foot { margin-top: 2rem; }
+.tag-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; }
+.tag-list a {
+  font: 400 0.75rem/1.7 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-decoration: none;
+}
+.tag-list a::before { content: "#"; color: var(--accent-ui); }
+.tag-list a:hover { color: var(--accent-ui); }
+
+/* ---------- photo posts ---------- */
+.post--photo .post-body figure { grid-column: full; width: 100%; max-width: 76rem; justify-self: center; margin-block: 0; }
+.post--photo .post-body > figure + figure { margin-block-start: 4.5rem; }
+.post--photo .post-body figcaption {
+  text-align: center;
+  margin-top: 0.875rem;
+  font-size: 0.9375rem;
+}
+.post--photo .post-body { padding-top: 3rem; padding-bottom: 1rem; }
+.post--photo .post-body > p { margin-block-start: 3.5rem; }
+
+/* ---------- notes ---------- */
+.post--note .post-body { padding-top: 1.25rem; }
+.post--note .post-body p { font-size: 1.125rem; }
+
+/* ---------- contents page ---------- */
+main:has(> .contents) { padding-top: 3.25rem; }
+main:has(> .contents) > h1 {
+  margin: 0;
+  font: 600 clamp(1.75rem, 3vw, 2.25rem)/1.15 var(--sans);
+  letter-spacing: -0.01em;
+}
+.contents-note {
+  margin: 0.875rem 0 0;
+  font: italic 400 1rem/1.6 var(--serif);
+  color: var(--muted);
+}
+ol.contents {
+  grid-column: full;
+  display: grid;
+  grid-template-columns: subgrid;
+  list-style: none;
+  margin: 2.75rem 0 0;
+  padding: 0;
+  row-gap: 0.875rem;
+}
+.entry {
+  grid-column: full;
+  display: grid;
+  grid-template-columns: subgrid;
+  column-gap: var(--gap);
+}
+.entry time {
+  grid-column: rail;
+  grid-row: 1;
+  text-align: right;
+  font: 400 0.75rem/1.9 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.entry a {
+  grid-column: text;
+  grid-row: 1;
+  justify-self: start;
+  text-decoration: none;
+  font: 600 1.0625rem/1.4 var(--sans);
+}
+.entry a:hover { color: var(--accent-ui); text-decoration: underline; text-decoration-color: var(--accent-ui); }
+
+/* kind is typography: essays speak, notes murmur, photos are italic, links point out */
+.entry--note a  { font: 400 1rem/1.5 var(--serif); color: var(--ink); }
+.entry--photo a { font: italic 400 1.0625rem/1.5 var(--serif); }
+.entry--link a::after { content: "\2009\2197"; color: var(--accent-ui); font-family: var(--mono); font-size: 0.8125em; }
+
+/* year dividers — the years sit on the rule itself */
+.entry[data-year] { margin-top: 2.75rem; }
+ol.contents .entry[data-year]:first-child { margin-top: 0; }
+.entry[data-year]::before {
+  content: attr(data-year);
+  grid-column: rail;
+  grid-row: 1;
+  text-align: right;
+  font: 600 1.5rem/1 var(--sans);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  padding-bottom: 1rem;
+}
+.entry[data-year] time { grid-row: 2; }
+.entry[data-year] a { grid-row: 2; }
+
+/* ---------- narrow screens: the rail folds into the column ---------- */
+@media (max-width: 1079px) {
+  .site-head, .site-foot, .post-head, .post-body,
+  .series-nav, .post-foot, main:has(> .contents) {
+    grid-template-columns:
+      [full-start] 1.875rem
+      [rail-start text-start] minmax(0, 1fr)
+      [text-end rail-end] 1.25rem
+      [full-end];
+    column-gap: 0;
+  }
+  .post::before, main:has(> .contents)::before { left: 0.875rem; }
+
+  .post-head .post-eyebrow, .post-head .post-meta,
+  .post-head h1, .post-head .dek { grid-column: text; grid-row: auto; text-align: left; }
+  .post-head .post-eyebrow { margin-top: 0; }
+  .post-head h1 { margin-top: 0.375rem; }
+  .post-head .post-meta { margin-top: 0.75rem; }
+
+  .post-body h2::before {
+    position: static;
+    display: block;
+    width: auto;
+    text-align: left;
+    margin-bottom: 0.375rem;
+  }
+
+  .bp-wide { grid-column: text; }
+  .bp-gallery[data-layout="side-by-side"] { grid-template-columns: 1fr; }
+
+  .entry { row-gap: 0.125rem; }
+  .entry a { grid-row: 1; }
+  .entry time { grid-column: text; grid-row: 2; text-align: left; }
+  .entry[data-year]::before { grid-column: text; grid-row: 1; text-align: left; padding-bottom: 0.75rem; }
+  .entry[data-year] a { grid-row: 2; }
+  .entry[data-year] time { grid-row: 3; }
+  ol.contents { row-gap: 1.25rem; }
+}
+
+/* ---------- motion ---------- */
+a, .masthead { transition: color 120ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ---------- print: the notebook photocopies cleanly ---------- */
+@media print {
+  :root { --paper: #fff; --ink: #000; --muted: #333; --rule: #bbb; }
+  body, .post { --accent-ui: #000; }
+  body { font-size: 11pt; line-height: 1.5; }
+  .skip, .site-foot, .series-nav { display: none; }
+  .post::before, main:has(> .contents)::before { background: #000; width: 1px; }
+  .shiki { border: 1pt solid #bbb; }
+  a { text-decoration-color: #000; }
+}

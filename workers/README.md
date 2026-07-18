@@ -99,6 +99,22 @@ reaches the plane.
    Analytics Engine dataset until the account has opted in once via the
    dashboard — `pm-edge` fails with error 10089 ("You need to enable
    Analytics Engine") and a dashboard deep-link. One-time, account-wide.
+4. **D1 database for the blog plane** (ADR-0009): run
+   `wrangler d1 create pm-blog` and paste the returned id into
+   `workers/blog/wrangler.jsonc` (`d1_databases[0].database_id`) — the
+   committed id belongs to the account that armed first; on any other
+   account the blog's `migrate:remote` fails loudly until replaced. The
+   `pm-blog-media` R2 bucket needs no manual step (the deploy job creates
+   it idempotently).
+5. **Blog admin credential** (ADR-0009 §5): generate a high-entropy
+   credential, keep it in the password manager, and set its hash on the
+   Worker: `printf %s "<credential>" | shasum -a 256`, then
+   `wrangler secret put ADMIN_CREDENTIAL_HASH` in `workers/blog`. NOTE:
+   the post-deploy smoke can only prove the wall REFUSES — a missing or
+   wrong secret is invisible to CI (everything correctly 401/403s), so
+   **verify a real login at /blog/admin after arming**. Current secret
+   set 2026-07-18; the credential lives at
+   `~/.config/project-matrix/blog-admin-credential` (0600).
 
 The `pm-snapshot` R2 bucket needs no manual step — the deploy job creates it
 idempotently and seeds the committed fixture snapshot on every deploy —
