@@ -242,7 +242,18 @@ export async function addRevision(env, postId, kind, title, bodyMd) {
     .run();
 }
 
-export async function publishPost(env, id) {
+// `at` backdates published_at for scheduled publishing (ADR-0009 addendum):
+// the moment the author chose, not the cron tick that executed it. Either
+// path consumes any pending schedule.
+//
+// The instant rule, deliberately (a scheduled re-publish of a post that was
+// once published keeps a stale published_at under COALESCE, misfiling it on
+// the shelf and in RSS — caught in verify): an explicit `at` WINS, because
+// the author picked it in the schedule dialog; a plain manual publish (at
+// null) stamps now on a first publish but PRESERVES an existing date, so a
+// manual re-publish keeps the post's original publication date. The display
+// date is a separate author-owned field (original_date) either way.
+export async function publishPost(env, id, { at = null } = {}) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
   // The permanent-URL gate lives HERE, not in the editor bundle: the
@@ -250,12 +261,13 @@ export async function publishPost(env, id) {
   if (!validSlug(post.slug) || post.slug.startsWith("draft-")) {
     return { error: "set a real slug before publishing", status: 400 };
   }
+  const publishedAt = at ?? post.published_at ?? nowIso();
   await env.DB.prepare(
     `UPDATE posts SET status = 'published',
-       published_at = COALESCE(published_at, ?), updated_at = ?
+       published_at = ?, updated_at = ?, scheduled_at = NULL
      WHERE id = ?`,
   )
-    .bind(nowIso(), nowIso(), id)
+    .bind(publishedAt, nowIso(), id)
     .run();
   await addRevision(env, id, "snapshot", post.title, post.body_md);
   return { ok: true };
@@ -264,12 +276,79 @@ export async function publishPost(env, id) {
 export async function unpublishPost(env, id) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
+  // Any pre-publish schedule was consumed or superseded — never let a stale
+  // scheduled_at silently re-publish an unpublished post from the cron.
   await env.DB.prepare(
-    "UPDATE posts SET status = 'draft', updated_at = ? WHERE id = ?",
+    "UPDATE posts SET status = 'draft', updated_at = ?, scheduled_at = NULL WHERE id = ?",
   )
     .bind(nowIso(), id)
     .run();
   return { ok: true };
+}
+
+// ------------------------------------------------ scheduled publishing ----
+// The mechanism is a cron trigger calling publishDue (ADR-0009 addendum):
+// public queries stay untouched — a scheduled post is an ordinary draft
+// until the trigger publishes it through the same publishPost invariants
+// (slug gate, snapshot revision, redirect story) a manual publish gets.
+
+export async function schedulePost(env, id, at) {
+  const post = await getPost(env, id);
+  if (!post) return { error: "not found", status: 404 };
+  if (post.status === "published") {
+    return { error: "already published", status: 400 };
+  }
+  // The same permanent-URL gate as publish, enforced when the promise is
+  // MADE — a schedule that could never fire is a word-losing surprise.
+  if (!validSlug(post.slug) || post.slug.startsWith("draft-")) {
+    return { error: "set a real slug before scheduling", status: 400 };
+  }
+  const when = new Date(at ?? "");
+  if (Number.isNaN(when.getTime())) {
+    return { error: "publish time must be a valid date", status: 400 };
+  }
+  const iso = when.toISOString();
+  await env.DB.prepare("UPDATE posts SET scheduled_at = ? WHERE id = ?")
+    .bind(iso, id)
+    .run();
+  return { ok: true, scheduled_at: iso };
+}
+
+export async function cancelSchedule(env, id) {
+  const result = await env.DB.prepare(
+    "UPDATE posts SET scheduled_at = NULL WHERE id = ?",
+  )
+    .bind(id)
+    .run();
+  if (result.meta.changes === 0) return { error: "not found", status: 404 };
+  return { ok: true };
+}
+
+// The cron body. A refused publish (the slug was edited back to draft-… or
+// went invalid after scheduling) drops the schedule rather than retrying
+// forever — the post stays a draft, no words move, and the editor shows it
+// unscheduled.
+export async function publishDue(env, log = () => {}) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, scheduled_at FROM posts
+     WHERE status = 'draft' AND scheduled_at IS NOT NULL AND scheduled_at <= ?`,
+  )
+    .bind(nowIso())
+    .all();
+  let published = 0;
+  for (const row of results) {
+    const result = await publishPost(env, row.id, { at: row.scheduled_at });
+    if (result.ok) {
+      published += 1;
+      log("scheduled-publish", { id: row.id, at: row.scheduled_at });
+    } else {
+      await env.DB.prepare("UPDATE posts SET scheduled_at = NULL WHERE id = ?")
+        .bind(row.id)
+        .run();
+      log("scheduled-publish-refused", { id: row.id, error: result.error });
+    }
+  }
+  return published;
 }
 
 export async function deletePost(env, id) {
@@ -356,6 +435,53 @@ export async function getMediaById(env, id) {
   return env.DB.prepare("SELECT * FROM media WHERE id = ?").bind(id).first();
 }
 
+// The media library (editor follow-up, ADR-0009 addendum): every R2 object
+// through its media row, newest first, each carrying where it is used — one
+// posts scan in JS beats N LIKE queries at admin-library scale.
+export async function listMedia(env) {
+  const [media, posts] = await Promise.all([
+    env.DB.prepare("SELECT * FROM media ORDER BY created_at DESC").all(),
+    env.DB.prepare("SELECT id, slug, title, body_md, cover_media_id FROM posts").all(),
+  ]);
+  return media.results.map((row) => ({
+    ...row,
+    used_in: posts.results
+      .filter(
+        (post) =>
+          post.body_md.includes(`/blog/media/${row.key}`) ||
+          post.cover_media_id === row.id,
+      )
+      .map((post) => ({ id: post.id, title: post.title || post.slug })),
+  }));
+}
+
+// Alt lives on the media row and feeds rendering through mediaLookup — but
+// body_html is a CACHE, so an alt fix must re-render every post whose body
+// references the key or published pages would keep serving the stale alt.
+// body_html-only updates: updated_at stays put, so an open editor's
+// optimistic-concurrency baseline survives an alt fix elsewhere.
+export async function updateMediaAlt(env, id, alt) {
+  const row = await getMediaById(env, id);
+  if (!row) return { error: "not found", status: 404 };
+  await env.DB.prepare("UPDATE media SET alt = ? WHERE id = ?")
+    .bind(String(alt ?? ""), id)
+    .run();
+  const { results } = await env.DB.prepare(
+    "SELECT id, body_md FROM posts WHERE body_md LIKE ?",
+  )
+    .bind(`%/blog/media/${row.key}%`)
+    .all();
+  for (const post of results) {
+    const html = await renderMarkdown(post.body_md, {
+      mediaLookup: mediaLookup(env),
+    });
+    await env.DB.prepare("UPDATE posts SET body_html = ? WHERE id = ?")
+      .bind(html, post.id)
+      .run();
+  }
+  return { ok: true, rerendered: results.length };
+}
+
 // The contents page's browse block: every published tag and series.
 export async function listBrowse(env) {
   const [tags, series] = await Promise.all([
@@ -371,6 +497,54 @@ export async function listBrowse(env) {
     ).all(),
   ]);
   return { tags: tags.results, series: series.results };
+}
+
+// The zip-of-markdown variant of the export (ADR-0009 §2 recorded
+// follow-up): every post as front-matter + body_md, readable anywhere,
+// plus the media manifest and redirect map. Revisions stay the JSON
+// dump's job — the zip is the CURRENT words in the most portable shape.
+function yamlLine(key, value) {
+  // JSON scalars are valid YAML scalars; numbers stay bare.
+  return `${key}: ${typeof value === "number" ? value : JSON.stringify(value)}`;
+}
+
+export function postFrontMatter(post) {
+  const tags = JSON.parse(post.tags || "[]");
+  const lines = [];
+  for (const key of [
+    "id", "slug", "kind", "status", "title", "dek", "series", "series_part",
+    "accent", "header_style", "mood", "link_url", "cover_media_id",
+    "created_at", "updated_at", "published_at", "original_date", "scheduled_at",
+  ]) {
+    const value = post[key];
+    if (value !== null && value !== undefined && value !== "") {
+      lines.push(yamlLine(key, value));
+    }
+  }
+  if (tags.length) lines.push(`tags: ${JSON.stringify(tags)}`);
+  return `---\n${lines.join("\n")}\n---\n\n`;
+}
+
+export async function exportMarkdownEntries(env) {
+  const [posts, media, redirects] = await Promise.all([
+    env.DB.prepare("SELECT * FROM posts ORDER BY created_at ASC").all(),
+    env.DB.prepare("SELECT * FROM media ORDER BY created_at ASC").all(),
+    env.DB.prepare("SELECT * FROM redirects").all(),
+  ]);
+  const entries = posts.results.map((post) => ({
+    name: `posts/${post.slug}.md`,
+    data: `${postFrontMatter(post)}${post.body_md}${post.body_md.endsWith("\n") || post.body_md === "" ? "" : "\n"}`,
+    mtime: new Date(post.updated_at),
+  }));
+  entries.push({
+    name: "media.json",
+    data: JSON.stringify(media.results, null, 2),
+  });
+  entries.push({
+    name: "redirects.json",
+    data: JSON.stringify(redirects.results, null, 2),
+  });
+  return entries;
 }
 
 export async function exportAll(env) {

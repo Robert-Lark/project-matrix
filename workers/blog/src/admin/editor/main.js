@@ -3,8 +3,8 @@
 //   flush with keepalive) AND a localStorage mirror consulted on boot;
 // - the preview IS the blog: the iframe shows /api/render's full document —
 //   the same pipeline and template the public page uses;
-// - keyboard-first: ⌘S save, ⌘E preview, ⌘, settings, ⌘B/I/K markdown,
-//   slash-commands at line start, paste/drop image upload.
+// - keyboard-first: ⌘S save, ⌘E preview, ⌘, settings, ⌘⇧M media library,
+//   ⌘B/I/K markdown, slash-commands at line start, paste/drop image upload.
 
 import { EditorView, keymap, placeholder, drawSelection } from "@codemirror/view";
 import { EditorState, EditorSelection } from "@codemirror/state";
@@ -483,7 +483,13 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     toggleMeta();
   }
-  if (event.key === "Escape" && !metaPanel.hidden) {
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "m") {
+    event.preventDefault();
+    if (!el("media-library").open) openMediaLibrary();
+  }
+  // The dialog owns Escape while open (native cancel) — don't also fold the
+  // settings panel underneath it.
+  if (event.key === "Escape" && !metaPanel.hidden && !el("media-library").open) {
     toggleMeta(false);
     view.focus();
   }
@@ -543,6 +549,175 @@ el("delete-post").addEventListener("click", async () => {
     window.location.href = "/blog/admin";
   }
 });
+
+// ------------------------------------------------------------ media library --
+// Browse everything already in R2 (the media table), insert without
+// re-uploading, fix alt after the fact. Inserts use the EMPTY-alt form so
+// the library's alt flows through mediaLookup at render time — editing alt
+// here re-fixes every referencing post's cached HTML on the server.
+const mediaDialog = el("media-library");
+
+function mediaCell(item) {
+  const li = document.createElement("li");
+  li.className = "media-cell";
+
+  const img = document.createElement("img");
+  img.src = `/blog/media/${item.key}`;
+  img.alt = "";
+  img.loading = "lazy";
+  img.decoding = "async";
+  if (item.width) {
+    img.width = item.width;
+    img.height = item.height;
+  }
+
+  const meta = document.createElement("p");
+  meta.className = "media-meta";
+  const dims = item.width ? `${item.width}×${item.height} · ` : "";
+  const used = item.used_in.length
+    ? `used in ${item.used_in.length} post${item.used_in.length === 1 ? "" : "s"}`
+    : "unused";
+  meta.textContent = `${item.filename || item.key} · ${dims}${used}`;
+  meta.title = item.used_in.map((post) => post.title).join(", ");
+
+  const altRow = document.createElement("div");
+  altRow.className = "media-alt";
+  const alt = document.createElement("input");
+  alt.value = item.alt;
+  alt.placeholder = "Alt text";
+  alt.setAttribute("aria-label", `Alt text for ${item.filename || item.key}`);
+  const saveAlt = document.createElement("button");
+  saveAlt.type = "button";
+  saveAlt.textContent = "Save alt";
+  saveAlt.addEventListener("click", async () => {
+    saveAlt.disabled = true;
+    saveAlt.textContent = "Saving…";
+    const res = await api(`/blog/admin/api/media/${item.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ alt: alt.value }),
+    });
+    saveAlt.disabled = false;
+    if (res.ok) {
+      const { rerendered } = await res.json();
+      saveAlt.textContent = rerendered
+        ? `Saved · re-rendered ${rerendered} post${rerendered === 1 ? "" : "s"}`
+        : "Saved";
+    } else {
+      saveAlt.textContent = "Failed — retry";
+    }
+    setTimeout(() => (saveAlt.textContent = "Save alt"), 2500);
+  });
+  altRow.append(alt, saveAlt);
+
+  const insert = document.createElement("button");
+  insert.type = "button";
+  insert.className = "media-insert";
+  insert.textContent = "Insert";
+  insert.addEventListener("click", () => {
+    view.dispatch(view.state.replaceSelection(`![](/blog/media/${item.key})\n`));
+    mediaDialog.close();
+    view.focus();
+  });
+
+  li.append(img, meta, altRow, insert);
+  return li;
+}
+
+async function openMediaLibrary() {
+  mediaDialog.showModal();
+  const status = el("media-status");
+  const grid = el("media-grid");
+  grid.replaceChildren();
+  status.textContent = "Loading…";
+  const res = await api("/blog/admin/api/media");
+  if (!res.ok) {
+    status.textContent = "Could not load the library.";
+    return;
+  }
+  const items = await res.json();
+  status.textContent = items.length
+    ? ""
+    : "Nothing here yet — paste or drop an image into the editor to upload.";
+  for (const item of items) grid.append(mediaCell(item));
+}
+
+el("open-media").addEventListener("click", openMediaLibrary);
+el("close-media").addEventListener("click", () => mediaDialog.close());
+// Light-dismiss fallback where <dialog closedby> is unsupported: a click
+// whose coordinates land outside the content box is a backdrop click.
+if (!("closedBy" in HTMLDialogElement.prototype)) {
+  mediaDialog.addEventListener("click", (event) => {
+    if (event.target !== mediaDialog) return;
+    const rect = mediaDialog.getBoundingClientRect();
+    const inside =
+      rect.top <= event.clientY && event.clientY <= rect.bottom &&
+      rect.left <= event.clientX && event.clientX <= rect.right;
+    if (!inside) mediaDialog.close();
+  });
+}
+
+// ------------------------------------------------------------------ schedule --
+// A scheduled post is a draft carrying its go-live instant; the Worker cron
+// publishes it through the same gates as the Publish button (db.js).
+const scheduleZone = el("schedule-zone");
+
+function renderSchedule() {
+  if (!scheduleZone) return; // published posts carry no schedule block
+  const at = scheduleZone.dataset.scheduled;
+  scheduleZone.replaceChildren();
+  if (at) {
+    const line = document.createElement("p");
+    line.className = "hint";
+    line.textContent = `Publishes ${new Date(at).toLocaleString()} (checked every 5 minutes).`;
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "Cancel schedule";
+    cancel.addEventListener("click", async () => {
+      const res = await api(`/blog/admin/api/posts/${postId}/schedule`, {
+        method: "POST",
+        body: JSON.stringify({ cancel: true }),
+      });
+      if (res.ok) {
+        scheduleZone.dataset.scheduled = "";
+        renderSchedule();
+      }
+    });
+    scheduleZone.append(line, cancel);
+    return;
+  }
+  const when = document.createElement("input");
+  when.type = "datetime-local";
+  when.setAttribute("aria-label", "Publish at");
+  const schedule = document.createElement("button");
+  schedule.type = "button";
+  schedule.textContent = "Schedule";
+  const note = document.createElement("p");
+  note.className = "hint";
+  schedule.addEventListener("click", async () => {
+    const chosen = new Date(when.value);
+    if (Number.isNaN(chosen.getTime())) {
+      note.textContent = "Pick a date and time first.";
+      return;
+    }
+    // Persist the draft first: the server gates on the SAVED slug, and a
+    // schedule made against unsaved metadata would be a lie.
+    dirty = true;
+    if (!(await save())) return;
+    const res = await api(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      body: JSON.stringify({ at: chosen.toISOString() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      note.textContent = data.error ?? `Scheduling failed (${res.status})`;
+      return;
+    }
+    scheduleZone.dataset.scheduled = data.scheduled_at;
+    renderSchedule();
+  });
+  scheduleZone.append(when, schedule, note);
+}
+renderSchedule();
 
 // ------------------------------------------------------------ preview link --
 function renderPreviewLink() {

@@ -248,6 +248,107 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
     expect(served.headers.get("cache-control")).toContain("immutable");
   });
 
+  it("the media library lists the upload; alt edits re-render referencing posts", async () => {
+    // Browse: the upload is in the library with its sniffed dimensions.
+    const list = await authed("/blog/admin/api/media");
+    expect(list.status).toBe(200);
+    const items = (await list.json()) as Array<{
+      id: string; key: string; filename: string; width: number;
+      used_in: Array<{ id: string }>;
+    }>;
+    const mine = items.find((item) => item.filename === "dot.png");
+    expect(mine).toBeDefined();
+    expect(mine!.width).toBe(1);
+
+    // Insert without re-uploading: the empty-alt form, so the library's alt
+    // is what renders. Saving re-renders body_html through mediaLookup.
+    const put = await authed(`/blog/admin/api/posts/${postId}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        body_md: `Opening paragraph.\n\n![](/blog/media/${mine!.key})\n`,
+      }),
+    });
+    expect(put.status).toBe(200);
+    const relisted = (await (await authed("/blog/admin/api/media")).json()) as typeof items;
+    expect(
+      relisted.find((item) => item.id === mine!.id)!.used_in.some((p) => p.id === postId),
+    ).toBe(true);
+
+    // Fixing alt on the media row re-fixes the PUBLISHED page's cached HTML.
+    const patch = await authed(`/blog/admin/api/media/${mine!.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ alt: "a better dot" }),
+    });
+    expect(patch.status).toBe(200);
+    expect(((await patch.json()) as { rerendered: number }).rerendered).toBeGreaterThanOrEqual(1);
+    const page = await (await get(`/blog/${slug}-moved`)).text();
+    expect(page).toContain('alt="a better dot"');
+    expect(page).toContain('width="1"');
+  });
+
+  it("media mutations refuse a missing CSRF header", async () => {
+    const list = (await (await authed("/blog/admin/api/media")).json()) as Array<{ id: string }>;
+    const res = await get(`/blog/admin/api/media/${list[0]!.id}`, {
+      method: "PATCH",
+      headers: { cookie, "content-type": "application/json" },
+      body: JSON.stringify({ alt: "riding" }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("accepts an AVIF upload now that its dimensions are sniffable", async () => {
+    // Hand-built minimal AVIF: ftyp(avif) + meta{pitm,iprp{ipco[ispe 3×2],ipma}}.
+    const cc = (s: string) => [...s].map((c) => c.charCodeAt(0));
+    const u32 = (n: number) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+    const u16 = (n: number) => [(n >>> 8) & 255, n & 255];
+    const box = (type: string, ...parts: number[][]): number[] => {
+      const body = parts.flat();
+      return [...u32(8 + body.length), ...cc(type), ...body];
+    };
+    const full = (type: string, ...parts: number[][]) => box(type, [0, 0, 0, 0], ...parts);
+    const avif = Uint8Array.from([
+      ...box("ftyp", cc("avif"), u32(0), cc("mif1")),
+      ...full("meta",
+        full("pitm", u16(1)),
+        box("iprp",
+          box("ipco", full("ispe", u32(3), u32(2))),
+          full("ipma", u32(1), u16(1), [1], [1]))),
+    ]);
+    const form = new FormData();
+    form.append("file", new File([avif], "tiny.avif", { type: "image/avif" }), "tiny.avif");
+    const res = await authed("/blog/admin/api/media", { method: "POST", body: form });
+    expect(res.status).toBe(200);
+    const media = (await res.json()) as { width: number; height: number; url: string };
+    expect(media.width).toBe(3);
+    expect(media.height).toBe(2);
+    expect((await get(media.url)).headers.get("content-type")).toBe("image/avif");
+  });
+
+  it("the markdown zip carries every post plus the media manifest", async () => {
+    const res = await authed("/blog/admin/api/export.zip");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/zip");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    expect([bytes[0], bytes[1], bytes[2], bytes[3]]).toEqual([0x50, 0x4b, 0x03, 0x04]);
+    // STORE'd entries sit raw in the archive — names and words included.
+    const text = new TextDecoder("latin1").decode(bytes);
+    expect(text).toContain(`posts/${slug}-moved.md`);
+    expect(text).toContain("media.json");
+    expect(text).toContain("redirects.json");
+    expect(text).toContain("Opening paragraph.");
+  });
+
+  it("scheduling refuses an already-published post", async () => {
+    const res = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ at: new Date(Date.now() + 3_600_000).toISOString() }),
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("export returns every word ever written", async () => {
     const res = await authed("/blog/admin/api/export");
     expect(res.status).toBe(200);
@@ -260,5 +361,145 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
     const res = await authed(`/blog/admin/api/posts/${postId}`, { method: "DELETE" });
     expect(res.status).toBe(200);
     expect((await get(`/blog/${slug}-moved`)).status).toBe(404);
+  });
+});
+
+// The cron leg needs the blog worker's own dev server (`wrangler dev
+// --test-scheduled` exposes /__scheduled on 8791) — local composition only;
+// the deployed smoke can't and shouldn't fire production's trigger.
+const BLOG_DEV = !process.env.PM_ORIGIN || ORIGIN.includes("127.0.0.1")
+  ? "http://127.0.0.1:8791"
+  : null;
+
+describe.skipIf(!CREDENTIAL || !BLOG_DEV)("blog plane: scheduled publishing (local cron)", () => {
+  let cookie = "";
+  let csrf = "";
+  let postId = "";
+  const slug = `suite-sched-${Date.now().toString(36)}`;
+
+  const authed = (path: string, init: RequestInit = {}) =>
+    get(path, {
+      ...init,
+      redirect: "manual",
+      headers: { cookie, "x-pm-blog-csrf": csrf, ...(init.headers ?? {}) },
+    });
+
+  it("logs in and drafts a post", async () => {
+    const login = await get("/blog/admin/login", {
+      method: "POST",
+      redirect: "manual",
+      body: new URLSearchParams({ credential: CREDENTIAL! }),
+    });
+    cookie = login.headers.get("set-cookie")?.split(";")[0] ?? "";
+    const desk = await get("/blog/admin", { headers: { cookie } });
+    csrf = /name="pm-blog-csrf" content="([^"]+)"/.exec(await desk.text())?.[1] ?? "";
+    const created = await authed("/blog/admin/new", {
+      method: "POST",
+      body: new URLSearchParams({ csrf, kind: "essay" }),
+    });
+    postId = created.headers.get("location")?.split("/edit/")[1] ?? "";
+    expect(postId.length).toBeGreaterThan(10);
+  });
+
+  it("refuses to schedule a draft-slugged post (the permanent-URL gate)", async () => {
+    const res = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ at: new Date(Date.now() + 3_600_000).toISOString() }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  // Generous timeout: publishDue runs under waitUntil, so the tail of this
+  // test is a poll, not a race.
+  it("schedules, stays invisible, then the cron publishes at the chosen instant", { timeout: 30_000 }, async () => {
+    const save = await authed(`/blog/admin/api/posts/${postId}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Scheduled post", slug, body_md: "Due words.\n" }),
+    });
+    expect(save.status).toBe(200);
+
+    // A future schedule can be made and unmade without publishing anything.
+    const future = new Date(Date.now() + 3_600_000).toISOString();
+    const scheduled = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ at: future }),
+    });
+    expect(scheduled.status).toBe(200);
+    expect(((await scheduled.json()) as { scheduled_at: string }).scheduled_at).toBe(future);
+    const cancelled = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cancel: true }),
+    });
+    expect(cancelled.status).toBe(200);
+
+    // Schedule for a moment already in the past — due on the next tick.
+    const at = new Date(Date.now() - 60_000).toISOString();
+    const due = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ at }),
+    });
+    expect(due.status).toBe(200);
+    expect((await get(`/blog/${slug}`)).status).toBe(404); // still a draft
+
+    const fired = await fetch(`${BLOG_DEV}/__scheduled?cron=*/5+*+*+*+*`);
+    expect(fired.status).toBe(200);
+
+    // publishDue runs under waitUntil — poll briefly rather than race it.
+    let page: Response | null = null;
+    for (let i = 0; i < 20; i += 1) {
+      page = await get(`/blog/${slug}`);
+      if (page.status === 200) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    expect(page!.status).toBe(200);
+    expect(await page!.text()).toContain("Due words.");
+
+    // published_at is the author's chosen instant, not the tick's.
+    const post = (await (await authed(`/blog/admin/api/posts/${postId}`)).json()) as {
+      published_at: string; scheduled_at: string | null; status: string;
+    };
+    expect(post.status).toBe("published");
+    expect(post.published_at).toBe(at);
+    expect(post.scheduled_at).toBeNull();
+  });
+
+  it("a re-scheduled, once-published post republishes at the NEW instant, not the stale one", { timeout: 30_000 }, async () => {
+    // The regression verify caught: publish (stamps a date) -> unpublish
+    // (keeps published_at) -> schedule for a different instant -> the cron
+    // must stamp the AUTHOR'S chosen instant, not COALESCE the stale one.
+    const publishNow = await authed(`/blog/admin/api/posts/${postId}/publish`, { method: "POST" });
+    expect(publishNow.status).toBe(200);
+    const first = (await (await authed(`/blog/admin/api/posts/${postId}`)).json()) as { published_at: string };
+    const stale = first.published_at;
+
+    await authed(`/blog/admin/api/posts/${postId}/unpublish`, { method: "POST" });
+    const chosen = new Date(Date.now() - 120_000).toISOString();
+    const reschedule = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ at: chosen }),
+    });
+    expect(reschedule.status).toBe(200);
+
+    await fetch(`${BLOG_DEV}/__scheduled?cron=*/5+*+*+*+*`);
+    let post: { status: string; published_at: string } | null = null;
+    for (let i = 0; i < 20; i += 1) {
+      post = (await (await authed(`/blog/admin/api/posts/${postId}`)).json()) as typeof post;
+      if (post!.status === "published") break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    expect(post!.status).toBe("published");
+    expect(post!.published_at).toBe(chosen);
+    expect(post!.published_at).not.toBe(stale);
+  });
+
+  it("cleans up: the scheduled post is deleted", async () => {
+    const res = await authed(`/blog/admin/api/posts/${postId}`, { method: "DELETE" });
+    expect(res.status).toBe(200);
   });
 });

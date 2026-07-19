@@ -84,6 +84,7 @@ export function dashboard({ posts, csrf }) {
           <a class="row-title" href="/blog/admin/edit/${esc(post.id)}">${esc(rowTitle(post))}</a>
           <span class="row-meta">
             <span class="pill pill--${esc(post.kind)}">${esc(kindLabel(post.kind))}</span>
+            ${post.scheduled_at ? `<span class="pill pill--scheduled">Scheduled</span>` : ""}
             ${wordCount(post.body_md)} words · ${esc(relTime(post.updated_at))}
           </span>
         </li>`,
@@ -129,7 +130,8 @@ ${continueCard}
 ${drafts.length ? `    <section>\n      <h2>Drafts <span class="count">${drafts.length}</span></h2>\n      <ul class="post-rows">\n${rows(drafts)}\n      </ul>\n    </section>` : ""}
 ${published.length ? `    <section>\n      <h2>Published <span class="count">${published.length}</span></h2>\n      <ul class="post-rows">\n${rows(published)}\n      </ul>\n    </section>` : ""}
     <footer class="desk-foot">
-      <a href="/blog/admin/api/export" download>Export everything</a> ·
+      <a href="/blog/admin/api/export" download>Export everything (JSON)</a> ·
+      <a href="/blog/admin/api/export.zip" download>Markdown zip</a> ·
       <a href="/blog/">View blog</a> ·
       <a href="/blog/feed.xml">Feed</a>
     </footer>
@@ -152,6 +154,7 @@ export function editorPage({ post, csrf }) {
              placeholder="Title" autocomplete="off" aria-label="Post title">
       <span id="word-count" class="word-count" aria-hidden="true"></span>
       <span id="save-state" class="save-state" role="status" aria-live="polite">Saved</span>
+      <button id="open-media" type="button" title="⌘⇧M">Media</button>
       <button id="toggle-preview" type="button" aria-pressed="false" title="⌘E">Preview</button>
       <button id="toggle-meta" type="button" aria-expanded="false" aria-controls="meta-panel" title="⌘,">Settings</button>
       <button id="publish" type="button" class="primary">${published ? "Republish" : "Publish"}</button>
@@ -214,6 +217,11 @@ export function editorPage({ post, csrf }) {
         <div id="preview-link-zone" data-token="${esc(post.preview_token ?? "")}"></div>
       </section>
 
+      ${post.status === "published" ? "" : `<section class="panel-block">
+        <h2>Scheduled publish</h2>
+        <div id="schedule-zone" data-scheduled="${esc(post.scheduled_at ?? "")}"></div>
+      </section>`}
+
       <section class="panel-block">
         <h2>History</h2>
         <ol id="revision-list" class="revision-list"></ol>
@@ -225,6 +233,15 @@ export function editorPage({ post, csrf }) {
         <button id="delete-post" type="button">Delete post</button>
       </section>
     </aside>
+    <dialog id="media-library" closedby="any" aria-labelledby="media-lib-title">
+      <header class="media-head">
+        <h2 id="media-lib-title">Media library</h2>
+        <p class="hint">Insert uses the library’s alt text — editing it here re-fixes every post that shows the image.</p>
+        <button id="close-media" type="button" aria-label="Close media library">✕</button>
+      </header>
+      <p id="media-status" class="hint" role="status" aria-live="polite"></p>
+      <ul id="media-grid" class="media-grid"></ul>
+    </dialog>
   </main>`,
   });
 }

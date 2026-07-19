@@ -26,6 +26,13 @@
       "bucket_name": "pm-blog-media"
     }
   ],
+  // Scheduled publishing (ADR-0009 addendum): every five minutes, publish
+  // due drafts through the same publishPost invariants a manual publish
+  // gets. A blog does not need minute precision; published_at carries the
+  // author's chosen instant regardless of which tick executed it.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   // Workers Logs — structured logs queryable in the dashboard (PRD story 42).
   "observability": {
     "enabled": true

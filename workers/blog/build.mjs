@@ -19,6 +19,11 @@ copyFileSync(
   join(root, "src", "public", "styles.css"),
   join(dist, "static", "blog.css"),
 );
+// The footnote-popover enhancement (CSP script-src 'self': a real file).
+copyFileSync(
+  join(root, "src", "public", "notes.js"),
+  join(dist, "static", "notes.js"),
+);
 copyFileSync(
   join(root, "src", "admin", "styles.css"),
   join(dist, "admin", "static", "admin.css"),

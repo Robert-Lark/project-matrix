@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "wrangler dev --port 8791 --inspector-port 9234",
+    "dev": "wrangler dev --port 8791 --inspector-port 9234 --test-scheduled",
     "deploy": "wrangler deploy",
     "migrate:local": "wrangler d1 migrations apply pm-blog --local",
     "migrate:remote": "wrangler d1 migrations apply pm-blog --remote",

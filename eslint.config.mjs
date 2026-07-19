@@ -51,14 +51,19 @@ export default tseslint.config(
     },
   },
   {
-    // The blog admin's client code runs in the browser (ADR-0009 §3).
-    files: ["workers/blog/src/admin/editor/**/*.js"],
+    // The blog's client code runs in the browser (ADR-0009 §3, §7): the
+    // admin editor bundle and the public progressive enhancements.
+    files: [
+      "workers/blog/src/admin/editor/**/*.js",
+      "workers/blog/src/public/*.js",
+    ],
     languageOptions: {
       globals: {
         document: "readonly",
         window: "readonly",
         localStorage: "readonly",
         navigator: "readonly",
+        HTMLDialogElement: "readonly",
       },
     },
   },

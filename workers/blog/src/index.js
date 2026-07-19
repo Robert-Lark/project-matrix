@@ -7,15 +7,17 @@ import {
   checkLockout, csrfOk, getSession, login, logout, logoutAll,
 } from "./auth.js";
 import {
-  addRevision, createPost, deletePost, exportAll, getMediaById, getPost,
-  getPublishedBySlug, getRedirect, getRevision, listAdmin, listBrowse,
-  listPublished, listRevisions, mediaLookup, publishPost, savePost,
-  seriesNeighbors, unpublishPost,
+  addRevision, cancelSchedule, createPost, deletePost, exportAll,
+  exportMarkdownEntries, getMediaById, getPost, getPublishedBySlug,
+  getRedirect, getRevision, listAdmin, listBrowse, listMedia, listPublished,
+  listRevisions, mediaLookup, publishDue, publishPost, savePost,
+  schedulePost, seriesNeighbors, unpublishPost, updateMediaAlt,
 } from "./db.js";
 import { imageDimensions } from "./dimensions.js";
 import { adminPage, json, notFound, publicPage, seeOther } from "./html.js";
 import { newId, newToken } from "./ids.js";
 import { renderMarkdown } from "./render.js";
+import { zipStore } from "./zip.js";
 import { dashboard, editorPage, loginPage } from "./admin/pages.js";
 import {
   contentsPage, feedXml, postPage, previewPage,
@@ -27,13 +29,15 @@ function log(level, event, fields) {
   else console.log(line);
 }
 
-// AVIF is deliberately absent until dimensions.js can sniff it — an
-// un-sniffed format would silently break the zero-CLS-by-construction rule.
+// Every type here is one dimensions.js can sniff — an un-sniffed format
+// would silently break the zero-CLS-by-construction rule. AVIF joined once
+// the ISOBMFF ispe walk landed (dimensions.js).
 const MEDIA_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "image/avif": "avif",
 };
 const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 
@@ -157,6 +161,25 @@ async function handleAdminApi(request, env, url, sub, session) {
     });
   }
 
+  // The words in their most portable shape: front-matter markdown, one file
+  // per post, zipped without compression (zip.js) — a pure read, so GET.
+  if (sub === "/api/export.zip" && method === "GET") {
+    const bytes = zipStore(await exportMarkdownEntries(env));
+    return new Response(bytes, {
+      headers: {
+        "content-type": "application/zip",
+        "content-length": String(bytes.length),
+        "content-disposition": `attachment; filename="blog-markdown-${new Date().toISOString().slice(0, 10)}.zip"`,
+        "x-content-type-options": "nosniff",
+        "cache-control": "no-store",
+      },
+    });
+  }
+
+  if (sub === "/api/media" && method === "GET") {
+    return json(await listMedia(env));
+  }
+
   const getPostMatch = /^\/api\/posts\/([a-z0-9]+)$/.exec(sub);
   if (getPostMatch && method === "GET") {
     const post = await getPost(env, getPostMatch[1]);
@@ -234,6 +257,15 @@ async function handleAdminApi(request, env, url, sub, session) {
     });
   }
 
+  // Alt text is the media row's to own (mediaLookup feeds every render), so
+  // fixing it here re-fixes every referencing post's cached body_html.
+  const mediaMatch = /^\/api\/media\/([a-z0-9]+)$/.exec(sub);
+  if (mediaMatch && method === "PATCH") {
+    const body = await readJson(request);
+    const result = await updateMediaAlt(env, mediaMatch[1], body.alt);
+    return result.ok ? json(result) : json({ error: result.error }, { status: result.status });
+  }
+
   const revMatch = /^\/api\/posts\/([a-z0-9]+)\/revisions$/.exec(sub);
   if (revMatch && method === "GET") {
     return json(await listRevisions(env, revMatch[1]));
@@ -274,6 +306,15 @@ async function handleAdminApi(request, env, url, sub, session) {
     }
     if (action === "/unpublish" && method === "POST") {
       return json(await unpublishPost(env, id));
+    }
+    if (action === "/schedule" && method === "POST") {
+      const body = await readJson(request);
+      const result = body.cancel
+        ? await cancelSchedule(env, id)
+        : await schedulePost(env, id, body.at);
+      return result.ok
+        ? json(result)
+        : json({ error: result.error }, { status: result.status });
     }
     if (action === "/preview-token" && method === "POST") {
       const body = await readJson(request);
@@ -376,6 +417,14 @@ async function handleAdmin(request, env, url, sub) {
 }
 
 export default {
+  // The scheduled-publishing tick (ADR-0009 addendum; crons in
+  // wrangler.jsonc). publishDue owns the invariants; this stays a shim.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      publishDue(env, (eventName, fields) => log("info", eventName, fields)),
+    );
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     // Exactly /blog or /blog/* — "/blogfoo" is not this plane's traffic.
