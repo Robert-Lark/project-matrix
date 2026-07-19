@@ -251,7 +251,15 @@ export function Shell({
       <a className="pm-skip pm-button" href="#main">
         Skip to content
       </a>
-      <div id="pm-chrome-slot" />
+      {/* The front Worker injects chrome into this div by rewriting the HTTP
+       *  stream in transit — React's own vdom for it has zero children, so
+       *  on hydration React's mismatch recovery discards the injected chrome
+       *  and re-renders it empty (invisible when hydration is fast; a real
+       *  CLS bug under slow-CPU loads, caught via a CI-only flake). A
+       *  dangerouslySetInnerHTML with a non-null __html is what makes
+       *  react-dom's hydration skip that subtree's child-matching walk
+       *  entirely — suppressHydrationWarning alone does not. */}
+      <div id="pm-chrome-slot" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "" }} />
       <div className="pm-page">
         <header className="pm-masthead">
           <a className="pm-masthead__brand" href="/">

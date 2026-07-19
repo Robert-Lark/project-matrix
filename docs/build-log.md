@@ -1831,6 +1831,49 @@ carries the full deviation-by-deviation record, including two items
 `@opennextjs/cloudflare`'s own incomplete dependency declaration) verified
 empirically rather than assumed from the library's documentation.
 
+**Postscript: a CI-only failure, invisible on every local machine, was a
+real hydration bug — not flakiness.** After the slice B commit pushed
+green through `check` and 209/209 locally in both snapshot modes, CI's
+"origin" job failed exactly once, on `suite/cart.browser.test.ts`'s
+geometry assertion for react-next: the masthead cart link's bounding box
+moved 45px between the pre-add and post-reload measurement. Unreproducible
+locally across many runs — the actual cause was a genuine race, not
+environment drift, confirmed by launching Playwright's Chromium with
+`Emulation.setCPUThrottlingRate: 4` locally: throttled, the same
+assertion failed 4/8 runs with the exact CI signature. A body-tree
+bounding-box dump at 100ms intervals isolated it to `div#pm-chrome-slot`
+(`src/lib/render.tsx`'s `Shell`): the front Worker's HTMLRewriter injects
+the switcher/HUD chrome into this div by rewriting the HTTP response in
+transit, so the browser's initial HTML parse already contains it — but
+React's own vdom for the element has zero children. Traced into
+`react-dom`'s own hydration source (`popHydrationState` in
+`react-dom-client.development.js`): when a host component hydrates with
+no expected children but unclaimed DOM nodes remain, it calls
+`throwOnHydrationMismatch` and React's mismatch-recovery re-renders that
+subtree from the client's (empty) output, silently deleting the injected
+chrome. On any fast machine this resolves within the same frame as paint
+— invisible; CPU-throttled (i.e. a loaded CI runner), it's delayed long
+enough for the geometry test's two measurements to straddle the collapse.
+Also a real, currently-shipped production bug independent of the test:
+the switcher/HUD visibly vanishes on this variant a moment after every
+page load, on any visitor's machine slow enough to notice. Fixed with the
+one escape hatch that actually works — confirmed by reading
+`shouldSetTextContent`'s source, not assumed: `dangerouslySetInnerHTML`
+with a non-null (even empty-string) `__html` makes React treat the host
+component as having "set" content, which is the specific condition
+`popHydrationState` checks to skip the mismatch walk entirely.
+`suppressHydrationWarning` alone does not do this — it only silences a
+value-diff warning one level deep, and does not stop the extra-children
+walk (verified in the same source read, not by trial and error).
+Re-verified 8/8 under the same throttle with the fix applied, then
+209/209 in both fixture and crate modes at normal speed. Unrelated
+discovery made while chasing this down: this development machine had
+accumulated dozens of orphaned `wrangler dev`/`workerd` processes across
+many past sessions (`run-local.mjs`'s teardown only ever kills its own
+run's children, never a prior run's orphans if the parent was killed
+uncleanly) — real contributor to a red herring 522s suite run before the
+actual fix was isolated; cleared manually, not a code change.
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he

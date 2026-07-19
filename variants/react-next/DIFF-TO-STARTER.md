@@ -310,6 +310,28 @@ is deprecated, repo archived 2025-09-29).
     variant, or the request-time variants after it (Qwik, HTMX), want a
     permanent regression test for this path.
 
+23. **`div#pm-chrome-slot` (Shell, render.tsx) carries
+    `suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "" }}`.**
+    Found post-push, via a CI-only failure invisible on every local
+    machine: the front Worker injects the switcher/HUD chrome into this
+    div by rewriting the HTTP response in transit, so the served HTML
+    already contains it, but React's own vdom for the element has zero
+    children — a real hydration mismatch, not a test artifact. React's
+    mismatch-recovery (`popHydrationState`/`throwOnHydrationMismatch` in
+    `react-dom`'s own source) silently re-renders the subtree from the
+    client's empty output, deleting the chrome moments after every page
+    load — invisible when hydration is fast, a real CLS bug on any
+    visitor's machine slow enough to notice, and exactly what stalled the
+    CI runner long enough to fail a geometry assertion. Reproduced on
+    demand locally with Playwright's `Emulation.setCPUThrottlingRate: 4`.
+    `dangerouslySetInnerHTML` with a non-null `__html` is the one fix
+    that works: it makes `shouldSetTextContent` return true, which is the
+    specific condition `popHydrationState` checks to skip the
+    child-mismatch walk entirely. `suppressHydrationWarning` alone does
+    NOT prevent the deletion — confirmed by reading both functions in the
+    installed `react-dom-client.development.js`, not assumed from the
+    prop's name.
+
 ## Verified against primary sources (not training recall)
 
 Next.js 16 ships with an explicit warning that its APIs/conventions may
