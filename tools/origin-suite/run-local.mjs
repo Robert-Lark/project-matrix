@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 const suiteDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(suiteDir, "..", "..");
 const ORIGIN = "http://127.0.0.1:8787";
-const PORTS = [8787, 8788, 8789, 8790, 8791, 9230, 9231, 9232, 9233, 9234];
+const PORTS = [8787, 8788, 8789, 8790, 8791, 8792, 9230, 9231, 9232, 9233, 9234, 9235];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
 
@@ -103,11 +103,38 @@ async function waitFor(url, timeoutMs) {
   }
 }
 
-// Build every workspace's dist (placeholders, the measurement bundle, the
+// The snapshot the plane will SERVE is chosen by PM_SEED_DIR (below); the
+// snapshot build-time variants BAKE is chosen by PM_SNAPSHOT (@pm/vanilla —
+// the selector minted by the editorial build's slice A). Deriving the second
+// from the first here is what keeps "the one command holds either way" true:
+// a crate-seeded plane gets crate-baked variant pages, and the two can never
+// silently disagree. Unknown seed dirs fail loudly — a build-time variant
+// cannot bake a snapshot the selector doesn't name (and the suite's snapshot
+// resolution would fail closed on it anyway).
+const SNAPSHOT_DIRS = {
+  fixture: resolve(repoRoot, "tools/snapshot-fixture/snapshot"),
+  crate: resolve(repoRoot, "tools/snapshot-capture/crate"),
+};
+const seedDirForBuild = process.env.PM_SEED_DIR
+  ? resolve(repoRoot, process.env.PM_SEED_DIR)
+  : SNAPSHOT_DIRS.fixture;
+const snapshotName = Object.entries(SNAPSHOT_DIRS).find(
+  ([, dir]) => dir === seedDirForBuild,
+)?.[0];
+if (!snapshotName) {
+  console.error(
+    `PM_SEED_DIR=${process.env.PM_SEED_DIR} names no known snapshot (fixture|crate) — build-time variants cannot bake it`,
+  );
+  process.exit(1);
+}
+console.log(`snapshot-parameterized builds run with PM_SNAPSHOT=${snapshotName}`);
+
+// Build every workspace's dist (variants, the measurement bundle, the
 // front Worker's /_pm assets) — cached by turbo when unchanged.
 const build = spawnSync("pnpm", ["exec", "turbo", "run", "build"], {
   cwd: repoRoot,
   stdio: "inherit",
+  env: { ...process.env, PM_SNAPSHOT: snapshotName },
 });
 if (build.status !== 0) process.exit(build.status ?? 1);
 
@@ -155,6 +182,7 @@ try {
   startWorker("workers/edge", "edge");
   startWorker("variants/placeholder-static", "placeholder-static");
   startWorker("variants/placeholder-ssr", "placeholder-ssr");
+  startWorker("variants/vanilla", "vanilla");
   startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
@@ -162,6 +190,7 @@ try {
   await waitFor(`${ORIGIN}/`, 90_000);
   await waitFor(`${ORIGIN}/placeholder-static/sample/`, 60_000);
   await waitFor(`${ORIGIN}/placeholder-ssr/sample/`, 60_000);
+  await waitFor(`${ORIGIN}/vanilla/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 

@@ -1,0 +1,18 @@
+// The vanilla variant: static HTML, no runtime (editorial-build slice A).
+// Assets are nested under the /vanilla/ prefix (the documented "serving a
+// subdirectory" shape), so the front Worker forwards requests untouched.
+{
+  "name": "pm-vanilla",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": false, // no direct hostname — reachable ONLY through pm-front's
+                        // service binding, so the single origin (ADR-0004 §3)
+                        // cannot be bypassed on the deployed plane
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

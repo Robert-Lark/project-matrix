@@ -1581,6 +1581,102 @@ specs are committed in-repo instead (artifacts are the memory), with the
 publish commands in the issues file's header. The build does not wait on
 the mirror.
 
+### `editorial-build` slice A — the vanilla editorial variant (2026-07-18)
+
+`/vanilla/editorial/` serves through the composed origin, and the first
+REAL variant now stands where the placeholders stood. What the record
+should keep beyond the slice spec:
+
+**The §9 leg and the drift gate turned out to be one mechanism.** The
+issue framed "first variant-vs-master comparison" and "deployed-smoke
+re-render leg" as two duties; the honest implementation is one
+snapshot-aware block in `drift.browser.test.ts` — re-render the editorial
+master IN-PROCESS from whatever snapshot `/api/snapshot` says the origin
+serves, then compare the served page by normalized DOM and by pixels
+across the three profiles. In CI that resolves to the fixture (proving
+fixture-equivalence, exactly what the committed master already pins); on
+the deployed plane it resolves to the crate, which the committed
+fixture-rendered master could never prove. Two re-render flavors were
+needed: the DOM leg keeps tray-verbatim `/assets/img/*` srcs (attribute
+values are contract), the pixel leg points image srcs at the origin under
+test because the crate's image bytes are deliberately not in git.
+
+**The crate mode was proven locally before any deploy.** The capture
+machine holds the crate bytes, so `PM_SEED_DIR=tools/snapshot-capture/crate`
+ran the entire suite against a crate-seeded plane with crate-baked vanilla
+pages: 158/158, after 158/158 in fixture mode. run-local now DERIVES
+`PM_SNAPSHOT` from `PM_SEED_DIR` rather than reading a second knob — the
+"one command holds either way" promise stays true by construction, and the
+two selectors can never disagree silently.
+
+**The selector hazard closed as specified.** `PM_SNAPSHOT` is declared
+turbo `env` with both snapshots' tray JSONs as `inputs` on
+`@pm/vanilla#build`; the deploy job sets `crate` on its bare
+`turbo run build` step. Without the declaration, the deploy job's restored
+`turbo-origin-*` cache would have replayed the origin job's
+fixture-flavored dist onto the crate plane — the exact failure mode the
+PRD's verification round predicted from home's receipts precedent.
+
+**Cart contract: constant + conformance, not convention.** `CART_CONTRACT`
+lives with the shell contract (`packages/reference/render/shell.mjs`):
+key, versioned value schema, count semantics, badge copy, label copy,
+announcement copy, recovery rule. Vanilla re-implements it in
+`src/cart.js`, and the suite's JS-on leg asserts the rendered strings
+against the IMPORTED constant — five variants can no longer invent five
+carts, because divergence fails a test instead of a swap. The enhancement's
+data hook rides a JSON `<script>` element (delivery, not contract), so
+vanilla stays the registry's NO_NOISE control with zero extra attributes.
+Two contract clauses exist because verification forced them: the badge
+caps at "9+" (the slot's CSS is `min-width: 2.4ch` — an uncapped
+three-digit count would have the shell manufacturing post-paint CLS on
+every page load, the exact kill-condition class ADR-0008 §1 bans), and
+the cart anchor's `aria-label` carries the exact count (the badge span is
+`aria-hidden`; masthead.css's header had named this duty and the drafted
+contract missed it — the correctness lens caught the contract
+contradicting the CSS it sits on).
+
+**Content consumption: re-type, recorded.** The PRD left essay-copy
+consumption to this slice; the call is variant-owned re-typed content
+(`DIFF-TO-STARTER.md` records why: `@pm/reference` exposes no JS entry by
+guard, and request-time paradigms would otherwise bundle reference
+renderer code into served Workers). The gate polices textual identity both
+ways — a rough-normalized body diff of the built page against its master
+came back byte-identical for BOTH snapshots before the browser gate ever
+ran.
+
+**One foreground find, refuted-then-fixed.** The new page assertions
+initially banned planned-variant hrefs page-wide; the masthead's
+designated-host link (`Records → /react-next/plp/plain/`) is contract
+markup that legitimately anchors to a planned variant's other surface. The
+assertion is now scoped to the switcher row — the sparse-honesty rule
+lives in the chrome, not the shell.
+
+**Verification:** turbo lint/typecheck/test 20/20; origin suite 158/158
+in fixture mode AND 158/158 against a crate-seeded local plane before the
+adversarial pass. verify-slice ran its four lenses sequentially in the
+background (no limit death this time; ~830k subagent tokens) while the
+foreground probed inline: **11 findings, all refuted against source
+inline, all 11 real, all adopted pre-commit.** Beyond the two contract
+clauses above, the keepers: the smoke's new JS-on cart tests were
+beaconing synthetic RUM for a REAL measured surface into the production
+collector (route-intercepted now — the bench-runner precedent; the
+chrome suite's deliberate beacons stay); `behaviorAttrPatterns` was
+convention-only, so a repo-checks guard now fails any `attrPatterns`
+regex that matches an ADR-named behavior-attribute shape (the label is
+load-bearing, not decorative); crate-flavored TEXT was only ever compared
+after merge+deploy — a Node-only repo-checks guard now renders both
+renderers from both committed snapshots' trays pre-merge, closing the
+"merge green, smoke red" hole against the PRD's own standing rule; the
+zero-shift claim is pinned by geometry (bounding-box before/after badge
+population), not just by string; and `fonts.css` joined the byte-pinned
+set (the loading half of ADR-0003 §8 that settled-pixel comparisons are
+structurally blind to). One test assertion was also caught twice —
+foreground and conformance lens independently — hardcoding today's
+one-variant state instead of deriving from the arrays; it now recounts
+from `SURFACE_CONTROLS` and survives B–F's registrations unchanged.
+Final state with every adoption in: origin suite 160/160 (the transport
+and capped-badge tests joined it), turbo checks 20/20.
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he

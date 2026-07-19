@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@pm/drift-gate": "workspace:*",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^24.0.0",
     "fontkit": "^2.0.4",

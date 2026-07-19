@@ -177,6 +177,9 @@ importers:
       '@pm/measurement':
         specifier: workspace:*
         version: link:../../packages/measurement
+      '@pm/switcher':
+        specifier: workspace:*
+        version: link:../../packages/switcher
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2
@@ -192,6 +195,9 @@ importers:
 
   tools/repo-checks:
     devDependencies:
+      '@pm/drift-gate':
+        specifier: workspace:*
+        version: link:../drift-gate
       '@types/fontkit':
         specifier: ^2.0.9
         version: 2.0.9
@@ -263,6 +269,16 @@ importers:
         version: 4.110.0
 
   variants/placeholder-static:
+    dependencies:
+      '@pm/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+    devDependencies:
+      wrangler:
+        specifier: ^4.110.0
+        version: 4.110.0
+
+  variants/vanilla:
     dependencies:
       '@pm/tokens':
         specifier: workspace:*

@@ -57,6 +57,7 @@ export function extractNormalizedDom(
   return page.evaluate(PAGE_NORMALIZE, {
     attrPatterns: [...noise.attrPatterns],
     classPatterns: [...noise.classPatterns],
+    behaviorAttrPatterns: [...noise.behaviorAttrPatterns],
     rootSelector,
   });
 }

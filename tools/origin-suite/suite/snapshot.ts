@@ -240,3 +240,22 @@ export function loadServedSnapshot(): Promise<ServedSnapshot> {
   cached ??= resolve();
   return cached;
 }
+
+/** The reference renderer's snapshot name for a resolved committed root —
+ *  the two names `packages/reference/render/lib.mjs` loads by. */
+export function snapshotNameFor(root: string): "fixture" | "crate" {
+  return root === "tools/snapshot-fixture/snapshot" ? "fixture" : "crate";
+}
+
+/** The editorial surface's featured release id for the resolved snapshot:
+ *  the fixture's curation.json names it; the crate's frozen curation
+ *  predates the field, so the crate pick is the recorded design constant
+ *  (ADR-0008 §9 — editorial 953800, a curated choice, not a receipt). */
+export function editorialFeaturedId(snap: ServedSnapshot): number {
+  if (snapshotNameFor(snap.root) === "crate") return 953800;
+  const curated = (
+    readJson(join(repoRoot, snap.root, "curation.json")) as { featured?: number }
+  ).featured;
+  if (curated == null) fail(`snapshot under ${snap.root} names no featured release id`);
+  return curated;
+}

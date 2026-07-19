@@ -17,6 +17,7 @@
   "services": [
     { "binding": "PLACEHOLDER_STATIC", "service": "pm-placeholder-static" },
     { "binding": "PLACEHOLDER_SSR", "service": "pm-placeholder-ssr" },
+    { "binding": "VANILLA", "service": "pm-vanilla" },
     { "binding": "EDGE", "service": "pm-edge" },
     { "binding": "BLOG", "service": "pm-blog" }
   ],

@@ -34,6 +34,56 @@ export const HOSTS = {
   howBuilt: "/how-it-was-built/",
 };
 
+/**
+ * The cart storage contract (ADR-0008 §7; minted by the editorial build's
+ * slice A). The canonical SERVED state is empty — everything below is
+ * per-paradigm CLIENT enhancement, and every variant plus every later
+ * cart-bearing build (PDP, checkout, the masthead everywhere) re-implements
+ * exactly this behavior. Five independent inventions would break
+ * cart-survives-the-swap silently: `localStorage` is same-origin, so one
+ * key + one value shape is the whole mechanism (ADR-0004 §5 — localStorage
+ * holds the cart ONLY).
+ *
+ * - Storage: `localStorage[CART_CONTRACT.key]`, JSON:
+ *   `{"v":1,"items":[{"id":<releaseId>,"qty":<integer ≥ 1>}]}` — one entry
+ *   per release id; adding an id already present increments its `qty`.
+ * - Validity: a missing, unparseable, or schema-failing value (wrong `v`,
+ *   non-array `items`, any entry without an integer `id` and integer
+ *   `qty ≥ 1`) is treated as the EMPTY cart; the next successful add
+ *   overwrites it. A failed `setItem` (quota, storage off) changes nothing
+ *   and announces nothing.
+ * - Count: the sum of `qty` over `items`. On every shell page load the
+ *   enhancement populates each `[data-pm-cart-count]` slot with
+ *   `badge(count)` — empty string when 0 (the canonical empty state).
+ *   The badge caps at "9+": the slot reserves `min-width: 2.4ch`
+ *   (masthead.css), so an uncapped 3-digit count would widen it — a layout
+ *   shift the shell must never manufacture (ADR-0008's zero-CLS posture).
+ *   The exact number still reaches everyone: visually the cart page, and
+ *   for AT through the label below.
+ * - Label: whenever the count renders, the paradigm sets the cart anchor's
+ *   `aria-label` to `cartLabel(count)` — the count span is `aria-hidden`,
+ *   so without this a screen-reader user hears only "Cart"
+ *   (masthead.css's header names exactly this duty). Count 0 removes the
+ *   attribute (the accessible name falls back to the anchor text).
+ * - Announcement: after a successful add, `announce(title, count)` is
+ *   assigned as `textContent` (never HTML) to the shell's `[data-pm-status]`
+ *   live region (WCAG 4.1.3).
+ *
+ * This module is build-time spec, never shipped code (ADR-0003 §1): variants
+ * re-implement the strings; the origin suite asserts conformance against
+ * this constant.
+ */
+export const CART_CONTRACT = {
+  key: "pm:cart",
+  version: 1,
+  /** Total over all counts: 0 is the empty badge (the canonical state). */
+  badge: (count) => (count === 0 ? "" : count > 9 ? "9+" : String(count)),
+  /** null at 0 = REMOVE the attribute (name falls back to the anchor text). */
+  cartLabel: (count) =>
+    count === 0 ? null : `Cart, ${count} ${count === 1 ? "item" : "items"}`,
+  announce: (title, count) => `Added "${title}" to cart — ${count} in cart.`,
+};
+
 /** The canonical <head> for a master at `depth` directories below
  *  packages/reference/ (font markup verbatim per tokens/fonts/loading-markup,
  *  base path adjusted only). `css` lists component/surface modules. */

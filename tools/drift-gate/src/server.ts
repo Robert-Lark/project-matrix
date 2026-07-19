@@ -8,15 +8,16 @@
  * `file://` was rejected: Chromium's font/CORS behavior on file URLs differs
  * from HTTP and the whole gate otherwise runs over HTTP.
  *
- * `/assets/img/*` is ALIASED onto a snapshot's img directory (surface-design
- * session): the rendered masters carry image srcs exactly as the trays do —
- * `/assets/img/…`, the composed origin's data-plane path (lib.mjs `imageSrc`)
- * — so the gate's server must answer that path or every master's images 404.
- * Default: the committed fixture snapshot (what the committed masters are
- * rendered from — CI never reads the crate, ADR-0007). Overridable for the
- * deployed-smoke leg, which re-renders masters from the RESOLVED served
- * snapshot (the origin-suite snapshot.ts precedent) and points the alias at
- * that snapshot's img dir.
+ * `/assets/img/*` is ALIASED onto the committed fixture snapshot's img
+ * directory (surface-design session): the rendered masters carry image srcs
+ * exactly as the trays do — `/assets/img/…`, the composed origin's
+ * data-plane path (lib.mjs `imageSrc`) — so the gate's server must answer
+ * that path or every master's images 404. The fixture is the only snapshot
+ * whose bytes are committed (CI never reads the crate, ADR-0007); the
+ * ADR-0008 §9 deployed-smoke leg therefore does NOT re-point this alias —
+ * it re-renders the master's PIXEL flavor with image srcs pointed at the
+ * origin under test, which serves the resolved snapshot's bytes
+ * (drift.browser.test.ts, editorial block).
  *
  * Binds 127.0.0.1 on an EPHEMERAL port — no fixed-port collision class, no
  * interaction with the origin-suite orchestrator's pre-flight list.
@@ -45,20 +46,14 @@ export interface StaticServer {
   close(): Promise<void>;
 }
 
-export interface RepoServerOptions {
-  /** Directory served at `/assets/img/*` (a snapshot's img dir). Defaults to
-   *  the committed fixture snapshot's — the source the committed masters are
-   *  rendered from. */
-  assetsImgDir?: string;
-}
-
-export async function startRepoServer(
-  rootDir: string,
-  options: RepoServerOptions = {},
-): Promise<StaticServer> {
-  const assetsImgDir =
-    options.assetsImgDir ??
-    join(rootDir, "tools", "snapshot-fixture", "snapshot", "img");
+export async function startRepoServer(rootDir: string): Promise<StaticServer> {
+  const assetsImgDir = join(
+    rootDir,
+    "tools",
+    "snapshot-fixture",
+    "snapshot",
+    "img",
+  );
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", "http://localhost");

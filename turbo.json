@@ -30,6 +30,23 @@
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json"],
       "outputs": ["dist/**"]
     },
+    "@pm/vanilla#build": {
+      "dependsOn": ["topo", "^build"],
+      // PM_SNAPSHOT is THE snapshot selector for snapshot-parameterized
+      // variant builds (minted by the editorial build's slice A; every later
+      // build-time variant declares it the same way): fixture default, crate
+      // on the deploy job. The origin job and the deploy job share the
+      // turbo-origin-* cache family — without this env declaration (and the
+      // tray inputs below) the deploy job would replay the origin job's
+      // fixture-flavored dist straight onto the crate-serving plane.
+      "env": ["PM_SNAPSHOT"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/*.json",
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/*.json"
+      ],
+      "outputs": ["dist/**"]
+    },
     "dev": {
       "dependsOn": ["build"],
       "cache": false,

@@ -37,7 +37,8 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
 
 `pnpm dev` at the repo root starts every Worker — **one `wrangler dev` process
 per Worker** with distinct ports (front 8787, placeholder-static 8788,
-placeholder-ssr 8789, edge 8790) and inspector ports; wrangler's local dev
+placeholder-ssr 8789, edge 8790, blog 8791, vanilla 8792) and inspector
+ports; wrangler's local dev
 registry connects the service bindings across processes. Seed local R2 once
 per fresh checkout (`pnpm --filter @pm/edge run seed:local`) or use
 `pnpm run origin-suite`, which wipes edge state and seeds automatically. The single-process
@@ -51,7 +52,12 @@ against a crate-seeded local plane instead, set
 `PM_SEED_DIR=tools/snapshot-capture/crate` — the suite asks the plane which
 snapshot it serves (`GET /api/snapshot`) and asserts that snapshot's own
 committed artifacts (ids + trays + image sha256s), failing closed if it
-cannot tell (issue #11). CI never sets `PM_SEED_DIR`.
+cannot tell (issue #11). run-local derives `PM_SNAPSHOT` (the build-time
+snapshot selector minted by the editorial build's slice A) from
+`PM_SEED_DIR`, so snapshot-parameterized variant builds (`@pm/vanilla`)
+always bake the snapshot the plane serves — the one command holds either
+way. CI never sets `PM_SEED_DIR`; the deploy job sets `PM_SNAPSHOT=crate`
+on its build step because the deployed plane serves the crate.
 
 ## Deploying (the canonical plane)
 

@@ -29,8 +29,9 @@
  *     though (a dropped `lang` is pixel-neutral a11y drift): they are
  *     serialized as the extract's leading lines, through the same noise
  *     filter as every other attribute.
- *  5. Per-variant PERMITTED noise — hydration-marker attributes and scoping
- *     hash classes, declared in {@link PERMITTED_NOISE} so what each variant
+ *  5. Per-variant PERMITTED noise — hydration-marker attributes, scoping
+ *     hash classes, and behavior attributes (their own declared class,
+ *     ADR-0008), declared in {@link PERMITTED_NOISE} so what each variant
  *     is allowed to add is auditable in exactly one place.
  *  6. Insignificant whitespace — ASCII whitespace runs collapse to one
  *     space; ASCII-whitespace-only text drops (indentation is not drift).
@@ -46,14 +47,28 @@
  */
 
 export interface NoiseSpec {
-  /** Regex sources matching ATTRIBUTE NAMES that are permitted noise. */
+  /** Regex sources matching ATTRIBUTE NAMES that are permitted noise
+   *  (hydration markers and other inert residue). */
   attrPatterns: readonly string[];
   /** Regex sources matching CLASS TOKENS that are permitted scoping hashes. */
   classPatterns: readonly string[];
+  /** Regex sources matching BEHAVIOR-ATTRIBUTE NAMES (`hx-*`, `on:*`,
+   *  `q:*`): the paradigm's MECHANISM, not residue — ADR-0008's freedoms
+   *  list makes them their own declared registry class so a registration is
+   *  auditable as "this is how the paradigm works", never smuggled in as
+   *  residue. Stripped identically to `attrPatterns`; the distinction is
+   *  the audit trail. Minted by the editorial build's slice A so the
+   *  behavior-attribute paradigms (Qwik, HTMX) register without touching
+   *  this shared type mid-chain. */
+  behaviorAttrPatterns: readonly string[];
 }
 
 /** No permitted noise: what the reference render is held to. */
-export const NO_NOISE: NoiseSpec = { attrPatterns: [], classPatterns: [] };
+export const NO_NOISE: NoiseSpec = {
+  attrPatterns: [],
+  classPatterns: [],
+  behaviorAttrPatterns: [],
+};
 
 /**
  * The permitted-noise registry — gate POLICY, one auditable place
@@ -71,7 +86,11 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   "placeholder-ssr": {
     attrPatterns: ["^data-ph-"],
     classPatterns: ["^ph-"],
+    behaviorAttrPatterns: [],
   },
+  // vanilla registers NOTHING — it is the NO_NOISE control, by design
+  // (editorial-build PRD): the absence of an entry here is asserted in the
+  // origin suite, and its drift comparison runs under NO_NOISE.
 };
 
 /**
@@ -86,9 +105,14 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
 export const PAGE_NORMALIZE = (spec: {
   attrPatterns: readonly string[];
   classPatterns: readonly string[];
+  behaviorAttrPatterns: readonly string[];
   rootSelector?: string;
 }): string => {
-  const attrRes = spec.attrPatterns.map((s) => new RegExp(s));
+  // Behavior attributes strip exactly like inert-residue attributes — the
+  // two classes differ in the registry's audit trail, not in mechanics.
+  const attrRes = [...spec.attrPatterns, ...spec.behaviorAttrPatterns].map(
+    (s) => new RegExp(s),
+  );
   const classRes = spec.classPatterns.map((s) => new RegExp(s));
   const DROP_ELEMENTS = new Set(["script", "style", "link", "template"]);
   const VOID_ELEMENTS = new Set([

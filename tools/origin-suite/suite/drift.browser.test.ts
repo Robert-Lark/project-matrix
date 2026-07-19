@@ -16,10 +16,11 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { PROFILES, PROFILE_IDS } from "@pm/measurement";
+import { loadServedSnapshot, snapshotNameFor } from "./snapshot";
 import {
   captureStablePixels,
   comparePixels,
@@ -208,6 +209,29 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
     await page.close();
   }, 60_000);
 
+  it("behaviorAttrPatterns strips as its OWN declared class (the slice-A mechanism D–F register through)", async () => {
+    // ADR-0008 makes behavior attributes (`hx-*`, `on:*`, `q:*`) a declared
+    // registry class distinct from inert residue. Mechanics are identical to
+    // attrPatterns — the class is the audit trail — so the proof reuses the
+    // SSR placeholder's real marker attribute: registered under the behavior
+    // class instead, the page still normalizes to reference equality, and
+    // with the class empty it demonstrably does not.
+    const page = await openTracked(domContext, `${ORIGIN}/placeholder-ssr/sample/`);
+    const asBehavior = {
+      attrPatterns: [],
+      classPatterns: SSR_NOISE.classPatterns,
+      behaviorAttrPatterns: SSR_NOISE.attrPatterns,
+    };
+    const unstripped = await extractNormalizedDom(page, {
+      ...asBehavior,
+      behaviorAttrPatterns: [],
+    });
+    expect(unstripped).toContain("data-ph-hydrate");
+    const dom = await extractNormalizedDom(page, asBehavior);
+    assertDomEqual("dom-behavior-attr-class", referenceDom, dom);
+    await page.close();
+  }, 60_000);
+
   it("the deliberate-drift fixture FAILS the DOM check despite chrome exclusion and noise stripping", async () => {
     const page = await openTracked(domContext, FIXTURE_URL);
     // The fixture's POPULATED fake chrome slot is excluded like any other…
@@ -338,6 +362,136 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
       assertPixelsEqual(`pixels-${profileId}-${variant}`, referenceShot, shot);
       await page.close();
     }, 90_000);
+  }
+});
+
+describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapshot (ADR-0008 §9)", () => {
+  // The gate's first REAL variant comparison (editorial-build slice A) and
+  // the deployed-smoke re-render leg are one snapshot-aware mechanism: the
+  // editorial master is re-rendered IN-PROCESS from whatever snapshot
+  // /api/snapshot says the origin serves — the fixture in CI (proving
+  // fixture-equivalence, exactly what the committed master pins) and the
+  // crate on the deployed plane (proving the plane serves the crate
+  // correctly, which the committed fixture-rendered master cannot). Two
+  // flavors of the re-render:
+  //  - DOM leg: image srcs stay tray-verbatim (/assets/img/* — attribute
+  //    values are contract, and the served variant page carries the same);
+  //  - pixel leg: image srcs point at the origin under test, because the
+  //    crate's image bytes are deliberately not in git — the plane serves
+  //    them (the fixture case exercises the same path through local R2).
+  const rerenderRoot = join(
+    repoRoot,
+    "packages",
+    "reference",
+    ".local",
+    "origin-suite-rerender",
+  );
+  let masterDomUrl: string;
+  let masterPixelUrl: string;
+
+  beforeAll(async () => {
+    const snap = await loadServedSnapshot();
+    const name = snapshotNameFor(snap.root);
+    // Dynamic import by file URL: the renderer is plain-JS build tooling
+    // with a main-module-guarded CLI — importing renders and writes nothing
+    // (the @pm/reference regeneration test's own pattern).
+    const lib = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+    );
+    const editorial = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "editorial.mjs")).href
+    );
+    const snapshot = lib.loadSnapshot(name);
+    // extraDepth 2: these files sit four directories below packages/reference
+    // (.local/origin-suite-rerender/{flavor}/editorial/), so the head's
+    // relative @pm/tokens links resolve through the package's node_modules
+    // symlink on the gate's repo-root static server.
+    for (const [flavor, origin] of [
+      ["dom", ""],
+      ["pixels", ORIGIN],
+    ] as const) {
+      const html = editorial.renderEditorial(snapshot, { origin, extraDepth: 2 });
+      const dir = join(rerenderRoot, flavor, "editorial");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "index.html"), html);
+    }
+    const base = `${statics.origin}/packages/reference/.local/origin-suite-rerender`;
+    masterDomUrl = `${base}/dom/editorial/`;
+    masterPixelUrl = `${base}/pixels/editorial/`;
+  });
+
+  /**
+   * Settle every image before a pixel shot. In the gate's JS-off contexts
+   * the editorial figure's `loading="lazy"` never actually defers — the
+   * HTML spec runs lazy loading only when scripting is enabled — so the
+   * scroll is defensive (a JS-on reuse of this helper would need it), and
+   * the real work is the settle + the broken-load check: every `<img>`
+   * complete with `naturalWidth > 0`. A master-side 404 must read as a
+   * harness failure, never as pixel "drift".
+   */
+  async function settleImages(page: Page): Promise<void> {
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight),
+    );
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      const settled = await page.evaluate(() =>
+        Array.from(document.images).every((img) => img.complete),
+      );
+      if (settled) break;
+      if (Date.now() > deadline) {
+        throw new Error("images never settled — a screenshot now could false-diff");
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const broken = await page.evaluate(() =>
+      Array.from(document.images)
+        .filter((img) => img.naturalWidth === 0)
+        .map((img) => img.currentSrc || img.src),
+    );
+    expect(broken, "broken image loads before the pixel shot").toEqual([]);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
+
+  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE (vanilla is the control)", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/vanilla/editorial/`);
+    // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+    const dom = await extractNormalizedDom(page, NO_NOISE);
+    expect(dom).not.toContain("pm-chrome");
+    assertDomEqual("dom-vanilla-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+      const context = await browser.newContext(
+        profileContextOptions(PROFILES[profileId]),
+      );
+      const masterPage = await openTracked(context, masterPixelUrl);
+      // The re-rendered master has no chrome slot — part of the contract.
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureStablePixels(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/vanilla/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      await settleImages(page);
+      const shot = await captureStablePixels(page);
+      assertPixelsEqual(`pixels-${profileId}-vanilla-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
   }
 });
 

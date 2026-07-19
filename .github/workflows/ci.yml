@@ -123,7 +123,15 @@ jobs:
 
       - name: Build worker dists (variants + measurement bundle + front /_pm assets)
         if: steps.creds.outputs.present == 'true'
+        # PM_SNAPSHOT=crate: the deployed plane serves the crate, so
+        # snapshot-parameterized variant builds (@pm/vanilla) must bake the
+        # crate's trays. The selector is declared as turbo env on those tasks
+        # — otherwise the restored turbo-origin-* cache would replay the
+        # origin job's fixture-flavored dists onto the crate plane
+        # (turbo.json documents the hazard).
         run: pnpm exec turbo run build
+        env:
+          PM_SNAPSHOT: crate
 
       - name: Seed the frozen snapshot into R2
         if: steps.creds.outputs.present == 'true'
@@ -144,6 +152,7 @@ jobs:
         run: |
           pnpm --filter @pm/placeholder-static run deploy
           pnpm --filter @pm/placeholder-ssr run deploy
+          pnpm --filter @pm/vanilla run deploy
           pnpm --filter @pm/edge run deploy
 
       # The blog plane (ADR-0009): resources, then schema, then the Worker —

@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // @pm/drift-gate's source includes the in-browser normalizer (typed
+    // against DOM); importing its registry pulls those files into this
+    // program — same widening the origin suite carries.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
   "include": ["test"]
 }
