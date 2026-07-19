@@ -17,6 +17,7 @@ export function layout({
   body,
   noindex = false,
   ogImage = null,
+  scripts = [],
 }) {
   const fullTitle = title ? `${title} — ${MASTHEAD}` : MASTHEAD;
   return `<!doctype html>
@@ -38,6 +39,7 @@ export function layout({
   <link rel="preload" href="/blog/static/fonts/literata-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/blog/static/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/blog/static/blog.css">
+${scripts.map((src) => `  <script type="module" src="${esc(src)}"></script>`).join("\n")}
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -194,6 +196,17 @@ ${tagList}
 </article>`;
 }
 
+// The footnote popover enhancement rides only on pages that actually carry
+// footnote refs. Worst case a post whose prose contains the literal string
+// "data-footnote-ref" loads a ~2 KB script that finds no [data-footnote-ref]
+// elements and no-ops — never a correctness or security cost, just an
+// avoided-when-cheap fetch.
+function postScripts(post) {
+  return post.body_html.includes("data-footnote-ref")
+    ? ["/blog/static/notes.js"]
+    : [];
+}
+
 export function postPage(post, { origin, neighbors, cover = null }) {
   return layout({
     title: post.title || excerptText(post.body_html, 60),
@@ -201,6 +214,7 @@ export function postPage(post, { origin, neighbors, cover = null }) {
     origin,
     path: `/blog/${post.slug}`,
     ogImage: cover ? `/blog/media/${cover.key}` : null,
+    scripts: postScripts(post),
     body: postArticle(post, { neighbors, cover }),
   });
 }
@@ -212,6 +226,7 @@ export function previewPage(post, { origin, cover = null }) {
     origin,
     path: `/blog/preview/${post.preview_token}`,
     noindex: true,
+    scripts: postScripts(post),
     body: `<p class="preview-banner">Draft preview — unpublished, unlisted.</p>\n${postArticle(post, { cover })}`,
   });
 }

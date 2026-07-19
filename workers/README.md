@@ -79,7 +79,11 @@ the front Worker — and re-runs the integration suite against the deployed
 origin with the Brotli assertion (the post-deploy smoke, spike FINDINGS §5).
 
 The deploy job needs two GitHub repo secrets, minted in the Cloudflare
-dashboard (an API token with Workers Scripts:Edit on the account):
+dashboard (an API token with **Workers Scripts:Edit + D1:Edit** on the
+account — D1:Edit joined the requirement with the blog plane's
+`migrate:remote` step, ADR-0009 §8; learned the loud way when the first
+post-merge deploy of `main` failed there with API error 7403 on
+2026-07-18, deploying nothing):
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`

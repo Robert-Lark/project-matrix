@@ -191,3 +191,76 @@ and surfaces only at login (runbook step: verify login after arming).
   `/_pm/*` bytes, no receipt rows; the drift gate and origin-suite store
   contracts never mention it. Separation is enforced by the same
   workspace-isolation guard that fences the variants.
+
+## Addendum — phase 2: the editor made luxurious (2026-07-18)
+
+The recorded follow-ups, closed, plus one new mechanism decided here.
+
+**Scheduled publishing is a cron trigger, not a read-time check.** `posts`
+gains `scheduled_at` (migration 0002); a scheduled post is an ordinary
+draft until the Worker's `*/5 * * * *` trigger publishes due rows through
+`publishDue` → `publishPost` — the same slug gate, snapshot revision, and
+redirect story a manual publish gets, with `published_at` stamped with the
+author's chosen instant rather than the tick that executed it. The gate is
+enforced when the schedule is MADE (a schedule that could never fire is a
+word-losing surprise), and a publish the cron cannot honor (the slug was
+edited invalid afterward) drops the schedule and logs rather than retrying
+forever. Considered alternatives: **publish_at checked on read** — rejected
+because "published but not yet visible" semantics would have to be appended
+to every public query (contents, slug lookup, feed, tag/series, browse
+counts, neighbors) and one missed clause is a silent leak of unpublished
+words; **lazy sweep on public GETs** — rejected on writes riding the public
+read path and on duplicating publish invariants outside `publishPost`.
+Five-minute granularity is deliberate: a blog does not need minute
+precision, and the displayed date is the author's anyway. Local dev exposes
+the trigger via `wrangler dev --test-scheduled`, and the origin suite fires
+it for real (port 8791, local runs only).
+
+**The media library rides the media table.** Browse everything in R2,
+insert without re-uploading, edit alt after the fact. Inserts use the
+empty-alt form (`![](/blog/media/…)`) so the row's alt flows through
+`mediaLookup` at render; markdown-explicit alt still wins per image. Since
+`body_html` is a cache, an alt edit re-renders every referencing post's
+cached HTML server-side — `updated_at` untouched, so open editors keep
+their optimistic-concurrency baseline.
+
+**The zip-of-markdown export (§2's recorded variant) ships beside the JSON
+dump.** Each post as front-matter + `body_md`, plus `media.json` and
+`redirects.json`; revisions stay the JSON dump's job. The writer is ~90
+in-repo lines of STORE-only ZIP (`src/zip.js`) — prose gains nothing from
+DEFLATE and the dependency list stays at four (§7).
+
+**AVIF is allowed now that it is sniffable.** `dimensions.js` walks the
+ISOBMFF property tree — `pitm`/`ipma` association to the PRIMARY item's
+`ispe` (an alpha-carrying AVIF has a second ispe, so "first ispe" is wrong
+on exactly those files), with `irot` 90°/270° transposing the stored box —
+so uploads keep the zero-CLS-by-construction rule that justified refusing
+the type. Verified against a real encoder's output, not only crafted boxes.
+
+**Public luxuries stay inside §7's budget.** Footnote hover-popovers ship
+as a ~2 KB dependency-free enhancement served only on pages whose generated
+markup carries footnote refs; the anchor behavior is untouched, the popover
+is aria-hidden (it duplicates content the reader can already reach), and
+WCAG 1.4.13's dismissible/hoverable/persistent triad is implemented
+directly. The `interestfor`/anchor-positioning platform pattern was
+considered and rejected for now: its polyfills are real dependencies and
+real kilobytes on a page that needs neither. Print polish joins the same
+stylesheet: page margins, break-avoidance around figures/code, ink-colored
+underlines, and the dark-mode image dim explicitly reset on paper.
+
+**One §8 correction learned the loud way:** the deploy job's API token
+needs **D1:Edit** as well as Workers Scripts:Edit — the first post-merge
+deploy of `main` failed at `migrate:remote` with API error 7403 and
+deployed nothing (`workers/README.md` records the re-mint).
+
+**A §4 fence hole closed (found by the phase-2 verify pass):** the `loud`
+mood inked the post title in the per-post accent — recorded in phase 1 as
+"the one sanctioned accent-as-text." But the accent is format-validated,
+never contrast-checked, so a light accent rendered the title near-invisible
+on paper (fails AA), an "accessibility without exception" violation. `loud`
+is now carried by scale and weight; the accent-never-colors-text discipline
+is absolute, its only home the spine. Two other phase-2 verify findings:
+the scheduled-republish stale-date bug above (fixed, `at` wins over
+COALESCE); and a staging-order catch — the fix and its regression test were
+staged before they were written, so the index had to be re-staged before
+commit (they would otherwise have shipped the bug green).

@@ -1763,6 +1763,75 @@ frontend-design skill (the spine is the boldness budget) · chrome-devtools
 MCP (editor drive + dark-mode pass) · headless-Chrome screenshot loop ·
 Fontsource subsets · the origin suite as the non-contamination gate.
 
+### Phase 9.2 — the editor made luxurious (2026-07-18, worktree-blog-phase2)
+
+A second session against the landed plane (`022e307`, merged to origin/main
+between sessions), closing ADR-0009's recorded follow-ups and the phase-2
+handoff. First act was operational, not editorial: the first post-merge CI
+deploy of `main` had failed — `wrangler d1 migrations apply --remote` 7403'd
+because the deploy token carried Workers Scripts:Edit but not **D1:Edit**, so
+nothing reached the plane and production `/blog/` still 404s. Recorded the
+re-mint in `workers/README.md`, deployed `pm-blog` locally (sanctioned;
+production can't reach it until merge), and verified the wall's **accept**
+side with a real credential login on the preview origin — the one thing CI
+structurally cannot prove (a missing secret 401s exactly like a working
+wall). The full origin suite ran green against the preview (164), the fence
+that the benchmark stayed untouched.
+
+Five upgrades, each inside the fences:
+- **Media library** — a `<dialog closedby="any">` (with a light-dismiss
+  fallback for Safari) over the `media` table: browse everything in R2 with
+  where-it's-used counts, insert an existing image without re-uploading, and
+  edit alt after the fact. Inserts use the empty-alt form so the row's alt
+  flows through `mediaLookup` at render; since `body_html` is a cache, an alt
+  edit re-renders every referencing post server-side — `updated_at`
+  untouched, so an open editor keeps its optimistic-concurrency baseline.
+  Proven in the browser end to end: an empty-alt insert surfaced as
+  `alt="a better dot"` on the published page.
+- **Scheduled publishing** — the mechanism decision (ADR-0009 addendum): a
+  **cron trigger** (`*/5`), not a read-time check, because "published but not
+  visible" would have to be threaded through every public query and one
+  missed clause leaks unpublished words. A scheduled post is an ordinary
+  draft until `publishDue` publishes it through the same `publishPost` gates;
+  `published_at` carries the author's chosen instant, not the tick. The gate
+  is enforced when the schedule is made, and an un-honorable schedule drops
+  rather than retrying forever.
+- **Zip-of-markdown export** (§2's recorded variant) — a ~90-line STORE-only
+  ZIP writer (`src/zip.js`), no new dependency; proven against real macOS
+  `unzip -t`/`zipinfo`, CRCs and content round-tripping.
+- **AVIF** — re-allowed once `dimensions.js` could sniff it: an ISOBMFF walk
+  to the **primary** item's `ispe` (an alpha AVIF carries a second ispe, so
+  "first ispe" is wrong on exactly those files), `irot` transposing 90°/270°.
+  Verified against a real `sips`-encoded 320×200 landscape and 240×380
+  portrait, not only hand-built boxes.
+- **Public luxuries** — footnote hover-popovers as a ~2 KB dependency-free
+  enhancement served only on pages whose *generated* markup carries footnote
+  refs (CSP `script-src 'self'` intact, WCAG 1.4.13 implemented directly,
+  aria-hidden because it duplicates reachable content); print polish (page
+  margins, break-avoidance, ink-colored underlines, dark-dim reset on paper).
+
+The four never-judged design boards were finally judged
+(`boards/JUDGMENT.md`): a workflow inventoried all four (40 evidence-cited
+devices) before the three-lens panel died on a session limit; judgment
+finished inline against the committed system with a screenshot probe of the
+one near-miss (liner-notes' tracklist dotted leaders — held, not adopted:
+on-register but busy against essay deks). **Sleeve & Shelf stands unchanged.**
+Proof: repo `check` 21/21, the full origin suite green with the blog composed
+in (**173**, was 164 — +9 covering the media library round-trip, the markdown
+zip, the AVIF upload, and the cron firing a due schedule through
+`--test-scheduled`), 40 blog unit tests (was 20 — AVIF box-walk incl. the
+alpha/rotation cases, the zip writer against a hand-walked central directory,
+export front-matter). One real regression caught by the suite and fixed
+before commit: a missing `seriesNeighbors` re-export 500'd every public post
+page. Verify-slice ran the standing sequential-lens pass while the main
+session probed inline (the zip and AVIF real-file probes above).
+
+**Skills / tools used (phase 9.2):** modern-web-guidance (dialog
+`closedby`, popover/interest-invoker survey — the platform pattern was
+considered and rejected on polyfill weight) · chrome-devtools MCP (the full
+editor + public browser pass) · headless-Chrome screenshot probe · the
+verify-slice workflow · the origin suite as the non-contamination gate.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

@@ -428,14 +428,23 @@ a:hover {
   font-size: 2rem;
 }
 
-/* The mood knob. */
+/* The mood knob. Register is carried by SCALE and WEIGHT, never color — an
+ * arbitrary per-post accent on title text could fail AA (a light accent →
+ * invisible heading), so loud is bigger/bolder, not accent-inked. The
+ * accent stays where it can never break contrast: the spine. */
 .mood--quiet .post-head h1 {
   font-size: 1.85rem;
   font-weight: 480;
 }
 
 .mood--loud .post-head h1 {
-  color: var(--accent);
+  font-size: 2.95rem;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+
+.mood--loud .post-head::before {
+  inline-size: 10px;
 }
 
 .link-line {
@@ -708,6 +717,29 @@ a:hover {
   text-decoration: none;
 }
 
+/* The hover-popover (notes.js progressive enhancement). Text stays ink on
+ * paper — the accent has no business inside a note. */
+.fn-popover {
+  position: absolute;
+  z-index: 20;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.14);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.fn-popover > p {
+  margin: 0 0 0.5rem;
+}
+
+.fn-popover > p:last-child {
+  margin: 0;
+}
+
 /* ------------------------------------------------------- post furnishings */
 
 .series-nav {
@@ -810,11 +842,16 @@ a:hover {
 /* ------------------------------------------------------------------- print */
 
 @media print {
+  @page {
+    margin: 22mm;
+  }
+
   .site-head,
   .site-foot,
   .skip,
   .series-nav,
-  .preview-banner {
+  .preview-banner,
+  .fn-popover {
     display: none;
   }
 
@@ -824,9 +861,39 @@ a:hover {
     background: #fff;
   }
 
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .post-body h2,
+  .post-body h3 {
+    break-after: avoid;
+  }
+
+  .post-body figure,
+  .post-body pre,
+  .post-body img,
+  .bp-pullquote,
+  .bp-gallery {
+    break-inside: avoid;
+  }
+
+  /* The dark-mode 6% dim must never reach paper. */
+  img {
+    filter: none !important;
+  }
+
   .post-head::before,
   .entry::before {
     print-color-adjust: exact;
+  }
+
+  /* Underlines and printed hrefs in ink, not in a screen accent. */
+  a,
+  .post-body a {
+    text-decoration-color: currentColor;
+    overflow-wrap: anywhere;
   }
 
   .post-body {
@@ -849,5 +916,10 @@ a:hover {
     float: none;
     inline-size: auto;
     margin-inline-end: 0;
+  }
+
+  /* Viewport-width math has no meaning on paper. */
+  .bp-bleed {
+    margin-inline: 0;
   }
 }

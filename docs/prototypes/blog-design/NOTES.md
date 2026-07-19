@@ -53,8 +53,17 @@ Deliberately zero overlap with the store's faces.
 Header treatments (the `header_style` knob): `standard` · `display`
 (oversized Fraunces, 10-px spine) · `photo-hero` (cover image full-bleed
 above the head) · `bare` (notes: catalog line only). Mood knob: `default` /
-`quiet` (smaller, lighter head) / `loud` (accent-colored display title —
-the one sanctioned accent-as-text, opt-in per post).
+`quiet` (smaller, lighter head) / `loud` (a bigger, bolder title + thicker
+spine).
+
+> **Correction (phase 2, 2026-07-18):** `loud` originally inked the display
+> title in the per-post accent — recorded here as "the one sanctioned
+> accent-as-text." A verify pass caught that this breaks the load-bearing
+> rule: the accent is format-validated but never contrast-checked, so a
+> light accent renders the title near-invisible on paper (fails AA), and
+> "accessibility without exception" is the plane's floor (ADR-0009 Context).
+> `loud` is now carried by scale and weight, not color — the accent-never-
+> colors-text discipline is now absolute, with the spine as its only home.
 
 ## The shelf (contents page)
 
