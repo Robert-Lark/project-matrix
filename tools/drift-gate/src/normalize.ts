@@ -61,6 +61,18 @@ export interface NoiseSpec {
    *  behavior-attribute paradigms (Qwik, HTMX) register without touching
    *  this shared type mid-chain. */
   behaviorAttrPatterns: readonly string[];
+  /** CSS selectors matching WHOLE ELEMENTS (subtree included) that are
+   *  permitted noise — for residue that isn't expressible as an
+   *  attribute/class strip because the element itself doesn't exist in the
+   *  master (e.g. a framework's own internal streaming/hydration-boundary
+   *  wrapper). Optional: only variants that measure a real need register
+   *  it (minted by editorial-build slice B for Next's App Router streaming
+   *  marker, `body > div[hidden]:first-child` — an empty wrapper around
+   *  React's own `<!--$-->`/`<!--/$-->` Suspense-boundary comments, which
+   *  the comment-stripping rule already erases; only the wrapping element
+   *  remains to account for). Removed the same way the chrome slot already
+   *  is — this generalizes that one hardcoded case into registry policy. */
+  dropElementSelectors?: readonly string[];
 }
 
 /** No permitted noise: what the reference render is held to. */
@@ -91,6 +103,16 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   // vanilla registers NOTHING — it is the NO_NOISE control, by design
   // (editorial-build PRD): the absence of an entry here is asserted in the
   // origin suite, and its drift comparison runs under NO_NOISE.
+  /** react-next (editorial-build slice B): measured from real served
+   *  output (not guessed) — no noisy attributes or scoping-hash classes
+   *  anywhere; the one residue is structural, App Router's own streaming
+   *  wrapper (see NoiseSpec.dropElementSelectors' doc comment). */
+  "react-next": {
+    attrPatterns: [],
+    classPatterns: [],
+    behaviorAttrPatterns: [],
+    dropElementSelectors: ["body > div[hidden]:first-child"],
+  },
 };
 
 /**
@@ -106,6 +128,7 @@ export const PAGE_NORMALIZE = (spec: {
   attrPatterns: readonly string[];
   classPatterns: readonly string[];
   behaviorAttrPatterns: readonly string[];
+  dropElementSelectors?: readonly string[];
   rootSelector?: string;
 }): string => {
   // Behavior attributes strip exactly like inert-residue attributes — the
@@ -129,6 +152,23 @@ export const PAGE_NORMALIZE = (spec: {
 
   const root = document.documentElement.cloneNode(true) as HTMLElement;
   for (const slot of root.querySelectorAll("div#pm-chrome-slot")) slot.remove();
+  for (const sel of spec.dropElementSelectors ?? []) {
+    for (const el of root.querySelectorAll(sel)) {
+      // Content-aware, not just positional: a registration excuses an
+      // EMPTY structural artifact (verified case: Next's App Router
+      // streaming-metadata wrapper, comment-only when the page's own
+      // <title>/<meta> are the only metadata, since those auto-hoist to
+      // <head> regardless of tree position). If real markup ever renders
+      // inside the matched element (e.g. a future <link>/icon that does
+      // NOT auto-hoist), silently deleting the whole subtree would hide
+      // that divergence from the drift gate instead of proving it —
+      // exactly the failure mode this gate exists to catch. Only comment
+      // nodes are tolerated inside; any element child aborts the removal
+      // (verify-slice finding: the registration is a scoped noise excuse,
+      // never a bulk content eraser).
+      if (el.childElementCount === 0) el.remove();
+    }
+  }
 
   const normalizedAttrs = (el: Element): string[] => {
     const attrs: string[] = [];

@@ -47,6 +47,26 @@
       ],
       "outputs": ["dist/**"]
     },
+    "@pm/react-next#build": {
+      "dependsOn": ["topo", "^build"],
+      // Not snapshot-parameterized for the TRAYS (request-time variant,
+      // editorial-build slice B — fetched through the edge Worker per
+      // request, no PM_SNAPSHOT env declaration needed here) — but
+      // src/lib/snapshot.ts statically imports the fixture's committed
+      // manifest.json/curation.json at build time (to resolve the
+      // featured-id policy without a hardcoded crate-name string); without
+      // these as declared inputs, regenerating the fixture would replay a
+      // stale cached bundle (verify-slice finding — the
+      // @pm/vanilla#build precedent above, same hazard, narrower cause).
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/manifest.json",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/curation.json"
+      ],
+      // Output is the OpenNext bundle, not the generic "dist/**" every
+      // other variant uses.
+      "outputs": [".open-next/**"]
+    },
     "dev": {
       "dependsOn": ["build"],
       "cache": false,

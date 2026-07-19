@@ -5,7 +5,10 @@
     // @pm/drift-gate's source includes the in-browser normalizer (typed
     // against DOM); importing its registry pulls those files into this
     // program — same widening the origin suite carries.
-    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    // The variant-master-identity guard imports variants/react-next's
+    // render.tsx directly (editorial-build slice B).
+    "jsx": "react-jsx"
   },
   "include": ["test"]
 }

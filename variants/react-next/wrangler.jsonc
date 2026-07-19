@@ -1,0 +1,29 @@
+// The react-next variant: heavy hydration on the OpenNext Cloudflare adapter
+// (editorial-build slice B). Trays are fetched through the edge Worker at
+// REQUEST time (SSR is the paradigm's real shape, ADR-0002 §7) — the front
+// Worker's own EDGE binding doesn't reach a variant server-side, so this
+// Worker binds pm-edge itself; wrangler's local dev registry resolves it
+// (run-local.mjs already spawns edge before every variant), and the CI
+// deploy step deploys pm-edge before any variant that binds it.
+//
+// No WORKER_SELF_REFERENCE / incremental-cache binding: the editorial route
+// is 100% force-dynamic SSR, no ISR or SSG anywhere in this variant — SSR
+// routes work with zero caching config (opennext.js.org/cloudflare/caching).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pm-react-next",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false, // reachable ONLY through pm-front's service binding
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    { "binding": "EDGE", "service": "pm-edge" }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

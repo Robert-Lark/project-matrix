@@ -14,6 +14,15 @@ allowBuilds:
   sharp: true
   workerd: true
 
+# @opennextjs/cloudflare's bundler step imports esbuild directly but does not
+# declare it as a dependency (relies on it being hoisted, which the
+# no-hoisting isolation below deliberately prevents) — editorial-build slice
+# B (react-next).
+packageExtensions:
+  "@opennextjs/cloudflare":
+    dependencies:
+      esbuild: "^0.25.4"
+
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
 # pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a
 # workspace can resolve only what it declares, even through tooling that

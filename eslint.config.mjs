@@ -7,6 +7,18 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/.turbo/**",
       "**/dist/**",
+      // Next.js's own build cache/output and OpenNext's Cloudflare bundle
+      // (editorial-build slice B) — build output, same class as dist/**:
+      // bundled/minified/generated code (require, __dirname, Turbopack
+      // runtime internals) that was never meant to pass ESM/browser lint.
+      "**/.next/**",
+      "**/.open-next/**",
+      // @next/env's generated ambient module — Next's own convention (its
+      // own scaffolded .gitignore excludes it from version control too).
+      "**/next-env.d.ts",
+      // wrangler's generated ambient bindings/runtime types — regenerate via
+      // `pnpm run cf-typegen`, never hand-edited.
+      "**/cloudflare-env.d.ts",
       "**/coverage/**",
       "**/.wrangler/**",
       "docs/**",

@@ -41,11 +41,18 @@ const repoRoot = join(suiteDir, "..", "..", "..");
 const evidenceDir = join(suiteDir, "..", ".dev-logs", "drift");
 
 const SSR_NOISE = PERMITTED_NOISE["placeholder-ssr"]!;
+const REACT_NEXT_NOISE = PERMITTED_NOISE["react-next"]!;
 
 let browser: Browser;
 let statics: StaticServer;
 let REFERENCE_URL: string;
 let FIXTURE_URL: string;
+// The editorial master re-rendered from the RESOLVED snapshot (ADR-0008 §9)
+// — shared by every variant's editorial comparison below (vanilla,
+// react-next, ...): the re-render is a pure function of the snapshot, not
+// of which variant is under test.
+let masterDomUrl: string;
+let masterPixelUrl: string;
 
 beforeAll(async () => {
   try {
@@ -64,6 +71,90 @@ afterAll(async () => {
   await browser?.close();
   await statics?.close();
 });
+
+beforeAll(async () => {
+  // The gate's first REAL variant comparison (editorial-build slice A) and
+  // the deployed-smoke re-render leg are one snapshot-aware mechanism: the
+  // editorial master is re-rendered IN-PROCESS from whatever snapshot
+  // /api/snapshot says the origin serves — the fixture in CI (proving
+  // fixture-equivalence, exactly what the committed master pins) and the
+  // crate on the deployed plane (proving the plane serves the crate
+  // correctly, which the committed fixture-rendered master cannot). Two
+  // flavors of the re-render:
+  //  - DOM leg: image srcs stay tray-verbatim (/assets/img/* — attribute
+  //    values are contract, and the served variant page carries the same);
+  //  - pixel leg: image srcs point at the origin under test, because the
+  //    crate's image bytes are deliberately not in git — the plane serves
+  //    them (the fixture case exercises the same path through local R2).
+  const rerenderRoot = join(
+    repoRoot,
+    "packages",
+    "reference",
+    ".local",
+    "origin-suite-rerender",
+  );
+  const snap = await loadServedSnapshot();
+  const name = snapshotNameFor(snap.root);
+  // Dynamic import by file URL: the renderer is plain-JS build tooling
+  // with a main-module-guarded CLI — importing renders and writes nothing
+  // (the @pm/reference regeneration test's own pattern).
+  const lib = await import(
+    pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+  );
+  const editorial = await import(
+    pathToFileURL(join(repoRoot, "packages", "reference", "render", "editorial.mjs")).href
+  );
+  const snapshot = lib.loadSnapshot(name);
+  // extraDepth 2: these files sit four directories below packages/reference
+  // (.local/origin-suite-rerender/{flavor}/editorial/), so the head's
+  // relative @pm/tokens links resolve through the package's node_modules
+  // symlink on the gate's repo-root static server.
+  for (const [flavor, origin] of [
+    ["dom", ""],
+    ["pixels", ORIGIN],
+  ] as const) {
+    const html = editorial.renderEditorial(snapshot, { origin, extraDepth: 2 });
+    const dir = join(rerenderRoot, flavor, "editorial");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "index.html"), html);
+  }
+  const base = `${statics.origin}/packages/reference/.local/origin-suite-rerender`;
+  masterDomUrl = `${base}/dom/editorial/`;
+  masterPixelUrl = `${base}/pixels/editorial/`;
+});
+
+/**
+ * Settle every image before a pixel shot. In the gate's JS-off contexts
+ * the editorial figure's `loading="lazy"` never actually defers — the
+ * HTML spec runs lazy loading only when scripting is enabled — so the
+ * scroll is defensive (a JS-on reuse of this helper would need it), and
+ * the real work is the settle + the broken-load check: every `<img>`
+ * complete with `naturalWidth > 0`. A master-side 404 must read as a
+ * harness failure, never as pixel "drift".
+ */
+async function settleImages(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    window.scrollTo(0, document.documentElement.scrollHeight),
+  );
+  const deadline = Date.now() + 15_000;
+  for (;;) {
+    const settled = await page.evaluate(() =>
+      Array.from(document.images).every((img) => img.complete),
+    );
+    if (settled) break;
+    if (Date.now() > deadline) {
+      throw new Error("images never settled — a screenshot now could false-diff");
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  const broken = await page.evaluate(() =>
+    Array.from(document.images)
+      .filter((img) => img.naturalWidth === 0)
+      .map((img) => img.currentSrc || img.src),
+  );
+  expect(broken, "broken image loads before the pixel shot").toEqual([]);
+  await page.evaluate(() => window.scrollTo(0, 0));
+}
 
 /**
  * Open a page and record every network request it makes: rendering must be
@@ -366,93 +457,6 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
 });
 
 describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapshot (ADR-0008 §9)", () => {
-  // The gate's first REAL variant comparison (editorial-build slice A) and
-  // the deployed-smoke re-render leg are one snapshot-aware mechanism: the
-  // editorial master is re-rendered IN-PROCESS from whatever snapshot
-  // /api/snapshot says the origin serves — the fixture in CI (proving
-  // fixture-equivalence, exactly what the committed master pins) and the
-  // crate on the deployed plane (proving the plane serves the crate
-  // correctly, which the committed fixture-rendered master cannot). Two
-  // flavors of the re-render:
-  //  - DOM leg: image srcs stay tray-verbatim (/assets/img/* — attribute
-  //    values are contract, and the served variant page carries the same);
-  //  - pixel leg: image srcs point at the origin under test, because the
-  //    crate's image bytes are deliberately not in git — the plane serves
-  //    them (the fixture case exercises the same path through local R2).
-  const rerenderRoot = join(
-    repoRoot,
-    "packages",
-    "reference",
-    ".local",
-    "origin-suite-rerender",
-  );
-  let masterDomUrl: string;
-  let masterPixelUrl: string;
-
-  beforeAll(async () => {
-    const snap = await loadServedSnapshot();
-    const name = snapshotNameFor(snap.root);
-    // Dynamic import by file URL: the renderer is plain-JS build tooling
-    // with a main-module-guarded CLI — importing renders and writes nothing
-    // (the @pm/reference regeneration test's own pattern).
-    const lib = await import(
-      pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
-    );
-    const editorial = await import(
-      pathToFileURL(join(repoRoot, "packages", "reference", "render", "editorial.mjs")).href
-    );
-    const snapshot = lib.loadSnapshot(name);
-    // extraDepth 2: these files sit four directories below packages/reference
-    // (.local/origin-suite-rerender/{flavor}/editorial/), so the head's
-    // relative @pm/tokens links resolve through the package's node_modules
-    // symlink on the gate's repo-root static server.
-    for (const [flavor, origin] of [
-      ["dom", ""],
-      ["pixels", ORIGIN],
-    ] as const) {
-      const html = editorial.renderEditorial(snapshot, { origin, extraDepth: 2 });
-      const dir = join(rerenderRoot, flavor, "editorial");
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "index.html"), html);
-    }
-    const base = `${statics.origin}/packages/reference/.local/origin-suite-rerender`;
-    masterDomUrl = `${base}/dom/editorial/`;
-    masterPixelUrl = `${base}/pixels/editorial/`;
-  });
-
-  /**
-   * Settle every image before a pixel shot. In the gate's JS-off contexts
-   * the editorial figure's `loading="lazy"` never actually defers — the
-   * HTML spec runs lazy loading only when scripting is enabled — so the
-   * scroll is defensive (a JS-on reuse of this helper would need it), and
-   * the real work is the settle + the broken-load check: every `<img>`
-   * complete with `naturalWidth > 0`. A master-side 404 must read as a
-   * harness failure, never as pixel "drift".
-   */
-  async function settleImages(page: Page): Promise<void> {
-    await page.evaluate(() =>
-      window.scrollTo(0, document.documentElement.scrollHeight),
-    );
-    const deadline = Date.now() + 15_000;
-    for (;;) {
-      const settled = await page.evaluate(() =>
-        Array.from(document.images).every((img) => img.complete),
-      );
-      if (settled) break;
-      if (Date.now() > deadline) {
-        throw new Error("images never settled — a screenshot now could false-diff");
-      }
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    const broken = await page.evaluate(() =>
-      Array.from(document.images)
-        .filter((img) => img.naturalWidth === 0)
-        .map((img) => img.currentSrc || img.src),
-    );
-    expect(broken, "broken image loads before the pixel shot").toEqual([]);
-    await page.evaluate(() => window.scrollTo(0, 0));
-  }
-
   it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE (vanilla is the control)", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
@@ -489,6 +493,58 @@ describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapsho
       await settleImages(page);
       const shot = await captureStablePixels(page);
       assertPixelsEqual(`pixels-${profileId}-vanilla-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
+  }
+});
+
+describe("editorial: react-next vs the master re-rendered from the RESOLVED snapshot (editorial-build slice B)", () => {
+  it("the served page equals the re-rendered master by normalized DOM — under react-next's registered noise", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/react-next/editorial/`);
+    // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+    // Non-vacuity for the registered noise itself: derived from the ACTUAL
+    // registered selector(s) (not a hand-typed approximation, which could
+    // silently drift out of sync with normalize.ts and pass even if the
+    // real selector became vacuous — verify-slice finding) — each selector
+    // this variant excuses must actually match something on the served
+    // page, or the registration is excusing nothing real.
+    for (const selector of REACT_NEXT_NOISE.dropElementSelectors ?? []) {
+      expect(await page.locator(selector).count(), selector).toBeGreaterThan(0);
+    }
+    const dom = await extractNormalizedDom(page, REACT_NEXT_NOISE);
+    expect(dom).not.toContain("pm-chrome");
+    assertDomEqual("dom-react-next-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+      const context = await browser.newContext(
+        profileContextOptions(PROFILES[profileId]),
+      );
+      const masterPage = await openTracked(context, masterPixelUrl);
+      // The re-rendered master has no chrome slot — part of the contract.
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureStablePixels(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/react-next/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      await settleImages(page);
+      const shot = await captureStablePixels(page);
+      assertPixelsEqual(`pixels-${profileId}-react-next-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
     }, 120_000);

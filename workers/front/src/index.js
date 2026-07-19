@@ -22,6 +22,7 @@ const VARIANTS = {
   "placeholder-static": "PLACEHOLDER_STATIC",
   "placeholder-ssr": "PLACEHOLDER_SSR",
   vanilla: "VANILLA",
+  "react-next": "REACT_NEXT",
 };
 
 // Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass

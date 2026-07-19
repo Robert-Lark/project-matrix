@@ -9,10 +9,16 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@pm/data-contract": "workspace:*",
     "@pm/drift-gate": "workspace:*",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^24.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "fontkit": "^2.0.4",
+    "linkedom": "^0.18.13",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }

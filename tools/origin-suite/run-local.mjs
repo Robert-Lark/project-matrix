@@ -5,7 +5,10 @@
 // suite, and tears everything down.
 //
 // Variants start before the front Worker so its service bindings find them in
-// wrangler's local dev registry (the spike's proven shape).
+// wrangler's local dev registry (the spike's proven shape). Edge starts
+// first of all: react-next binds pm-edge itself (a request-time variant,
+// editorial-build slice B), so its own dev process needs edge already
+// registered, same as front's requirement.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, openSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -14,7 +17,9 @@ import { fileURLToPath } from "node:url";
 const suiteDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(suiteDir, "..", "..");
 const ORIGIN = "http://127.0.0.1:8787";
-const PORTS = [8787, 8788, 8789, 8790, 8791, 8792, 9230, 9231, 9232, 9233, 9234, 9235];
+const PORTS = [
+  8787, 8788, 8789, 8790, 8791, 8792, 8793, 9230, 9231, 9232, 9233, 9234, 9235, 9236,
+];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
 
@@ -183,6 +188,7 @@ try {
   startWorker("variants/placeholder-static", "placeholder-static");
   startWorker("variants/placeholder-ssr", "placeholder-ssr");
   startWorker("variants/vanilla", "vanilla");
+  startWorker("variants/react-next", "react-next");
   startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
@@ -191,6 +197,7 @@ try {
   await waitFor(`${ORIGIN}/placeholder-static/sample/`, 60_000);
   await waitFor(`${ORIGIN}/placeholder-ssr/sample/`, 60_000);
   await waitFor(`${ORIGIN}/vanilla/editorial/`, 60_000);
+  await waitFor(`${ORIGIN}/react-next/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 

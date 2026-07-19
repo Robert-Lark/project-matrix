@@ -58,6 +58,7 @@ export function extractNormalizedDom(
     attrPatterns: [...noise.attrPatterns],
     classPatterns: [...noise.classPatterns],
     behaviorAttrPatterns: [...noise.behaviorAttrPatterns],
+    dropElementSelectors: noise.dropElementSelectors ? [...noise.dropElementSelectors] : [],
     rootSelector,
   });
 }

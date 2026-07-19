@@ -1677,6 +1677,160 @@ from `SURFACE_CONTROLS` and survives B–F's registrations unchanged.
 Final state with every adoption in: origin suite 160/160 (the transport
 and capped-badge tests joined it), turbo checks 20/20.
 
+### `editorial-build` slice B — the react-next variant, OpenNext on Cloudflare (2026-07-19)
+
+`/react-next/editorial/` serves through the composed origin: the render
+baseline's planning-time villain, on the framework's own idiomatic
+default (`create-next-app`, unmodified except where ADR-0008 forces a
+deviation — DIFF-TO-STARTER.md records every one). What the record
+should keep beyond the slice spec:
+
+**Next 16 warns it isn't the Next you trained on, and it was right twice.**
+The scaffold's own `AGENTS.md` says to read `node_modules/next/dist/docs/`
+before writing code, not recall it — followed literally. Two findings
+came directly from that discipline, not guesswork: Cache Components
+(`cacheComponents: true`) is opt-in in v16, not the default, so the
+classic `dynamic = "force-dynamic"` route-segment config still governs
+this variant exactly as it always has; and `basePath` only auto-prefixes
+`next/link`/`next/router` — hand-written `<link>`/asset paths need the
+prefix written in, which is what makes fonts/CSS byte-identical delivery
+possible at all (point 8 below).
+
+**A genuine infinite-recursion bug, found by actually running the build,
+not by reading it.** `@opennextjs/aws`'s `buildNextjsApp()` shells out to
+`${packager} build` when no `buildCommand` is configured — for pnpm,
+literally `pnpm build`, i.e. this package's OWN `build` script (`... &&
+opennextjs-cloudflare build`). Running `pnpm run build` therefore called
+itself, forever; the failure looked like a hung process re-printing its
+own banner every ~15s, not an obvious stack overflow, and took several
+rounds of process-tree inspection and a raw-log capture (the CLI's own
+TUI redraws obscured the real error) to trace to the actual cause. Fixed
+by pinning `buildCommand` on the object `defineCloudflareConfig()`
+returns (its own parameter type doesn't accept the field — has to be set
+after the call, not passed into it).
+
+**Fonts/CSS as a controlled constant meant fighting the recommended
+pattern, on purpose.** ADR-0003 §8 requires byte-identical files and
+canonical loading markup; Next's own guidance for stylesheets
+("Unsupported Metadata" table) is "import them directly," which runs the
+files through the bundler — hashed, processed, no longer byte-identical
+to `@pm/tokens`. `scripts/copy-tokens.mjs` copies the source files
+untouched into `public/` instead, and `layout.tsx` renders a literal
+`<head>` with plain `<link>` children. One wrong assumption corrected
+empirically along the way: rendering those `<link>`s as children of
+`<body>` (the first attempt, reasoning that React hoists `<link>`/`<meta>`
+from anywhere in the tree) does NOT get them moved into `<head>` — they
+stayed exactly where authored, confirmed by fetching the real served
+page, not by re-reading React's docs harder. An explicit `<head>` element
+is what actually places them there.
+
+**The zero-tolerance pixel gate found a real, if invisible, difference —
+and the fix was a code-quality improvement, not a tolerance threshold.**
+All three profiles failed pixel comparison against the master on the
+first real run, ~0.01–0.02% of pixels differing, clustered on individual
+glyphs mid-paragraph. Side-by-side crops looked identical; only a pixel
+subtraction revealed it. Root cause, traced to source: JSX splits
+`text {expr} more text` into separate DOM text nodes joined by React's
+own empty `<!-- -->` hydration-boundary comments (confirmed in real
+served output), and Chromium's text shaping produces measurably different
+sub-pixel antialiasing across that extra node boundary than across the
+master's single continuous text node — same visible characters, same
+CSS, different glyph-edge rounding. `comparePixels`' zero-tolerance
+policy is deliberate spec (`includeAA: true`, same-run determinism —
+tools/drift-gate/src/pixels.ts's own header), so the fix was in the
+essay content, not the gate: every prose block became one combined
+template-literal string per side of any embedded `<em>` (matching the
+master's own single-text-node shape exactly), JSX used only to wrap the
+actual `<em>` element. Zero pixels differ now, across all three profiles,
+both snapshots.
+
+**A framework-residue class the existing registry couldn't express, so
+the registry grew a new kind of entry.** App Router's own SSR streaming
+wraps the body in an empty `<div hidden><!--$--><!--/$--></div>` marker —
+real, unavoidable, measured from actual served output. The comments are
+already-permitted noise (stripped unconditionally); the wrapping ELEMENT
+had no equivalent case — `NoiseSpec`'s three fields only ever strip
+attributes/classes on elements that exist in both master and variant, not
+elements that exist only in one. `dropElementSelectors` generalizes the
+drift gate's own hardcoded chrome-slot removal into registry policy: any
+future variant with the same kind of structural-wrapper residue registers
+a CSS selector instead of the gate needing another one-off carve-out.
+
+**verify-slice ran all four lenses sequentially in the background while
+the foreground probed inline and built the remaining registrations: 8
+findings, all verified against source before adopting, all real, all
+fixed pre-commit.** Beyond the pixel-gate and recursion findings above:
+an origin-suite raw-string assertion used the decimal HTML entity form
+(`&#39;`) for the featured release's title/artist, but React's SSR
+serializer uses the hex form (`&#x27;`) — verified against the installed
+`react-dom` source, not assumed; both decode identically so the real
+(DOM-parsed) drift gate was never at risk, but the raw `.toContain()`
+check would have false-failed the moment a future curated pick's
+title/artist contained an apostrophe, quote, `&`, `<`, or `>` (the current
+picks happen to have none) — fixed with a React-specific escape helper
+for that one assertion. The pre-merge variant-master-identity guard's
+`dropElementSelectors` registration was never actually exercised by its
+own mechanism (`renderToStaticMarkup` doesn't produce the streaming
+wrapper `PAGE_NORMALIZE` is supposed to strip), a silent no-op a future
+selector typo or framework version bump could hide behind — closed with a
+dedicated case that normalizes a literal wrapper fixture through the
+registered spec and asserts it disappears. The interactive cart suite
+(`cart.browser.test.ts`) was the only JS-on end-to-end coverage and was
+hardcoded to vanilla; react-next's cart islands had zero automated
+click-through proof despite DIFF-TO-STARTER.md claiming the behavior
+works — parametrized over every live editorial variant instead of adding
+a one-off twin. `@pm/react-next#build`'s turbo task declared no `inputs`
+for the fixture `manifest.json`/`curation.json` it statically imports at
+build time (the featured-id policy resolution) — a fixture regeneration
+touching neither file under `variants/react-next/` would have replayed a
+stale cached bundle, the exact hazard `@pm/vanilla#build`'s own inputs
+declaration already exists to prevent, just from a narrower cause here
+(one variant-owned data import, not the whole tray). And the most
+consequential: the `deploy` script never ran `copy-tokens.mjs` — CI's
+"deploy" job invokes `pnpm --filter @pm/react-next run deploy` directly,
+entirely outside turbo's cache, and since that job's turbo cache for the
+"build" task is a guaranteed hit on a normal push (shared cache key with
+the already-run "origin" job, same SHA), `public/assets/pm/` — git-
+ignored, not a declared turbo output — would never have existed on the
+deploy job's runner at all. Undetected, the very first real deploy would
+have shipped a Worker with all nine CSS files and both fonts 404ing: a
+completely unstyled production page. Fixed by making `deploy`
+self-sufficient, the same way `build` already was. The anti-rigging
+lens's two findings closed the arc: `dropElementSelectors` removed a
+whole subtree by POSITION only, with nothing proving it was actually
+content-free — traced to Next's own source, the exact div it targets is
+the framework's streaming-METADATA boundary (`MetadataWrapper()`), empty
+today only because this page's `generateMetadata()` returns nothing but
+an auto-hoisting `<title>`; a future icon or `alternate` link added there
+would render as a real child inside the SAME div and be silently erased
+before the drift gate ever compared it — fixed with a content-emptiness
+guard (`childElementCount === 0`) plus a pinned exact-substring assertion
+that fails the moment the div stops being empty. And: nothing forced the
+one failure path this, the FIRST request-time variant in the whole
+matrix, actually has — an unreachable or non-2xx `pm-edge` had no error
+boundary at all, meaning a visitor would land on Next's generic unbranded
+default (confirmed by tracing the compiled bundle, not assumed) instead
+of the store's own chrome. Added `app/editorial/error.tsx` reusing `Shell`
+directly, verified end-to-end by temporarily sabotaging the edge fetch
+path and checking the ACTUAL rendered DOM via Playwright (the failure
+path streams an RSC payload a raw curl can't resolve into visible text),
+then reverting — disclosed as a manual verification, not a committed
+automated test (DIFF-TO-STARTER.md records why: the alternatives were a
+test-only fault-injection hook in production code, or stopping the edge
+Worker mid-run and destabilizing the shared composed-origin suite).
+
+**Verification:** turbo lint/typecheck/test 22/22 (root `eslint.config.mjs`
+gained `.next/`/`.open-next/`/generated-`.d.ts` ignores along the way —
+found by actually running the repo-wide lint, which had picked up ~16,000
+errors from Next's and OpenNext's own bundled/generated output before
+that fix). Origin suite 199/199 in fixture mode AND 199/199 against a
+crate-seeded local plane. Narrative in this entry; DIFF-TO-STARTER.md
+carries the full deviation-by-deviation record, including two items
+(the Brotli/`localhost`-vs-`127.0.0.1` wrangler-dev gotcha, and the
+`esbuild`/`pnpm-workspace.yaml` `packageExtensions` fix for
+`@opennextjs/cloudflare`'s own incomplete dependency declaration) verified
+empirically rather than assumed from the library's documentation.
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he
