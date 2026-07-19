@@ -172,7 +172,12 @@ export function editorPage({ post, csrf }) {
         <iframe id="preview" title="Live preview — rendered exactly as the blog renders"></iframe>
       </section>
     </div>
+    <div id="meta-backdrop" class="meta-backdrop" hidden></div>
     <aside id="meta-panel" class="meta-panel" hidden aria-label="Post settings">
+      <div class="panel-top">
+        <button id="close-meta" class="panel-close" type="button" aria-label="Close settings">✕</button>
+      </div>
+      <p id="publish-hint" class="publish-hint" role="status" aria-live="polite" hidden></p>
       <form id="meta-form">
         <h2>Post settings</h2>
         <label for="f-slug">Slug <button type="button" id="slug-from-title" class="linkish">from title</button></label>

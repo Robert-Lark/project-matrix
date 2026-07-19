@@ -267,6 +267,10 @@ button.primary {
   padding: 0.6rem 1rem;
   border-block-end: 1px solid var(--line);
   background: var(--paper);
+  /* Stay above the settings drawer (z 20) and its backdrop (z 15) so the
+     primary actions — Publish, Settings, Preview — never hide behind it. */
+  position: relative;
+  z-index: 30;
 }
 
 .back {
@@ -347,7 +351,9 @@ button.primary {
 
 .meta-panel {
   position: fixed;
-  inset-block: 0;
+  /* Begin below the header (measured into --top-h) so its content is never
+     tucked under the top bar. */
+  inset-block: var(--top-h, 3.5rem) 0;
   inset-inline-end: 0;
   width: min(24rem, 92vw);
   overflow-y: auto;
@@ -355,7 +361,67 @@ button.primary {
   border-inline-start: 1px solid var(--line);
   box-shadow: -12px 0 32px rgb(0 0 0 / 0.12);
   padding: 1.25rem 1.25rem 3rem;
-  z-index: 10;
+  z-index: 20;
+  animation: meta-slide 160ms ease-out;
+}
+
+/* Dimmed, click-to-dismiss backdrop behind the drawer. The header sits above
+   it (z 30), so Publish stays reachable while the rest is clearly inert. */
+.meta-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: rgb(0 0 0 / 0.28);
+  animation: meta-fade 120ms ease-out;
+}
+
+.panel-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel-close {
+  border: none;
+  background: none;
+  padding: 0.15rem 0.4rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--faint);
+}
+
+.panel-close:hover {
+  color: var(--ink);
+  border-color: transparent;
+}
+
+/* Durable guidance shown when Publish needs a real slug first — the header
+   status line is transient (autosave overwrites it) and was hidden here. */
+.publish-hint {
+  margin: 0 0 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink);
+  background: color-mix(in oklab, var(--accent-ui) 14%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--accent-ui) 35%, var(--line));
+}
+
+@keyframes meta-slide {
+  from { transform: translateX(0.75rem); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes meta-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meta-panel,
+  .meta-backdrop {
+    animation: none;
+  }
 }
 
 .meta-panel h2 {

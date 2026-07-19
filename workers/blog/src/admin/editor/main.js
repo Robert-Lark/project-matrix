@@ -435,6 +435,14 @@ view.focus();
 updateWordCount();
 offerRestore();
 
+// The settings drawer opens below the header; publish this height as a CSS
+// var so its content never tucks under the top bar (see .meta-panel).
+const editorTop = document.querySelector(".editor-top");
+const syncTopHeight = () =>
+  document.documentElement.style.setProperty("--top-h", `${editorTop.offsetHeight}px`);
+syncTopHeight();
+new ResizeObserver(syncTopHeight).observe(editorTop);
+
 // ---------------------------------------------------------------- preview --
 let previewOn = false;
 let previewTimer = null;
@@ -471,13 +479,24 @@ el("toggle-preview").addEventListener("click", togglePreview);
 
 // -------------------------------------------------------------- meta panel --
 const metaPanel = el("meta-panel");
+const metaBackdrop = el("meta-backdrop");
+const publishHint = el("publish-hint");
 function toggleMeta(force) {
   const show = force ?? metaPanel.hidden;
   metaPanel.hidden = !show;
+  metaBackdrop.hidden = !show;
   el("toggle-meta").setAttribute("aria-expanded", String(show));
-  if (show) el("f-slug").focus();
+  if (show) {
+    publishHint.hidden = true; // clear stale guidance; the publish flow re-shows it
+    el("f-slug").focus();
+  } else {
+    view.focus();
+  }
 }
 el("toggle-meta").addEventListener("click", () => toggleMeta());
+// Light-dismiss: click the dimmed backdrop or the ✕ to close (Escape also works).
+metaBackdrop.addEventListener("click", () => toggleMeta(false));
+el("close-meta").addEventListener("click", () => toggleMeta(false));
 document.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === ",") {
     event.preventDefault();
@@ -499,6 +518,7 @@ metaForm.addEventListener("input", markDirty);
 el("f-title").addEventListener("input", markDirty);
 el("f-slug").addEventListener("input", () => {
   el("slug-echo").textContent = el("f-slug").value;
+  publishHint.hidden = true;
 });
 el("slug-from-title").addEventListener("click", () => {
   el("f-slug").value = slugify(el("f-title").value);
@@ -516,15 +536,23 @@ el("f-accent").addEventListener("input", () => {
 // ---------------------------------------------------------------- publish --
 el("publish").addEventListener("click", async () => {
   if (el("f-slug").value.startsWith("draft-")) {
+    // Open settings and offer a slug derived from the title, then wait: the
+    // slug is the permanent URL, so the author confirms it before publishing.
     toggleMeta(true);
     if (el("f-title").value) {
       el("f-slug").value = slugify(el("f-title").value);
       el("slug-echo").textContent = el("f-slug").value;
       markDirty();
     }
-    saveState.textContent = "Give it a real slug, then publish again.";
+    // The header status is transient (autosave overwrites it) and sits under
+    // the drawer — put the guidance where the author is now looking.
+    publishHint.textContent = el("f-slug").value
+      ? "Check this URL — it’s permanent once published. Then press Publish again."
+      : "Give this post a slug (its URL), then press Publish again.";
+    publishHint.hidden = false;
     return;
   }
+  publishHint.hidden = true;
   dirty = true;
   if (!(await save())) return;
   const res = await api(`/blog/admin/api/posts/${postId}/publish`, { method: "POST" });

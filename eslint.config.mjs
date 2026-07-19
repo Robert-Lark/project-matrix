@@ -76,6 +76,7 @@ export default tseslint.config(
         localStorage: "readonly",
         navigator: "readonly",
         HTMLDialogElement: "readonly",
+        ResizeObserver: "readonly",
       },
     },
   },
