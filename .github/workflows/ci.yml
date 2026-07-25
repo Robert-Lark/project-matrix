@@ -123,12 +123,19 @@ jobs:
 
       - name: Build worker dists (variants + measurement bundle + front /_pm assets)
         if: steps.creds.outputs.present == 'true'
-        # PM_SNAPSHOT=crate: the deployed plane serves the crate, so
-        # snapshot-parameterized variant builds (@pm/vanilla) must bake the
-        # crate's trays. The selector is declared as turbo env on those tasks
-        # — otherwise the restored turbo-origin-* cache would replay the
-        # origin job's fixture-flavored dists onto the crate plane
-        # (turbo.json documents the hazard).
+        # PM_SNAPSHOT=crate: the deployed plane serves the crate, so every
+        # snapshot-parameterized (build-time) variant must bake the crate's
+        # trays here. Which builds those are is DERIVABLE, deliberately not
+        # enumerated in this comment: they are exactly the turbo tasks
+        # declaring `env: ["PM_SNAPSHOT"]` (grep turbo.json) — an enumerated
+        # list goes stale the moment another build-time variant lands, and a
+        # stale list here is dangerous rather than untidy: it is the evidence
+        # someone would use to conclude a variant's `deploy` may safely
+        # rebuild. It may not. THIS step is the only place PM_SNAPSHOT is set,
+        # so a rebuild inside any `deploy` script would default to `fixture`
+        # and overwrite crate-baked output moments before upload
+        # (variants/astro/DIFF-TO-STARTER.md point 9; turbo.json documents the
+        # cache-family hazard the env declaration exists to prevent).
         run: pnpm exec turbo run build
         env:
           PM_SNAPSHOT: crate
@@ -159,6 +166,7 @@ jobs:
           pnpm --filter @pm/placeholder-ssr run deploy
           pnpm --filter @pm/vanilla run deploy
           pnpm --filter @pm/react-next run deploy
+          pnpm --filter @pm/astro run deploy
 
       # The blog plane (ADR-0009): resources, then schema, then the Worker —
       # and all of it before the front Worker, whose BLOG binding must

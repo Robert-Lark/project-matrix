@@ -210,6 +210,21 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
     });
   }
 
+  /**
+   * NOTE — astro's equivalent guard is deliberately NOT in this file
+   * (editorial-build slice C). It closes the same hole for the same reason,
+   * but through Astro's own render-to-string entry point: the Container API
+   * (`experimental_AstroContainer` from `astro/container`), which needs
+   * Astro's compiler to load a `.astro` component and therefore needs
+   * `getViteConfig` in the vitest config. Adding that here would route every
+   * repo-wide structural check in this workspace through Astro's Vite plugin,
+   * so an Astro upgrade could break guards with nothing to do with Astro.
+   * It lives at `variants/astro/test/master-identity.test.ts`, reuses this
+   * same `PAGE_NORMALIZE`-over-linkedom policy, and is still reached
+   * pre-merge by the `check` job (`turbo run lint typecheck test`) with
+   * `@pm/astro#test` declared `cache: false` for the same
+   * under-declarable-inputs reason `@pm/repo-checks#test` is.
+   */
   it("REACT_NEXT_NOISE.dropElementSelectors actually matches the App Router streaming wrapper", () => {
     const withWrapper = normalizeHtml(
       '<!doctype html><html lang="en"><body><div hidden><!--$--><!--/$--></div><p>content</p></body></html>',

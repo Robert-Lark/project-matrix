@@ -103,6 +103,27 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   // vanilla registers NOTHING — it is the NO_NOISE control, by design
   // (editorial-build PRD): the absence of an entry here is asserted in the
   // origin suite, and its drift comparison runs under NO_NOISE.
+  //
+  // astro registers NOTHING EITHER, and unlike vanilla that is a MEASURED
+  // result rather than a design choice (editorial-build slice C). Astro's two
+  // noise species both turned out to be opt-in, and this page opts into
+  // neither:
+  //   - `data-astro-cid-*` scoping attributes appear only on components that
+  //     carry a `<style>` block. This variant delivers the shared design
+  //     system as plain <link>s to unprocessed files (ADR-0003 §8 pins the
+  //     font markup and byte-identical files), so it authors no scoped styles
+  //     and no element carries a cid.
+  //   - `<astro-island>` wrappers appear only around FRAMEWORK components
+  //     given a `client:*` directive. The one interaction on this surface is a
+  //     plain bundled `<script>` — Astro's own documented mechanism for
+  //     interactivity without a UI framework — so no island exists to wrap.
+  // Measured from real built output, not inferred: the served page's DOM
+  // normalizes equal to the master under NO_NOISE, and an island probe built
+  // during the slice confirmed the wrapper is an ELEMENT with element
+  // children (so `dropElementSelectors`' content-aware guard could not have
+  // excused it anyway — the reason the island was rejected). The origin suite
+  // asserts the empty registration, and the drift leg compares under
+  // NO_NOISE; variants/astro/DIFF-TO-STARTER.md records the whole finding.
   /** react-next (editorial-build slice B): measured from real served
    *  output (not guessed) — no noisy attributes or scoping-hash classes
    *  anywhere; the one residue is structural, App Router's own streaming

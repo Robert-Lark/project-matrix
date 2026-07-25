@@ -1,0 +1,118 @@
+---
+/**
+ * The canonical shell, re-implemented as an Astro layout — the skeleton every
+ * store surface wraps itself in (`packages/reference/render/shell.mjs` is the
+ * markup contract of record; ADR-0003 §1: a component is a spec, each paradigm
+ * re-implements the DOM in its own idiom and must emit it byte-identically).
+ *
+ * Variant-only additions the masters deliberately omit (ADR-0008): the
+ * `div#pm-chrome-slot` immediately after the skip link — so the skip link stays
+ * the first focusable element — and the paradigm's own scripts.
+ *
+ * Cross-surface links are ABSOLUTE, to each destination surface's DESIGNATED
+ * HOST variant, exactly as the master has them: the sparse matrix means a
+ * same-variant link would 404 wherever this variant doesn't build that surface.
+ * Several of these targets 404 until their builds land — by design; no
+ * assertion anywhere may require them to resolve yet.
+ *
+ * Whitespace discipline: elements whose INLINE content is whitespace-sensitive
+ * (the brand, the cart anchor, every prose-bearing element) are authored on one
+ * line, and inter-element whitespace matches the master's own. Astro emits a
+ * template's whitespace as authored, so a reflowed line break inside an inline
+ * run is a real rendering difference — the zero-tolerance pixel leg would catch
+ * it, but it is cheaper not to write it.
+ */
+interface Props {
+  title: string;
+  /** Which masthead link carries aria-current="page". */
+  current?: "plp" | "editorial";
+  /** The surface's own CSS modules, appended after the shell's (master order). */
+  css: readonly string[];
+}
+
+const { title, current, css } = Astro.props;
+
+/** Designated hosts (spec of record — shell.mjs HOSTS). */
+const HOSTS = {
+  plp: "/react-next/plp/plain/",
+  editorial: "/vanilla/editorial/",
+  checkout: "/vanilla/checkout/",
+  a11y: "/vanilla/a11y/",
+  howBuilt: "/how-it-was-built/",
+};
+
+/**
+ * This variant's own asset base. `import.meta.env.BASE_URL` is Astro's
+ * documented base-aware URL root — it reflects astro.config.mjs's `base` plus
+ * the trailing slash `trailingSlash: "always"` implies — so the prefix is
+ * derived from config instead of typed a second time. The front Worker never
+ * rewrites paths, so a wrong prefix here is a 404, not a redirect.
+ */
+const asset = (path: string) => `${import.meta.env.BASE_URL}assets/pm/${path}`;
+
+/**
+ * The shell's own CSS, in the master's order (shell.mjs head()). Delivered as
+ * plain <link>s to files Astro serves verbatim out of public/ — see
+ * scripts/prepare-build.mjs for why they are not bundled.
+ */
+const SHELL_CSS = [
+  "tokens.css",
+  "surfaces/shell.css",
+  "components/masthead.css",
+  "components/footer.css",
+  "components/button.css",
+];
+
+/**
+ * The canonical font-loading markup (@pm/tokens/fonts/loading-markup.html)
+ * verbatim modulo the base path — ADR-0003 §8: fonts are a controlled constant
+ * and only the asset base may differ per consumer. Preloads for the two
+ * first-paint files, then the @font-face stylesheet. PMWarnGlyph is served but
+ * deliberately NOT preloaded (an error-state-only glyph, never first paint).
+ */
+const PRELOAD_FONTS = ["fonts/FamiljenGrotesk.var.woff2", "fonts/PMCrateSymbols.woff2"];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {PRELOAD_FONTS.map((file) => (
+      <link rel="preload" href={asset(file)} as="font" type="font/woff2" crossorigin />
+    ))}
+    <link rel="stylesheet" href={asset("css/fonts.css")} />
+    {[...SHELL_CSS, ...css].map((file) => (
+      <link rel="stylesheet" href={asset(`css/${file}`)} />
+    ))}
+  </head>
+  <body>
+    <a class="pm-skip pm-button" href="#main">Skip to content</a>
+    <div id="pm-chrome-slot"></div>
+    <div class="pm-page">
+      <header class="pm-masthead">
+        <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+        <nav class="pm-masthead__nav" aria-label="Store">
+          <a class="pm-masthead__link" href={HOSTS.plp} aria-current={current === "plp" ? "page" : undefined}>Records</a>
+          <a class="pm-masthead__link" href={HOSTS.editorial} aria-current={current === "editorial" ? "page" : undefined}>Editorial</a>
+        </nav>
+        <a class="pm-masthead__cart" href={HOSTS.checkout}>Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+      </header>
+      <main id="main">
+        <slot />
+      </main>
+      <p class="pm-status" role="status" data-pm-status></p>
+      <footer class="pm-footer">
+        <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+        <nav class="pm-footer__nav" aria-label="About this site">
+          <a href="/">What is this?</a>
+          <a href={HOSTS.a11y}>Accessibility, shown</a>
+          <a href={HOSTS.howBuilt}>How it was built</a>
+          <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+        </nav>
+      </footer>
+    </div>
+    <slot name="scripts" />
+  </body>
+</html>

@@ -437,3 +437,235 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     expect(body).toMatch(/<a class="pm-masthead__cart" href="\/vanilla\/checkout\/">/);
   });
 });
+
+/**
+ * /astro/editorial/ — the third real variant: the islands paradigm, static
+ * output, no adapter (editorial-build slice C). Same duties as the two blocks
+ * above, with the differences this paradigm actually has:
+ *
+ *  - fonts/CSS verbatim modulo base path, ABSOLUTE like react-next's (the base
+ *    is `/astro/`, derived from astro.config.mjs via `import.meta.env.BASE_URL`)
+ *    — but unlike react-next, byte-exact: Astro renders a bare `crossorigin`
+ *    and does not self-close void elements, so the canonical lines match as
+ *    written rather than needing JSX-shaped tolerances;
+ *  - the SAME `esc` vanilla uses, not a second escaper: Astro escapes through
+ *    `html-escaper`, which is byte-identical to the reference renderer's own
+ *    `esc()` (apostrophe included — `&#39;`, decimal, where React emits
+ *    `&#x27;`);
+ *  - NO permitted-noise registration at all, which is a MEASURED fact about
+ *    this page and is asserted as such (see the drift leg for the raw-bytes
+ *    half of the same proof);
+ *  - the cart contract's key in the page's own bundled module script — Astro
+ *    processes a bare `<script>` (TypeScript, imports, `type="module"`), and
+ *    the release it adds rides a JSON script element, both of which are
+ *    delivery rather than contract (ADR-0008's freedoms name `script`).
+ */
+describe("the astro editorial page (canonical shell + composition)", () => {
+  it("serves 200 with the shell in canonical order: skip link, chrome slot, page", async () => {
+    const res = await get("/astro/editorial/");
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const skip = body.indexOf('class="pm-skip');
+    const slot = body.indexOf('id="pm-chrome-slot"');
+    const page = body.indexOf('class="pm-page"');
+    expect(skip).toBeGreaterThan(-1);
+    expect(slot).toBeGreaterThan(skip);
+    expect(page).toBeGreaterThan(slot);
+    expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
+    expect(body).toContain('<article class="pm-editorial">');
+    expect(body).toContain('role="status" data-pm-status');
+  });
+
+  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+    const snap = await loadServedSnapshot();
+    const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
+    if (!featured) throw new Error("resolved snapshot lost its featured release");
+    const body = await (await get("/astro/editorial/")).text();
+    // The dateline IS the manifest's freeze date (ADR-0008 §8) — asserted from
+    // the resolved committed manifest, never a literal. Astro emits the
+    // lowercase `datetime` attribute the master has (React's JSX prop is
+    // `dateTime`, which is why slice B's version of this assertion differs).
+    expect(body).toContain(
+      `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
+    );
+    expect(body).toContain(esc(featured.title));
+    expect(body).toContain(esc(featured.artist));
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets (never dereferenced here)", async () => {
+    const body = await (await get("/astro/editorial/")).text();
+    expect(body).toContain('href="/react-next/plp/plain/"');
+    expect(body).toContain('href="/vanilla/editorial/" aria-current="page"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+    expect(body).toContain('href="/vanilla/pdp/');
+  });
+
+  it("chrome injected: stamped for this page, serving cell current, counts from the arrays", async () => {
+    const controls = SURFACE_CONTROLS["editorial"]!;
+    // The registration move is part of this build's definition of done.
+    expect(controls.variants).toContain("astro");
+    expect(controls.plannedVariants).not.toContain("astro");
+
+    const body = await (await get("/astro/editorial/")).text();
+    expect(count(body, 'data-pm-chrome="1"')).toBe(1);
+    expect(body).toContain('data-pm-variant="astro"');
+    expect(body).toContain('data-pm-surface="editorial"');
+    expect(body).toContain('aria-current="page">astro<');
+    const live = controls.variants.length;
+    const planned = live + (controls.plannedVariants?.length ?? 0);
+    expect(body).toContain(`Served by ${live} of ${planned} planned variants today.`);
+    const switcherRow =
+      body.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain('aria-current="page">astro<');
+    const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
+      .map((m) => m[1])
+      .sort();
+    const otherLive = controls.variants.filter((v) => v !== "astro").sort();
+    expect(anchorTargets).toEqual(otherLive);
+    for (const v of controls.plannedVariants ?? []) {
+      expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
+      expect(switcherRow).not.toContain(v);
+    }
+  });
+
+  it("fonts: the canonical loading markup verbatim modulo base path (ADR-0003 §8)", async () => {
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    // Absolute base path, like react-next's — but matched VERBATIM, no
+    // renderer-shaped tolerances: Astro emits `crossorigin` bare and does not
+    // self-close void elements, so these lines survive byte-for-byte.
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/astro/assets/pm"));
+    expect(lines).toHaveLength(3);
+
+    const body = await (await get("/astro/editorial/")).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      const at = head.indexOf(line);
+      expect(at, `canonical loading line missing or out of order: ${line}`).toBeGreaterThan(last);
+      last = at;
+    }
+    // PMWarnGlyph is served but never preloaded (error-state-only glyph).
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("font files and the tokens stylesheet arrive byte-identical to @pm/tokens", async () => {
+    for (const font of [
+      "FamiljenGrotesk.var.woff2",
+      "PMCrateSymbols.woff2",
+      "PMWarnGlyph.U26A0.woff2",
+    ]) {
+      const res = await get(`/astro/assets/pm/fonts/${font}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("woff2");
+      const source = readFileSync(join(repoRoot, "packages", "tokens", "fonts", font));
+      expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
+    }
+    // Astro's public/ directory is the one delivery route that leaves these
+    // untouched: importing them as stylesheets would let Vite hash the files
+    // and rewrite fonts.css's own @font-face URLs, failing both halves of
+    // ADR-0003 §8 at once.
+    for (const sheet of ["tokens.css", "fonts.css"]) {
+      const css = await get(`/astro/assets/pm/css/${sheet}`);
+      expect(css.status).toBe(200);
+      expect(await css.text()).toBe(
+        readFileSync(join(repoRoot, "packages", "tokens", "css", sheet), "utf8"),
+      );
+    }
+  });
+
+  it("every asset the page references resolves through the composed origin (the base-path proof)", async () => {
+    // The front Worker forwards the ORIGINAL request and never rewrites paths,
+    // so this variant's own prefix is its own responsibility: `base: "/astro"`
+    // in astro.config.mjs must agree with `outDir: "./dist/astro"` or every
+    // Astro-generated URL 404s while the HTML still serves 200. That includes
+    // the bundled module script, whose name is a build hash — so the set is
+    // DERIVED from the served page, not hardcoded.
+    const body = await (await get("/astro/editorial/")).text();
+    const refs = [
+      ...body.matchAll(/(?:href|src)="(\/astro\/[^"]+)"/g),
+    ].map((m) => m[1]!);
+    // The 9 stylesheets + 2 font preloads at minimum; a bundled script joins
+    // them whenever Astro emits it as a file rather than inlining it.
+    expect(refs.length).toBeGreaterThanOrEqual(11);
+    for (const ref of new Set(refs)) {
+      const res = await get(ref);
+      expect(res.status, `${ref} did not resolve`).toBe(200);
+    }
+  });
+
+  it("transport parity: astro's editorial page matches the placeholder baseline (ADR-0001 §6)", () => {
+    const encoding = wireEncoding("/astro/editorial/");
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("astro registers NO permitted noise — a measured result, and non-vacuously so", async () => {
+    // Both of Astro's noise species are opt-in and this page opts into
+    // neither: `data-astro-cid-*` scoping attributes appear only on components
+    // that carry a `<style>` block (the design system arrives as plain <link>s
+    // instead), and `<astro-island>` wrappers appear only around framework
+    // components given a `client:*` directive (the one interaction is a plain
+    // bundled script). The drift leg compares this page under NO_NOISE, which
+    // is what makes the claim load-bearing rather than decorative.
+    expect(PERMITTED_NOISE["astro"]).toBeUndefined();
+    const body = await (await get("/astro/editorial/")).text();
+    expect(body).not.toMatch(/data-astro-cid-/);
+    expect(body).not.toContain("<astro-island");
+  });
+
+  it("the cart enhancement carries the contract's key in its own bundled script, with the canonical empty state", async () => {
+    const shell = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "shell.mjs")).href
+    );
+    const body = await (await get("/astro/editorial/")).text();
+
+    // Astro processes a bare <script> into a `type="module"` bundle, and
+    // inlines it when it is small enough — so the contract key is either in
+    // the page itself or in a module file the page references. Discover which
+    // from the served bytes rather than assuming either shape. The quote
+    // character is the minifier's call (esbuild emits backticks here), so all
+    // three are accepted; the key itself carries no regex metacharacters.
+    const quoted = new RegExp(`["'\`]${shell.CART_CONTRACT.key}["'\`]`);
+    let found = quoted.test(body);
+    if (!found) {
+      const moduleSrcs = [...body.matchAll(/<script[^>]+src="(\/astro\/[^"]+)"/g)].map(
+        (m) => m[1]!,
+      );
+      expect(moduleSrcs.length).toBeGreaterThan(0);
+      for (const src of moduleSrcs) {
+        const js = await (await get(src)).text();
+        if (quoted.test(js)) {
+          found = true;
+          break;
+        }
+      }
+    }
+    expect(found, "no served JS carries the CART_CONTRACT key").toBe(true);
+
+    // The release the button adds rides a JSON script element — delivery, not
+    // contract (ADR-0008 freedoms), so the canonical DOM stays clean. Astro
+    // leaves a <script> with any attribute other than `src` untouched, which
+    // is what keeps this a plain data hook rather than a bundled module.
+    const snap = await loadServedSnapshot();
+    const featuredId = editorialFeaturedId(snap);
+    expect(body).toContain('<script type="application/json" id="pm-cart-item">');
+    expect(body).toContain(`{"id":${featuredId},`);
+
+    // Canonical served state: the masthead count slot is EMPTY (§7) and the
+    // cart anchor carries no aria-label (count 0 removes the attribute).
+    // Astro emits the bare boolean attribute the master has.
+    expect(body).toContain(
+      '<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span>',
+    );
+    expect(body).toMatch(/<a class="pm-masthead__cart" href="\/vanilla\/checkout\/">/);
+  });
+});

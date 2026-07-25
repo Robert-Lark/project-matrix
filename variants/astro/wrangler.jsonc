@@ -1,0 +1,23 @@
+// The astro variant: islands, static output, no adapter (editorial-build
+// slice C). Assets are nested under the /astro/ prefix (astro.config.mjs's
+// outDir), the documented "serving a subdirectory" shape, so the front
+// Worker forwards requests untouched.
+//
+// No `services` entry: astro is a BUILD-TIME variant (trays baked by
+// scripts/prepare-build.mjs), so unlike react-next it never talks to pm-edge
+// at request time and has nothing to bind.
+{
+  "name": "pm-astro",
+  "main": "src/index.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": false, // no direct hostname — reachable ONLY through pm-front's
+                        // service binding, so the single origin (ADR-0004 §3)
+                        // cannot be bypassed on the deployed plane
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

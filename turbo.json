@@ -47,6 +47,65 @@
       ],
       "outputs": ["dist/**"]
     },
+    "@pm/astro#build": {
+      "dependsOn": ["topo", "^build"],
+      // Same declaration as @pm/vanilla#build above, same reason: astro is a
+      // build-time variant (editorial-build slice C) whose page is BAKED from
+      // the snapshot PM_SNAPSHOT names, so the selector is part of this task's
+      // cache key and the trays are inputs. Without both, the deploy job's
+      // restored turbo-origin-* cache would replay the origin job's
+      // fixture-flavored dist straight onto the crate-serving plane.
+      "env": ["PM_SNAPSHOT"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/*.json",
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/*.json"
+      ],
+      // src/data/snapshot.json is as much a build OUTPUT as dist/ is:
+      // scripts/prepare-build.mjs writes it (git-ignored) and the editorial
+      // page statically imports it. Declaring it means a cache HIT restores
+      // it — without that, a hit replays only dist/, the script never runs,
+      // and the generated module is simply absent, so `astro check` fails
+      // with ts(2307) (verify-slice finding; reproduced by deleting the file
+      // and re-running a cache-hit build). Turbo's own check job happens to
+      // stay green today because typecheck's hash is coupled to build's and
+      // hits alongside it — but that coupling is incidental, and the direct
+      // `pnpm run typecheck` inside this workspace fails immediately in that
+      // state. Modelling the file as the output it is closes both.
+      // public/assets/pm/** is deliberately NOT listed: nothing consumes it
+      // after the build (Astro copies it INTO dist/, which is restored), so
+      // declaring it would only duplicate ~1 MB of fonts in every cache entry.
+      "outputs": ["dist/**", "src/data/snapshot.json"]
+    },
+    "@pm/astro#typecheck": {
+      // `astro check` type-checks src/pages/editorial/index.astro, which
+      // statically imports the GENERATED src/data/snapshot.json — so the
+      // typecheck genuinely depends on this package's own build having run
+      // (scripts/prepare-build.mjs writes it). Without this, a fresh checkout
+      // fails with ts(2307) "Cannot find module '../../data/snapshot.json'":
+      // green on any machine that has ever built, red in CI's `check` job,
+      // which runs `turbo run lint typecheck test` and never builds first.
+      // Verified by deleting the file and re-running, not reasoned about.
+      "dependsOn": ["topo", "build"]
+    },
+    "@pm/astro#test": {
+      // The pre-merge master-identity guard (variants/astro/test) renders the
+      // editorial document for BOTH snapshots and compares each against the
+      // reference renderer's own output. Its real inputs therefore span the
+      // reference render/ tree and both committed snapshots — a set that is
+      // easy to under-declare, and an under-declared input here means turbo
+      // replays a stale PASS while crate-flavored copy has actually drifted
+      // (precisely the hole this guard exists to close). Uncached, like
+      // @pm/repo-checks#test, for the same reason: correctness over ~1s.
+      //
+      // dependsOn build: the guard also renders the PAGE, which statically
+      // imports the GENERATED src/data/snapshot.json, so the build that writes
+      // it must have run (verify-slice finding — the page was otherwise the one
+      // thing nothing exercised pre-merge, so a crate-only page-wiring bug
+      // could merge green and turn the post-deploy smoke red).
+      "dependsOn": ["topo", "build"],
+      "cache": false
+    },
     "@pm/react-next#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized for the TRAYS (request-time variant,

@@ -1,0 +1,57 @@
+---
+/**
+ * The whole editorial document, from props — the one render entry point.
+ *
+ * It exists as a props-taking component (rather than the page assembling the
+ * shell itself) so the pre-merge identity guard can render it for BOTH
+ * committed snapshots in one process: `test/master-identity.test.ts` drives it
+ * through Astro's Container API with each snapshot's data, catching
+ * crate-flavored copy drift before merge. CI's browser legs only ever serve the
+ * fixture, so without that the crate text would first be compared on the
+ * deployed plane, AFTER merge. Slice B's `render.tsx` is the same idea for the
+ * same reason (framework-neutral, directly callable).
+ */
+import type { EditorialData } from "../lib/data";
+import { essayFor } from "../lib/essays";
+import Shell from "../layouts/Shell.astro";
+import EditorialArticle from "./EditorialArticle.astro";
+
+interface Props {
+  data: EditorialData;
+}
+
+const { data } = Astro.props;
+const essay = essayFor(data.name);
+
+/** The surface's own CSS, appended after the shell's (editorial.mjs's list). */
+const CSS = ["components/release-card.css", "components/prose.css", "surfaces/editorial.css"];
+---
+
+<Shell title={`${essay.title} — Long Decay Records`} current="editorial" css={CSS}>
+  <EditorialArticle data={data} />
+  {/*
+    The paradigm's one client enhancement, and the data it needs.
+
+    Astro processes a bare <script> — TypeScript, import bundling, dedupe, and
+    `type="module"` — which is the framework's documented way to add
+    interactivity "without the need for a UI framework like React, Svelte, or
+    Vue. This avoids the overhead of shipping framework JavaScript." It is
+    deliberately NOT an island: see DIFF-TO-STARTER.md for the measured reason
+    (an island wraps its content in an <astro-island> custom ELEMENT, which the
+    master has no equivalent for).
+
+    A bundled script cannot read frontmatter, so the release it adds to the cart
+    rides a JSON script element — delivery, not contract (ADR-0008's freedoms
+    list names `script` explicitly), so the canonical DOM stays clean. Astro's
+    docs suggest data-* attributes for this; that would put a variant-invented
+    attribute on a CONTRACT element and need a permitted-noise entry to excuse
+    it, which is a worse trade when a free channel exists.
+  */}
+  <Fragment slot="scripts">
+    <script is:inline type="application/json" id="pm-cart-item" set:html={JSON.stringify({ id: data.featured.id, title: data.featured.title }).replace(/</g, "\\u003c")} />
+    <script>
+      import { mountCart } from "../scripts/cart";
+      mountCart();
+    </script>
+  </Fragment>
+</Shell>
