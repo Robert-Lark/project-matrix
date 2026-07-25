@@ -351,6 +351,12 @@ for `create-next-app`).
 
 ## Open question raised by this slice, NOT decided in it
 
+> **Tracked as [issue #16](https://github.com/Robert-Lark/project-matrix/issues/16),
+> scheduled for the session immediately after slice D (qwik) lands** — Rob's
+> call, 2026-07-24: documented properly and addressed at the right time rather
+> than deferred to the end of the project. See `docs/decision-map.md` →
+> `bench-accounting-fix` for the timing rationale.
+
 **Astro inlines the cart bundle, and the bench runner's KB accounting cannot
 see inline script bytes — so the render axis's headline number would read
 "astro: 0 KB initial JS" while this page ships 1,247 B of JavaScript.**
