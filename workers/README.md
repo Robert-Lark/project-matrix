@@ -37,8 +37,8 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
 
 `pnpm dev` at the repo root starts every Worker — **one `wrangler dev` process
 per Worker** with distinct ports (front 8787, placeholder-static 8788,
-placeholder-ssr 8789, edge 8790, blog 8791, vanilla 8792, react-next 8793)
-and inspector ports; wrangler's local dev
+placeholder-ssr 8789, edge 8790, blog 8791, vanilla 8792, react-next 8793,
+astro 8794) and inspector ports (9230–9237); wrangler's local dev
 registry connects the service bindings across processes. Seed local R2 once
 per fresh checkout (`pnpm --filter @pm/edge run seed:local`) or use
 `pnpm run origin-suite`, which wipes edge state and seeds automatically. The single-process
@@ -54,9 +54,9 @@ snapshot it serves (`GET /api/snapshot`) and asserts that snapshot's own
 committed artifacts (ids + trays + image sha256s), failing closed if it
 cannot tell (issue #11). run-local derives `PM_SNAPSHOT` (the build-time
 snapshot selector minted by the editorial build's slice A) from
-`PM_SEED_DIR`, so snapshot-parameterized variant builds (`@pm/vanilla`)
-always bake the snapshot the plane serves — the one command holds either
-way. CI never sets `PM_SEED_DIR`; the deploy job sets `PM_SNAPSHOT=crate`
+`PM_SEED_DIR`, so snapshot-parameterized variant builds (`@pm/vanilla`,
+`@pm/astro`) always bake the snapshot the plane serves — the one command
+holds either way. CI never sets `PM_SEED_DIR`; the deploy job sets `PM_SNAPSHOT=crate`
 on its build step because the deployed plane serves the crate.
 
 ## Deploying (the canonical plane)
@@ -75,8 +75,9 @@ landing commit into the manifest and re-put it remotely (see
 warm-tier flush needed.
 
 CI deploys from `main` — edge first (react-next binds it directly, a
-request-time variant, editorial-build slice B), then the rest of the
-variants (service bindings must resolve), then the front Worker — and
+request-time variant, editorial-build slice B; `pm-astro` does not — it is
+build-time, so its pages are already baked and it talks to nothing), then the
+rest of the variants (service bindings must resolve), then the front Worker — and
 re-runs the integration suite against the deployed origin with the Brotli
 assertion (the post-deploy smoke, spike FINDINGS §5).
 

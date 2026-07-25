@@ -1,0 +1,41 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# wrangler dev state
+.wrangler/
+
+# --- editorial-build slice C additions (generated, never source) ---
+
+# @pm/tokens copied in by scripts/prepare-build.mjs before every build, so
+# Astro serves them verbatim out of public/ (ADR-0003 §8: fonts are a
+# controlled constant — byte-identical to packages/tokens, never edited).
+public/assets/pm/
+
+# The snapshot-parameterized build's baked tray payload, written by
+# scripts/prepare-build.mjs from PM_SNAPSHOT (fixture default, crate on the
+# deploy job). Generated per build, so it must never be committed — a stale
+# committed copy is the fixture-dist-onto-the-crate-plane hazard that
+# @pm/astro#build's turbo env/inputs declaration exists to prevent.
+src/data/snapshot.json

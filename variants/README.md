@@ -15,6 +15,22 @@ Current occupants:
   (`packages/reference/render/shell.mjs` `CART_CONTRACT`). Its
   `DIFF-TO-STARTER.md` records the starterless call and the composition
   pattern the other editorial slices copy.
+- **`react-next`** — the REQUEST-TIME precedent (editorial-build slice B):
+  Next.js on the OpenNext Cloudflare adapter, SSR per request. Copy this one,
+  not `vanilla`, for any variant that fetches trays at request time (Qwik,
+  HTMX, Remix 3): a request-time variant **binds `pm-edge` itself** in its own
+  `wrangler.jsonc` (the front Worker's `EDGE` binding does not reach a variant
+  server-side), which is also why the CI deploy step deploys `pm-edge` before
+  the variants. Registers Next's App Router streaming wrapper through
+  `NoiseSpec.dropElementSelectors`, the whole-element noise class it minted.
+- **`astro`** — the second BUILD-TIME variant (editorial-build slice C):
+  islands, static output, no adapter; binds nothing at request time. The
+  variant that registers NOTHING in `PERMITTED_NOISE` as a measured outcome
+  rather than by design, and whose `DIFF-TO-STARTER.md` records why one
+  interactive button is not an island (an `<astro-island>` wrapper is an
+  element the drift gate cannot excuse). Its pre-merge master-identity guard
+  lives in its OWN workspace (`test/`), driven by Astro's Container API,
+  because loading a `.astro` file needs Astro's compiler.
 - the **throwaway placeholder stand-in variants** (issue #3) —
   `placeholder-static` (assets + the one-line forwarder script) and
   `placeholder-ssr` (per-request render with representative permitted

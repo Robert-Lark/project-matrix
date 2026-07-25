@@ -551,6 +551,69 @@ describe("editorial: react-next vs the master re-rendered from the RESOLVED snap
   }
 });
 
+describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot (editorial-build slice C)", () => {
+  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE, and its emptiness is EARNED", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/astro/editorial/`);
+    // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+
+    // Astro registers NO permitted noise (normalize.ts), and unlike vanilla
+    // that is a MEASURED result rather than a design choice — so it is checked
+    // here against the raw served bytes rather than asserted in a comment.
+    // Astro's two noise species are both opt-in and this page opts into
+    // neither: `data-astro-cid-*` scoping attributes exist only on components
+    // carrying a `<style>` block, and `<astro-island>` wrappers exist only
+    // around framework components given a `client:*` directive. If a later
+    // edit adds either, this fails and the registry must be updated
+    // deliberately instead of the drift comparison silently starting to lie.
+    const raw = await page.content();
+    expect(raw).not.toMatch(/data-astro-cid-/);
+    expect(raw).not.toContain("<astro-island");
+    expect(PERMITTED_NOISE["astro"]).toBeUndefined();
+
+    const dom = await extractNormalizedDom(page, NO_NOISE);
+    expect(dom).not.toContain("pm-chrome");
+    assertDomEqual("dom-astro-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+      // The pixel leg is what proves Astro's `compressHTML` (on by default —
+      // it strips the inter-element whitespace the master's own serialization
+      // carries) is genuinely rendering-neutral on this page, rather than
+      // trusting the reasoning that the two navs are flex containers whose
+      // whitespace-only children never become flex items.
+      const context = await browser.newContext(
+        profileContextOptions(PROFILES[profileId]),
+      );
+      const masterPage = await openTracked(context, masterPixelUrl);
+      // The re-rendered master has no chrome slot — part of the contract.
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureStablePixels(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/astro/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      await settleImages(page);
+      const shot = await captureStablePixels(page);
+      assertPixelsEqual(`pixels-${profileId}-astro-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
+  }
+});
+
 describe("the deliberate-drift fixture fails the pixel check", () => {
   // One profile suffices: the fixture proves the CHECK catches re-valued
   // pixels; profile coverage is proven by the passing matrix above.

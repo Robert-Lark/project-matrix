@@ -171,6 +171,76 @@ export async function measureVisit(
     await page.waitForTimeout(settleMs);
     const afterEntries = await resourceEntries(page);
 
+    // Wait for the interaction's own event-timing entry to EXIST before
+    // flushing, or INP is silently lost — a false-FAIL (and worse, a null
+    // metric in a published receipt) traced to web-vitals' own source rather
+    // than guessed:
+    //
+    //  - `initMetric` starts INP at -1 (initMetric.js: `value = -1`), and
+    //    `bindReporter` gates every emission — INCLUDING a forced one — behind
+    //    `if (metric.value >= 0)`. So an INP that was never computed is not
+    //    reported as 0; nothing is sent at all and the run records null.
+    //  - INP is only computed once an entry reaches the InteractionManager,
+    //    and that hop runs inside `whenIdleOrHidden` — a requestIdleCallback
+    //    while the page is still visible.
+    //  - The `event` observer cannot supply that entry here: it uses
+    //    web-vitals' default `durationThreshold: 40`, and a trivial click on a
+    //    static page measures ~8ms (verified in Chromium: one `pointerdown`
+    //    entry, duration 8). INP therefore depends ENTIRELY on the buffered
+    //    `first-input` observation, which arrives asynchronously.
+    //
+    // A fixed settle window is the wrong instrument for that: on a loaded
+    // machine (a CI runner, or a dev box running anything else) the browser
+    // can still be producing the entry when the window elapses, and the visit
+    // records INP: null with no error anywhere. Waiting on the entry itself is
+    // deterministic — `first-input` IS retained in the performance timeline
+    // (which is what makes web-vitals' `buffered: true` work), so it can be
+    // polled directly.
+    //
+    // Placement is deliberate: AFTER the byte accounting above, so nothing
+    // measured moves — this only widens the window the vitals flush gets. A
+    // timeout is swallowed on purpose: if no interaction entry ever appears,
+    // that is a real finding for the suite's assertions to report as
+    // INP: null, not something to disguise by failing the visit here.
+    // Waiting for the entry is necessary but NOT sufficient, and the second
+    // half is the part that actually starves. web-vitals' observer callback
+    // does not compute INP inline: it defers into `whenIdleOrHidden`, i.e. a
+    // `requestIdleCallback`. Meanwhile the ONLY emission that can ever fire is
+    // the forced `report(true)` inside INP's own visibility-hidden handler — a
+    // non-forced `report()` with the default `reportAllChanges: false` emits
+    // nothing at all (`bindReporter`: the inner `if (forceReport ||
+    // reportAllChanges)`). And that forced report runs BEFORE the deferred
+    // idle work in the case that matters, because `getVisibilityWatcher`'s
+    // listener is registered first and therefore fires first. So if the idle
+    // callback has not run by then, `metric.value` is still -1, the forced
+    // report is dropped, and the entry we waited for changes nothing.
+    //
+    // Idle callbacks run in request order, so awaiting one requested HERE
+    // proves the earlier-queued one has already run and `metric.value` is set
+    // before the flush below. The `timeout` option bounds it: if the page never
+    // goes idle the callback is invoked anyway, and a genuinely absent INP
+    // still surfaces as null for the suite to judge rather than hanging here.
+    if (spec.interactionId !== "none") {
+      await page
+        .waitForFunction(
+          () => performance.getEntriesByType("first-input").length > 0,
+          undefined,
+          { timeout: 10_000 },
+        )
+        .catch(() => {
+          /* no entry: let the receipt record null and the suite judge it */
+        });
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            const rIC: typeof globalThis.requestIdleCallback | undefined =
+              globalThis.requestIdleCallback;
+            if (rIC) rIC(() => resolve(), { timeout: 2000 });
+            else setTimeout(resolve, 50);
+          }),
+      );
+    }
+
     // Flush the measurement client (its own reporting trigger): final
     // values report on visibility-hidden.
     await page.evaluate(() => {

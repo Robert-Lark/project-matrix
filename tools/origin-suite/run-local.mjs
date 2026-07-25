@@ -17,8 +17,13 @@ import { fileURLToPath } from "node:url";
 const suiteDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(suiteDir, "..", "..");
 const ORIGIN = "http://127.0.0.1:8787";
+// One HTTP port + one inspector port per Worker, in spawn order below:
+// front 8787/9230, placeholder-static 8788/9231, placeholder-ssr 8789/9232,
+// edge 8790/9233, blog 8791/9234, vanilla 8792/9235, react-next 8793/9236,
+// astro 8794/9237. Each pair is declared in that Worker's own `dev` script.
 const PORTS = [
-  8787, 8788, 8789, 8790, 8791, 8792, 8793, 9230, 9231, 9232, 9233, 9234, 9235, 9236,
+  8787, 8788, 8789, 8790, 8791, 8792, 8793, 8794,
+  9230, 9231, 9232, 9233, 9234, 9235, 9236, 9237,
 ];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
@@ -189,6 +194,7 @@ try {
   startWorker("variants/placeholder-ssr", "placeholder-ssr");
   startWorker("variants/vanilla", "vanilla");
   startWorker("variants/react-next", "react-next");
+  startWorker("variants/astro", "astro");
   startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
@@ -198,6 +204,7 @@ try {
   await waitFor(`${ORIGIN}/placeholder-ssr/sample/`, 60_000);
   await waitFor(`${ORIGIN}/vanilla/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/react-next/editorial/`, 60_000);
+  await waitFor(`${ORIGIN}/astro/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 

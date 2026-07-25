@@ -1,0 +1,34 @@
+---
+/**
+ * The release card, linked form — canonical markup (shell.mjs releaseCard).
+ * The whole card's title links to the PDP's DESIGNATED HOST, which is vanilla,
+ * not this variant (that target 404s until the PDP build lands: by design).
+ *
+ * Image srcs stay EXACTLY as the tray carries them (/assets/img/…): the edge
+ * Worker serves those paths for every variant, no variant re-hosts or proxies
+ * images, and the drift gate compares attribute values verbatim.
+ */
+import type { ReleaseSummary } from "@pm/data-contract";
+import { formatPrice, metaLine, stockLine } from "../lib/format";
+
+interface Props {
+  summary: ReleaseSummary;
+}
+
+const { summary } = Astro.props;
+const price = formatPrice(summary.priceFrom);
+const cover = summary.cover;
+---
+
+<li class="pm-release-card">
+  <img class="pm-release-card__media" width={cover.width} height={cover.height} alt={cover.alt} src={cover.src} />
+  <div class="pm-release-card__body">
+    <h3 class="pm-release-card__title"><a class="pm-release-card__link" href={`/vanilla/pdp/${summary.slug}/`}>{summary.title}</a></h3>
+    <p class="pm-release-card__artist">{summary.artist}</p>
+    <p class="pm-release-card__meta">{metaLine(summary)}</p>
+    <div class="pm-release-card__foot">
+      <span class="pm-release-card__price">{price ?? "—"}</span>
+      <span class="pm-release-card__stock">{stockLine(summary.numForSale)}</span>
+    </div>
+  </div>
+</li>

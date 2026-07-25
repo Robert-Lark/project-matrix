@@ -1874,6 +1874,208 @@ run's children, never a prior run's orphans if the parent was killed
 uncleanly) — real contributor to a red herring 522s suite run before the
 actual fix was isolated; cleared manually, not a code change.
 
+### `editorial-build` slice C — the astro variant, islands with no island (2026-07-24)
+
+`/astro/editorial/` serves through the composed origin. Static output, no
+adapter, and — a first for this build — **nothing added to the shared
+tooling**: no new `NoiseSpec` field, no new normalizer behavior, not even a
+`PERMITTED_NOISE` entry. What the record should keep:
+
+**The slice's flagged judgment call was settled by measurement, and the
+measurement inverted the intuition.** ISSUE C says to make Add to cart an
+island "if that is Astro's idiomatic shape for one interactive button".
+Before deciding, a throwaway Astro project with `@astrojs/preact` was built
+with the same button behind `client:load`. It emits the button wrapped in an
+`<astro-island uid=… component-url=… renderer-url=… ssr client="load"
+await-children>` custom element. That element has element children — so
+`PAGE_NORMALIZE`'s content-aware `dropElementSelectors` guard
+(`el.childElementCount === 0`, minted by slice B for exactly the opposite
+reason) refuses to remove it, and no registration could excuse it without
+first widening the guard until it could hide real divergence. The sharp
+detail worth remembering: `astro-island` carries `display: contents`, so the
+wrapper is visually transparent and **the pixel leg would have passed** —
+only the DOM check catches it. A paradigm's hydration wrapper is invisible
+to pixels and loud in the DOM, which is precisely the division of labour the
+two-check gate was designed for.
+
+The chosen mechanism is a plain bundled `<script>` importing
+`src/scripts/cart.ts`, which is what Astro's own docs put first for
+interactivity "without the need for a UI framework like React, Svelte, or
+Vue" — Astro still compiles the TypeScript, resolves imports and minifies
+it, so this is a real paradigm delivery path, not a hand-written blob. The
+honest finding underneath: on prose with one button, the islands paradigm
+has **no island to place**. One click handler is not a component boundary.
+
+**"Astro registers no noise" is an outcome, not a design choice — so it is
+asserted, not assumed.** Vanilla registers nothing because it IS the
+`NO_NOISE` control. Astro registers nothing because both of its noise
+species turned out to be opt-in and this page opts into neither:
+`data-astro-cid-*` scoping attributes are emitted only for components
+carrying a `<style>` block (measured — a probe component with one `<style>`
+stamped a cid on `html`, `body` and every element in the component), and
+`<astro-island>` only around framework components with a `client:*`
+directive. Because it is an outcome it could silently stop being true, so
+`editorial.test.ts` and the drift leg both grep the RAW served bytes for
+`data-astro-cid-` and `<astro-island`. Adding either later fails loudly
+instead of letting a NO_NOISE comparison quietly start lying.
+
+**Astro's escaping is byte-identical to the reference renderer's — verified,
+and it changed the shape of the slice.** Astro escapes through
+`html-escaper` (v3.0.3 installed), which maps the same five characters to
+the same entities as `packages/reference/render/lib.mjs`'s `esc()`,
+apostrophe included: `&#39;`, decimal. React emits `&#x27;`, which is why
+slice B needed a second `reactEsc` helper for its raw-string assertions.
+Astro also renders bare boolean attributes and does not self-close void
+elements, so `crossorigin` stays `crossorigin` and `data-pm-cart-count`
+stays bare. Consequence: slice C's font-leg assertion is the strict
+string-for-string form vanilla uses, with none of the renderer-shaped
+tolerances slice B had to add, and the whole page is byte-comparable to the
+master rather than merely DOM-comparable. The normalized DOM matched the
+master on the FIRST build, for both snapshots.
+
+**Where the identity guard lives, and why it moved.** ISSUE C's pointer said
+`tools/repo-checks`, where slices A and B put theirs; the instruction to
+read Astro's own container/compiler APIs first is what changed the answer.
+Astro ships a real render-to-string entry point — the Container API
+(`experimental_AstroContainer` from `astro/container`, `renderToString(…,
+{ props, partial: false })`) — but loading a `.astro` file requires Astro's
+compiler, i.e. `getViteConfig` in the vitest config. Hosting that in
+`repo-checks` would route every repo-wide structural check through Astro's
+Vite plugin, so an Astro upgrade could break guards with nothing to do with
+Astro. The guard therefore lives in `variants/astro/test/`, still reached
+pre-merge by the `check` job's `turbo run lint typecheck test`, with
+`@pm/astro#test` declared `cache: false` — its real inputs span the
+reference renderer and both committed snapshots, a set easy to
+under-declare, and an under-declared input means turbo replays a stale PASS
+while crate copy has actually drifted.
+
+**The `deploy` script is deliberately the OPPOSITE of slice B's, for the
+same underlying reason.** Slice B learned that CI's deploy job runs
+`pnpm --filter … run deploy` entirely outside turbo, so its `deploy` had to
+re-do the token copy itself or ship an unstyled page. Slice C's `deploy` is
+bare `wrangler deploy` and must NOT rebuild: the deploy step does not set
+`PM_SNAPSHOT` (that env is scoped to "Build worker dists"), so a rebuild
+there would default to `fixture` and overwrite the crate-baked dist with the
+fixture essay moments before uploading it — publishing "the fixture never
+leaves CI" prose to production. Relying on the turbo-built dist is safe here
+in a way it was not for slice B, and for a specific reason: everything astro
+serves lands inside the declared `outputs: ["dist/**"]` (the copied tokens
+included, because Astro copies `public/` into the output), so a cache hit
+restores a COMPLETE dist, whereas react-next's `public/assets/pm/` was an
+undeclared git-ignored input a cache hit never recreated. Same hazard class,
+opposite correct answer — the reason each variant's deploy script has to be
+reasoned about rather than copied.
+
+**Astro's `compressHTML` strips whitespace the master has; the pixel leg is
+what proves that is fine.** Astro removes inter-element whitespace (the
+newlines between the masthead nav's two anchors, the footer nav's four) that
+the reference serialization carries. Legitimate — whitespace-only text nodes
+are dropped by the normalizer, and both navs are `display: flex` with `gap`,
+so whitespace-only children never become flex items — but the zero-tolerance
+pixel comparison across all three profiles is what actually establishes it.
+The reverse risk is the one that needed designing against: Astro emits a
+template's whitespace AS AUTHORED, so any element whose inline content is
+whitespace-sensitive is authored on one line in `Shell.astro` and
+`EditorialArticle.astro`. A reflowed line break inside an inline run would
+insert a space mid-sentence — slice B's text-run hazard arriving through a
+different door.
+
+**A pre-existing harness defect surfaced while verifying this slice, and it
+is not slice C's code.** `bench.browser.test.ts`'s INP assertion failed on
+two of three local suite runs. Root-caused in web-vitals' own source rather
+than treated as flake: `initMetric` starts INP at `-1`, and `bindReporter`
+gates every emission — including a forced one — behind
+`if (metric.value >= 0)`, so an INP that was never computed is not reported
+as `0`; nothing is sent and the run records `null`. INP is only computed
+once an entry reaches the InteractionManager, and that hop runs inside
+`whenIdleOrHidden`, a requestIdleCallback while the page is still visible.
+The `event` observer cannot supply the entry: it uses web-vitals' default
+`durationThreshold: 40` and a trivial click on a static page measures ~8ms
+(verified in Chromium — one `pointerdown` entry, duration 8), so INP depends
+ENTIRELY on the buffered `first-input` observation, which arrives
+asynchronously. `tools/bench-runner/src/collect.ts` waited a FIXED 400ms
+settle before forcing visibility-hidden, so on any loaded machine the
+browser could still be producing the entry when the window elapsed.
+Load-sensitive in the failing direction, which is why it showed up now:
+nothing in slice C touches the bench runner, the measurement client, the
+placeholder pages the test drives, or the click target (`#pm-chrome` is
+`position: relative`, so the chrome gaining one switcher anchor and one
+reading-table column shifts `main h1` down but cannot occlude it). Fixed by
+waiting for the interaction's `first-input` entry to EXIST before flushing
+— bounded, and placed after the byte accounting so nothing measured moves;
+a timeout is swallowed on purpose so a genuinely absent interaction still
+surfaces as `INP: null` for the suite to judge rather than being disguised.
+Worth recording that this was never only a CI-green problem: the bench
+runner produces PUBLISHED receipts, so the same race could have emitted a
+null INP into a real benchmark number (ADR-0001 §9's own ethos). Flagged as
+a defect found during slice C rather than caused by it — it arguably wanted
+its own commit. The first version of that fix was itself incomplete, and
+verify-slice caught it: waiting for the `first-input` entry to EXIST proves the
+browser produced it, but web-vitals defers the computation into
+`whenIdleOrHidden` (a `requestIdleCallback`), and the only emission that can
+ever fire is the FORCED `report(true)` inside INP's own hidden handler — a
+non-forced `report()` at the default `reportAllChanges: false` emits nothing at
+all (`bindReporter`'s inner `if (forceReport || reportAllChanges)`). Because
+`getVisibilityWatcher`'s listener is registered first, that forced report can
+run BEFORE the deferred idle work sets `metric.value`, so the entry we waited
+for changes nothing. Closed by additionally awaiting one idle callback of our
+own before the flush: idle callbacks run in request order, so ours cannot run
+before the one queued earlier.
+
+**Three measurement-credibility findings were ESCALATED rather than fixed, and
+the reasoning matters more than the list.** The four lenses returned 12
+findings; nine were adopted, three deliberately left alone because fixing them
+means deciding methodology, which the PRD fences a slice from doing ("a slice
+that thinks the spec is wrong records an ADR addendum question, it doesn't
+improvise"). The headline one: **Astro inlines the cart bundle, so the render
+axis would publish "astro: 0 KB initial JS" while the page ships 1,247 B of
+JavaScript.** Measured — one `<script type="module">` of 1,247 B, zero external
+script `src`s — and structural in cause: `collect.ts` derives `buckets.js` and
+`initialJsBytes` from resource-timing entries classified by URL extension, and
+an inline script produces no resource-timing entry, so its bytes land in
+`buckets.html` instead. The consequence lands exactly where it hurts most: the
+editorial table would report vanilla, the NO-RUNTIME control, as shipping ~1 KB
+of initial JS and astro as shipping none, for the same enhancement, on the one
+surface whose thesis is how much machinery prose needs. It is discontinuous too
+— grow the cart module past Vite's inline threshold and the number jumps from 0
+to its true value with no change in the paradigm.
+
+The available workaround was rejected on principle: forcing
+`vite.build.assetsInlineLimit: 0` so Astro emits a file the instrument can see
+would invent a request the paradigm would not make — rigging the variant to fit
+the harness, the same error mirrored. The real fix belongs in the harness (count
+inline `<script>` bytes as JS, stop counting them as HTML) and is an ADR-0001 §3
+decision, because it changes every variant's published numbers and must settle
+double-counting. Nothing in this build publishes a receipt, so no false number
+ships from here; the obligation is that none ships from the publication step
+either. Escalated alongside it, both PRE-DATING slice C: the bench runner's
+`LOCAL_PLANE_INSPECTORS` omits every real variant's inspector (`pm-vanilla`
+9235 and `pm-react-next` 9236 as well as `pm-astro` 9237), so a LOCAL bench
+attributes zero CPU to whichever Worker served the page — not a one-line fix,
+since `CdpConnection.open` throws on an absent inspector, so the list and its
+failure tolerance have to be decided together; and ADR-0003 §2's "CSS its native
+way" is satisfied only nominally, since all three editorial variants ship the
+shared stylesheets as raw verbatim copies, so astro's CSS cell will equal
+vanilla's exactly and Astro's bundling pipeline will appear to buy nothing.
+
+Also adopted from the same pass, each verified against source before being
+believed: the starter's `AGENTS.md` — symlinked as `CLAUDE.md`, so it
+auto-loads as project instructions — told future agents to run `astro dev`,
+which serves no injected chrome, no `/_pm/*` client, and 404s every image while
+looking fine (section replaced, docs links kept); nothing exercised
+`src/pages/editorial/index.astro` pre-merge, so a crate-only page-wiring bug
+could merge green (the guard now renders the page and asserts faithful
+pass-through, proven by sabotage); `@pm/astro#build` under-declared its outputs,
+so a cache hit replayed `dist/` without the generated snapshot module
+(declared, restore verified); `prepare-build.mjs`'s own header claimed it runs
+before deploy when it deliberately does not — a false claim sitting exactly
+where a maintainer would decide whether to "align" `deploy` with slice B's
+shape and thereby publish the fixture essay to the crate plane; and the
+`compressHTML` whitespace justification named two containers when the page has
+six, now generalized to the real invariant (every inline-child container here is
+flex or grid, so whitespace-only children never become items — and a
+tokens-tier edit taking any of them out of flex is what the pixel leg catches).
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he
