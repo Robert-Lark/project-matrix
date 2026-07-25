@@ -35,14 +35,38 @@ const get = (path: string) => fetch(`${ORIGIN}${path}`);
 const count = (haystack: string, needle: string) =>
   haystack.split(needle).length - 1;
 
-/** content-encoding as the wire carries it (composed-origin.test.ts helper). */
+/**
+ * content-encoding as the wire carries it (composed-origin.test.ts helper).
+ *
+ * On the DEPLOYED plane a brand-new URL's first hit is a cache MISS, and
+ * Cloudflare serves that MISS **uncompressed** — so a variant's first-ever
+ * deploy would measure cache state instead of transport configuration. Slice C
+ * failed its deploy on exactly this: `/astro/editorial/` reported `''` seconds
+ * after pm-astro's first-ever deploy and `br` once warm, with response headers
+ * byte-identical to vanilla's. Every later slice introduces a new URL the same
+ * way, so this would be a guaranteed red deploy once per variant.
+ *
+ * So on the deployed plane (the only place compression is asserted) the URL is
+ * warmed until an encoding appears, bounded. This does NOT weaken anything: if
+ * compression never shows up, the empty string is returned and the caller's
+ * assertion still fails. Successive curl round-trips supply the spacing, since
+ * this helper is called from synchronous tests.
+ */
 function wireEncoding(path: string): string {
-  return execFileSync(
-    "curl",
-    ["-s", "-o", "/dev/null", "-H", "Accept-Encoding: br, gzip",
-      "-w", "%header{content-encoding}", `${ORIGIN}${path}`],
-    { encoding: "utf8" },
-  ).trim();
+  const measure = () =>
+    execFileSync(
+      "curl",
+      ["-s", "-o", "/dev/null", "-H", "Accept-Encoding: br, gzip",
+        "-w", "%header{content-encoding}", `${ORIGIN}${path}`],
+      { encoding: "utf8" },
+    ).trim();
+
+  let encoding = measure();
+  if (!EXPECT_BROTLI) return encoding;
+  for (let attempt = 0; attempt < 8 && encoding === ""; attempt += 1) {
+    encoding = measure();
+  }
+  return encoding;
 }
 
 /** The reference renderer's escaping, for tray values asserted in raw HTML
