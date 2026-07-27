@@ -1,0 +1,40 @@
+// The qwik variant: resumability, on the official `cloudflare-workers`
+// integration (editorial-build slice D). Trays are fetched through the edge
+// Worker at REQUEST time (ADR-0002 §7) — the front Worker's own EDGE binding
+// doesn't reach a variant server-side, so this Worker binds pm-edge itself
+// (the slice-B precedent); wrangler's local dev registry resolves it
+// (run-local.mjs spawns edge first), and the CI deploy step already deploys
+// pm-edge before the variants.
+//
+// Layout: `base: "/qwik/"` in vite.config.ts makes the optimizer write the
+// client's public output to dist/qwik/ (clientPublicOutDir = clientOutDir +
+// base), while the adapter writes _worker.js/_routes.json to dist/ itself.
+// So `assets.directory` stays the starter's ./dist and every built asset is
+// served at the /qwik/… URL the page references — no path rewriting anywhere.
+// dist/.assetsignore (written by scripts/prepare-build.mjs) is what keeps
+// _worker.js from being served as a public file.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pm-qwik",
+  "main": "./dist/_worker.js",
+  // The plane's shared date, not the starter's own 2025-12-28: the runtime
+  // compatibility date changes runtime semantics, so a per-variant value
+  // would be an unfair variable across the matrix (ADR-0003).
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false, // reachable ONLY through pm-front's service binding
+  "assets": {
+    // ASSETS, not the starter's ASSET: qwik-city's own cloudflare-pages
+    // middleware calls `env.ASSETS.fetch(request)` for any path its
+    // build-time static-path list matches (lib/middleware/cloudflare-pages/
+    // index.mjs), so the starter's `ASSET` name — and the matching
+    // `worker-configuration.d.ts` — would make that fallback throw on the
+    // day it is reached. Also what every other variant here calls it.
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "services": [{ "binding": "EDGE", "service": "pm-edge" }],
+  "observability": {
+    "enabled": true
+  }
+}

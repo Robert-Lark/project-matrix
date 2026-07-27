@@ -15,8 +15,29 @@
 import { describe, expect, it } from "vitest";
 import { PERMITTED_NOISE } from "@pm/drift-gate";
 
-/** Probe strings for the ADR-0008-named behavior-attribute classes. */
-const BEHAVIOR_PROBES = ["hx-get", "hx-post", "on:click", "on:input", "q:id"];
+/**
+ * Probe strings for the ADR-0008-named behavior-attribute classes.
+ *
+ * The `on-document:`/`on-window:` entries are NOT redundant with `on:click`
+ * (editorial-build slice D): they are separate attribute prefixes that a `^on:`
+ * regex does not match, so before they were listed here a variant could have
+ * registered `^on-document:` under `attrPatterns` — presenting a paradigm's
+ * mechanism as inert residue — and this guard would have passed. Found while
+ * writing slice D's own registration, which uses all three qwik prefixes.
+ * `on-window:` is listed ahead of need: nothing registers it today (this
+ * surface uses no `useOnWindow`), but the shape is Qwik's and slice E's htmx
+ * work is the next place it could appear.
+ */
+const BEHAVIOR_PROBES = [
+  "hx-get",
+  "hx-post",
+  "on:click",
+  "on:input",
+  "q:id",
+  "q:key",
+  "on-document:qinit",
+  "on-window:storage",
+];
 
 describe("behavior attributes never hide in the inert-residue class (ADR-0008)", () => {
   for (const [variant, spec] of Object.entries(PERMITTED_NOISE)) {

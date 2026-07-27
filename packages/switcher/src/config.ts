@@ -71,8 +71,8 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "A stand-in surface proving the composed origin: placeholder variants under one measurement contract. The real store surfaces replace it.",
   },
   editorial: {
-    variants: ["vanilla", "react-next", "astro"],
-    plannedVariants: ["qwik", "htmx"],
+    variants: ["vanilla", "react-next", "astro", "qwik"],
+    plannedVariants: ["htmx"],
     host: "vanilla",
     proves:
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",

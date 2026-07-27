@@ -38,7 +38,7 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
 `pnpm dev` at the repo root starts every Worker — **one `wrangler dev` process
 per Worker** with distinct ports (front 8787, placeholder-static 8788,
 placeholder-ssr 8789, edge 8790, blog 8791, vanilla 8792, react-next 8793,
-astro 8794) and inspector ports (9230–9237); wrangler's local dev
+astro 8794, qwik 8795) and inspector ports (9230–9238); wrangler's local dev
 registry connects the service bindings across processes. Seed local R2 once
 per fresh checkout (`pnpm --filter @pm/edge run seed:local`) or use
 `pnpm run origin-suite`, which wipes edge state and seeds automatically. The single-process
@@ -74,9 +74,10 @@ landing commit into the manifest and re-put it remotely (see
 `tools/snapshot-capture/src/normalize.ts`); trays unchanged ⇒ no KV
 warm-tier flush needed.
 
-CI deploys from `main` — edge first (react-next binds it directly, a
-request-time variant, editorial-build slice B; `pm-astro` does not — it is
-build-time, so its pages are already baked and it talks to nothing), then the
+CI deploys from `main` — edge first (`pm-react-next` and `pm-qwik` bind it
+directly, the request-time variants, editorial-build slices B and D;
+`pm-astro` does not — it is build-time, so its pages are already baked and it
+talks to nothing), then the
 rest of the variants (service bindings must resolve), then the front Worker — and
 re-runs the integration suite against the deployed origin with the Brotli
 assertion (the post-deploy smoke, spike FINDINGS §5).

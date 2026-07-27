@@ -31,6 +31,17 @@ Current occupants:
   element the drift gate cannot excuse). Its pre-merge master-identity guard
   lives in its OWN workspace (`test/`), driven by Astro's Container API,
   because loading a `.astro` file needs Astro's compiler.
+- **`qwik`** — the second REQUEST-TIME variant (editorial-build slice D):
+  resumability, on the official `cloudflare-workers` integration; binds
+  `pm-edge` itself like `react-next`, and fetches trays through a
+  `routeLoader$` per request. The first variant whose registered noise is ALL
+  mechanism (`^q:`/`^on:`/`^on-document:` under `behaviorAttrPatterns`, nothing
+  under `attrPatterns`) — and the first that needs a registration for
+  attributes on the `<html>` ELEMENT, which the drift gate compares. Its whole
+  URL prefix comes from ONE value (`base` in `vite.config.ts`): qwik-city's
+  router, the client's on-disk output directory, `q:base`, and the asset URLs
+  are all derived from it. Pre-merge master-identity guard in its own `test/`
+  (needs `qwikVite()`), driven by Qwik's own `renderToString`.
 - the **throwaway placeholder stand-in variants** (issue #3) —
   `placeholder-static` (assets + the one-line forwarder script) and
   `placeholder-ssr` (per-request render with representative permitted

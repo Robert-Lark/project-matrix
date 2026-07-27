@@ -172,6 +172,49 @@ for (const variant of SURFACE_CONTROLS["editorial"]!.variants) {
       await context.close();
     }, 60_000);
 
+    it("the front Worker's injected chrome survives load AND a cart interaction on a slow CPU", async () => {
+      // The slice-B regression, generalized to every live variant
+      // (editorial-build slice D). react-next shipped a real CLS bug here: the
+      // front Worker injects the switcher/HUD into `#pm-chrome-slot` by
+      // rewriting the HTTP stream in transit, so the browser's initial parse
+      // has children the framework's own vdom does not — and react-dom's
+      // hydration-mismatch recovery silently re-rendered that subtree EMPTY.
+      // It was invisible on a fast machine (resolved within one paint frame)
+      // and first appeared as a CI-only flake, which is why this runs under a
+      // 4x CPU throttle applied BEFORE navigation: that is what made it
+      // reproducible on demand.
+      //
+      // Every paradigm reaches this differently and each needs proving, not
+      // arguing: react-next by an escape hatch that skips the child-mismatch
+      // walk, astro/vanilla by never re-rendering the shell at all, qwik by
+      // subscribing components only to the store properties they read (its
+      // `Shell` provides the cart store and deliberately never reads it, so a
+      // cart change re-renders the badge and the live region and never the
+      // component hosting the slot). A future variant that gets this wrong
+      // fails here instead of on a visitor's slow laptop.
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.route("**/api/beacon", (route) => route.fulfill({ status: 204 }));
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+      await page.goto(PAGE, { waitUntil: "load" });
+
+      const chrome = page.locator("div#pm-chrome-slot #pm-chrome");
+      // Non-vacuity: the chrome must BE here, or the rest proves nothing.
+      expect(await chrome.count(), "chrome was never injected").toBe(1);
+
+      // Let any deferred startup work land — this is the window in which the
+      // react-next bug destroyed the subtree.
+      await page.waitForLoadState("networkidle");
+      expect(await chrome.count(), "chrome vanished after startup settled").toBe(1);
+
+      // Then force the interactive re-render path and check again.
+      await page.click(BUTTON);
+      await waitForCount(page, contract.badge(1));
+      expect(await chrome.count(), "chrome vanished after a cart interaction").toBe(1);
+      await context.close();
+    }, 90_000);
+
     it("a malformed stored value reads as the empty cart and is overwritten by the next add (recovery rule)", async () => {
       const context = await browser.newContext();
       const page = await openCartPage(context, PAGE);
