@@ -81,6 +81,35 @@ text.
   is proven to catch exactly the class only it can see, and exclusion is
   proven unable to mask drift.
 
+## Settling: wait for the real signal, never a proxy
+
+Standing rule, earned the hard way three separate times — the pixel check is
+zero-tolerance, so anything it screenshots before the page has genuinely
+finished becomes "drift" that no amount of re-reading the diff explains:
+
+- **Fonts** — wait for `document.fonts` to report a loaded, non-loading set,
+  not a timeout. (A never-triggered `unicode-range` fallback stays `unloaded`
+  rather than `loading`, so it cannot stall the wait.)
+- **Images** — `img.complete` means *the bytes arrived*, and it is NOT
+  sufficient. Any image with `decoding="async"` may be painted before its
+  frame is decoded, so `img.decode()` is the signal: it resolves when the
+  frame is paintable and rejects when it never will be. Skipping it cost a red
+  deploy on `main` (editorial slice D's merge): 421,656 differing pixels at
+  identical dimensions, every glyph matching, one `decoding="async"` figure
+  blank. Measured after the fact, decode still needed 1.3–2.3 ms per image
+  *after* `complete` went true on a fast workstation — unbounded on a loaded
+  two-core CI runner.
+- **Interaction metrics** — the same trap in the bench runner: INP was read
+  after a fixed 400 ms and silently came back null, because the entry only
+  arrives via `requestIdleCallback`. Fixed by waiting for the `first-input`
+  entry to exist.
+
+The pattern behind all three: a proxy for readiness (a timeout, a
+bytes-arrived flag, a network-quiet heuristic) passes while the thing you
+actually depend on has not happened. When a gate goes red and the page looks
+correct by hand, suspect the wait before suspecting the page — and fix it by
+making the wait more precise, never by loosening the assertion.
+
 ## The golden master
 
 `packages/reference/surfaces/sample/index.html` — the sample surface's
