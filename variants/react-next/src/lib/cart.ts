@@ -79,12 +79,24 @@ export const CART_ANNOUNCE_EVENT = "pm:cart-announce";
 
 /** Add one unit of `id` to the cart. Returns the new count, or `null` if
  *  storage failed (quota, storage off) — the contract: state unchanged,
- *  nothing announced. */
+ *  nothing announced.
+ *
+ *  Builds the next cart IMMUTABLY rather than mutating what `readCart()`
+ *  returned. That is load-bearing, not style: on an empty or schema-failing
+ *  store `readCart()` returns the module-level `EMPTY_CART`, so the previous
+ *  in-place `existing.qty += 1` / `items.push(...)` mutated that shared
+ *  constant. When `setItem` then threw — the exact case the contract says must
+ *  change nothing — the failed add stayed in memory, and every later
+ *  `readCart()` on a still-empty store returned a phantom cart. Reproduced
+ *  against the live plane before fixing: two failed adds followed by one
+ *  successful add stored qty 4 instead of 1, where vanilla, astro and qwik all
+ *  stored 1. */
 export function addToCart(id: number, title: string): number | null {
-  const cart = readCart();
-  const existing = cart.items.find((i) => i.id === id);
-  if (existing) existing.qty += 1;
-  else cart.items.push({ id, qty: 1 });
+  const current = readCart();
+  const existing = current.items.find((i) => i.id === id);
+  const cart: Cart = existing
+    ? { v: 1, items: current.items.map((i) => (i.id === id ? { ...i, qty: i.qty + 1 } : i)) }
+    : { v: 1, items: [...current.items, { id, qty: 1 }] };
   try {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
   } catch {

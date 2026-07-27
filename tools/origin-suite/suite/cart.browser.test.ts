@@ -172,6 +172,55 @@ for (const variant of SURFACE_CONTROLS["editorial"]!.variants) {
       await context.close();
     }, 60_000);
 
+    it("a FAILED add changes nothing — not even in memory (contract: storage off/quota)", async () => {
+      // CART_CONTRACT: "A failed `setItem` (quota, storage off) changes nothing
+      // and announces nothing." react-next violated the in-memory half: its
+      // `readCart()` returned the module-level EMPTY_CART and `addToCart`
+      // mutated it in place, so a failed add persisted in memory and every
+      // later read on a still-empty store returned a phantom cart. Measured
+      // before the fix: two failed adds then one real one stored qty 4.
+      //
+      // The WARM-UP click is not optional. A resumable variant loads its click
+      // handler lazily, so overriding `setItem` and clicking immediately races
+      // the chunk fetch — that ordering made an earlier version of this probe
+      // accuse qwik of a bug it does not have. One real click first guarantees
+      // the handler is resident before storage is broken.
+      const context = await browser.newContext();
+      const page = await openCartPage(context, PAGE);
+
+      await page.click(BUTTON);
+      await waitForCount(page, contract.badge(1));
+
+      await page.evaluate((key) => localStorage.removeItem(key), contract.key);
+      await page.evaluate(() => {
+        const proto = Object.getPrototypeOf(localStorage);
+        (globalThis as { __realSet?: unknown }).__realSet = proto.setItem;
+        proto.setItem = () => {
+          throw new DOMException("QuotaExceededError");
+        };
+      });
+
+      // Two adds that must be no-ops in storage AND in memory.
+      await page.click(BUTTON);
+      await page.waitForTimeout(300);
+      await page.click(BUTTON);
+      await page.waitForTimeout(300);
+      expect(await storedCart(page), "a failed add wrote to storage").toBeNull();
+
+      // Restore storage; ONE real add must store exactly one unit.
+      await page.evaluate(() => {
+        const proto = Object.getPrototypeOf(localStorage);
+        proto.setItem = (globalThis as { __realSet?: typeof proto.setItem }).__realSet!;
+      });
+      await page.click(BUTTON);
+      await waitForCount(page, contract.badge(1));
+      expect(
+        JSON.parse((await storedCart(page))!),
+        "the failed adds leaked into in-memory cart state",
+      ).toEqual({ v: contract.version, items: [{ id: featured.id, qty: 1 }] });
+      await context.close();
+    }, 90_000);
+
     it("the front Worker's injected chrome survives load AND a cart interaction on a slow CPU", async () => {
       // The slice-B regression, generalized to every live variant
       // (editorial-build slice D). react-next shipped a real CLS bug here: the
