@@ -106,6 +106,48 @@
       "dependsOn": ["topo", "build"],
       "cache": false
     },
+    "@pm/qwik#build": {
+      "dependsOn": ["topo", "^build"],
+      // Not snapshot-parameterized: qwik is a REQUEST-TIME variant
+      // (editorial-build slice D — trays fetched through the edge Worker per
+      // request), so there is no PM_SNAPSHOT env declaration here, exactly as
+      // for @pm/react-next#build below. But src/lib/snapshot.ts statically
+      // imports the fixture's committed manifest.json/curation.json at build
+      // time (to resolve the featured-id policy without a hardcoded crate-name
+      // string), so regenerating the fixture must invalidate this cache entry.
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/manifest.json",
+        "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/curation.json"
+      ],
+      // BOTH trees, and server/** is the load-bearing half: wrangler bundles
+      // dist/_worker.js, which imports ../server/entry.cloudflare-pages by
+      // relative path (the adapter's own generate() hook writes it that way).
+      // server/ deliberately lives OUTSIDE dist/ because dist/ is this
+      // Worker's public asset directory — a server bundle in there would be
+      // downloadable — so it has to be declared separately or a turbo cache
+      // HIT would restore dist/ alone and `wrangler deploy` would fail to
+      // resolve the import. (The @pm/astro#build precedent: declare every
+      // build product, not just the obvious directory.)
+      "outputs": ["dist/**", "server/**"]
+    },
+    "@pm/qwik#test": {
+      // The pre-merge master-identity guard (variants/qwik/test) renders this
+      // variant's components for BOTH snapshots and compares each against the
+      // reference renderer's output. Its real inputs therefore span the
+      // reference render/ tree and both committed snapshots — a set that is easy
+      // to under-declare, and an under-declared input means turbo replays a
+      // stale PASS while crate-flavoured copy has actually drifted, which is
+      // precisely the hole this guard exists to close. Uncached, like
+      // @pm/astro#test and @pm/repo-checks#test, for the same reason:
+      // correctness over ~1s.
+      //
+      // No dependsOn build, unlike @pm/astro#test: nothing here imports
+      // generated build output. qwik is a REQUEST-TIME variant, so there is no
+      // baked snapshot module to exist first — the guard drives the components
+      // directly with tray data it reads itself.
+      "cache": false
+    },
     "@pm/react-next#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized for the TRAYS (request-time variant,

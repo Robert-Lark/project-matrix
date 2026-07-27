@@ -152,9 +152,9 @@ jobs:
 
       # Service-binding targets first: the front Worker's bindings must
       # resolve. Edge deploys BEFORE any variant that binds it itself
-      # (react-next, editorial-build slice B — request-time variants bind
-      # pm-edge directly, not through the front Worker) — reordered here
-      # from "edge last" now that such a variant exists.
+      # (react-next and qwik — the request-time variants, editorial-build
+      # slices B and D, bind pm-edge directly rather than through the front
+      # Worker) — reordered here from "edge last" once such a variant existed.
       - name: Deploy service-bound Workers (edge + variants)
         if: steps.creds.outputs.present == 'true'
         env:
@@ -167,6 +167,7 @@ jobs:
           pnpm --filter @pm/vanilla run deploy
           pnpm --filter @pm/react-next run deploy
           pnpm --filter @pm/astro run deploy
+          pnpm --filter @pm/qwik run deploy
 
       # The blog plane (ADR-0009): resources, then schema, then the Worker —
       # and all of it before the front Worker, whose BLOG binding must

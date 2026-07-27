@@ -134,6 +134,69 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
     behaviorAttrPatterns: [],
     dropElementSelectors: ["body > div[hidden]:first-child"],
   },
+  /**
+   * qwik (editorial-build slice D): the first variant whose noise is ALL
+   * mechanism — every entry below is the resumability wire format, so all
+   * three patterns belong to the behavior-attribute class and `attrPatterns`
+   * stays empty (tools/repo-checks/test/noise-class-discipline.test.ts fails
+   * the build if a `q:`/`on:` shape is ever registered as inert residue).
+   *
+   * Measured from the real served page, and each pattern earns its place:
+   *  - `^q:` — two distinct species. On the `<html>` ELEMENT, the container
+   *    attributes: exactly `q:container`, `q:version`, `q:render`, `q:route`,
+   *    `q:base`, `q:locale`, `q:manifest-hash`, `q:instance`. These are why
+   *    this variant needs a registration at all — the normalizer treats the
+   *    document element's own attributes as contract surface (§4 above), so
+   *    they are compared, not dropped. Inside the page, per-element
+   *    bookkeeping: `q:key` and `q:id`.
+   *
+   *    Counts, all regex-derived from the real served page and SCOPED, because
+   *    an audit note with unqualified numbers is not auditable (an earlier
+   *    version of this note said "11" for the comments below and was wrong by
+   *    three): in `<body>`, which is all this normalizer compares, 7 elements
+   *    carry `q:key` — but one of those is a `<script>`, which the
+   *    DROP_ELEMENTS rule removes, so **6 compared elements** carry it — and 4
+   *    carry `q:id` (three `<a>`, one `<button>`). Document-wide there are 15,
+   *    the other 8 being `<head>`'s mapped stylesheet `<link>`s, all sharing
+   *    `q:key="Ro_1"` (root.tsx relies on that measurement). Separately there
+   *    are 16 `<!--qv …-->` component markers, 14 with a non-empty `q:key`.
+   *
+   *    Which elements get one is Qwik's OPTIMIZER's call, and deliberately NOT
+   *    described here as a rule, because the obvious rules are all wrong. An
+   *    element's `q:key` comes only from its JSX node's key
+   *    (`@builder.io/qwik/dist/core.mjs`: `if (key != null) openingElement +=
+   *    ' q:key="' + escapeHtml(key) + '"'`), and the optimizer assigns node keys
+   *    for its own bookkeeping — so `q:key` appears on plain markup that is
+   *    neither a `component$` host nor author-keyed (`<article
+   *    class="pm-editorial">`, a `<blockquote>`, `<li
+   *    class="pm-release-card">`), while a `component$` host's OWN key goes on
+   *    its `<!--qv … q:key=…-->` comment, which the comment-stripping rule
+   *    already erases. Likewise `q:id` lands on elements the serializer wants
+   *    to reference, including two masthead links that carry no listener at
+   *    all. The pattern is a prefix for exactly this reason: it covers the
+   *    species without pretending to predict the placement.
+   *  - `^on:` — the resumable listener bindings (`on:click` on the
+   *    add-to-cart button: chunk + symbol, no listener attached until the
+   *    click).
+   *  - `^on-document:` — the document-level equivalents (`on-document:qinit`
+   *    from `useOnDocument`, which is how the masthead badge reads stored
+   *    cart state at load; `on-document:qcinit` from qwik-city's own router).
+   *    NOT covered by `^on:` — a separate prefix, and registering only `^on:`
+   *    would leave these on the page for the DOM check to fail on.
+   *
+   * Deliberately NOT registered: `^on-window:` (this page uses no
+   * `useOnWindow`, and the rule is to register only what is measured in
+   * served output) and any `dropElementSelectors` — Qwik adds no wrapper
+   * ELEMENT anywhere, so unlike slice B there is nothing structural to
+   * excuse. Its dynamic-text markers (`<!--t=…-->`) and component boundaries
+   * (`<!--qv …-->`) are COMMENTS, which the normalizer already drops
+   * unconditionally while merging the text runs they split.
+   */
+  qwik: {
+    attrPatterns: [],
+    classPatterns: [],
+    behaviorAttrPatterns: ["^q:", "^on:", "^on-document:"],
+  },
 };
 
 /**

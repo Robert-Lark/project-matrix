@@ -1,0 +1,35 @@
+{
+  "name": "@pm/qwik",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The qwik variant (editorial-build slice D): resumability, on the official cloudflare-workers integration. REQUEST-TIME \u2014 trays are fetched through the edge Worker per request via this Worker's own pm-edge service binding (ADR-0002 \u00a77); serves /qwik/* through the composed origin.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "node scripts/prepare-build.mjs && pnpm run build.client && pnpm run build.server",
+    "build.client": "vite build",
+    "build.server": "vite build -c adapters/cloudflare-workers/vite.config.ts",
+    "dev": "wrangler dev --port 8795 --inspector-port 9238",
+    "deploy": "node scripts/prepare-build.mjs && pnpm run build.client && pnpm run build.server && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pm/data-contract": "workspace:*",
+    "@pm/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@builder.io/qwik": "1.20.0",
+    "@builder.io/qwik-city": "1.20.0",
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@pm/drift-gate": "workspace:*",
+    "@types/node": "^20",
+    "linkedom": "^0.18.13",
+    "typescript": "^6.0.3",
+    "vite": "7.3.1",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
+  }
+}

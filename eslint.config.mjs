@@ -20,6 +20,13 @@ export default tseslint.config(
       // triple-slash reference, `any` in framework-internal generics), never
       // meant to satisfy this repo's lint rules.
       "**/.astro/**",
+      // The qwik variant's SSR bundle (editorial-build slice D). Same class as
+      // the three above — rollup output — but it cannot live under dist/**
+      // because dist/ is that Worker's public asset directory (see
+      // variants/qwik/.gitignore), so it needs its own entry. Scoped to the
+      // one workspace rather than a bare "**/server/**", which would silently
+      // exempt any future hand-written server/ directory from lint.
+      "variants/qwik/server/**",
       // @next/env's generated ambient module — Next's own convention (its
       // own scaffolded .gitignore excludes it from version control too).
       "**/next-env.d.ts",

@@ -42,6 +42,7 @@ const evidenceDir = join(suiteDir, "..", ".dev-logs", "drift");
 
 const SSR_NOISE = PERMITTED_NOISE["placeholder-ssr"]!;
 const REACT_NEXT_NOISE = PERMITTED_NOISE["react-next"]!;
+const QWIK_NOISE = PERMITTED_NOISE["qwik"]!;
 
 let browser: Browser;
 let statics: StaticServer;
@@ -608,6 +609,102 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
       await settleImages(page);
       const shot = await captureStablePixels(page);
       assertPixelsEqual(`pixels-${profileId}-astro-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
+  }
+});
+
+describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (editorial-build slice D)", () => {
+  it("the served page equals the re-rendered master by normalized DOM — under qwik's registered noise, non-vacuously in both directions", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/qwik/editorial/`);
+    // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+
+    // Non-vacuity for the registration itself, DERIVED from what is registered
+    // rather than hand-typed (the slice-B lesson: a hand-typed approximation
+    // can drift out of sync with normalize.ts and keep passing after the real
+    // pattern goes vacuous). Every attribute NAME on the served page is
+    // enumerated, and each registered behaviour-attribute pattern must match
+    // at least one of them — so a pattern that stops describing this
+    // paradigm's output fails here instead of quietly excusing nothing.
+    // Scoped to elements the comparison KEEPS. `querySelectorAll("*")` would
+    // include the `<script>` QwikCityProvider emits unconditionally, which
+    // carries `on-document:qcinit` and `on-document:qinit` — so a pattern could
+    // "match something on the page" while stripping nothing the gate ever sees.
+    // That is exactly the vacuity this block exists to prevent (a verify-slice
+    // finding: swapping `useOnDocument` for `useVisibleTask$` would have left
+    // `^on-document:` excusing nothing, with all three guards still green).
+    // Mirrors normalize.ts's own DROP_ELEMENTS set.
+    const attrNames: string[] = await page.evaluate(() => {
+      const DROPPED = new Set(["SCRIPT", "STYLE", "LINK", "TEMPLATE"]);
+      return [
+        ...new Set(
+          [...document.querySelectorAll("*")]
+            .filter((el) => !DROPPED.has(el.tagName) && el.closest("template") === null)
+            .flatMap((el) => [...el.attributes].map((a) => a.name)),
+        ),
+      ];
+    });
+    expect(attrNames).toContain("q:container"); // the <html> container really is here
+    for (const source of QWIK_NOISE.behaviorAttrPatterns) {
+      const re = new RegExp(source);
+      expect(
+        attrNames.some((name) => re.test(name)),
+        `registered behaviorAttrPattern ${source} matches no attribute on the served page`,
+      ).toBe(true);
+    }
+    // qwik adds no wrapper ELEMENT, so nothing structural is excused; if a
+    // future edit needs one, this fails and the registration must be widened
+    // deliberately rather than by accident.
+    expect(QWIK_NOISE.dropElementSelectors).toBeUndefined();
+    expect(QWIK_NOISE.attrPatterns).toEqual([]);
+
+    // The other direction: with NO noise stripped the page must NOT match, or
+    // the registration is decorative (the placeholder-ssr precedent above).
+    const unstripped = await extractNormalizedDom(page, NO_NOISE);
+    expect(unstripped).not.toBe(masterDom);
+
+    const dom = await extractNormalizedDom(page, QWIK_NOISE);
+    expect(dom).not.toContain("pm-chrome");
+    assertDomEqual("dom-qwik-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+      // The pixel leg is what proves Qwik's own serialization choices are
+      // rendering-neutral. Two of them, stated as measured rather than as
+      // assumed: JSX drops the inter-element whitespace the master's
+      // hand-authored HTML carries, and ONE text position on this page is split
+      // by a comment marker — `<!--t=…-->` around CartStatus's `{cart.message}`,
+      // the only interpolation that reads a store proxy. Non-reactive
+      // interpolation (the whole essay, the dateline, the feature notes) is NOT
+      // split, so those text runs are byte-shaped like the master's. Neither
+      // should move a pixel; this leg establishes that rather than the
+      // reasoning behind it.
+      const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
+      const masterPage = await openTracked(context, masterPixelUrl);
+      // The re-rendered master has no chrome slot — part of the contract.
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureStablePixels(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/qwik/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      await settleImages(page);
+      const shot = await captureStablePixels(page);
+      assertPixelsEqual(`pixels-${profileId}-qwik-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
     }, 120_000);

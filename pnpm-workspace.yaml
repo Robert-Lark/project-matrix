@@ -22,6 +22,22 @@ packageExtensions:
   "@opennextjs/cloudflare":
     dependencies:
       esbuild: "^0.25.4"
+  # @builder.io/qwik-city declares @builder.io/qwik in NEITHER dependencies nor
+  # peerDependencies — it relies entirely on the framework being hoisted, which
+  # the isolation below deliberately prevents. Its post-build SSG step
+  # (lib/static/node.mjs) then dies with ERR_MODULE_NOT_FOUND. Same class as the
+  # entry above; found by editorial-build slice D (qwik).
+  #
+  # Declared as a PEER, not a dependency, and the distinction is load-bearing:
+  # qwik-city must resolve the SAME framework instance the app uses. A
+  # `dependencies` entry has to name a version, and any literal there
+  # (`"1.20.0"`) silently installs a SECOND copy the day variants/qwik bumps the
+  # framework — two cores, one of which nothing renders with. As a peer with
+  # autoInstallPeers on, it resolves to whatever the consumer already has, which
+  # is what upstream should have declared in the first place.
+  "@builder.io/qwik-city":
+    peerDependencies:
+      "@builder.io/qwik": "*"
 
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
 # pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a

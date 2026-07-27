@@ -2076,6 +2076,180 @@ six, now generalized to the real invariant (every inline-child container here is
 flex or grid, so whitespace-only children never become items — and a
 tokens-tier edit taking any of them out of flex is what the pixel leg catches).
 
+### `editorial-build` slice D — the qwik variant, resumability (2026-07-26)
+
+The fourth editorial column, and the second REQUEST-TIME one: `variants/qwik`
+serving `/qwik/editorial/` on Qwik v1 stable (`@builder.io/qwik@1.20.0`) with the
+official `cloudflare-workers` integration, fetching trays per request through
+its own `pm-edge` service binding via a `routeLoader$`. Copied from
+`variants/react-next` rather than the two build-time variants, exactly as the
+slice-B precedent requires: the front Worker's `EDGE` binding does not reach a
+variant server-side, so a request-time variant binds edge itself.
+
+**The slice's big structural question was settled by measurement before a line
+of the variant was written.** Qwik has no `<html>` element in its source — the
+framework emits one, and puts its container attributes on it: `q:container`,
+`q:version`, `q:render`, `q:route`, `q:base`, `q:locale`, `q:manifest-hash`,
+`q:instance`, alongside `lang`. That lands squarely on contract surface, because
+the drift-gate normalizer serializes the document element's OWN attributes
+deliberately (a dropped `lang` is pixel-neutral a11y drift). So the question was
+whether this is slice C's `<astro-island>` problem again — an element no
+registration can excuse — or a registration question. A throwaway scaffold
+answered it: **Qwik adds no wrapper ELEMENT anywhere.** Everything it adds is
+either an attribute (registrable) or a comment (already dropped
+unconditionally). The registration is therefore the first one in the registry
+that is ALL mechanism — `behaviorAttrPatterns: ["^q:", "^on:",
+"^on-document:"]`, with `attrPatterns` and `classPatterns` empty and no
+`dropElementSelectors` — which is what ADR-0008's behavior-attribute class was
+minted for, and what `noise-class-discipline.test.ts` keeps honest (registering
+any of it as inert residue fails the build). `^on-document:` is a separate
+prefix that `^on:` does not match; registering only the latter would have left
+`on-document:qinit` on the page for the DOM check to fail on.
+
+The same scaffold answered the rest of the slice's unknowns, and two of them
+inverted the expectations carried in from earlier slices. **Escaping is
+byte-identical to the reference renderer's `esc()`** — all five characters,
+apostrophe decimal — so this variant reuses vanilla's escaper unchanged, where
+slice B needed a second one. **Qwik does not split `text {expr} text` into
+separate text nodes** for non-reactive interpolation: no comment markers, one
+continuous run, the master's own shape (the essay is still authored as one
+template literal per run, but for reflow-immunity rather than slice B's
+marker problem — a smaller claim, recorded as such). Void elements and boolean
+attributes stay bare, so the canonical font markup matches VERBATIM modulo base
+path with none of slice B's renderer tolerances — one marker attribute aside
+(`q:head`, appended to everything Qwik manages in `<head>`). And attribute names
+pass through verbatim, so `datetime` is authored lowercase to match the master
+byte-for-byte where react-next's `dateTime` does not.
+
+**Prefix mounting is the nicest thing this paradigm did.** Slice C had to keep
+Astro's `base` and `outDir` in agreement by hand. Qwik derives everything from
+one `base: "/qwik/"`: qwik-city's router `basePathname` defaults to vite's base,
+the optimizer computes the client's public output directory as `clientOutDir +
+base` (so `dist/qwik/…` matches the URL space with no `outDir` override), the
+served container's `q:base` follows, and `import.meta.env.BASE_URL` gives the
+asset root. Verified against the scaffold, not inferred — and an earlier attempt
+to force the layout with `build.outDir` is recorded as a trap, because it applies
+to BOTH vite builds and the SSR build's `emptyOutDir` then wipes the client
+output the previous step wrote.
+
+**Two starter defects, one latent and one fatal, both fixed with evidence.** The
+`cloudflare-workers` integration names its assets binding `ASSET`, while
+qwik-city's own cloudflare-pages middleware calls `env.ASSETS.fetch(request)`
+for any path its build-time static-path list matches — so the binding would have
+thrown on the day that fallback was reached. It is not reached today (Workers
+Static Assets serves those paths before the Worker runs; measured with the
+mismatched name in place, a build chunk still returned 200), which is exactly
+what would have made it a latent failure rather than an obvious one. Renamed to
+`ASSETS`, which is also what every other variant here calls it. The fatal one is
+one layer down: **`@builder.io/qwik-city@1.20.0` declares `@builder.io/qwik` in
+neither `dependencies` nor `peerDependencies`** — it relies entirely on being
+hoisted, which ADR-0004 §2's zero-bias isolation deliberately prevents, so the
+post-build SSG step dies with `ERR_MODULE_NOT_FOUND`. Declared via
+`packageExtensions`, the slice-B precedent (`@opennextjs/cloudflare` needing
+`esbuild`). The framework's own CLI is a third instance of the same class and was
+dropped from the pipeline instead: it needs `ignore`, then `semver`, neither
+declared, and chasing that would let one framework's dependency hygiene shape the
+whole repo's install graph while nothing in build/deploy/test needs the CLI.
+
+**Where resumability does not get to defer — and the slice's own worst
+over-claim, caught by its adversarial pass.** The cart contract requires every
+shell page load to populate the masthead count slot from storage, because that is
+what makes the cart survive a variant swap (ADR-0004 §5). Reading client storage
+at load is eager work by definition. The first draft of this section, and of the
+receipt, and of two source comments, called that "one lazy chunk at startup" and
+said no JavaScript for the click behaviour is downloaded until the click. Both
+were wrong in the variant's favour, which is the direction that matters.
+
+Measured against the composed origin with JS on, from resource timing (the same
+source the bench runner reads): qwik fetches **7 files, 26.83 kB encoded /
+62.16 kB decoded, at load — and nothing at all on the click.** vanilla fetched
+1.35 kB in the same run, astro 0 requests (its bundle is inlined — the issue-#16
+accounting defect reproducing itself independently), react-next 145.05 kB.
+
+The causal chain is the real result, and it is more interesting than the
+rounding: the contract forces a load-time storage read, that read is a QRL,
+resolving any QRL requires the framework core (50,917 B), and rollup co-located
+`src/lib/cart.ts` so the chunk behind the `useOnDocument` statically imports the
+add-to-cart chunk as well. Resumability genuinely defers the BINDING — no
+listener is attached at load — while on this surface the contract pulls the BYTES
+forward regardless. The mechanism is still `useOnDocument("qinit", …)` rather
+than `useVisibleTask$`, because `eslint-plugin-qwik`'s own rule prefers it and a
+visible task blocks interaction until it has run. None of this is a Qwik defect;
+it is the number the reading table has to publish.
+
+**The paradigm also removed machinery the last two variants needed.** Cart state
+is one Qwik store behind a context id: no `CustomEvent` bus (react-next needed
+one because its cart pieces are separate hydration islands with no common client
+ancestor), no `document.querySelectorAll` (vanilla's only option). And `Shell`
+PROVIDES that store while deliberately never READING it — which is not tidiness
+but the fix for slice B's shipped CLS bug: Qwik subscribes a component to exactly
+the store properties its render function touches, so a cart change re-renders
+the badge and the live region and never the component hosting
+`#pm-chrome-slot`. Slice B lost that subtree on every slow-CPU load because
+react-dom's hydration walk discarded children React had not authored. Here there
+is no hydration walk at all — and a browser test asserts the injected chrome
+survives a click rather than trusting the argument.
+
+`EditorialArticle` and `ReleaseCard` are Qwik INLINE components (plain functions
+returning JSX), which its docs put first for small presentational markup: not a
+lazy boundary, so no lazy chunk and no serialized props, and neither has
+interactivity to defer. That does NOT make inline markup free of Qwik's
+bookkeeping attributes — an earlier draft of this section and of the receipt both
+claimed it did, and the served page disproves it: `<article>`, the essay's
+`<blockquote>` and `<li class="pm-release-card">` all carry a `q:key`. An
+element's `q:key` comes from its JSX node's key, and the OPTIMIZER assigns node
+keys for its own bookkeeping, so which elements carry one is not predictable
+from component boundaries at all — measured at seven elements plus `q:id` on
+four, including two masthead links with no listener. It is registered noise, not
+a reason to avoid inline components. The three pieces that
+do are real `component$` boundaries, so the lazy chunks the page ships are the
+interactive ones and nothing else. No JSX `key` sits on anything the drift gate compares, and
+that is measured rather than stylistic: **Qwik serializes a JSX key as a `q:key`
+ATTRIBUTE** where React's does not render at all, so a key on the essay's
+paragraph list put variant-authored noise on contract elements (verified by
+removing them — those `<p>` elements lost their `q:key`). `RouterHead`'s
+head.meta/head.links loops keep theirs; `<head>` is a declared freedom the
+normalizer drops whole. The same
+measurement forced `fonts.css` out of the stylesheet `.map()` and up beside the
+two font preloads — Qwik reorders an element's attributes and stamps a generated
+`q:key` when the element is an ARRAY child, which would have broken ADR-0003
+§8's "verbatim modulo base path" for the one canonical stylesheet line.
+
+**The pre-merge master-identity guard is the most direct of the four**, because
+Qwik ships a genuine `renderToString`. Slice A could call a string-returning
+render function; slice B had to drive `react-dom/server` over a deliberately
+framework-neutral module; slice C needed Astro's Container API; this one just
+asks the framework to render. Three measured details shaped it: Qwik rejects
+`containerTagName: "body"` ("its parent is not a `<html>` element"), so the
+render uses a `<div>` container the test UNWRAPS as a DOM operation — string
+surgery on the serialized output got the indentation wrong, which is how that was
+found; outside a production build no chunk exists for a QRL, so the render aborts
+until `symbolMapper` supplies one (a deterministic stub is honest here, because
+bundle layout is a build concern this guard makes no claim about, and the REAL
+chunk names are proven against the served page by `editorial.test.ts`, which
+fetches every chunk an `on:*` attribute actually names); and comparison runs
+through the drift gate's own `PAGE_NORMALIZE` over linkedom, because Qwik emits
+`class` last and stamps `q:key` on component hosts. Proven non-vacuous by
+sabotage: one word changed in the CRATE essay fails the crate leg and only the
+crate leg.
+
+The route loader PROJECTS its payload, and the reason is narrower than it first
+looked — measured, not assumed. The initial page's inline resumability state does
+NOT carry loader results: it is 339 bytes, holding only the cart store and the
+props of the three `component$` boundaries. What carries the whole loader result
+is the route's client-navigation payload, `q-data.json` (955 bytes with the
+projection). An earlier code comment claimed the inline state was the reason and
+was corrected once the numbers existed.
+
+Local proof BOTH snapshot modes, and the crate leg needed the git-ignored image
+bytes copied into the fresh worktree before `PM_SEED_DIR` could seed at all.
+`variants/qwik/DIFF-TO-STARTER.md` records 23 numbered deviations plus a
+measured-behaviours section, including the delivery shape the scheduled
+bench-accounting work (issue #16) will want: Qwik ships MANY EXTERNAL `.js`
+chunks, making it the third distinct shape across the editorial columns after
+vanilla's single external file and astro's inlined bundle — exactly the spread
+that fix needs to validate against.
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he

@@ -693,3 +693,311 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     expect(body).toMatch(/<a class="pm-masthead__cart" href="\/vanilla\/checkout\/">/);
   });
 });
+
+/**
+ * /qwik/editorial/ — the fourth real variant: resumability, on the official
+ * `cloudflare-workers` integration (editorial-build slice D). REQUEST-TIME
+ * like react-next (trays through this variant's own pm-edge service binding),
+ * with the differences this paradigm actually has:
+ *
+ *  - the SAME `esc` vanilla uses, not react-next's second escaper: Qwik's JSX
+ *    escaping is byte-identical to the reference renderer's (measured — all
+ *    five characters, apostrophe decimal `&#39;`);
+ *  - the canonical font markup matches VERBATIM modulo base path (bare
+ *    `crossorigin`, no self-closed void elements — the astro shape, not
+ *    react-next's), with ONE tolerance: Qwik appends a `q:head` marker
+ *    attribute to every element it manages in `<head>`, so the search drops
+ *    the canonical line's closing `>`;
+ *  - attribute ORDER: Qwik emits `class` after an element's other attributes,
+ *    so raw-substring assertions spanning a class are written in Qwik's order.
+ *    The drift gate is unaffected (its normalizer sorts attributes);
+ *  - noise that is ALL mechanism — `q:*`, `on:*`, `on-document:*` — asserted
+ *    against the raw served bytes and derived from the registry, not hand-typed;
+ *  - a cart contract carried in the very chunk the button's own `on:click`
+ *    attribute names, which is the resumability mechanism made checkable.
+ */
+describe("the qwik editorial page (canonical shell + composition)", () => {
+  it("serves 200 with the shell in canonical order: skip link, chrome slot, page", async () => {
+    const res = await get("/qwik/editorial/");
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const skip = body.indexOf('class="pm-skip');
+    const slot = body.indexOf('id="pm-chrome-slot"');
+    const page = body.indexOf('class="pm-page"');
+    expect(skip).toBeGreaterThan(-1);
+    expect(slot).toBeGreaterThan(skip);
+    expect(page).toBeGreaterThan(slot);
+    expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
+    // Qwik stamps a `q:key` on every component$ host element, and <article> is
+    // one — so this is the open tag without its closing bracket, not a
+    // loosened match: the class attribute and its value are still exact.
+    expect(body).toContain('<article class="pm-editorial"');
+    expect(body).toContain('role="status" data-pm-status');
+    // The container Qwik puts on the DOCUMENT element, carrying the master's
+    // own `lang` (entry.ssr.tsx's containerAttributes). The drift gate compares
+    // <html>'s attributes, so this is contract surface, not head decoration.
+    expect(body).toMatch(/<html lang="en" [^>]*q:container="paused"/);
+  });
+
+  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+    const snap = await loadServedSnapshot();
+    const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
+    if (!featured) throw new Error("resolved snapshot lost its featured release");
+    const body = await (await get("/qwik/editorial/")).text();
+    // `datetime` lowercase, exactly as the master serves it: Qwik passes
+    // attribute names through verbatim, so the DOM-property spelling
+    // (`dateTime`, which react-next emits) would have shipped a different
+    // attribute name.
+    expect(body).toContain(
+      `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
+    );
+    // vanilla's escaper, unchanged — Qwik's own escaping matches it byte for
+    // byte, apostrophes included.
+    expect(body).toContain(esc(featured.title));
+    expect(body).toContain(esc(featured.artist));
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets (never dereferenced here)", async () => {
+    const body = await (await get("/qwik/editorial/")).text();
+    expect(body).toContain('href="/react-next/plp/plain/"');
+    expect(body).toContain('href="/vanilla/editorial/" aria-current="page"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+    expect(body).toContain('href="/vanilla/pdp/');
+  });
+
+  it("chrome injected: stamped for this page, serving cell current, counts from the arrays", async () => {
+    const controls = SURFACE_CONTROLS["editorial"]!;
+    // The registration move is part of this build's definition of done.
+    expect(controls.variants).toContain("qwik");
+    expect(controls.plannedVariants).not.toContain("qwik");
+
+    const body = await (await get("/qwik/editorial/")).text();
+    expect(count(body, 'data-pm-chrome="1"')).toBe(1);
+    expect(body).toContain('data-pm-variant="qwik"');
+    expect(body).toContain('data-pm-surface="editorial"');
+    expect(body).toContain('aria-current="page">qwik<');
+    const live = controls.variants.length;
+    const planned = live + (controls.plannedVariants?.length ?? 0);
+    expect(body).toContain(`Served by ${live} of ${planned} planned variants today.`);
+    const switcherRow = body.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain('aria-current="page">qwik<');
+    const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
+      .map((m) => m[1])
+      .sort();
+    const otherLive = controls.variants.filter((v) => v !== "qwik").sort();
+    expect(anchorTargets).toEqual(otherLive);
+    for (const v of controls.plannedVariants ?? []) {
+      expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
+      expect(switcherRow).not.toContain(v);
+    }
+  });
+
+  it("fonts: the canonical loading markup verbatim modulo base path (ADR-0003 §8)", async () => {
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/qwik/assets/pm"));
+    expect(lines).toHaveLength(3);
+
+    const body = await (await get("/qwik/editorial/")).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      // ONE tolerance, and it is a marker rather than a content difference:
+      // Qwik appends `q:head` to every element it manages inside <head>, so the
+      // canonical line's closing `>` is dropped from the search string (the
+      // react-next precedent, for a different renderer quirk). Everything
+      // before it — attribute order, the bare `crossorigin`, the unclosed void
+      // element — matches as written, which is why fonts.css is authored beside
+      // the preloads rather than inside the stylesheet list that Qwik reorders
+      // (variants/qwik/src/root.tsx records that measurement).
+      const marked = line.slice(0, -1);
+      const at = head.indexOf(marked);
+      expect(at, `canonical loading line missing or out of order: ${marked}`).toBeGreaterThan(
+        last,
+      );
+      last = at;
+    }
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("font files and the tokens stylesheet arrive byte-identical to @pm/tokens", async () => {
+    for (const font of [
+      "FamiljenGrotesk.var.woff2",
+      "PMCrateSymbols.woff2",
+      "PMWarnGlyph.U26A0.woff2",
+    ]) {
+      const res = await get(`/qwik/assets/pm/fonts/${font}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("woff2");
+      const source = readFileSync(join(repoRoot, "packages", "tokens", "fonts", font));
+      expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
+    }
+    // public/ is the one delivery route vite leaves untouched — importing the
+    // sheets so it bundled them would hash the files and rewrite fonts.css's
+    // own @font-face URLs, failing both halves of ADR-0003 §8 at once.
+    for (const sheet of ["tokens.css", "fonts.css"]) {
+      const css = await get(`/qwik/assets/pm/css/${sheet}`);
+      expect(css.status).toBe(200);
+      expect(await css.text()).toBe(
+        readFileSync(join(repoRoot, "packages", "tokens", "css", sheet), "utf8"),
+      );
+    }
+  });
+
+  it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
+    // The front Worker forwards the ORIGINAL request and never rewrites paths,
+    // so the prefix is this variant's own responsibility. Qwik derives all of
+    // it from one `base` — the router's basePathname, the client's on-disk
+    // output directory, `q:base`, and these asset URLs — but "derived from one
+    // place" is a claim about the framework, so it is checked rather than
+    // trusted: every /qwik/… URL the page references must resolve, and the
+    // build-chunk names are content hashes, so the set is DERIVED from the
+    // served page.
+    const body = await (await get("/qwik/editorial/")).text();
+    const refs = [...body.matchAll(/(?:href|src)="(\/qwik\/[^"]+)"/g)].map((m) => m[1]!);
+    // 2 font preloads + 9 stylesheets at minimum, plus qwikloader/preloader
+    // chunks and the bundle-graph fetch.
+    expect(refs.length).toBeGreaterThanOrEqual(11);
+    for (const ref of new Set(refs)) {
+      const res = await get(ref);
+      expect(res.status, `${ref} did not resolve`).toBe(200);
+    }
+  });
+
+  it("the router's own redirect keeps the prefix, and unknown paths under it 404 cleanly", async () => {
+    // The other half of the prefix proof, and the failure mode it guards is
+    // specific: qwik-city normalizes to a trailing slash with a 301, and a
+    // router that did not know its own basePathname would send visitors to
+    // `/editorial/` — a path the front Worker does not route to any variant.
+    // `redirect: "manual"` because fetch would otherwise follow it and hide
+    // the Location header this is actually about.
+    const res = await fetch(`${ORIGIN}/qwik/editorial`, { redirect: "manual" });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("/qwik/editorial/");
+
+    // An unbuilt path under this variant's own prefix is a clean 404, not a
+    // 500 — the request-time router is reached and answers.
+    for (const path of ["/qwik/", "/qwik/nope/"]) {
+      expect((await get(path)).status, path).toBe(404);
+    }
+  });
+
+  it("transport parity: qwik's editorial page matches the placeholder baseline (ADR-0001 §6)", () => {
+    const encoding = wireEncoding("/qwik/editorial/");
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("qwik's registered noise is real, and every registered pattern is earning its place", async () => {
+    // The composed-origin placeholder-ssr precedent: a registration must be
+    // provably non-vacuous against the RAW served bytes. Both directions are
+    // checked — every registered pattern matches something served, and the
+    // classes that are deliberately EMPTY stay empty, so widening the policy
+    // can never happen by accident.
+    const spec = PERMITTED_NOISE["qwik"];
+    expect(spec).toBeDefined();
+    expect(spec!.attrPatterns).toEqual([]); // all of it is mechanism, not residue
+    expect(spec!.classPatterns).toEqual([]);
+    expect(spec!.dropElementSelectors).toBeUndefined(); // no wrapper element
+    expect(spec!.behaviorAttrPatterns.length).toBeGreaterThan(0);
+
+    const raw = await (await get("/qwik/editorial/")).text();
+    // Attribute names as they appear in the raw bytes, matched against the
+    // registered patterns themselves rather than a hand-typed copy — but with
+    // the open tags of elements the normalizer DELETES removed first. Qwik City
+    // emits a `<script on-document:qcinit=… on-document:qinit=…>`
+    // unconditionally, so scanning the whole body would let `^on-document:`
+    // satisfy this check while stripping nothing the drift gate ever compares
+    // (a verify-slice finding — the same vacuity the browser leg now guards
+    // against, and the reason both legs mirror normalize.ts's DROP_ELEMENTS).
+    const body = raw.replace(/<(script|style|link|template)\b[^>]*>/g, "");
+    const attrNames = new Set(
+      [...body.matchAll(/[\s"']((?:q|on|on-document|on-window):[a-zA-Z:-]+)=/g)].map(
+        (m) => m[1]!,
+      ),
+    );
+    for (const source of spec!.behaviorAttrPatterns) {
+      const re = new RegExp(source);
+      expect(
+        [...attrNames].some((name) => re.test(name)),
+        `registered behaviorAttrPattern ${source} matches nothing in the served page`,
+      ).toBe(true);
+    }
+    // Named explicitly so the three species stay visible in the record: the
+    // container on <html>, a resumable listener binding, and the document-level
+    // listener the masthead badge uses to read stored cart state at load.
+    expect(attrNames).toContain("q:container");
+    expect(attrNames).toContain("on:click");
+    expect(attrNames).toContain("on-document:qinit");
+  });
+
+  it("the cart contract rides the very chunk the button's on:click names, with the canonical empty state", async () => {
+    const shell = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "shell.mjs")).href
+    );
+    const body = await (await get("/qwik/editorial/")).text();
+
+    // Resumability, made checkable: each `on:*` value is "<chunk>#<symbol>", so
+    // no listener is attached at load and the BINDING is deferred. It does NOT
+    // mean the bytes are — measured, a JS-on load of this page fetches the
+    // click chunk already (the load-time cart read's QRL statically imports it),
+    // and the click itself fetches nothing. The assertion below is about the
+    // wire format and the contract key, not about deferred download; the
+    // numbers live in variants/qwik/DIFF-TO-STARTER.md point 12.
+    const handlerChunks = [
+      ...body.matchAll(/(?:on|on-document|on-window):[a-zA-Z-]+="(q-[^".#]+\.js)#/g),
+    ].map((m) => m[1]!);
+    expect(handlerChunks.length).toBeGreaterThan(0);
+    let found = false;
+    for (const chunk of new Set(handlerChunks)) {
+      const res = await get(`/qwik/build/${chunk}`);
+      expect(res.status, `handler chunk ${chunk} did not resolve`).toBe(200);
+      const js = await res.text();
+      if (js.includes(`"${shell.CART_CONTRACT.key}"`)) found = true;
+    }
+    expect(found, "no chunk named by an on:* handler carries the CART_CONTRACT key").toBe(true);
+
+    // Pin the measured eager-load fact so the record cannot rot into the
+    // flattering version. The chunk behind the load-time cart read
+    // (`on-document:qinit`, which the cart contract forces on every page load)
+    // statically imports the chunk named by `on:click` — which is WHY a JS-on
+    // load already has the click handler and the click fetches nothing. If a
+    // future Qwik or rollup version stops co-locating them, this fails and the
+    // slice's published numbers get revisited deliberately instead of quietly
+    // becoming wrong (DIFF-TO-STARTER.md point 12 carries the measurement).
+    const qinitChunk = body.match(/on-document:qinit="(q-[^".#]+\.js)#/)?.[1];
+    const clickChunk = body.match(/on:click="(q-[^".#]+\.js)#/)?.[1];
+    expect(qinitChunk, "no on-document:qinit chunk on the page").toBeTruthy();
+    expect(clickChunk, "no on:click chunk on the page").toBeTruthy();
+    expect(qinitChunk).not.toBe(clickChunk); // separate chunks, hence the import
+    const qinitJs = await (await get(`/qwik/build/${qinitChunk}`)).text();
+    expect(
+      qinitJs.includes(`"./${clickChunk}"`),
+      `the load-time (${qinitChunk}) chunk no longer imports the click chunk (${clickChunk}) — ` +
+        `re-measure the eager-load bytes in DIFF-TO-STARTER.md point 12`,
+    ).toBe(true);
+
+    // No data hook: the release the button adds reaches the handler as
+    // serialized component props (the paradigm's own transport), so unlike
+    // vanilla and astro there is no `<script type="application/json">` here.
+    expect(body).not.toContain('id="pm-cart-item"');
+
+    // Canonical served state (§7): the masthead count slot is EMPTY and the
+    // cart anchor carries no aria-label (count 0 removes the attribute).
+    // Qwik emits the bare boolean attribute the master has, and `class` last.
+    expect(body).toContain(
+      '<span data-pm-cart-count aria-hidden="true" class="pm-masthead__cart-count"></span>',
+    );
+    const cartAnchor = body.match(/<a href="\/vanilla\/checkout\/"[^>]*>/)?.[0] ?? "";
+    expect(cartAnchor).toContain('class="pm-masthead__cart"');
+    expect(cartAnchor).not.toContain("aria-label");
+  });
+});
