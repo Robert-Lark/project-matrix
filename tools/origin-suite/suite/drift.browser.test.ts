@@ -132,6 +132,24 @@ beforeAll(async () => {
  * the real work is the settle + the broken-load check: every `<img>`
  * complete with `naturalWidth > 0`. A master-side 404 must read as a
  * harness failure, never as pixel "drift".
+ *
+ * `complete` is NOT sufficient on its own, and that gap cost a red deploy on
+ * main (slice D's merge). It means "the bytes arrived"; the editorial figure
+ * carries `decoding="async"`, which explicitly permits the browser to paint the
+ * element BEFORE the frame is decoded. Nothing else in the pre-shot pipeline
+ * closes that window either — `captureStablePixels` waits for FONTS and then
+ * screenshots. So on a busy runner the shot can catch a decoded-too-late image
+ * as a blank box: the failure was 421,656 differing pixels at identical
+ * dimensions, and the CI screenshots showed every glyph matching with exactly
+ * one image — the `decoding="async"` figure — empty on the served side.
+ *
+ * `img.decode()` is the real signal: it resolves when the frame is decoded and
+ * ready to paint, and rejects if the image cannot be decoded at all. Measured
+ * against the deployed plane, decode still needed 1.3–2.3 ms per image AFTER
+ * `complete` went true on a fast workstation — small here, unbounded on a
+ * loaded two-core runner, and entirely inside the window a screenshot can land
+ * in. Waiting for it makes the gate MORE precise rather than more forgiving,
+ * which is the only acceptable direction for a zero-tolerance pixel check.
  */
 async function settleImages(page: Page): Promise<void> {
   await page.evaluate(() =>
@@ -154,6 +172,23 @@ async function settleImages(page: Page): Promise<void> {
       .map((img) => img.currentSrc || img.src),
   );
   expect(broken, "broken image loads before the pixel shot").toEqual([]);
+
+  // Bytes are in; now wait for every frame to be DECODED and paintable.
+  const undecodable = await page.evaluate(async () => {
+    const failures: string[] = [];
+    await Promise.all(
+      Array.from(document.images).map(async (img) => {
+        try {
+          await img.decode();
+        } catch (err) {
+          failures.push(`${img.currentSrc || img.src}: ${String(err)}`);
+        }
+      }),
+    );
+    return failures;
+  });
+  expect(undecodable, "images failed to decode before the pixel shot").toEqual([]);
+
   await page.evaluate(() => window.scrollTo(0, 0));
 }
 
