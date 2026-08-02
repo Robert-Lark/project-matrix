@@ -247,10 +247,17 @@ export const PAGE_NORMALIZE = (spec: {
       // NOT auto-hoist), silently deleting the whole subtree would hide
       // that divergence from the drift gate instead of proving it —
       // exactly the failure mode this gate exists to catch. Only comment
-      // nodes are tolerated inside; any element child aborts the removal
-      // (verify-slice finding: the registration is a scoped noise excuse,
-      // never a bulk content eraser).
-      if (el.childElementCount === 0) el.remove();
+      // nodes and insignificant ASCII whitespace are tolerated inside; an
+      // element child OR any real text (NBSP/Unicode spaces are content per
+      // §6) aborts the removal (verify-slice finding: the registration is a
+      // scoped noise excuse, never a bulk content eraser — and
+      // `childElementCount` alone would let a stray text run be erased).
+      const hasContent = Array.from(el.childNodes).some(
+        (n) =>
+          n.nodeType === Node.ELEMENT_NODE ||
+          (n.nodeType === Node.TEXT_NODE && /[^\t\n\f\r ]/.test(n.nodeValue ?? "")),
+      );
+      if (!hasContent) el.remove();
     }
   }
 

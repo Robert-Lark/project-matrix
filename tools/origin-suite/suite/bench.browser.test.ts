@@ -52,6 +52,12 @@ const PAGE_TARGETS = ["/placeholder-static/sample/", "/placeholder-ssr/sample/"]
 // nonce for every visit it drives (@pm/bench-runner batch discipline).
 // kv-exempt: nonced by the bench runner at request time
 const API_TARGET = "/api/plp";
+// Real editorial variants — the END-TO-END non-vacuity for the inline-byte
+// decomposition (issue #16). A placeholder has no inline script, so only a real
+// variant page, driven through the composed origin with chrome injected, proves
+// initialJsBytes actually counts inline executable JS (astro, whose bundle is
+// INLINED) and that Qwik's post-load preloader lands on the initial side.
+const EDITORIAL_TARGETS = ["/astro/editorial/", "/qwik/editorial/"] as const;
 
 let receipt: ReceiptT;
 
@@ -74,6 +80,14 @@ beforeAll(async () => {
     targets: [
       ...PAGE_TARGETS.map((path) => ({ path, interactionId: "body-click" })),
       { path: API_TARGET, interactionId: "none" },
+      // Editorial variants are LOCAL-ONLY: they exercise the harness byte
+      // decomposition, not plane correctness (the drift gate + placeholder
+      // bench already prove the deployed plane), and adding heavier pages to
+      // the post-deploy smoke would aggravate the already-flagged deploy-bench
+      // timing flake (finish-line log / issue #16 open design question).
+      ...(REMOTE
+        ? []
+        : EDITORIAL_TARGETS.map((path) => ({ path, interactionId: "body-click" }))),
     ],
     profileId: PROFILE.id,
     runsPerUrl: RUNS,
@@ -169,6 +183,44 @@ describe("KB accounting (ADR-0001 §3, §6)", () => {
           Object.values(run.kb.buckets).reduce((a, b) => a + b, 0),
         );
       }
+    }
+  });
+});
+
+describe.skipIf(REMOTE)("editorial KB accounting is non-vacuous end-to-end (issue #16 defect 1/4)", () => {
+  // The placeholders above ship no page JS, so they can only prove the NEGATIVE
+  // (js === 0). These real variant pages drive the full pipeline — measureVisit
+  // → served-body decomposition → chrome-injected document — the only place the
+  // inline-byte accounting is proven against real served HTML rather than a
+  // hand-written fixture (decompose.test.ts).
+  it("astro's INLINED cart module lands in the JS headline; its cart-item JSON in data", () => {
+    const astro = receipt.targets.find((t) => t.path === "/astro/editorial/")!;
+    for (const run of astro.columns.cold.runs) {
+      // Astro ships ZERO external JS (the bundle is inlined), so a non-zero JS
+      // headline here can ONLY come from the inline-executable decomposition —
+      // exactly the "0 KB JS islands variant" defect this unit kills.
+      expect(run.kb.initialJsBytes).toBeGreaterThan(0);
+      expect(run.kb.buckets.js).toBeGreaterThan(0);
+      // The cart-item is `<script type="application/json">` — inert data, not JS.
+      expect(run.kb.buckets.data).toBeGreaterThan(0);
+      // Instrumentation markup is stripped, and the buckets still partition.
+      expect(run.kb.instrumentationBytes).toBeGreaterThan(0);
+      expect(run.kb.totalBytes).toBe(
+        Object.values(run.kb.buckets).reduce((a, b) => a + b, 0),
+      );
+    }
+  });
+
+  it("qwik ships real JS, serializes state as data, and its preloader lands on the INITIAL side (defect 4)", () => {
+    const qwik = receipt.targets.find((t) => t.path === "/qwik/editorial/")!;
+    for (const run of qwik.columns.cold.runs) {
+      expect(run.kb.initialJsBytes).toBeGreaterThan(0);
+      // Qwik serializes resumability state as `<script type="qwik/json">` → data.
+      expect(run.kb.buckets.data).toBeGreaterThan(0);
+      // Nothing fetches on the body click, and the preloader was awaited onto
+      // the initial side — so the interaction boundary is a clean zero, not the
+      // run-varying straddle defect 4 was about.
+      expect(run.kb.interactionBytes).toBe(0);
     }
   });
 });

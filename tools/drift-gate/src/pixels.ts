@@ -5,14 +5,20 @@
  *
  * Both screenshots in a comparison come from the SAME browser build in the
  * same run (the reference render is captured live, not stored as a baseline
- * image), so rendering is deterministic and the pass criterion is strict:
- * ZERO differing pixels. pixelmatch's per-pixel color threshold (0.1, its
- * documented default) only absorbs sub-perceptual channel noise; any visible
- * difference counts — including anti-aliased edge pixels (`includeAA: true`):
- * the AA exclusion exists for cross-environment comparisons, and here it
- * would let edge-confined drift (a font-axis nudge, a hairline border tint)
- * pass as 0. Same-run determinism, not the AA heuristic, absorbs benign
- * variance.
+ * image), so rendering is deterministic: identical DOM + identical CSS produce
+ * byte-identical pixels. The pass criterion is therefore literal zero-tolerance
+ * — `threshold: 0`, so ANY non-zero per-pixel delta counts. pixelmatch's
+ * documented default (0.1) was masking exactly the drift this leg exists to
+ * catch: a uniform token re-valuation of ~26 neutral levels (or ~75 blue-only
+ * levels) stays under it and passes with 0 differing pixels (audit 2026-08-01).
+ * Same-run determinism — not a perceptual threshold — is what absorbs benign
+ * variance here, and it absorbs it to zero; the 0.1 default is for the
+ * CROSS-environment baselines this comparison never uses. `includeAA: true`
+ * for the same reason: the AA exclusion exists for cross-environment
+ * comparisons, and here it would let edge-confined drift (a font-axis nudge, a
+ * hairline border tint) pass as 0. The `solidPng` sensitivity proof
+ * (tools/origin-suite/suite/pixels.test.ts) pins a single-level uniform shift
+ * as caught, so the threshold cannot silently drift back up.
  */
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
@@ -47,7 +53,7 @@ export function comparePixels(
 
   const diff = new PNG({ width: a.width, height: a.height });
   const diffPixels = pixelmatch(a.data, b.data, diff.data, a.width, a.height, {
-    threshold: 0.1,
+    threshold: 0,
     includeAA: true,
   });
   if (diffPixels === 0) {
@@ -60,4 +66,28 @@ export function comparePixels(
     diffPixels,
     diffPng: PNG.sync.write(diff),
   };
+}
+
+/**
+ * A solid-colour PNG — test support for this check's own sensitivity proof.
+ * It lives here beside `comparePixels` because origin-suite cannot import
+ * `pngjs` directly (the workspace's non-hoisted isolation), so the code that
+ * builds a controlled small-drift image and the code being tested share one
+ * pngjs. `rgba` alpha defaults to opaque.
+ */
+export function solidPng(
+  width: number,
+  height: number,
+  rgba: readonly [number, number, number, number?],
+): Buffer {
+  const png = new PNG({ width, height });
+  const [r, g, b, a = 255] = rgba;
+  for (let i = 0; i < width * height; i++) {
+    const o = i * 4;
+    png.data[o] = r;
+    png.data[o + 1] = g;
+    png.data[o + 2] = b;
+    png.data[o + 3] = a;
+  }
+  return PNG.sync.write(png);
 }

@@ -1,6 +1,6 @@
 {
   "capturedAt": "2026-07-17",
-  "source": "api.discogs.com",
+  "source": "synthesized-fixture",
   "crate": "synthesized-placeholder-fixture",
   "releaseCount": 240,
   "commitSha": null

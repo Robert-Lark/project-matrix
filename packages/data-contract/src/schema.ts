@@ -105,7 +105,12 @@ export const PlpPage = z.object({
  */
 export const SnapshotManifest = z.object({
   capturedAt: z.string(), // ISO date, e.g. "2026-07-06"
-  source: z.literal("api.discogs.com"),
+  // Truthful provenance (ADR-0002 addendum, 2026-08-01): the real crate comes
+  // from the Discogs API; the committed placeholder fixture is synthesized and
+  // must be able to SAY so rather than borrow the API's provenance. A single
+  // literal forced the fixture to claim "api.discogs.com"; the union lets it be
+  // honest without loosening to a free string.
+  source: z.union([z.literal("api.discogs.com"), z.literal("synthesized-fixture")]),
   crate: z.string(), // the curated slice, e.g. "jazz-original-pressings"
   releaseCount: z.number().int().positive(),
   commitSha: z.string().nullable(),
