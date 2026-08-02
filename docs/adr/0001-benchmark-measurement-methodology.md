@@ -185,3 +185,90 @@ published as a stated constant — byte-stripping alone does not remove it from
 timing metrics; every lab number is a **Chromium** number (`web-vitals` + CDP);
 and the page carries a privacy paragraph naming exactly what the beacon collects
 (variant/surface/env/cache/location — no identifiers, no PII).
+
+## Addendum — the ruler's accounting fixes (2026-08-01, issue #16 + audit)
+
+The `bench-accounting-fix` unit (Rob's 2026-07-24 call: fix the ruler before the
+first editorial batch) resolved four measurement defects, widened by a
+whole-repo audit ([`docs/prototypes/audit-2026-08-01-and-next-unit-prompt.md`](../prototypes/audit-2026-08-01-and-next-unit-prompt.md)).
+No §1–§9 decision changes; these sharpen §3 (KB accounting) and §6 (KB
+fairness) and enforce §7 binding E in code. No benchmark number had published,
+so none of these had corrupted a real result — the point was to fix the ruler
+first.
+
+**G. Inline resource bytes are attributed by uncompressed share (§3 defect 1).**
+The document response is ONE brotli stream, so its compressed `transferSize`
+cannot be split into per-part compressed sizes by measurement. It is attributed
+to buckets in proportion to each part's share of the UNCOMPRESSED served bytes —
+the one reproducible split that sums EXACTLY back to `transferSize` and
+double-counts nothing (`decomposeDocument`, tools/bench-runner). Three parts are
+carved out of what §3 previously dumped entirely into HTML: **inline executable
+`<script>`** (empty/JS/module type) → the JS bucket and the initial-JS headline
+(so Astro's inlined ~1.2 KB cart module is no longer reported as "0 KB JS"
+against the no-runtime control); **inline non-executable `<script>`** (a type the
+browser will not run: `application/json`, `qwik/json`, `importmap`, …) → the
+DATA bucket (serialized resumability/hydration state is data, not runtime, and
+must not inflate the JS headline a hostile reader is meant to trust); and the
+injected **instrumentation markup** (§6 below). Which paradigm delivers inline
+vs external, executable vs serialized, IS the render-axis variable (ADR-0003 §2)
+— this split makes it visible instead of hidden in the HTML total. **Limit,
+stated in the receipt and the methodology page:** the share is exact only if
+each part compresses at the document's average ratio (JS and prose do not), so
+it is a stated, reproducible attribution — strictly more honest than reporting
+inline JS as zero — never a claim of per-byte compressed truth.
+
+*Open cross-framework asymmetry, bound to the publication arc (verify-slice,
+conformance lens).* The executable/inert split above keys on whether the
+browser RUNS the script, which is correct for byte accounting but leaves a
+confound the DATA-bucket rule was meant to prevent, reappearing ACROSS
+frameworks: React's App Router delivers its serialized RSC hydration payload as
+*executable* `<script>self.__next_f.push([…])</script>` (no type → JS bucket),
+while Qwik delivers byte-equivalent serialized state as inert
+`<script type="qwik/json">` (→ DATA). So react-next's initial-JS headline is
+inflated by serialized data that Qwik's is not — two hydrating frameworks
+printing different initial-JS purely by serialization FORMAT. No code changes
+here (executable→JS is the honest byte rule, and nothing publishes this unit),
+but **the cross-framework initial-JS cell must not publish as an apples-to-apples
+verdict until this is decided** in the publication arc: either classify known
+framework hydration payloads (React flight) as DATA by role, or publish the cell
+with an explicit caveat that the JS headline includes serialized hydration data
+for executable-payload frameworks but not inert-payload ones. Same class as the
+CSS-delivery deferral (ADR-0003 addendum) — recorded, not silently resolved.
+
+**H. Instrumentation markup is stripped, extending §6's known-path rule.** §6
+strips our instrumentation from the counted total, but only the `/_pm/*` +
+`/api/beacon` SUBRESOURCE payloads were stripped — the front Worker's injected
+chrome MARKUP (`<aside id="pm-chrome">…`, its `/_pm/` head links, the
+measurement script tag) rode inside the HTML byte bucket. It is now stripped the
+same way and reported under `instrumentationBytes`. The document byte bucket
+must not carry the instrument's own markup.
+
+**I. Settle waits are signal-based, never a fixed proxy (§9; defects 4 + audit
+collect.ts:171/:254).** Three fixed timeouts were replaced by waits on the real
+signal, each BOUNDED so an absent signal surfaces honestly rather than hanging:
+the per-interaction byte boundary waits for the network to go idle (a fetch of
+any duration is counted, not cropped at 400 ms); the vitals-beacon flush waits
+for beacon delivery to quiesce (a slow flush no longer writes a null vital that
+silently shrinks the median's run count); and any post-load idle work (Qwik's
+`requestIdleCallback` preloader) is awaited onto the INITIAL byte side before
+the boundary snapshot, so the initial/interaction split is deterministic across
+runs and profiles. This is the standing "wait for the real signal, never a
+proxy" rule (tools/drift-gate/README.md) applied to the bench runner.
+
+**J. Local CPU: serving-path attribution, binding-E enforced in code (§7 defect
+2 + audit).** `LOCAL_PLANE_INSPECTORS` now registers every editorial variant
+Worker (pm-vanilla 9235, pm-react-next 9236, pm-astro 9237, pm-qwik 9238), not
+just front/placeholders/edge — the omission attributed ZERO CPU to whichever
+variant served the page while its comparators WERE sampled. A visit's cost is
+summed over its SERVING PATH ONLY — front + the variant resolved from the target
+path + edge — **not** the whole plane: profiling non-serving isolates would let a
+sibling suite's traffic on, say, pm-qwik contaminate a pm-vanilla number (and
+unequally, since the non-serving set differs per target), and would force the
+full plane up to bench one variant. That matches §7's stated "front + variant +
+edge" cost model (the earlier whole-plane sum silently violated it — verify-slice,
+anti-rigging lens). A missing SERVING-PATH inspector is a NAMED hard error, never
+a silent under-attribution; a non-serving one need not even be up (pm-blog stays
+out regardless — ADR-0009). And binding E ("local workerd sampling profiles are
+development only") is enforced: `--local-cpu` against a non-loopback `--origin` is
+refused, so an idle-local CPU profile can never be emitted as if it measured a
+remote origin.

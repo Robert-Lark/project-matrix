@@ -198,3 +198,39 @@ adapter). A reviewer no longer audits idiomatic-ness by reading six
 codebases; they read six diffs. The diffs double as "How it was built"
 content. Same rule, now an artifact instead of a claim — the §6 "proven, not
 promised" standard applied to §2.
+
+## Addendum — CSS delivery is nominal on the editorial slices (2026-08-01)
+
+The `bench-accounting-fix` audit (issue #16 defect 3) found that all four
+editorial variants ship the shared component/surface stylesheets as raw
+verbatim copies. §8 forces byte-identity for the FONT files and `fonts.css`
+only; the other eight sheets are raw **by choice**, for cross-variant
+comparability while the variants were brought up one slice at a time. The
+consequence is that the CSS KB cell is currently **byte-identical by
+construction** — so Astro's, Next's and Vite's CSS pipelines all appear to buy
+nothing, which is exactly the false signal §2 says the CSS bucket must not
+carry ("flips from noise to signal").
+
+No decision reverses. §2 stands (delivery IS the measured variable) and the
+rejected "CSS held constant everywhere" alternative stays rejected — raw sheets
+are a bring-up scaffold, not the end state. The binding resolution:
+
+**The CSS cell does NOT publish as a render-axis verdict while the sheets are
+raw-identical.** It publishes labeled as "held constant (raw sheets) — not yet a
+paradigm signal," or not at all, until each variant delivers the shared CSS its
+own idiomatic way (scoping / code-splitting / critical-CSS inlining /
+unused-CSS elimination — §2's "idiomatic default"). That native-delivery work is
+a scheduled follow-on, landing where it has real surface: the PDP/PLP builds,
+where components multiply. It is a cross-variant change (every variant's build
+plus the drift gate's byte assumptions), which is why no single editorial slice
+resolved it and why it is not folded into this accounting unit.
+
+**How the drift gate adapts when native delivery lands.** The gate's load-bearing
+guarantee is RENDERED identity (normalized-DOM + pixels), which "repackage,
+don't re-value" already requires native delivery to preserve. The current
+raw-byte-identity of the eight sheets is an artifact of today's delivery, not a
+contract; when a variant scopes/splits/inlines its CSS the delivered bytes
+diverge BY DESIGN, and only the rendered-identity assertions remain — the gate
+does not (and must not) assert CSS byte-identity. Recorded so the CSS cell is
+never published as a paradigm verdict on the strength of a construction
+artifact.

@@ -42,6 +42,29 @@ function cpuSource(local: boolean) {
   return local ? new InspectorCpuSource(LOCAL_PLANE_INSPECTORS) : undefined;
 }
 
+function isLoopbackOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname.replace(/^\[|\]$/g, "");
+    return host === "127.0.0.1" || host === "localhost" || host === "::1";
+  } catch {
+    return false;
+  }
+}
+
+// ADR-0001 §7 binding E: local workerd sampling profiles are DEVELOPMENT ONLY.
+// Profiling the idle local plane while benching a REMOTE origin emits a
+// near-zero CPU number the remote requests never incurred, labelled as measured
+// (audit 2026-08-01, cli.ts:42). Refuse it — the deployed plane's CPU arrives
+// from Workers observability telemetry with the deploy leg, never a local
+// inspector. Returns an error string when the combination is illegal.
+function localCpuOriginError(local: boolean, origin: string): string | null {
+  if (!local || isLoopbackOrigin(origin)) return null;
+  return (
+    `--local-cpu profiles the LOCAL plane's inspectors and cannot measure a remote origin (${origin}); ` +
+    `bench a loopback origin or drop --local-cpu — the deployed plane's CPU comes from observability telemetry, not a local inspector (ADR-0001 §7 binding E).`
+  );
+}
+
 async function main(): Promise<number> {
   const [command, ...rest] = process.argv.slice(2);
 
@@ -61,6 +84,11 @@ async function main(): Promise<number> {
     });
     if (!values.targets || !values.profile) {
       console.error("run requires --targets and --profile");
+      return 2;
+    }
+    const cpuError = localCpuOriginError(values["local-cpu"], values.origin);
+    if (cpuError) {
+      console.error(cpuError);
       return 2;
     }
     const spec: BatchSpec = {
@@ -96,6 +124,14 @@ async function main(): Promise<number> {
       return 2;
     }
     const receipt = parseReceipt(JSON.parse(readFileSync(receiptPath, "utf8")));
+    const cpuError = localCpuOriginError(
+      values["local-cpu"],
+      values.origin ?? receipt.origin,
+    );
+    if (cpuError) {
+      console.error(cpuError);
+      return 2;
+    }
     const spec = specFromReceipt(receipt, repoRoot, {
       origin: values.origin,
       cpuSource: cpuSource(values["local-cpu"]),

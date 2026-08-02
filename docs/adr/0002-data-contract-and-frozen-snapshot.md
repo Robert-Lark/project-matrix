@@ -195,3 +195,17 @@ page's limits-of-data list (ADR-0001 addendum §F), scoped honestly: the
 catalog/commerce split (§2) is what makes the omission production-faithful for
 *catalog* reads specifically — immutable catalog data genuinely never needs
 invalidating within a snapshot's lifetime.
+
+## Addendum — the manifest states its true provenance (2026-08-01)
+
+`SnapshotManifest.source` was a single literal `"api.discogs.com"`, which forced
+the committed **placeholder fixture** manifest to claim its synthesized data
+came from the Discogs API — a provenance the fixture disclosed only obliquely,
+through its `crate` name. Under the north star (every provenance defensible to a
+hostile reader) the manifest must be able to say what is true. `source` is now a
+union `"api.discogs.com" | "synthesized-fixture"`; the real crate keeps the
+former (truthful — it IS the API), the fixture takes the latter. Backward
+compatible: the crate manifest and every `SOURCE api.discogs.com` receipt on the
+home surface are unchanged (the home surface bakes the crate manifest, ADR-0007).
+A free string was rejected — the union keeps provenance to an auditable,
+enumerated set.

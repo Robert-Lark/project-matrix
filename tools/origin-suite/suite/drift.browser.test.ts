@@ -193,10 +193,32 @@ async function settleImages(page: Page): Promise<void> {
 }
 
 /**
+ * Self-hosting is a DELIMITED origin match, not a prefix test: `startsWith`
+ * would accept a prefix-extension host (`https://<origin>.evil.tld/…`), so the
+ * request's PARSED origin must EQUAL the composed origin or the gate's static
+ * server (audit 2026-08-01, drift.browser.test.ts:208).
+ */
+function isSelfHosted(url: string): boolean {
+  let origin: string;
+  try {
+    origin = new URL(url).origin;
+  } catch {
+    return false;
+  }
+  return origin === ORIGIN || origin === statics.origin;
+}
+
+// Each tracked page's running list of non-self-hosted request URLs, so the
+// check can run AGAIN after the load-time one — late @font-face fetches begin
+// only when layout is forced (see captureTracked).
+const externalRequests = new WeakMap<Page, string[]>();
+
+/**
  * Open a page and record every network request it makes: rendering must be
- * fully self-hosted (ADR-0003 §8 / ADR-0001 §6) — a fetch to any host but
- * the composed origin or the gate's own static server would mean the pixels
- * depend on bytes the benchmark doesn't control.
+ * fully self-hosted (ADR-0003 §8 / ADR-0001 §6) — a fetch to any host but the
+ * composed origin or the gate's own static server would mean the pixels depend
+ * on bytes the benchmark doesn't control. The listener stays attached so a
+ * later `captureTracked` can re-assert after layout-triggered fetches.
  */
 async function openTracked(
   context: BrowserContext,
@@ -204,14 +226,30 @@ async function openTracked(
 ): Promise<Page> {
   const page = await context.newPage();
   const external: string[] = [];
+  externalRequests.set(page, external);
   page.on("request", (req) => {
-    if (!req.url().startsWith(ORIGIN) && !req.url().startsWith(statics.origin)) {
-      external.push(req.url());
-    }
+    if (!isSelfHosted(req.url())) external.push(req.url());
   });
   await page.goto(url, { waitUntil: "load" });
   expect(external, `non-self-hosted requests from ${url}`).toEqual([]);
   return page;
+}
+
+/**
+ * Screenshot AND re-assert self-hosting. `captureStablePixels` forces layout
+ * and waits for fonts, which is when a page's `@font-face` fetches actually
+ * begin (gate.ts) — AFTER openTracked's load-time check. So a variant pulling
+ * an external font would slip past the load-time assertion; re-checking the
+ * accumulated request list here closes that window (drift.browser.test.ts:208).
+ */
+async function captureTracked(target: Page): Promise<Buffer> {
+  const shot = await captureStablePixels(target);
+  const late = externalRequests.get(target) ?? [];
+  expect(
+    late,
+    "non-self-hosted requests (post-shot: layout-triggered @font-face etc.)",
+  ).toEqual([]);
+  return shot;
 }
 
 function assertDomEqual(label: string, reference: string, actual: string): void {
@@ -436,7 +474,7 @@ describe("the new surface masters are healthy (surface-design session)", () => {
       await page.reload({ waitUntil: "load" });
       expect(failures, `failed asset loads on ${surface}`).toEqual([]);
 
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       // PNG IHDR: width/height at byte offsets 16/20. Sized-from-data image
       // slots mean layout cannot explode — a runaway full-page height is a
       // broken master, not a long page.
@@ -464,7 +502,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
     const page = await openTracked(context, REFERENCE_URL);
     // The reference render has no chrome slot — part of the contract.
     expect(await neutralizeChrome(page)).toBe(0);
-    referenceShot = await captureStablePixels(page);
+    referenceShot = await captureTracked(page);
     await page.close();
   }, 90_000);
   afterAll(async () => {
@@ -474,7 +512,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
   it("reference render vs itself: an independent load renders identically", async () => {
     const page = await openTracked(context, REFERENCE_URL);
     await neutralizeChrome(page);
-    const shot = await captureStablePixels(page);
+    const shot = await captureTracked(page);
     assertPixelsEqual(`pixels-${profileId}-reference-self`, referenceShot, shot);
     await page.close();
   }, 90_000);
@@ -485,7 +523,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
       // Removal (not region-masking): the chrome is in normal document
       // flow — exactly one slot removed, page reflows to reference layout.
       expect(await neutralizeChrome(page)).toBe(1);
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-${variant}`, referenceShot, shot);
       await page.close();
     }, 90_000);
@@ -521,13 +559,13 @@ describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapsho
       // The re-rendered master has no chrome slot — part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
-      const referenceShot = await captureStablePixels(masterPage);
+      const referenceShot = await captureTracked(masterPage);
       await masterPage.close();
 
       const page = await openTracked(context, `${ORIGIN}/vanilla/editorial/`);
       expect(await neutralizeChrome(page)).toBe(1);
       await settleImages(page);
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-vanilla-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
@@ -573,13 +611,13 @@ describe("editorial: react-next vs the master re-rendered from the RESOLVED snap
       // The re-rendered master has no chrome slot — part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
-      const referenceShot = await captureStablePixels(masterPage);
+      const referenceShot = await captureTracked(masterPage);
       await masterPage.close();
 
       const page = await openTracked(context, `${ORIGIN}/react-next/editorial/`);
       expect(await neutralizeChrome(page)).toBe(1);
       await settleImages(page);
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-react-next-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
@@ -636,13 +674,13 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
       // The re-rendered master has no chrome slot — part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
-      const referenceShot = await captureStablePixels(masterPage);
+      const referenceShot = await captureTracked(masterPage);
       await masterPage.close();
 
       const page = await openTracked(context, `${ORIGIN}/astro/editorial/`);
       expect(await neutralizeChrome(page)).toBe(1);
       await settleImages(page);
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-astro-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
@@ -732,13 +770,13 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
       // The re-rendered master has no chrome slot — part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
-      const referenceShot = await captureStablePixels(masterPage);
+      const referenceShot = await captureTracked(masterPage);
       await masterPage.close();
 
       const page = await openTracked(context, `${ORIGIN}/qwik/editorial/`);
       expect(await neutralizeChrome(page)).toBe(1);
       await settleImages(page);
-      const shot = await captureStablePixels(page);
+      const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-qwik-editorial`, referenceShot, shot);
       await page.close();
       await context.close();
@@ -755,14 +793,14 @@ describe("the deliberate-drift fixture fails the pixel check", () => {
     const context = await browser.newContext(profileContextOptions(profile));
     const refPage = await openTracked(context, REFERENCE_URL);
     await neutralizeChrome(refPage);
-    const referenceShot = await captureStablePixels(refPage);
+    const referenceShot = await captureTracked(refPage);
     await refPage.close();
 
     const page = await openTracked(context, FIXTURE_URL);
     // The fixture's fake chrome exists and is removed — so the failure
     // below is the planted drift, not leftover chrome bytes.
     expect(await neutralizeChrome(page)).toBe(1);
-    const shot = await captureStablePixels(page);
+    const shot = await captureTracked(page);
     const result = comparePixels(referenceShot, shot);
     expect(result.equal).toBe(false);
     expect(result.diffPixels).toBeGreaterThan(0);

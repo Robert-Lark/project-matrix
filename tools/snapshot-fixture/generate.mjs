@@ -223,7 +223,7 @@ const summaries = details.map(
 
 const manifest = {
   capturedAt: CAPTURED_AT,
-  source: "api.discogs.com", // schema literal; the crate name marks it synthesized
+  source: "synthesized-fixture", // truthful provenance (ADR-0002 addendum) — the fixture is synthesized, not from the API
   crate: "synthesized-placeholder-fixture",
   releaseCount: RELEASE_COUNT,
   commitSha: null,

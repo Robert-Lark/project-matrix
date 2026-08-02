@@ -2250,6 +2250,120 @@ chunks, making it the third distinct shape across the editorial columns after
 vanilla's single external file and astro's inlined bundle — exactly the spread
 that fix needs to validate against.
 
+### Phase 8.1 — Fixing the ruler (bench-accounting-fix, issue #16; 2026-08-01)
+
+Before the first editorial number could publish, the ruler itself had to be
+fixed — Rob's 2026-07-24 call, deliberately its own session between slice D and
+slices E/F. Four known defects, widened by a 2026-08-01 whole-repo audit that
+surfaced more of the same class. The through-line: an instrument that can't see
+a cost is worse than no instrument, so every fix here makes the measurement
+*see more*, never look nicer.
+
+The load-bearing one was **inline bytes**. `collect.ts` bucketed bytes by URL
+extension, so an inline `<script>` contributed zero and its bytes hid in the
+HTML bucket — Astro inlines its ~1.2 KB cart module, so the render axis would
+have printed the islands variant at "0 KB initial JS" against vanilla, the
+no-runtime control, on the one surface whose thesis is how much machinery prose
+needs. The honest fix has to survive a hostile reader, and the hard fact is that
+a document is ONE brotli stream: you cannot *measure* a per-part compressed size.
+So `decomposeDocument` attributes the document's single compressed `transferSize`
+to buckets by each part's share of the UNCOMPRESSED served bytes — the one split
+that sums back EXACTLY and double-counts nothing (HTML is the remainder). Inline
+*executable* script → JS (Astro's bundle is no longer zero); inline
+*non-executable* typed script (`application/json`, `qwik/json`, …) → data,
+because serialized resumability/hydration state is data, not runtime, and calling
+it JS would hand the skeptic "you inflated Qwik's JS." The Astro editorial page
+validated the model on its own: it ships exactly one executable module AND one
+`application/json` cart-item, so the executable/data split isn't theoretical. The
+same decomposition strips the front Worker's injected chrome markup
+(`<aside id="pm-chrome">`, its `/_pm/` head links, the measurement script tag)
+out of the byte buckets — the audit's find that the instrument's own markup rode
+in the HTML total, an extension of §6's known-path strip. Method and its stated
+limit (the share is exact only if each part compresses at the document average)
+live in an ADR-0001 §3 addendum and the receipt's own `methodNotes`.
+
+The other three: **CPU attribution** listed only front/placeholders/edge, so a
+local bench of an editorial variant scored ZERO CPU for the Worker that served
+the page while its comparators were sampled — the port list is now complete
+(9235–9238), and CPU is summed over the SERVING PATH per visit (front + the
+variant + edge), not the whole plane, so a non-serving isolate's traffic can't
+contaminate a number and benching one variant needs only its own path up
+(verify-slice, anti-rigging lens). A missing serving-path inspector is a *named
+hard error*, never a silent under-attribution (pm-blog stays out, ADR-0009). Binding E got teeth: `--local-cpu` against a remote origin is refused,
+so an idle-local profile can't be emitted as if it measured production.
+**Settle-by-signal** replaced three fixed timeouts — the interaction byte
+boundary waits for network-idle (a slow fetch no longer vanishes from both
+`interactionBytes` AND the total), the vitals flush waits for beacon delivery to
+quiesce (a slow flush no longer writes a null that silently shrinks the median's
+run count), and Qwik's `requestIdleCallback` preloader is awaited onto the
+INITIAL byte side before the snapshot so the same build stops yielding two
+receipts. That is the standing "wait for the real signal, never a proxy" rule
+(drift-gate README) reaching the bench runner, its third home.
+
+The audit also found the **drift gate** — the mechanism that proves zero-bias —
+had two blind spots of its own, so they rode along. The pixel check claimed
+zero-tolerance but ran at pixelmatch's `0.1` default, which lets a uniform token
+re-valuation of ~26 neutral levels pass with ZERO differing pixels; same-run
+rendering is deterministic, so the honest threshold is `0`, pinned by a
+`solidPng` unit proof that a single-level shift is caught. The self-hosted-only
+check was an undelimited `startsWith(ORIGIN)` (it accepts `origin.evil.tld`)
+asserted once at load, before `@font-face` fetches even begin — now a delimited
+origin match re-asserted after the shot forces those late fetches. And
+`dropElementSelectors` excused an element on `childElementCount === 0`, which
+would erase a stray text run inside it; it now rejects any real text too.
+
+Two smaller honesty repairs: `SnapshotManifest.source` was a single literal that
+forced the synthesized fixture to claim it came from the Discogs API — widened to
+a union so the fixture can say `synthesized-fixture` (the real crate keeps
+`api.discogs.com`, truthfully). And a Task-0 pass reconciled the state of record
+the audit found stale: the blog has been live since 2026-07-19, slice D merged
+(PR #18), the arming runbook's "goes green" step is a guaranteed red until the
+crate seed now that editorial variants bake `PM_SNAPSHOT=crate`, and a dead
+decision-map pointer.
+
+The adversarial `verify-slice` pass (four sequential lenses) earned its keep. It
+independently caught the `scriptAttr` attribute-boundary bug an inline probe had
+just found (both fixed by a proper attribute tokenizer), and surfaced four more,
+all adopted: a `hasChrome`/`servedBody` coupling that would let one body-read
+failure null a run's web-vitals (now read from the live DOM); the missing
+end-to-end non-vacuity — no test drove a REAL variant through the runner, so
+`/astro/editorial/` and `/qwik/editorial/` are now benched with
+`initialJsBytes > 0` asserted; a `decomposeDocument` rounding path that could
+drive the HTML bucket negative (now largest-remainder apportionment); and, the
+deepest, that the CPU source summed the WHOLE plane rather than the serving path,
+so a sibling suite's traffic on pm-qwik could contaminate a pm-vanilla number and
+benching one variant forced the full plane up — re-worked to sum front + the
+served variant + edge only, matching §7's model. It also flagged, as a
+bound-to-publication note rather than a fix, that React's RSC flight ships as
+executable JS while Qwik's state is inert `qwik/json`, so the cross-framework
+initial-JS cell must not publish as a verdict until that asymmetry is decided
+(ADR-0001 addendum G).
+
+Proven: turbo 28/28; the full origin suite **269/269 in fixture mode** (254 + the
+13 `decomposeDocument`/`comparePixels` unit assertions + 2 real-variant editorial
+integration assertions), and **268/269 in crate mode** — the sole miss a
+`data-plane` image test hitting a git-ignored crate thumbnail absent in this
+environment (the crate originals to regenerate it are absent too), which fails
+identically on clean `main` and touches nothing this unit changed; CI runs
+fixture mode, `check` + `origin` green. No bench PUBLISHED here — that is the
+next arc step — and the blog/edge security findings the audit also raised are a
+separate track, deliberately untouched.
+
+One CI-only failure, found and fixed (the fourth instance of the settling rule).
+The first push went `check` green but `origin` red on a single assertion — a
+placeholder's CLS/INP read null. The new vitals-beacon wait was the culprit: it
+had waited for delivery to QUIESCE (no new beacon for 150 ms), but web-vitals
+sends each metric as its own `sendBeacon`, and on the 2-core CI runner the later
+ones (CLS/INP) land >150 ms after the early ones (TTFB/FCP/LCP) — so the wait
+exited in that gap and dropped them, the exact null-vitals failure it was written
+to prevent, reintroduced in a subtler form. The old fixed 300 ms had spanned the
+gap by luck. Fixed by waiting for the EXPECTED metric SET to arrive (TTFB/FCP/LCP/
+CLS, plus INP when the visit scripts an interaction), bounded — a real signal, not
+a proxy for one, and strictly more robust than either the fixed window or the
+quiescence heuristic. Local runs never caught it (a fast machine delivers the
+beacons with no gap); the loaded CI runner is the reproduction, same class as the
+hydration/decode races before it.
+
 ## Phase 9 — The writing home (blog + CMS)
 
 The domain grew its second inhabitant: Rob's personal blog and the CMS he

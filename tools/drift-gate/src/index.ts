@@ -5,7 +5,7 @@ export {
   firstDomDivergence,
   type NoiseSpec,
 } from "./normalize";
-export { comparePixels, type PixelComparison } from "./pixels";
+export { comparePixels, solidPng, type PixelComparison } from "./pixels";
 export { startRepoServer, type StaticServer } from "./server";
 export {
   profileContextOptions,

@@ -145,8 +145,16 @@ left in between; issue #11 removed the last one):**
 2. Push (or re-run the deploy job): CI deploys the plane and runs the
    post-deploy smoke against the fixture-seeded bucket. The suite is
    snapshot-aware — it reads `GET /api/snapshot` and asserts the committed
-   artifacts of whatever snapshot the bucket serves — so this run asserts
-   the fixture's, and goes green.
+   artifacts of whatever snapshot the bucket serves. The placeholder and
+   reference-vs-master legs assert the fixture's and pass — but the deploy
+   bakes the EDITORIAL variants with `PM_SNAPSHOT=crate` (`.github/workflows/ci.yml`),
+   so their pages carry crate featured-IDs while a fixture-seeded bucket still
+   serves the fixture: the editorial drift legs MISMATCH and go **red** until
+   step 3 seeds the crate. On a fresh (re-)arming expect that red here and clear
+   it at step 3; on the live plane (already crate-seeded since arming) it does
+   not arise. (Before the editorial variants existed only placeholders were
+   measured, and this step did go green against the fixture — hence the old
+   note; slice A changed it.)
 3. Seed the real crate remotely: `pnpm capture seed --remote`. The clobber
    guard keeps later deploys from resetting the bucket to the fixture.
    Then **flush the warm tier**: KV keys carry no snapshot identity by
