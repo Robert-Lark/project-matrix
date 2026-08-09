@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { PROFILE_IDS } from "@pm/measurement";
 import { renderChrome } from "../src/chrome";
+import { SURFACE_CONTROLS, type SurfaceControls } from "../src/config";
 
 const ctx = {
   variant: "placeholder-static",
@@ -44,17 +45,56 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
   });
 
   it("a planned matrix cell is a disclosure, never an offer (no anchor)", () => {
+    // checkout, not editorial: slice E completed the editorial surface, so
+    // it no longer HAS planned cells to disclose — this guard follows the
+    // sparse frontier (checkout's cells stay planned until its own build;
+    // when that lands, retarget again or synthesize a config).
     const html = renderChrome({
       ...ctx,
       variant: "vanilla",
-      surface: "editorial",
-      pathname: "/vanilla/editorial/",
+      surface: "checkout",
+      pathname: "/vanilla/checkout/",
     });
-    // editorial's planned variants render as dead table headers…
+    // checkout's planned variants render as dead table headers…
     expect(html).toContain("not built yet");
     // …and never as switcher anchors.
     const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/(nav|span)>/)?.[0] ?? "";
     expect(switcherRow).not.toContain("<a ");
+  });
+
+  it("live anchors and planned disclosures coexist in one reading table (synthetic mixed surface)", () => {
+    // No REAL surface is mid-build right now — slice E completed editorial,
+    // and pdp/plp/checkout have no live cells yet — so the mixed state the
+    // per-variant suite blocks covered until slice E (live anchors BESIDE
+    // dead planned headers) would otherwise be exercised nowhere until
+    // PDP's first slice re-enters it (verify-slice finding, seams lens).
+    // SURFACE_CONTROLS is a plain module object; the synthetic registration
+    // is test-local and removed in finally.
+    const controls = SURFACE_CONTROLS as unknown as Record<string, SurfaceControls>;
+    controls["__test-mixed"] = {
+      variants: ["vanilla", "qwik"],
+      plannedVariants: ["htmx"],
+      proves: "synthetic mixed fixture — never shipped",
+    };
+    try {
+      const html = renderChrome({
+        ...ctx,
+        variant: "vanilla",
+        surface: "__test-mixed",
+        pathname: "/vanilla/__test-mixed/",
+      });
+      // The planned cell is a dead labeled header in the table…
+      expect(html).toContain(`htmx<span class="pm-chrome__note"> not built yet</span>`);
+      // …while the live sibling anchors (query preserved — the swap is a
+      // pure variant-segment rewrite) and the current cell is marked.
+      const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+      expect(switcherRow).toContain('aria-current="page">vanilla<');
+      expect(switcherRow).toContain('href="/qwik/__test-mixed/?n=240&amp;cache=cold"');
+      expect(switcherRow).not.toContain("htmx");
+      expect(html).toContain("Served by 2 of 3 planned variants today.");
+    } finally {
+      delete controls["__test-mixed"];
+    }
   });
 
   it("anchors carry no script payload", () => {

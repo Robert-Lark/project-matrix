@@ -784,6 +784,71 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
   }
 });
 
+describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (editorial-build slice E)", () => {
+  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE, and its emptiness is EARNED", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/htmx/editorial/`);
+    // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+
+    // htmx registers NO permitted noise (normalize.ts), and like astro's
+    // that is a MEASURED result, checked against the raw served bytes: the
+    // paradigm's mechanism is `hx-*` BEHAVIOR attributes, but editorial's
+    // one interaction is client cart state, which hypermedia does not own —
+    // so the served page idiomatically carries none (ISSUE E's "honest
+    // hypermedia statement"). The runtime rides a `<script>` element, which
+    // is delivery. If a later edit puts an `hx-*` attribute on this page,
+    // this fails and the registration must be added deliberately (slice A's
+    // behaviorAttrPatterns class) instead of the comparison silently lying.
+    // The whole mechanism family (verify-slice finding): `hx-on:*` carries
+    // a colon the old [a-z-]+= shape missed, `hx-disable` is valueless,
+    // and `data-hx-*` is the documented prefix form — all three are live
+    // htmx 2.0.10 mechanisms. Any whitespace-preceded (data-)hx- token
+    // fails loudly.
+    const raw = await page.content();
+    expect(raw).not.toMatch(/\s(?:data-)?hx-/i);
+    expect(PERMITTED_NOISE["htmx"]).toBeUndefined();
+
+    const dom = await extractNormalizedDom(page, NO_NOISE);
+    expect(dom).not.toContain("pm-chrome");
+    assertDomEqual("dom-htmx-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+      // The renderer mirrors the master's own serialization (template
+      // literals, byte-strict pre-merge guard in tools/repo-checks), so
+      // unlike astro/qwik there is no whitespace reshaping to prove
+      // rendering-neutral — this leg holds the delivery (absolute asset
+      // base, Worker-rendered per request) to the same pixel zero.
+      const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
+      const masterPage = await openTracked(context, masterPixelUrl);
+      // The re-rendered master has no chrome slot — part of the contract.
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureTracked(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/htmx/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      await settleImages(page);
+      const shot = await captureTracked(page);
+      assertPixelsEqual(`pixels-${profileId}-htmx-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
+  }
+});
+
 describe("the deliberate-drift fixture fails the pixel check", () => {
   // One profile suffices: the fixture proves the CHECK catches re-valued
   // pixels; profile coverage is proven by the passing matrix above.

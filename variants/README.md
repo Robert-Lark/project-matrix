@@ -42,6 +42,22 @@ Current occupants:
   router, the client's on-disk output directory, `q:base`, and the asset URLs
   are all derived from it. Pre-merge master-identity guard in its own `test/`
   (needs `qwikVite()`), driven by Qwik's own `renderToString`.
+- **`htmx`** — the third REQUEST-TIME variant, and the second starterless one
+  (editorial-build slice E): hypermedia — a hand-written Worker renders the
+  complete page per request (the paradigm IS the template), with the PINNED
+  `htmx.org` runtime vendored into the variant's own assets and served
+  same-origin as a script tag (never a CDN include — the suite's request
+  tracker fails any request off the composed origin). Binds `pm-edge` itself
+  like `react-next`/`qwik`. Registers NOTHING in `PERMITTED_NOISE` — a
+  measured outcome, like `astro`'s: editorial's one interaction is client
+  cart state, which hypermedia does not own, so the page idiomatically
+  carries zero `hx-*` attributes (the honest hypermedia statement ISSUE E
+  names; `hx-*` earns its keep on the PLP/checkout builds). Its
+  `DIFF-TO-STARTER.md` records why the runtime still ships. Pre-merge
+  master-identity guard in `tools/repo-checks` (plain-JS renderer, the
+  vanilla mechanism — byte-strict, both snapshots). Completed the editorial
+  surface: `SURFACE_CONTROLS.editorial.plannedVariants` emptied with this
+  slice.
 - the **throwaway placeholder stand-in variants** (issue #3) —
   `placeholder-static` (assets + the one-line forwarder script) and
   `placeholder-ssr` (per-request render with representative permitted

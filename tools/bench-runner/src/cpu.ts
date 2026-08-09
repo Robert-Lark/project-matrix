@@ -229,4 +229,5 @@ export const LOCAL_PLANE_INSPECTORS = [
   { worker: "pm-react-next", port: 9236 },
   { worker: "pm-astro", port: 9237 },
   { worker: "pm-qwik", port: 9238 },
+  { worker: "pm-htmx", port: 9239 },
 ] as const;

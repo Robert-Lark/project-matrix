@@ -21,6 +21,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -141,7 +142,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
     // The registration move is part of this build's definition of done.
     expect(controls.variants).toContain("vanilla");
-    expect(controls.plannedVariants).not.toContain("vanilla");
+    expect(controls.plannedVariants ?? []).not.toContain("vanilla");
 
     const body = await (await get("/vanilla/editorial/")).text();
     expect(count(body, 'data-pm-chrome="1"')).toBe(1);
@@ -320,7 +321,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     const controls = SURFACE_CONTROLS["editorial"]!;
     // The registration move is part of this build's definition of done.
     expect(controls.variants).toContain("react-next");
-    expect(controls.plannedVariants).not.toContain("react-next");
+    expect(controls.plannedVariants ?? []).not.toContain("react-next");
 
     const body = await (await get("/react-next/editorial/")).text();
     expect(count(body, 'data-pm-chrome="1"')).toBe(1);
@@ -530,7 +531,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
     // The registration move is part of this build's definition of done.
     expect(controls.variants).toContain("astro");
-    expect(controls.plannedVariants).not.toContain("astro");
+    expect(controls.plannedVariants ?? []).not.toContain("astro");
 
     const body = await (await get("/astro/editorial/")).text();
     expect(count(body, 'data-pm-chrome="1"')).toBe(1);
@@ -771,7 +772,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
     // The registration move is part of this build's definition of done.
     expect(controls.variants).toContain("qwik");
-    expect(controls.plannedVariants).not.toContain("qwik");
+    expect(controls.plannedVariants ?? []).not.toContain("qwik");
 
     const body = await (await get("/qwik/editorial/")).text();
     expect(count(body, 'data-pm-chrome="1"')).toBe(1);
@@ -998,6 +999,279 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     );
     const cartAnchor = body.match(/<a href="\/vanilla\/checkout\/"[^>]*>/)?.[0] ?? "";
     expect(cartAnchor).toContain('class="pm-masthead__cart"');
+    expect(cartAnchor).not.toContain("aria-label");
+  });
+});
+
+/**
+ * /htmx/editorial/ — the fifth real variant, completing the surface: the
+ * hypermedia paradigm, server-rendered HTML from a hand-written Worker
+ * (editorial-build slice E). REQUEST-TIME like react-next/qwik (trays
+ * through its own pm-edge service binding), with the differences this
+ * paradigm actually has:
+ *
+ *  - the SAME `esc` vanilla uses (the renderer is hand-written template
+ *    literals mirroring the master's serialization — decimal `&#39;`), so
+ *    every raw-string assertion is the strict form;
+ *  - the canonical font markup matches VERBATIM modulo base path (absolute,
+ *    `/htmx/assets/pm`) — no renderer-shaped tolerances at all, like
+ *    vanilla's and astro's;
+ *  - the PINNED htmx runtime is VENDORED into the variant's own assets and
+ *    served same-origin (a CDN include would fail the drift leg's request
+ *    tracker) — asserted byte-identical to the lockfile-installed package,
+ *    resolved through the variant's OWN dependency graph (isolation-honest);
+ *  - NO permitted-noise registration, which like astro's is a MEASURED fact:
+ *    zero `hx-*` attributes on the served page (editorial's one interaction
+ *    is client cart state, which hypermedia does not own — ISSUE E's honest
+ *    hypermedia statement); the drift leg holds the raw-bytes half;
+ *  - the cart contract's key in the page's own plain enhancement script,
+ *    with a vanilla-style JSON data hook (both script elements — delivery,
+ *    not contract).
+ */
+describe("the htmx editorial page (canonical shell + composition)", () => {
+  it("serves 200 with the shell in canonical order: skip link, chrome slot, page", async () => {
+    const res = await get("/htmx/editorial/");
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const skip = body.indexOf('class="pm-skip');
+    const slot = body.indexOf('id="pm-chrome-slot"');
+    const page = body.indexOf('class="pm-page"');
+    expect(skip).toBeGreaterThan(-1);
+    expect(slot).toBeGreaterThan(skip);
+    expect(page).toBeGreaterThan(slot);
+    expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
+    expect(body).toContain('<article class="pm-editorial">');
+    expect(body).toContain('role="status" data-pm-status');
+  });
+
+  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+    const snap = await loadServedSnapshot();
+    const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
+    if (!featured) throw new Error("resolved snapshot lost its featured release");
+    const body = await (await get("/htmx/editorial/")).text();
+    // The dateline IS the manifest's freeze date (ADR-0008 §8) — asserted
+    // from the resolved committed manifest, never a literal. `datetime`
+    // lowercase, exactly as the master serves it (hand-written markup, no
+    // JSX prop-name mapping in the path).
+    expect(body).toContain(
+      `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
+    );
+    expect(body).toContain(esc(featured.title));
+    expect(body).toContain(esc(featured.artist));
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets (never dereferenced here)", async () => {
+    const body = await (await get("/htmx/editorial/")).text();
+    expect(body).toContain('href="/react-next/plp/plain/"');
+    expect(body).toContain('href="/vanilla/editorial/" aria-current="page"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+    expect(body).toContain('href="/vanilla/pdp/');
+  });
+
+  it("chrome injected: stamped for this page, serving cell current, counts from the arrays", async () => {
+    const controls = SURFACE_CONTROLS["editorial"]!;
+    // The registration move is part of this build's definition of done —
+    // and slice E COMPLETES the surface: nothing stays planned-but-unbuilt.
+    expect(controls.variants).toContain("htmx");
+    expect(controls.plannedVariants ?? []).toEqual([]);
+
+    const body = await (await get("/htmx/editorial/")).text();
+    expect(count(body, 'data-pm-chrome="1"')).toBe(1);
+    expect(body).toContain('data-pm-variant="htmx"');
+    expect(body).toContain('data-pm-surface="editorial"');
+    expect(body).toContain('aria-current="page">htmx<');
+    const live = controls.variants.length;
+    const planned = live + (controls.plannedVariants?.length ?? 0);
+    expect(body).toContain(`Served by ${live} of ${planned} planned variants today.`);
+    const switcherRow = body.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain('aria-current="page">htmx<');
+    const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
+      .map((m) => m[1])
+      .sort();
+    const otherLive = controls.variants.filter((v) => v !== "htmx").sort();
+    expect(anchorTargets).toEqual(otherLive);
+    // The surface is complete: no reading-table column is a dead
+    // "not built yet" disclosure anymore, on any live page.
+    expect(body).not.toContain("not built yet");
+  });
+
+  it("fonts: the canonical loading markup verbatim modulo base path (ADR-0003 §8)", async () => {
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    // Absolute base path, matched VERBATIM — the renderer is hand-written
+    // template literals, so the canonical lines survive byte-for-byte (the
+    // vanilla/astro form, no JSX- or marker-shaped tolerances).
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/htmx/assets/pm"));
+    expect(lines).toHaveLength(3);
+
+    const body = await (await get("/htmx/editorial/")).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      const at = head.indexOf(line);
+      expect(at, `canonical loading line missing or out of order: ${line}`).toBeGreaterThan(last);
+      last = at;
+    }
+    // PMWarnGlyph is served but never preloaded (error-state-only glyph).
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("font files and the tokens stylesheet arrive byte-identical to @pm/tokens", async () => {
+    for (const font of [
+      "FamiljenGrotesk.var.woff2",
+      "PMCrateSymbols.woff2",
+      "PMWarnGlyph.U26A0.woff2",
+    ]) {
+      const res = await get(`/htmx/assets/pm/fonts/${font}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("woff2");
+      const source = readFileSync(join(repoRoot, "packages", "tokens", "fonts", font));
+      expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
+    }
+    for (const sheet of ["tokens.css", "fonts.css"]) {
+      const css = await get(`/htmx/assets/pm/css/${sheet}`);
+      expect(css.status).toBe(200);
+      expect(await css.text()).toBe(
+        readFileSync(join(repoRoot, "packages", "tokens", "css", sheet), "utf8"),
+      );
+    }
+  });
+
+  it("the htmx runtime is vendored: referenced by the page, served same-origin, byte-identical to the pinned package", async () => {
+    // ISSUE E's install contract: htmx's documented install IS a script tag,
+    // vendored into the variant's own assets — never a CDN include (the drift
+    // leg's request tracker fails any request off the composed origin; this
+    // pins the delivery half from the raw bytes). The comparison source is
+    // resolved through the VARIANT'S own dependency graph (the build script's
+    // own resolution path), so the assertion tracks the lockfile pin rather
+    // than a hand-copied file that could rot.
+    const body = await (await get("/htmx/editorial/")).text();
+    expect(body).toContain('<script src="/htmx/assets/htmx.min.js" defer></script>');
+    // "Never a CDN include" is asserted from PARSED subresource URLs, not a
+    // quote/case-sensitive byte regex (verify-slice finding, anti-rigging
+    // lens: a single-quoted or protocol-relative third-party src would slip
+    // a `src="https?://` match, and the drift leg's request tracker cannot
+    // see script fetches at all — its contexts are JS-off, and a JS-off
+    // browser never requests <script src>). Every subresource element's URL
+    // must resolve INTO the composed origin; <a> hrefs are navigation, not
+    // subresources, and stay out. JS-INJECTED subresources remain outside
+    // this gate until the JS-on gate pass lands (ADR-0008 §7's recorded
+    // boundary).
+    const subresources = [
+      ...body.matchAll(/<(?:script|link|img)\b[^>]*\s(?:src|href)\s*=\s*("[^"]*"|'[^']*')/g),
+    ].map((m) => m[1]!.slice(1, -1));
+    expect(subresources.length).toBeGreaterThanOrEqual(13);
+    for (const ref of subresources) {
+      expect(
+        new URL(ref, ORIGIN).origin,
+        `subresource off the composed origin: ${ref}`,
+      ).toBe(new URL(ORIGIN).origin);
+    }
+
+    const served = await get("/htmx/assets/htmx.min.js");
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toContain("javascript");
+    const requireFromVariant = createRequire(
+      join(repoRoot, "variants", "htmx", "package.json"),
+    );
+    const pinned = readFileSync(requireFromVariant.resolve("htmx.org/dist/htmx.min.js"));
+    expect(
+      Buffer.from(await served.arrayBuffer()).equals(pinned),
+      "served htmx.min.js differs from the lockfile-pinned package",
+    ).toBe(true);
+  });
+
+  it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
+    // The front Worker forwards the ORIGINAL request and never rewrites
+    // paths, so the /htmx/ prefix is this variant's own duty — every URL the
+    // page references must resolve, derived from the served page.
+    const body = await (await get("/htmx/editorial/")).text();
+    const refs = [...body.matchAll(/(?:href|src)="(\/htmx\/[^"]+)"/g)].map((m) => m[1]!);
+    // 2 font preloads + 9 stylesheets + 2 scripts.
+    expect(refs.length).toBeGreaterThanOrEqual(13);
+    for (const ref of new Set(refs)) {
+      const res = await get(ref);
+      expect(res.status, `${ref} did not resolve`).toBe(200);
+    }
+  });
+
+  it("the Worker's own redirect keeps the prefix; unknown paths 404; non-GET is refused", async () => {
+    // The request-time router half of the prefix proof (the qwik-block
+    // precedent): the slashless form 301s WITH the prefix — a redirect that
+    // dropped it would strand the visitor on a path the front Worker routes
+    // nowhere. `redirect: "manual"` so the Location header itself is
+    // asserted, not followed.
+    const res = await fetch(`${ORIGIN}/htmx/editorial`, { redirect: "manual" });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("/htmx/editorial/");
+
+    for (const path of ["/htmx/", "/htmx/nope/"]) {
+      expect((await get(path)).status, path).toBe(404);
+    }
+
+    // The render path is GET/HEAD only — a POST is refused, not rendered.
+    const post = await fetch(`${ORIGIN}/htmx/editorial/`, { method: "POST" });
+    expect(post.status).toBe(405);
+    expect(post.headers.get("allow")).toBe("GET, HEAD");
+  });
+
+  it("transport parity: htmx's editorial page matches the placeholder baseline (ADR-0001 §6)", () => {
+    const encoding = wireEncoding("/htmx/editorial/");
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("htmx registers NO permitted noise — a measured result, and non-vacuously so", async () => {
+    // The paradigm's mechanism is `hx-*` behavior attributes (slice A's
+    // behaviorAttrPatterns class exists for exactly them) — but editorial's
+    // one interaction is client cart state, which hypermedia does not own,
+    // so the served page idiomatically carries none: ISSUE E's honest
+    // hypermedia statement. The drift leg compares this page under NO_NOISE,
+    // which is what makes the empty registration load-bearing.
+    expect(PERMITTED_NOISE["htmx"]).toBeUndefined();
+    const body = await (await get("/htmx/editorial/")).text();
+    // The WHOLE mechanism family, not just valued hx-foo= attributes:
+    // htmx 2.0.10 also processes `hx-on:*`/`hx-on::*` (colon in the name),
+    // bare valueless attributes (`hx-disable`), and the `data-hx-*` prefix
+    // form — a narrower regex passed on all three while they attached live
+    // behavior (verify-slice finding, conformance lens). Any
+    // whitespace-preceded (data-)hx- token fails; the served page carries
+    // zero such bytes (measured), so there is nothing here to
+    // false-positive on — a loud stop is the point.
+    expect(body).not.toMatch(/\s(?:data-)?hx-/i);
+  });
+
+  it("the cart enhancement is served and carries the contract's key; the page ships its data hook as delivery", async () => {
+    const shell = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "shell.mjs")).href
+    );
+    const res = await get("/htmx/assets/cart.js");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("javascript");
+    const cartJs = await res.text();
+    expect(cartJs).toContain(`"${shell.CART_CONTRACT.key}"`);
+
+    const body = await (await get("/htmx/editorial/")).text();
+    // Both hooks are script elements — delivery, not contract (ADR-0008
+    // freedoms), so the canonical DOM stays clean.
+    expect(body).toContain('<script type="application/json" id="pm-cart-item">');
+    expect(body).toContain('<script src="/htmx/assets/cart.js" defer></script>');
+    // Canonical served state: the masthead count slot is EMPTY (§7), bare
+    // boolean attributes exactly as the master serializes them, and the cart
+    // anchor carries no aria-label (count 0 removes the attribute).
+    expect(body).toContain(
+      '<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span>',
+    );
+    const cartAnchor = body.match(/<a class="pm-masthead__cart" href="\/vanilla\/checkout\/"[^>]*>/)?.[0] ?? "";
+    expect(cartAnchor).not.toBe("");
     expect(cartAnchor).not.toContain("aria-label");
   });
 });

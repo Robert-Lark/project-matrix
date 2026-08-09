@@ -1,0 +1,19 @@
+{
+  "name": "@pm/htmx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The htmx variant (editorial-build slice E): hypermedia — server-rendered HTML from a hand-written Worker, the pinned htmx.org runtime vendored into the variant's own assets and served same-origin. REQUEST-TIME — trays are fetched through the edge Worker per request via this Worker's own pm-edge service binding (ADR-0002 §7); serves /htmx/* through the composed origin.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev --port 8796 --inspector-port 9239",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@pm/tokens": "workspace:*",
+    "htmx.org": "2.0.10"
+  },
+  "devDependencies": {
+    "wrangler": "^4.110.0"
+  }
+}
