@@ -2250,6 +2250,136 @@ chunks, making it the third distinct shape across the editorial columns after
 vanilla's single external file and astro's inlined bundle — exactly the spread
 that fix needs to validate against.
 
+### `editorial-build` slice E — the htmx variant, hypermedia (2026-08-09)
+
+The fifth editorial column, completing the surface: `variants/htmx` serving
+`/htmx/editorial/` from a hand-written Worker — the third REQUEST-TIME variant
+(its own `pm-edge` service binding, the slice-B precedent) and the second
+starterless one. For hypermedia there is nothing to scaffold: htmx's
+documented install IS a script tag, so the paradigm here is "the server
+renders complete HTML per request," and the Worker's template literals ARE
+the variant. That had a pleasant consequence for verification: the renderer
+mirrors the master's own serialization directly, so the pre-merge
+master-identity guard is the vanilla MECHANISM (byte-strict after the
+delivery strip, both snapshots, in `tools/repo-checks`) rather than a
+normalized-DOM approximation — and it passed on the first probe, both
+snapshots, before any wiring existed. Because the guard assembles the
+renderer's request-time data shape ({ isFixture, capturedAt, featured DETAIL
+tray }) from the committed trays and compares against a master rendered from
+the SUMMARY tray, it also proves per snapshot that the card fields are
+tray-identical between the two trays instead of assuming it (the qwik
+projection precedent, made checkable).
+
+**The slice's one real judgment call is recorded, not optimized away: the
+htmx runtime ships on a page that uses none of it.** Editorial's one
+interaction is client cart state, which hypermedia does not own (there is no
+server cart by contract — ADR-0004 §5: localStorage holds the cart ONLY, so
+it survives a variant swap), so the served page carries ZERO `hx-*`
+attributes — ISSUE E's "honest hypermedia statement," and like slice C's
+astro the variant registers NOTHING in `PERMITTED_NOISE`, with the emptiness
+asserted against raw served bytes in both the origin suite and the drift leg
+(the comparison runs under `NO_NOISE`). But the runtime still ships, because
+a hypermedia site includes its library site-wide and spends attributes where
+the server owns the interaction — dropping the script would have made the
+column a second vanilla and stopped measuring the paradigm; inventing an
+`hx-*` server-cart would have broken cart-survives-the-swap and misstated
+it. Measured, tool-derived: `htmx.min.js` (pinned EXACT 2.0.10 — 4.x exists
+only as alpha/beta and would be a fenced exhibit under ADR-0003's first
+addendum, the qwik-v2 logic) is 51,238 B raw, **14,996 B brotli** — the
+paradigm's site-wide cost landing between vanilla (1.35 kB) and qwik
+(26.83 kB) on the surface whose thesis is how much machinery prose needs.
+The runtime is VENDORED from the lockfile-pinned npm package into the
+variant's own assets and served same-origin (a CDN include would fail the
+drift leg's request tracker and add an uncontrolled third-party variable);
+the origin suite asserts the SERVED file byte-identical to the installed
+package, resolved through the variant's own dependency graph.
+
+**Completing the surface had registry consequences beyond the usual move.**
+`SURFACE_CONTROLS.editorial.plannedVariants` is GONE (the PRD's "empty or
+gone"), which surfaced two latent assumptions: four pre-existing suite
+assertions called `.not.toContain(...)` on the now-absent key and crashed
+(hardened with `?? []` — caught by the fixture run, 5 failures, all one
+class), and the switcher unit guard proving "a planned cell is a disclosure,
+never an offer" was pinned to editorial, which no longer has planned cells
+to disclose — retargeted to checkout, the sparse frontier, where it keeps
+meaning something. The chrome's reading table now shows five live columns
+and "Served by 5 of 5," both recounted from the array. Slice E's second
+completion duty, **the ADR-0007 §4 home catalogue row flip**, is the
+designed one-token edit: editorial's row goes `In build · decision map` →
+`Public today · open the surface`, linking the designated host
+`/vanilla/editorial/` (the PM-006 pattern: the Public state links the public
+thing itself); the publication-time tense/verdict flips stay out of this
+build, exactly as the PRD fences them.
+
+Wiring worth naming: pm-htmx takes ports 8796/9239, and the
+`LOCAL_PLANE_INSPECTORS` entry is load-bearing rather than bookkeeping —
+after issue #16, CPU is summed over the SERVING PATH per visit and a missing
+serving-path inspector is a NAMED hard error, so a local bench of
+`/htmx/editorial/` would refuse to run without it. The Worker's slashless
+redirect emits a RELATIVE Location (RFC 9110 §10.2.2) so the composed origin
+stays host-agnostic. The featured-id policy imports the fixture's committed
+manifest/curation with `with { type: "json" }` — loads identically under
+wrangler's esbuild and plain Node; unlike qwik there is no turbo input
+declaration for those files because nothing turbo-cached embeds them
+(wrangler bundles src at dev/deploy time, outside the build task).
+
+Also reconciled while verifying from the world (the Task-0 discipline):
+decision-map still carried `bench-accounting-fix` as "pending merge" — PR
+#20 merged as `d561677` (2026-08-02 UTC) with the deploy job green, verified
+against GitHub before editing the line.
+
+Local proof, re-run on the FINAL tree after every adopted finding: origin
+suite **291/291 fixture** and **290/291 crate-seeded** (the 1 miss is
+`/assets/img/9861004-primary.thumb.avif` 404 — the git-ignored crate thumb
+absent from this checkout, the known local gotcha the 2026-08-01 session
+recorded, unrelated to this slice); turbo lint/typecheck/test **28/28**;
+`wrangler deploy --dry-run` bundles the Worker clean (15.15 KiB upload);
+turbo cache-hit restores dist from a wiped tree; the identity guard was
+sabotage-proven on crate copy (a one-word essay edit fails exactly the
+crate leg, reverted and re-proven).
+
+**verify-slice: 4 lenses, 11 raw findings deduping to 7 distinct — 6
+adopted, 1 refuted.** The four-way duplicate was the humbling one: the
+DIFF-TO-STARTER's decision 4 recorded a script order the served page does
+not use (the JSON hook renders FIRST) — all four lenses independently
+caught the receipt misdescribing its own page, the exact
+record-not-code defect class slice D's pass was full of. The two that
+mattered most:
+(a) **the branded-503 boundary didn't cover the render** — a
+malformed-but-200 detail tray (a future re-freeze shipping the featured
+release with zero images) would throw during template interpolation and
+surface as pm-front's unbranded plain-text 502, the exact page the
+fallback exists to prevent; the render moved inside the guard, and the
+whole branch got its first test anywhere
+(`tools/repo-checks/test/htmx-worker-fallback.test.ts` drives the
+Worker's fetch in-process with stub EDGE bindings: dead plane → branded
+503, degenerate tray → branded 503, committed fixture trays → the real
+page).
+(b) **the identity guard never executed `snapshot.mjs`** — the crate
+featured-id and essay-selection policy would first run against the crate
+on the deployed plane, so a typo'd `CRATE_FEATURED_ID` merges green and
+turns the smoke red, precisely the hole the guard family exists to close
+(and the module's own comment claimed the guard was its runner); the
+guard now derives id and essay selection THROUGH the variant's module and
+cross-checks both against the recorded constants.
+Also adopted: the zero-`hx-*` assertion couldn't see `hx-on:*` (colon in
+the name), valueless `hx-disable`, or the `data-hx-*` prefix form — all
+real htmx 2.0.10 mechanisms, proven empirically by the lens — widened in
+both suites to any whitespace-preceded `(data-)hx-` token; the vendored
+runtime's same-origin claim rested on a quote-sensitive `src="https?://`
+regex that a single-quoted or protocol-relative CDN include would slip
+(and the drift tracker can never see script fetches — its contexts are
+JS-off), replaced with a parsed-subresource origin check over every
+script/link/img URL (18 on the served page, JS-injected subresources
+recorded as outside the gate until the JS-on pass lands); and completing
+the surface had left the mixed live+planned chrome state unit-covered
+nowhere until PDP's first slice — now a synthetic-registration test in
+the switcher workspace. REFUTED: "the crate count was recorded before the
+run finished" — the number was patched in after the run completed, and
+the later render.mjs mtime was the sabotage probe, reverted
+byte-identical; the finding's discipline held anyway, since adopting the
+fixes changed suite files and both modes re-ran on the final tree.
+
 ### Phase 8.1 — Fixing the ruler (bench-accounting-fix, issue #16; 2026-08-01)
 
 Before the first editorial number could publish, the ruler itself had to be

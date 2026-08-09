@@ -309,6 +309,19 @@ importers:
         specifier: ^4.110.0
         version: 4.110.0(@cloudflare/workers-types@5.20260718.1)
 
+  variants/htmx:
+    dependencies:
+      '@pm/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      htmx.org:
+        specifier: 2.0.10
+        version: 2.0.10
+    devDependencies:
+      wrangler:
+        specifier: ^4.110.0
+        version: 4.110.0(@cloudflare/workers-types@5.20260718.1)
+
   variants/placeholder-ssr:
     dependencies:
       '@pm/tokens':
@@ -3544,6 +3557,9 @@ packages:
 
   htmlparser2@10.1.0:
     resolution: {integrity: sha512-VTZkM9GWRAtEpveh7MSF6SjjrpNVNNVJfFup7xTY3UpFtm67foy9HDVXneLtFVt4pMz5kZtgNcvCniNFb1hlEQ==}
+
+  htmx.org@2.0.10:
+    resolution: {integrity: sha512-kdeJe7ZVwaS6QMz/ebBIVtZdpwen6L0OQ5GOhPV9MKBb196TCZeZu4yA7ZIQsaLKv7EpXz+So7KSXNuHXhj7Cw==}
 
   http-cache-semantics@4.2.0:
     resolution: {integrity: sha512-dTxcvPXqPvXBQpq5dUr6mEMJX4oIEFv6bwom3FDwKRDsuIjjJGANqhBuoAn9c1RQJIdAKav33ED65E2ys+87QQ==}
@@ -8745,6 +8761,8 @@ snapshots:
       domhandler: 5.0.3
       domutils: 3.2.2
       entities: 7.0.1
+
+  htmx.org@2.0.10: {}
 
   http-cache-semantics@4.2.0: {}
 

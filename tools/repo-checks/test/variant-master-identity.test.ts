@@ -88,6 +88,65 @@ describe("vanilla editorial equals the master textually, both snapshots (pre-mer
 });
 
 /**
+ * htmx's version of the same guard (editorial-build slice E) — the vanilla
+ * MECHANISM exactly (byte-strict after the delivery strip), because the
+ * renderer is the same species: plain template literals mirroring the
+ * master's serialization, importable directly with no framework runtime.
+ * The one shape difference is the data: htmx is REQUEST-TIME, so its
+ * renderer takes the resolved per-request data ({ isFixture, capturedAt,
+ * featured DETAIL tray }) rather than a whole snapshot — this guard
+ * assembles that from the committed trays, which also proves per snapshot
+ * that the release card's fields are tray-identical between the summary
+ * (what the master renders from) and the detail (what htmx renders from)
+ * rather than assuming it.
+ */
+describe("htmx editorial equals the master textually, both snapshots (pre-merge)", () => {
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: renderEditorialPage matches renderEditorial after the delivery strip`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const reference = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "editorial.mjs")).href
+      );
+      const htmx = await import(
+        pathToFileURL(join(repoRoot, "variants", "htmx", "src", "render.mjs")).href
+      );
+
+      // The featured-id and essay-selection POLICY is derived through the
+      // variant's OWN runtime module (src/snapshot.mjs), not this file's
+      // local constants — otherwise the one module production actually
+      // executes would never run pre-merge, and a typo'd crate id or an
+      // inverted isFixtureCrate would merge green and turn the deployed
+      // smoke red (verify-slice finding, anti-rigging lens). Both are
+      // still cross-checked against the recorded constants, so a policy
+      // drift and a constant drift each fail loudly.
+      const policy = await import(
+        pathToFileURL(join(repoRoot, "variants", "htmx", "src", "snapshot.mjs")).href
+      );
+      const snapshot = lib.loadSnapshot(name);
+      const master = stripDelivery(reference.renderEditorial(snapshot, { origin: "" }));
+      const id = policy.featuredIdFor(snapshot.manifest.crate);
+      expect(id).toBe(featuredId(name));
+      const isFixture = policy.isFixtureCrate(snapshot.manifest.crate);
+      expect(isFixture).toBe(name === "fixture");
+      const featured = snapshot.details.find((d: { id: number }) => d.id === id);
+      if (!featured) throw new Error(`${name}: no detail tray for id ${id}`);
+      const variant = stripDelivery(
+        htmx.renderEditorialPage({
+          isFixture,
+          capturedAt: snapshot.manifest.capturedAt,
+          featured,
+        }),
+      );
+      expect(variant).not.toBe("");
+      expect(variant).toContain("pm-editorial");
+      expect(variant).toBe(master);
+    });
+  }
+});
+
+/**
  * react-next's version of the same guard (editorial-build slice B) — same
  * hole to close (a crate-copy edit merging green, unproven until the
  * deployed smoke), different mechanism by necessity: vanilla's guard calls

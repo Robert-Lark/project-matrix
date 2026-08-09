@@ -74,8 +74,8 @@ landing commit into the manifest and re-put it remotely (see
 `tools/snapshot-capture/src/normalize.ts`); trays unchanged ⇒ no KV
 warm-tier flush needed.
 
-CI deploys from `main` — edge first (`pm-react-next` and `pm-qwik` bind it
-directly, the request-time variants, editorial-build slices B and D;
+CI deploys from `main` — edge first (`pm-react-next`, `pm-qwik`, and `pm-htmx` bind it
+directly, the request-time variants, editorial-build slices B, D, and E;
 `pm-astro` does not — it is build-time, so its pages are already baked and it
 talks to nothing), then the
 rest of the variants (service bindings must resolve), then the front Worker — and

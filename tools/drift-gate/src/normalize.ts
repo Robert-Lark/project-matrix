@@ -104,6 +104,20 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   // (editorial-build PRD): the absence of an entry here is asserted in the
   // origin suite, and its drift comparison runs under NO_NOISE.
   //
+  // htmx registers NOTHING EITHER, and like astro's that is a MEASURED
+  // outcome, not a design assumption (editorial-build slice E; ISSUE E names
+  // exactly this case: "an editorial page with zero hx-* is an honest
+  // hypermedia statement, and then nothing registers"). The paradigm's
+  // mechanism is `hx-*` BEHAVIOR attributes — slice A's
+  // behaviorAttrPatterns class exists for them — but editorial's one
+  // interaction is client cart state, which hypermedia does not own, so the
+  // served page idiomatically carries none. The runtime itself is a
+  // `<script>` element (delivery — dropped unconditionally). The origin
+  // suite asserts the empty registration against raw served bytes, and the
+  // drift leg compares under NO_NOISE; if a later surface (the PLP build,
+  // where htmx's loaders+PE strategy lives) puts `hx-*` on a page, THAT
+  // build registers `^hx-` under behaviorAttrPatterns deliberately.
+  //
   // astro registers NOTHING EITHER, and unlike vanilla that is a MEASURED
   // result rather than a design choice (editorial-build slice C). Astro's two
   // noise species both turned out to be opt-in, and this page opts into

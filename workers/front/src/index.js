@@ -25,6 +25,7 @@ const VARIANTS = {
   "react-next": "REACT_NEXT",
   astro: "ASTRO",
   qwik: "QWIK",
+  htmx: "HTMX",
 };
 
 // Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass

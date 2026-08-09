@@ -6,9 +6,9 @@
 //
 // Variants start before the front Worker so its service bindings find them in
 // wrangler's local dev registry (the spike's proven shape). Edge starts
-// first of all: react-next and qwik bind pm-edge themselves (the request-time
-// variants, editorial-build slices B and D), so their own dev processes need
-// edge already registered, same as front's requirement.
+// first of all: react-next, qwik, and htmx bind pm-edge themselves (the
+// request-time variants, editorial-build slices B, D, and E), so their own
+// dev processes need edge already registered, same as front's requirement.
 import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, openSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -20,11 +20,11 @@ const ORIGIN = "http://127.0.0.1:8787";
 // One HTTP port + one inspector port per Worker, in spawn order below:
 // front 8787/9230, placeholder-static 8788/9231, placeholder-ssr 8789/9232,
 // edge 8790/9233, blog 8791/9234, vanilla 8792/9235, react-next 8793/9236,
-// astro 8794/9237, qwik 8795/9238. Each pair is declared in that Worker's own
-// `dev` script.
+// astro 8794/9237, qwik 8795/9238, htmx 8796/9239. Each pair is declared in
+// that Worker's own `dev` script.
 const PORTS = [
-  8787, 8788, 8789, 8790, 8791, 8792, 8793, 8794, 8795,
-  9230, 9231, 9232, 9233, 9234, 9235, 9236, 9237, 9238,
+  8787, 8788, 8789, 8790, 8791, 8792, 8793, 8794, 8795, 8796,
+  9230, 9231, 9232, 9233, 9234, 9235, 9236, 9237, 9238, 9239,
 ];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
@@ -197,6 +197,7 @@ try {
   startWorker("variants/react-next", "react-next");
   startWorker("variants/astro", "astro");
   startWorker("variants/qwik", "qwik");
+  startWorker("variants/htmx", "htmx");
   startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
@@ -208,6 +209,7 @@ try {
   await waitFor(`${ORIGIN}/react-next/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/astro/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/qwik/editorial/`, 60_000);
+  await waitFor(`${ORIGIN}/htmx/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 

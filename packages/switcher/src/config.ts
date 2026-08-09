@@ -71,8 +71,12 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "A stand-in surface proving the composed origin: placeholder variants under one measurement contract. The real store surfaces replace it.",
   },
   editorial: {
-    variants: ["vanilla", "react-next", "astro", "qwik"],
-    plannedVariants: ["htmx"],
+    // All five planned cells are LIVE (slice E completed the surface) —
+    // `plannedVariants` is gone, per the editorial-build PRD's acceptance
+    // ("empty or gone"): the reading table shows five live columns and the
+    // "Served by N of M" note now counts 5 of 5, both derived from this
+    // array alone.
+    variants: ["vanilla", "react-next", "astro", "qwik", "htmx"],
     host: "vanilla",
     proves:
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",
