@@ -23,6 +23,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 import { computeCostReport, parseRateCard, renderReport } from "@pm/cost-calculator";
+import { SURFACE_CONTROLS } from "@pm/switcher";
 import {
   PROFILE_SPEC_VERSION,
   PROFILES,
@@ -32,6 +33,7 @@ import {
   InspectorCpuSource,
   LOCAL_PLANE_INSPECTORS,
   Receipt,
+  assertBenchableTarget,
   runBatch,
   specFromReceipt,
   type ReceiptT,
@@ -348,4 +350,55 @@ describe("one-command reproduce (ADR-0001 §9)", () => {
     // A fresh batch, not a replay: new nonce, new date.
     expect(again.environment.runNonce).not.toBe(receipt.environment.runNonce);
   }, 300_000);
+});
+
+describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, slice F)", () => {
+  // No origin needed: the guard sits in runBatch's validation block, BEFORE
+  // any browser launches — a receipt naming the fenced exhibit cannot be
+  // minted by the CLI, the reproduce path, or a direct library import.
+  it("assertBenchableTarget names the fence for any /remix3/* path", () => {
+    expect(() => assertBenchableTarget("/remix3/editorial/")).toThrowError(
+      /fenced exhibit.*excluded from every benchmark number/,
+    );
+    expect(() => assertBenchableTarget("/remix3/anything/else")).toThrowError(/fenced/);
+    // The guard resolves the path the way the runner's effectiveUrl does —
+    // the spec shapes URL() accepts must not slip past a naive split
+    // (verify-slice finding: both of these previously minted a fenced
+    // receipt).
+    expect(() => assertBenchableTarget("remix3/editorial/")).toThrowError(/fenced/);
+    expect(() => assertBenchableTarget("/./remix3/editorial/")).toThrowError(/fenced/);
+    // Prefix-scoped, not substring-scoped: a future variant whose name
+    // merely contains "remix3" is not the exhibit.
+    expect(() => assertBenchableTarget("/vanilla/editorial/")).not.toThrow();
+    expect(() => assertBenchableTarget("/placeholder-static/sample/")).not.toThrow();
+  });
+
+  it("every chrome-labeled fenced exhibit is refused by the runner — the two fence registries cannot drift apart", () => {
+    // The fence is double-entry (batch.ts FENCED_VARIANT_PREFIXES names
+    // what the runner refuses; SURFACE_CONTROLS fencedExhibits names what
+    // the chrome labels) and importing @pm/switcher from the runner would
+    // invert the dependency — so the correspondence is pinned HERE, where
+    // both packages already meet (verify-slice finding, seams lens: a
+    // future exhibit registered in the chrome but not the runner would
+    // mint receipts for a variant the chrome itself declares excluded).
+    for (const controls of Object.values(SURFACE_CONTROLS)) {
+      for (const f of controls.fencedExhibits ?? []) {
+        expect(() => assertBenchableTarget(`/${f.variant}/editorial/`)).toThrowError(/fenced/);
+      }
+    }
+  });
+
+  it("runBatch rejects a batch carrying a remix3 target before driving anything", async () => {
+    await expect(
+      runBatch({
+        origin: ORIGIN,
+        targets: [{ path: "/remix3/editorial/", interactionId: "body-click" }],
+        profileId: PROFILE.id,
+        runsPerUrl: 1,
+        n: 24,
+        runNonce: `${NONCE}-fence`,
+        repoRoot,
+      }),
+    ).rejects.toThrowError(/fenced exhibit/);
+  });
 });

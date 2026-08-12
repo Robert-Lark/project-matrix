@@ -216,10 +216,14 @@ export class InspectorCpuSource implements CpuSource {
  *  omitting the editorial variants attributed ZERO CPU to whichever one served
  *  the page while the placeholders it was compared against WERE sampled. Ports
  *  are the canonical plane's (tools/origin-suite/run-local.mjs). pm-blog (9234)
- *  stays OUT — ADR-0009 puts the blog outside every measurement fence. Only a
- *  visit's OWN serving-path inspector is required to be up (connectionFor opens
- *  lazily); a missing one on the path is a named hard error, never a silent
- *  under-attribution. */
+ *  stays OUT — ADR-0009 puts the blog outside every measurement fence. pm-remix3
+ *  (9240) stays OUT for the same class of reason (editorial-build slice F): the
+ *  fenced frontier exhibit is in no number, and upstream of this registry the
+ *  runner REFUSES /remix3/* targets outright (assertBenchableTarget, batch.ts),
+ *  so no measured serving path can ever include it — the absence here is
+ *  belt-over-mechanism, not the fence itself. Only a visit's OWN serving-path
+ *  inspector is required to be up (connectionFor opens lazily); a missing one
+ *  on the path is a named hard error, never a silent under-attribution. */
 export const LOCAL_PLANE_INSPECTORS = [
   { worker: "pm-front", port: 9230 },
   { worker: "pm-placeholder-static", port: 9231 },

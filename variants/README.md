@@ -58,6 +58,25 @@ Current occupants:
   vanilla mechanism — byte-strict, both snapshots). Completed the editorial
   surface: `SURFACE_CONTROLS.editorial.plannedVariants` emptied with this
   slice.
+- **`remix3`** — the FENCED frontier exhibit (editorial-build slice F):
+  Remix 3 beta, non-React server HTML + frames, on a hand-rolled Workers
+  entry — no official Workers target exists, so `src/worker.ts` IS the
+  adapter (ADR-0004 second addendum; the `docs/prototypes/remix3-frontier`
+  spike is prior art). The fourth REQUEST-TIME variant (binds `pm-edge`
+  itself) and the first fenced one: excluded from every benchmark number by
+  MECHANISM — on-surface plaque, a tagged `fencedExhibits` switcher cell
+  (never a reading-table column), and a bench runner that refuses
+  `/remix3/*` targets outright. `remix` is pinned EXACT and the committed
+  lockfile pins the `@remix-run/*` sub-packages; the spike's `test.sh` is
+  the canary on any bump. Registers NOTHING in `PERMITTED_NOISE` (the third
+  earned emptiness — remix's residue is comments, and its mechanism
+  attributes live only inside the two `[data-pm-fenced]` subtrees the
+  scoped drop removes). Drift comparison is ADVISORY (warns, never fails
+  CI — ADR-0003 first addendum); the pre-merge master-identity guard in its
+  own `test/` (needs remix/ui's JSX runtime) BLOCKS, because the lockfile
+  makes it deterministic. Its `DIFF-TO-STARTER.md` records the hand-rolled
+  entry, the drain-before-respond boundary, and every measured
+  serialization behavior.
 - the **throwaway placeholder stand-in variants** (issue #3) —
   `placeholder-static` (assets + the one-line forwarder script) and
   `placeholder-ssr` (per-request render with representative permitted

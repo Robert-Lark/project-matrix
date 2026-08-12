@@ -1,4 +1,10 @@
-export { runBatch, specFromReceipt, type BatchSpec, type TargetSpec } from "./batch";
+export {
+  assertBenchableTarget,
+  runBatch,
+  specFromReceipt,
+  type BatchSpec,
+  type TargetSpec,
+} from "./batch";
 export {
   INTERACTIONS,
   SETTLE_CAP_MS,

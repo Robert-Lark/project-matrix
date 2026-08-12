@@ -48,11 +48,16 @@ export function profileContextOptions(
  *
  * `rootSelector` scopes the extract to one element's subtree — used to pin
  * the component demo's canonical markup to the surface golden master.
+ *
+ * `dropFencedSubtrees` drops `[data-pm-fenced]` subtrees before serializing
+ * — passed ONLY by a fenced variant's own comparison legs (see the flag's
+ * doc comment in normalize.ts for why the scoping is caller-side).
  */
 export function extractNormalizedDom(
   page: Page,
   noise: NoiseSpec = NO_NOISE,
   rootSelector?: string,
+  dropFencedSubtrees = false,
 ): Promise<string> {
   return page.evaluate(PAGE_NORMALIZE, {
     attrPatterns: [...noise.attrPatterns],
@@ -60,6 +65,7 @@ export function extractNormalizedDom(
     behaviorAttrPatterns: [...noise.behaviorAttrPatterns],
     dropElementSelectors: noise.dropElementSelectors ? [...noise.dropElementSelectors] : [],
     rootSelector,
+    dropFencedSubtrees,
   });
 }
 
@@ -83,6 +89,28 @@ export function neutralizeChrome(page: Page): Promise<number> {
     const slots = document.querySelectorAll("div#pm-chrome-slot");
     for (const slot of slots) slot.remove();
     return slots.length;
+  });
+}
+
+/**
+ * REMOVE `[data-pm-fenced]` subtrees from the live page — the pixel check's
+ * counterpart to the DOM normalizer's `dropFencedSubtrees` (editorial-build
+ * slice F). Removal for the same reflow reason as {@link neutralizeChrome}:
+ * the plaque/demo participate in document flow, so masking their regions
+ * could not undo the layout shift below them. Called ONLY by a fenced
+ * variant's own pixel legs — the caller-side scoping documented on the
+ * normalizer flag.
+ *
+ * Returns the number of subtrees removed so callers can assert the count
+ * (the remix3 editorial page carries exactly 2 — plaque + frames demo — and
+ * the reference render 0; an unexpected extra fenced element must fail the
+ * leg, not ride the fence).
+ */
+export function neutralizeFenced(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const fenced = document.querySelectorAll("[data-pm-fenced]");
+    for (const el of fenced) el.remove();
+    return fenced.length;
   });
 }
 

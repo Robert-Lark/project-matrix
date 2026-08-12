@@ -38,6 +38,19 @@ packageExtensions:
   "@builder.io/qwik-city":
     peerDependencies:
       "@builder.io/qwik": "*"
+  # @remix-run/render-middleware's PUBLISHED dist/lib/render.d.ts carries an
+  # inline import type of "../../../fetch-router/src/lib/request-context.ts"
+  # — a relative path escaping the package into a SIBLING's raw TS source,
+  # which itself imports @remix-run/route-pattern. render-middleware declares
+  # only fetch-router, so under the isolation below tsc cannot resolve
+  # route-pattern from that symlinked location and every consumer's typecheck
+  # fails. Types-only leak (the runtime js imports only declared deps); same
+  # class as the two entries above, found by editorial-build slice F
+  # (remix3). A peer, not a dependency, for the qwik-city reason: it must
+  # resolve the SAME route-pattern instance fetch-router already uses.
+  "@remix-run/render-middleware":
+    peerDependencies:
+      "@remix-run/route-pattern": "*"
 
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
 # pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a

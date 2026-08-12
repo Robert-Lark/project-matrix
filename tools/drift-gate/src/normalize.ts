@@ -211,6 +211,34 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
     classPatterns: [],
     behaviorAttrPatterns: ["^q:", "^on:", "^on-document:"],
   },
+  // remix3 registers NOTHING — the fenced frontier exhibit (editorial-build
+  // slice F), and like astro's and htmx's this is a MEASURED outcome from
+  // the real served page, not an assumption. Remix 3's residue species all
+  // fall outside what a NoiseSpec would need to excuse:
+  //   - `<!-- rmx:f:… -->`/`<!-- /rmx:f -->` frame boundaries and the
+  //     `<!-- rmx:flush … -->` trailer are COMMENTS — dropped
+  //     unconditionally while the text runs they split merge back together;
+  //   - the `#rmx-data` hydration script IS emitted (end of body, the
+  //     frame-status map) and is a `<script>` — DELIVERY, dropped
+  //     unconditionally like every script, so it needs no registration.
+  //     Its presence is pinned by variants/remix3/test/worker-fallback
+  //     (an earlier draft of this comment recorded it ABSENT, misreading a
+  //     post-strip test dump — the pin exists so this record can never
+  //     drift from the page again);
+  //   - `rmxc-*` classes and `<style data-rmx>` exist only behind the css()
+  //     mixin, which this variant deliberately never uses on served markup
+  //     (variants/remix3/src/frontier.css records the call);
+  //   - `rmx-target`/`rmx-src` mechanism attributes (FINDINGS §2 named them
+  //     this slice's registration call "IF they appear in served DOM")
+  //     appear ONLY inside the [data-pm-fenced] demo subtree, which the
+  //     fenced variant's own comparisons drop via `dropFencedSubtrees`
+  //     below — so on COMPARED elements they never occur, and registering
+  //     them would be exactly the vacuous-excuse class slice D's non-vacuity
+  //     scoping exists to reject.
+  // The origin suite asserts the empty registration against raw served
+  // bytes SCOPED to compared content (fenced subtrees and delivery elements
+  // stripped first), and the advisory drift leg compares under NO_NOISE +
+  // dropFencedSubtrees.
 };
 
 /**
@@ -228,6 +256,19 @@ export const PAGE_NORMALIZE = (spec: {
   behaviorAttrPatterns: readonly string[];
   dropElementSelectors?: readonly string[];
   rootSelector?: string;
+  /** Drop `[data-pm-fenced]` subtrees before comparing (editorial-build
+   *  slice F). The fence hook is the CONTRACT's own labeling mechanism
+   *  (CONTEXT.md "Plaque": reserved for true number-exclusions), so unlike
+   *  `dropElementSelectors` the removal is deliberately content-bearing —
+   *  a plaque exists to carry text. SCOPING IS THE ANTI-RIGGING SEAM:
+   *  this is a call-site flag, NOT a NoiseSpec field, so no PERMITTED_NOISE
+   *  registration can ever smuggle it in — only a fenced variant's own
+   *  comparison legs pass it (remix3's advisory drift leg + its pre-merge
+   *  guard). A core variant marking markup `data-pm-fenced` gains nothing:
+   *  its comparisons never set this flag, so the extra element FAILS its
+   *  gate, and the origin suite additionally asserts core editorial pages
+   *  carry no such element at all. */
+  dropFencedSubtrees?: boolean;
 }): string => {
   // Behavior attributes strip exactly like inert-residue attributes — the
   // two classes differ in the registry's audit trail, not in mechanics.
@@ -250,6 +291,12 @@ export const PAGE_NORMALIZE = (spec: {
 
   const root = document.documentElement.cloneNode(true) as HTMLElement;
   for (const slot of root.querySelectorAll("div#pm-chrome-slot")) slot.remove();
+  if (spec.dropFencedSubtrees === true) {
+    // Content-bearing by design (doc comment above) — the plaque/demo are
+    // labeled exclusions, not residue; callers assert the removed COUNT
+    // separately so an unexpected fenced element can't ride along silently.
+    for (const el of root.querySelectorAll("[data-pm-fenced]")) el.remove();
+  }
   for (const sel of spec.dropElementSelectors ?? []) {
     for (const el of root.querySelectorAll(sel)) {
       // Content-aware, not just positional: a registration excuses an

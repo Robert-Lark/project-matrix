@@ -2380,6 +2380,221 @@ the later render.mjs mtime was the sabotage probe, reverted
 byte-identical; the finding's discipline held anyway, since adopting the
 fixes changed suite files and both modes re-ran on the final tree.
 
+### `editorial-build` slice F — the remix3 fenced frontier exhibit (2026-08-11)
+
+The last editorial column, and the one that was never a column: `/remix3/
+editorial/` serves the canonical page from a hand-rolled Cloudflare Workers
+entry — Remix 3 has no official Workers target, so the ~40-line
+`src/worker.ts` IS the adapter (ADR-0004 second addendum; the spike is prior
+art, and its two recorded frictions resolved differently here: no
+`clientEntry()` ships so the workerd stable-id friction never engages, and
+the client runtime is prebuilt by esbuild because the template's asset
+server is Node-only). The beta pin was re-verified before any code, the
+ISSUE F duty: `3.0.0-beta.5` is still the newest v3 anywhere (npm `next`
+dist-tag; GitHub `remix@3*` tags end at beta.5; every `@remix-run/*`
+sub-package last modified 2026-07-01, the beta.5 publish date — a fresh
+install resolves exactly what the spike verified), so the spike's canary
+never had a bump to fire on.
+
+**Serialization was measured before a line of variant code existed** (the
+slice-D scaffold discipline, done here with two probes against the spike's
+own pinned install). What the probes settled: Remix reorders attributes
+(`class` always serializes last), escapes only `&<>` in text (quotes stay
+raw — the master's `&#39;` can never match byte-for-byte, so the byte-strict
+vanilla/htmx guard mechanism is impossible and the react-next normalized-DOM
+mechanism is the recorded fallback), self-closes voids, and emits the
+doctype from `createHtmlResponse`. Frames add NO wrapper element — comment
+pairs only — so slice C's `<astro-island>` problem never materializes. And
+one expectation from the spike INVERTED on measurement: the `#rmx-data`
+hydration script disappears entirely when frames resolve as streams during
+SSR (the spike's probe resolved them from strings and got one), so the
+FINDINGS §7(b) noise list shrank to nothing — `PERMITTED_NOISE` registers
+NOTHING for remix3, the third earned-emptiness after astro and htmx, with
+the reasoning recorded in the registry comment: comments are freedoms,
+`css()` is deliberately unused on served markup, and `rmx-target`/`rmx-src`
+appear only inside the fenced demo subtree, where registering them would be
+exactly the vacuous-excuse class slice D's non-vacuity scoping exists to
+reject.
+
+**The fence is mechanism at all three layers** (FINDINGS §7(c)), and the one
+new comparison-scope primitive is deliberately narrow: `dropFencedSubtrees`
+is a CALL-SITE flag on `PAGE_NORMALIZE` (plus the `neutralizeFenced` pixel
+twin), never a `NoiseSpec` field — no `PERMITTED_NOISE` registration can
+smuggle it in, core comparisons never pass it, and the origin suite asserts
+every core editorial page carries zero `[data-pm-fenced]` elements while the
+remix3 page carries exactly TWO, count-pinned. Those two are the plaque (the
+DS component's canonical fenced form, top of main, label before content —
+the a11y-section principle; its version string is tool-derived from the
+variant's own package.json and cross-checked in three places, so a bump
+cannot leave a stale number without going red) and the frames demo (after
+the article — the store wins the page; its copy declares itself "exhibit
+apparatus, not store content", which keeps the article's canonical
+only-interactive-element note honest). The demo is what makes the exhibit an
+exhibit: without it the committed §5 browser coverage — the other FINDINGS
+§8 hand-off — would have had nothing to drive. That coverage now exists
+(`remix3.browser.test.ts`): one click on the demo anchor fetches exactly ONE
+HTML partial with no document navigation (a sentinel survives the swap), the
+URL updates through the Navigation API, Back restores the previous card
+without a reload, and with JS off the same anchor is a plain full-page
+navigation to the same content. The chrome layer got the variants-axis
+counterpart of the PLP strategy fence: `SurfaceControls.fencedExhibits`, a
+tagged `--fenced` switcher anchor that is never a reading-table column and
+never counts into "Served by N of M" (both derive from `variants` alone —
+putting remix3 there would have corrupted both, which is why the distinct
+field exists), plus a HUD note naming the RUM-only policy. The receipts
+layer turned policy into a wall: `assertBenchableTarget` in `runBatch`
+refuses any `/remix3/*` target before a browser launches — placed in the
+library, not the CLI, so the reproduce path and direct imports hit the same
+wall — and `pm-remix3` stays out of `LOCAL_PLANE_INSPECTORS` (the blog
+precedent, belt over mechanism).
+
+**Advisory means advisory, and the suite encodes it rather than skipping the
+check**: the remix3 drift legs run the same normalizer against the same
+re-rendered master and write the same evidence files, but route through
+`advisoryDomEqual`/`advisoryPixelsEqual`, which wrap the throwing helpers
+and warn instead — and a mechanism-proof test feeds them deliberate drift to
+prove they cannot block CI. Non-vacuity stays HARD: page serves, chrome
+injected, fenced count exact. Green-by-default held empirically (no advisory
+evidence files after the run). The pre-merge identity guard BLOCKS,
+deliberately, and the distinction is argued in DIFF-TO-STARTER decision 8:
+the lockfile exact-pins the whole render path, so the guard's outcome
+changes only when a commit changes the tree — the weekly-beta weather the
+advisory fence exists for cannot reach it. The guard renders through the
+REAL Worker path (stub EDGE serving the committed trays, both snapshots), so
+the snapshot policy, controller, middleware, and serializer all execute
+pre-merge (the slice-E lesson), and a divergence complement proves the
+fenced drop excuses something real.
+
+Two smaller finds worth their lines. `@remix-run/render-middleware`'s
+published `dist/lib/render.d.ts` carries an inline import type escaping into
+a SIBLING package's raw TS source, which imports `@remix-run/route-pattern`
+— undeclared, so unresolvable under the repo's `hoist: false` isolation:
+the third `packageExtensions` instance (after OpenNext's esbuild and
+qwik-city's core), types-only, proven by a full node_modules wipe (the
+slice-D sabotage lesson — `--force` lies). And the frames PARTIAL exposed a
+gap in the front Worker's page contract: a partial is `text/html` with no
+chrome slot by design, so injection would have error-logged healthy
+operation on every frame reload — partials now pass through untouched (the
+q-data.json precedent), variant-scoped rather than a plane-wide `/frames/`
+convention, with the generalization recorded as the PLP build's call (htmx
+loaders+PE will serve HTML partials too).
+
+Worker discipline: the response is DRAINED before the first byte leaves
+(deviation from the streaming template, recorded with its tradeoff — frames
+still stream on reload, which is the flagship behavior), so a render-time
+throw on a malformed-but-200 tray lands in the branded-503 guard instead of
+truncating a committed 200; `worker-fallback.test.ts` proves all three
+failure classes plus the route shapes (relative-Location 301, clean 404,
+405, HEAD-as-GET) and that `?pick=` — the demo's JS-off state — swaps ONLY
+the fenced card, the canonical page byte-invariant around it.
+
+Mid-build proof (the pre-verify-slice tree): origin suite **323/323
+fixture** (baseline before this slice was 291), full turbo
+lint/typecheck/test **30/30**, switcher 24/24, `wrangler deploy --dry-run`
+clean (144 KiB Worker, EDGE resolves), and a workerd smoke through the real
+EDGE binding before any suite wiring existed. **A self-inflicted record
+lesson, kept**: this entry briefly claimed the crate count before the crate
+run finished — the exact record-not-code class every verify-slice pass has
+caught — and the run then came back 37-failed, all `page.goto` 30-second
+timeouts (including the untouched htmx block that had just passed fixture
+mode), because the crate plane's 1,817 real images, three Playwright
+suites, and the concurrently running verify-slice agent fleet were fighting
+for one machine: 580 s wall-clock against fixture's 65. Not drift — load.
+The final-tree numbers, from quiet runs after every finding below was
+adopted, close this entry. Merge is Rob's call — merging deploys
+`/remix3/editorial/` to the plane, and the editorial build closes with it.
+
+**verify-slice: 4 lenses (correctness, issue/ADR-conformance, seams,
+anti-rigging skeptic), 14 distinct findings — 12 adopted, 1 informational,
+1 partially refuted — plus a 6-item refuted-sweep record.** The pass
+survived a mid-run session-limit death (3 lenses done; resumed next
+morning, cached lenses replayed, the anti-rigging lens re-ran against the
+already-hardened tree — the workflow's limit-resilient design doing exactly
+its job). The headliners, each caught by making a claim empirical:
+
+- **The fence was bypassable** (correctness): `assertBenchableTarget` split
+  the raw path while `effectiveUrl` resolves it through `new URL()`, so
+  `"remix3/editorial/"` (no leading slash) or `"/./remix3/editorial/"`
+  measured the fenced exhibit and minted the receipt the mechanism claims
+  is impossible. Fixed by resolving in the guard; then the SEAMS lens
+  caught the same class twice more (receipt variant/surface labels, the CPU
+  source's serving-path derivation), which forced the real fix — every
+  target path canonicalized ONCE at `runBatch` entry, one derivation for
+  all consumers, bypass shapes pinned as tests. The lens re-verified the
+  fix against backslash, absolute-URL, and protocol-relative shapes.
+- **The plaque shipped visually broken and nothing could catch it**
+  (conformance): `components/plaque.css` was never linked — the core
+  editorial CSS list has no plaque — and the fenced subtrees are by
+  construction the one region every DOM and pixel comparison drops, so the
+  exhibit's headline boundary label would have rendered as bare paragraphs
+  on the deployed plane forever, silently. Fixed, suite-asserted (the link
+  itself is now pinned — the one class of plaque breakage the fence can
+  never surface), and screenshot-verified against the real crate.
+- **A "measured" record was false, and the fix proved it** (anti-rigging →
+  correctness chain): the noise-registry comment cited "probe +
+  worker-fallback tests" as evidence that `#rmx-data` is absent with
+  stream-resolved frames — but no such assertion existed, and the moment
+  the lens forced the citation to become a real test, the test FAILED: the
+  script IS in the served document, end of body. The "measurement" had been
+  a misread of a post-strip test dump. Gate design unaffected (a script is
+  delivery, dropped everywhere); four records corrected; the element's
+  presence is now positively pinned so the record can never drift from the
+  page again. The record-not-code class, five slices running.
+- **`batch.ts` was a binary blob** (anti-rigging): four literal NUL bytes
+  (pre-existing, the samples-map key separator) made git classify the file
+  as binary — `git diff` renders "Bin", so the fence mechanism's change
+  history was unreviewable. Detoxed to `\0` escapes (identical runtime
+  strings); this slice ships as TWO commits so the detox diffs binary once
+  and the slice's `batch.ts` changes diff text-to-text (the slice-D
+  reviewability precedent for a second commit).
+- Also adopted: `advisoryPixelsEqual` gained its own deliberate-drift
+  mechanism proof (only the DOM funnel had one — the pixel funnel would
+  have first exercised its catch in CI on the day real beta drift
+  appeared); HEAD answers carry no body on ANY worker exit (404/503 sent
+  content under an unverified platform premise; the 405 half of that
+  finding was refuted — 405 fires only for non-GET/HEAD methods); the
+  `crossorigin` record misquoted the spec (missing-value default is No
+  CORS, not Anonymous — the bare attribute is the EMPTY-value form, which
+  is why deleting it would break preload reuse); `rmx-target`/`rmx-src`
+  joined the noise-class-discipline probes ahead of need; and the two fence
+  registries (runner refusal set, chrome `fencedExhibits`) got a
+  cross-check pin in the suite so the next fenced exhibit cannot register
+  in one and not the other.
+- Informational, flagged for review rather than inferred: ISSUE F's literal
+  text says "register the FINDINGS §7(b) noise list"; the implementation
+  measured every species absent-or-excluded on compared content and
+  registered nothing (the astro/htmx earned-emptiness precedent) — the
+  deviation is recorded in the registry comment, DIFF-TO-STARTER decision
+  9, and the decision map.
+- The refuted-sweep (kept so nobody re-probes): HTMLRewriter on a null-body
+  HEAD response never fires `end()` (miniflare probe — no spurious
+  slot-count error, matching the live front-log check); the beacon
+  collector accepts remix3 RUM (no variant allowlist); the lockfile churn
+  is the remix tree + esbuild only; builds precede deploys everywhere; the
+  root lint task covers the new workspace.
+
+One more fix came from looking at the real page rather than any lens: the
+fenced switcher cell rendered "REMIX3PRE-RELEASE…" — the tag's leading
+space is collapsible at the start of an inline formatting context —
+caught on a screenshot, fixed with `&nbsp;`, and the exhibit page,
+plaque, demo, and chrome bar are all screenshot-verified against the real
+crate data.
+
+**Final-tree proof, quiet machine, every finding adopted first**: origin
+suite **324/324 fixture** (13/13 files; the first attempt had one transient
+browser-leg failure whose name my own `| tail -8` wrapper on the background
+run destroyed — the diagnosis-destroying truncation is its own lesson,
+recorded; the immediate quiet re-run and every run since were clean) and
+**323/324 crate**, where the single failure is byte-for-byte the KNOWN
+pre-existing miss — `/assets/img/9861004-primary.thumb.avif` 404s because
+that git-ignored thumbnail is absent from this machine's crate copy, the
+same file behind the recorded 290/291 baseline; nothing this slice touched.
+The advisory drift legs passed clean in BOTH modes (the evidence directory
+carries only the mechanism-proof's deliberate artifacts), so green-by-
+default holds against the real crate as well as the fixture. Full turbo
+lint/typecheck/test **30/30** on the final tree; variant guards **14/14**
+after the finding adoptions.
+
 ### Phase 8.1 — Fixing the ruler (bench-accounting-fix, issue #16; 2026-08-01)
 
 Before the first editorial number could publish, the ruler itself had to be

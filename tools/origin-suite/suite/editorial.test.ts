@@ -166,7 +166,12 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    const otherLive = controls.variants.filter((v) => v !== "vanilla").sort();
+    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // still array-derived, never typed.
+    const otherLive = [
+      ...controls.variants.filter((v) => v !== "vanilla"),
+      ...(controls.fencedExhibits ?? []).map((f) => f.variant),
+    ].sort();
     expect(anchorTargets).toEqual(otherLive);
     for (const v of controls.plannedVariants ?? []) {
       expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
@@ -337,7 +342,12 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    const otherLive = controls.variants.filter((v) => v !== "react-next").sort();
+    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // still array-derived, never typed.
+    const otherLive = [
+      ...controls.variants.filter((v) => v !== "react-next"),
+      ...(controls.fencedExhibits ?? []).map((f) => f.variant),
+    ].sort();
     expect(anchorTargets).toEqual(otherLive);
     for (const v of controls.plannedVariants ?? []) {
       expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
@@ -547,7 +557,12 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    const otherLive = controls.variants.filter((v) => v !== "astro").sort();
+    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // still array-derived, never typed.
+    const otherLive = [
+      ...controls.variants.filter((v) => v !== "astro"),
+      ...(controls.fencedExhibits ?? []).map((f) => f.variant),
+    ].sort();
     expect(anchorTargets).toEqual(otherLive);
     for (const v of controls.plannedVariants ?? []) {
       expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
@@ -787,7 +802,12 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    const otherLive = controls.variants.filter((v) => v !== "qwik").sort();
+    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // still array-derived, never typed.
+    const otherLive = [
+      ...controls.variants.filter((v) => v !== "qwik"),
+      ...(controls.fencedExhibits ?? []).map((f) => f.variant),
+    ].sort();
     expect(anchorTargets).toEqual(otherLive);
     for (const v of controls.plannedVariants ?? []) {
       expect(body).toContain(`${v}<span class="pm-chrome__note"> not built yet</span>`);
@@ -1090,7 +1110,12 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    const otherLive = controls.variants.filter((v) => v !== "htmx").sort();
+    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // still array-derived, never typed.
+    const otherLive = [
+      ...controls.variants.filter((v) => v !== "htmx"),
+      ...(controls.fencedExhibits ?? []).map((f) => f.variant),
+    ].sort();
     expect(anchorTargets).toEqual(otherLive);
     // The surface is complete: no reading-table column is a dead
     // "not built yet" disclosure anymore, on any live page.
@@ -1271,6 +1296,291 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
       '<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span>',
     );
     const cartAnchor = body.match(/<a class="pm-masthead__cart" href="\/vanilla\/checkout\/"[^>]*>/)?.[0] ?? "";
+    expect(cartAnchor).not.toBe("");
+    expect(cartAnchor).not.toContain("aria-label");
+  });
+});
+
+/** Remix 3's OWN text escaping (@remix-run/ui's escapeTextContent — read
+ *  from the installed dist): `&`/`<`/`>` only; quotes stay raw in TEXT
+ *  (attribute values get the full form). Raw-string assertions on the
+ *  remix3 body must match what the serializer actually emits (the
+ *  reactEsc precedent, slice B). */
+const remixEsc = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () => {
+  // The one pin of record: the variant's own manifest (the lockfile pins the
+  // sub-packages behind it). Everything below that names a version derives
+  // from this, never a literal.
+  const remixPin = (
+    JSON.parse(
+      readFileSync(join(repoRoot, "variants", "remix3", "package.json"), "utf8"),
+    ) as { dependencies: Record<string, string> }
+  ).dependencies["remix"]!;
+
+  it("serves 200 with the shell in canonical order: skip link, chrome slot, page", async () => {
+    const res = await get("/remix3/editorial/");
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    const skip = body.indexOf('class="pm-skip');
+    const slot = body.indexOf('id="pm-chrome-slot"');
+    const page = body.indexOf('class="pm-page"');
+    expect(skip).toBeGreaterThan(-1);
+    expect(slot).toBeGreaterThan(skip);
+    expect(page).toBeGreaterThan(slot);
+    expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
+    expect(body).toContain('<article class="pm-editorial">');
+    expect(body).toContain('role="status" data-pm-status');
+  });
+
+  it("labeling layer 1 — the on-surface plaque: fenced hook, exact installed version, the exclusion rule (FINDINGS §7(c)1)", async () => {
+    const body = await (await get("/remix3/editorial/")).text();
+    // Exactly TWO fenced subtrees: the plaque and the frames demo — the
+    // count is the anti-rigging pin (nothing else may ride the fence).
+    expect(count(body, 'data-pm-fenced="true"')).toBe(2);
+    // The DS plaque component's canonical fenced form (plaque.css).
+    expect(body).toContain('class="pm-plaque pm-plaque--fenced"');
+    expect(body).toContain(">Fenced exhibit</p>");
+    // The exact version, tool-derived on both sides: the page renders it
+    // from the variant's own package.json; this test re-derives it from the
+    // same file — nothing typed.
+    expect(body).toContain(`<code>${remixPin}</code>`);
+    expect(body).toContain(`pre-release ${remixPin} · excluded from every benchmark number`);
+    // The plaque's own stylesheet is LINKED — the one class of plaque
+    // breakage no comparison can surface: every DOM/pixel leg drops
+    // [data-pm-fenced] subtrees, so an unstyled boundary label would ship
+    // silently forever (verify-slice finding, conformance lens — the first
+    // draft linked only the core editorial list, which has no plaque).
+    const head = body.slice(0, body.indexOf("</head>"));
+    expect(head).toContain('href="/remix3/assets/pm/css/components/plaque.css"');
+    const plaqueCss = await get("/remix3/assets/pm/css/components/plaque.css");
+    expect(plaqueCss.status).toBe(200);
+    expect(await plaqueCss.text()).toContain(".pm-plaque--fenced");
+  });
+
+  it("labeling layer 2 — the chrome: fenced cell current with the pin's tag, no reading-table column, RUM-only note (FINDINGS §7(c)2)", async () => {
+    const controls = SURFACE_CONTROLS["editorial"]!;
+    // remix3 is a fenced exhibit, NEVER a live/planned variant: the counts
+    // and columns derive from those arrays and must not move.
+    expect(controls.variants).not.toContain("remix3");
+    expect(controls.plannedVariants ?? []).not.toContain("remix3");
+    const fenced = controls.fencedExhibits ?? [];
+    expect(fenced.map((f) => f.variant)).toEqual(["remix3"]);
+    // The config's typed tag is cross-checked against the installed pin —
+    // a bump that forgot the chrome would fail here.
+    expect(fenced[0]!.tag).toBe(`pre-release ${remixPin}`);
+
+    const body = await (await get("/remix3/editorial/")).text();
+    expect(count(body, 'data-pm-chrome="1"')).toBe(1);
+    expect(body).toContain('data-pm-variant="remix3"');
+    expect(body).toContain('data-pm-surface="editorial"');
+    const switcherRow = body.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain('aria-current="page">remix3<');
+    expect(switcherRow).toContain(`pre-release ${remixPin}`);
+    expect(switcherRow).toContain("pm-chrome__cell--fenced");
+    // Counts stay the five live variants' — the exhibit is not a sixth.
+    const live = controls.variants.length;
+    expect(body).toContain(`Served by ${live} of ${live} planned variants today.`);
+    // Never a reading-table column (ADR-0005 §7 / ADR-0008 §3): the lab
+    // table reads the benchmarked variants only.
+    const table = body.match(/<table[\s\S]*?<\/table>/)?.[0] ?? "";
+    expect(table).not.toContain("remix3");
+    // The RUM-only statement: no lab snapshot by policy; live slots remain.
+    expect(body).toContain("data-pm-hud-fenced");
+    expect(body).toContain("no lab snapshot exists for it, by policy");
+    expect(body).toContain('data-pm-hud-live="LCP"');
+  });
+
+  it("every core editorial page carries NO fenced element — the fence cannot hide core drift (the scoped-drop complement)", async () => {
+    const controls = SURFACE_CONTROLS["editorial"]!;
+    for (const v of controls.variants) {
+      const body = await (await get(`/${v}/editorial/`)).text();
+      expect(body, `/${v}/editorial/ carries a data-pm-fenced element`).not.toContain(
+        "data-pm-fenced",
+      );
+    }
+  });
+
+  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+    const snap = await loadServedSnapshot();
+    const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
+    if (!featured) throw new Error("resolved snapshot lost its featured release");
+    const body = await (await get("/remix3/editorial/")).text();
+    expect(body).toContain(
+      `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
+    );
+    expect(body).toContain(remixEsc(featured.title));
+    expect(body).toContain(remixEsc(featured.artist));
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets (never dereferenced here)", async () => {
+    const body = await (await get("/remix3/editorial/")).text();
+    expect(body).toContain('href="/react-next/plp/plain/"');
+    expect(body).toContain('href="/vanilla/editorial/" aria-current="page"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+    expect(body).toContain('href="/vanilla/pdp/');
+  });
+
+  it("fonts: the canonical loading markup modulo base path + the framework's two spec-equivalent forms (ADR-0003 §8)", async () => {
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/remix3/assets/pm"));
+    expect(lines).toHaveLength(3);
+
+    const body = await (await get("/remix3/editorial/")).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      // Two tolerated framework-serializer differences, both spec-equivalent
+      // to the canonical file (the react-next precedent): (1) remix/ui's
+      // crossorigin type admits only the named states, and per the HTML spec
+      // bare `crossorigin`, `""`, and `"anonymous"` all select the same
+      // Anonymous CORS state — the served form is `crossorigin="anonymous"`;
+      // (2) voids self-close (`/>`), so the search string drops the closing
+      // `>` entirely.
+      const remixLine = line.replace("crossorigin>", 'crossorigin="anonymous"').slice(0, -1);
+      const at = head.indexOf(remixLine);
+      expect(at, `canonical loading line missing or out of order: ${remixLine}`).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("font files and the tokens stylesheet arrive byte-identical to @pm/tokens", async () => {
+    for (const font of [
+      "FamiljenGrotesk.var.woff2",
+      "PMCrateSymbols.woff2",
+      "PMWarnGlyph.U26A0.woff2",
+    ]) {
+      const res = await get(`/remix3/assets/pm/fonts/${font}`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("woff2");
+      const source = readFileSync(join(repoRoot, "packages", "tokens", "fonts", font));
+      expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
+    }
+    for (const sheet of ["tokens.css", "fonts.css"]) {
+      const css = await get(`/remix3/assets/pm/css/${sheet}`);
+      expect(css.status).toBe(200);
+      expect(await css.text()).toBe(
+        readFileSync(join(repoRoot, "packages", "tokens", "css", sheet), "utf8"),
+      );
+    }
+  });
+
+  it("the frames partial serves standalone at its own URL and passes through the front Worker UNTOUCHED (no chrome, no page contract)", async () => {
+    // The paradigm's wire format (FINDINGS §2): a frame reload fetches
+    // server HTML from rmx-src. A partial is not a page — the front Worker
+    // passes it through byte-identical (the q-data.json precedent), so no
+    // chrome is injected and no slot contract applies.
+    const res = await get("/remix3/editorial/frames/demo?pick=1");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    const body = await res.text();
+    expect(body).toMatch(/<div data-pick="1" class="pm-frontier-demo__card">/);
+    expect(body).not.toContain("data-pm-chrome");
+    expect(body).not.toContain("/_pm/");
+    expect(body).not.toContain("pm-masthead");
+  });
+
+  it("the demo's JS-off fallback is a full page for the same card (progressive enhancement by construction)", async () => {
+    const body = await (await get("/remix3/editorial/?pick=2")).text();
+    expect(body).toMatch(/<div data-pick="2" class="pm-frontier-demo__card">/);
+    // Still the full canonical page around it.
+    expect(body).toContain('<article class="pm-editorial">');
+    expect(count(body, 'data-pm-chrome="1"')).toBe(1);
+  });
+
+  it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
+    // FINDINGS §8's named seam: route mapping, frame src/rmx-src, anchor
+    // hrefs, asset URLs — all prefix-aware, all derived from the served
+    // page (the (?:href|src) shape also matches rmx-src, deliberately).
+    const body = await (await get("/remix3/editorial/")).text();
+    const refs = [...body.matchAll(/(?:href|src)="(\/remix3\/[^"]+)"/g)].map((m) => m[1]!);
+    // 2 font preloads + 10 stylesheets + 2 scripts + the demo's frame URLs.
+    expect(refs.length).toBeGreaterThanOrEqual(14);
+    for (const ref of new Set(refs)) {
+      const res = await get(ref);
+      expect(res.status, `${ref} did not resolve`).toBe(200);
+    }
+  });
+
+  it("the Worker's own redirect keeps the prefix; unknown paths 404; non-GET is refused", async () => {
+    const res = await fetch(`${ORIGIN}/remix3/editorial?pick=1`, { redirect: "manual" });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("/remix3/editorial/?pick=1");
+
+    for (const path of ["/remix3/", "/remix3/nope/"]) {
+      expect((await get(path)).status, path).toBe(404);
+    }
+
+    const post = await fetch(`${ORIGIN}/remix3/editorial/`, { method: "POST" });
+    expect(post.status).toBe(405);
+    expect(post.headers.get("allow")).toBe("GET, HEAD");
+  });
+
+  it("transport parity: the exhibit rides the same wire as everything else (fairness posture, not a number)", () => {
+    const encoding = wireEncoding("/remix3/editorial/");
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("remix3 registers NO permitted noise — a measured result, scoped to compared content", async () => {
+    expect(PERMITTED_NOISE["remix3"]).toBeUndefined();
+    const body = await (await get("/remix3/editorial/")).text();
+    // The mechanism DOES exist in the raw page — inside the fenced demo
+    // (rmx-target/rmx-src on its anchor) and as rmx:f comments — so the
+    // scoping below strips something real, not nothing (the slice-D
+    // non-vacuity lesson).
+    expect(body).toContain("rmx-target");
+    expect(body).toContain("<!-- rmx:f");
+    // Scope to what the gate COMPARES: drop the two fenced subtrees, then
+    // comments and delivery elements (script/style/link/template — the
+    // normalizer's DROP_ELEMENTS). What remains must carry no rmx-shaped
+    // byte: no rmx-* attribute, no rmxc-* class, no data-rmx marker.
+    const compared = body
+      .replace(/<aside[^>]*data-pm-fenced="true"[^>]*>[\s\S]*?<\/aside>/g, "")
+      .replace(/<section[^>]*data-pm-fenced="true"[^>]*>[\s\S]*?<\/section>/g, "")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<script[\s\S]*?<\/script>/g, "")
+      .replace(/<style[\s\S]*?<\/style>/g, "")
+      .replace(/<(?:link|template)[^>]*>/g, "");
+    expect(compared).toContain("pm-editorial"); // non-vacuity: real page left
+    expect(compared).not.toMatch(/\srmx-|rmxc-|data-rmx/);
+  });
+
+  it("the cart enhancement is served and carries the contract's key; the page ships its data hook as delivery", async () => {
+    const shell = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "shell.mjs")).href
+    );
+    const res = await get("/remix3/assets/cart.js");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("javascript");
+    const cartJs = await res.text();
+    expect(cartJs).toContain(`"${shell.CART_CONTRACT.key}"`);
+
+    const body = await (await get("/remix3/editorial/")).text();
+    // Both hooks are script elements — delivery, not contract (ADR-0008
+    // freedoms). The JSON hook rides the serializer's typed innerHTML
+    // escape hatch (script content is RAWTEXT; entity-escaped children
+    // would corrupt the JSON).
+    expect(body).toContain('<script type="application/json" id="pm-cart-item">');
+    expect(body).toContain('<script src="/remix3/assets/cart.js" defer></script>');
+    // Canonical served state: the masthead count slot is EMPTY (§7) — in
+    // remix's attribute order (class serializes last), same DOM.
+    expect(body).toContain(
+      '<span data-pm-cart-count aria-hidden="true" class="pm-masthead__cart-count"></span>',
+    );
+    const cartAnchor =
+      body.match(/<a href="\/vanilla\/checkout\/"[^>]*class="pm-masthead__cart"[^>]*>/)?.[0] ?? "";
     expect(cartAnchor).not.toBe("");
     expect(cartAnchor).not.toContain("aria-label");
   });

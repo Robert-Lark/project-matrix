@@ -1,0 +1,27 @@
+{
+  "name": "@pm/remix3",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Remix 3 fenced frontier exhibit (editorial-build slice F): non-React server-HTML + frames on a hand-rolled Workers entry (ADR-0004 second addendum), excluded from every benchmark number (ADR-0003 first addendum). REQUEST-TIME — trays fetched through the edge Worker per request via this Worker's own pm-edge service binding; serves /remix3/* through the composed origin. remix is pinned EXACT and the committed lockfile pins every @remix-run/* sub-package (the metapackage caret-ranges them); the spike's test.sh (docs/prototypes/remix3-frontier) is the canary on any bump.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev --port 8797 --inspector-port 9240",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pm/tokens": "workspace:*",
+    "remix": "3.0.0-beta.5"
+  },
+  "devDependencies": {
+    "@pm/drift-gate": "workspace:*",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.1",
+    "linkedom": "^0.18.13",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.110.0"
+  }
+}

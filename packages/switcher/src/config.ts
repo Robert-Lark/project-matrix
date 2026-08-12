@@ -47,11 +47,27 @@ export interface StrategyPreset {
   readonly fenced?: boolean;
 }
 
+/** A fenced VARIANT exhibit on the render axis (editorial-build slice F) —
+ *  the variants-axis counterpart of StrategyPreset.fenced: labeled in the
+ *  switcher control itself, a live anchor, but NEVER a reading-table column
+ *  and never counted in "Served by N of M" (ADR-0005 §7 / ADR-0008 §3:
+ *  fenced exhibits never get a column). */
+export interface FencedExhibit {
+  /** Variant prefix, e.g. "remix3". */
+  readonly variant: string;
+  /** The tag rendered inside the control (FINDINGS §7(c)2 — the exact
+   *  pre-release version travels with the offer, not just the page). */
+  readonly tag: string;
+}
+
 export interface SurfaceControls {
   /** Variant prefixes actually SERVING this surface today (live anchors). */
   readonly variants: readonly string[];
   /** Matrix cells decided but not yet built (dead labels, never anchors). */
   readonly plannedVariants?: readonly string[];
+  /** Fenced variant exhibits serving this surface (anchors with a tag,
+   *  excluded from every count, column, and benchmark number). */
+  readonly fencedExhibits?: readonly FencedExhibit[];
   /** Off the benchmarked matrix: plain-sentence reading section, no table. */
   readonly singleton?: boolean;
   /** Solo-first line. No typed counts — computable facts render from arrays. */
@@ -77,6 +93,13 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     // "Served by N of M" note now counts 5 of 5, both derived from this
     // array alone.
     variants: ["vanilla", "react-next", "astro", "qwik", "htmx"],
+    // The Remix 3 frontier exhibit (slice F): a live anchor with the
+    // pre-release tag in the control itself, fenced from every number —
+    // deliberately NOT in `variants`, whose length feeds "Served by N of M"
+    // and the reading-table columns (a fenced exhibit in either would be a
+    // false count). The tag's version string is asserted against the
+    // variant's installed pin by the origin suite, so it cannot drift.
+    fencedExhibits: [{ variant: "remix3", tag: "pre-release 3.0.0-beta.5" }],
     host: "vanilla",
     proves:
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",
