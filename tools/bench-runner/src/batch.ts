@@ -90,10 +90,63 @@ function medians(runs: RunSampleT[]) {
   };
 }
 
-export async function runBatch(spec: BatchSpec): Promise<ReceiptT> {
+/**
+ * Variant prefixes the runner REFUSES outright — the fence as MECHANISM,
+ * not policy (remix3-frontier FINDINGS §7(c)3; ADR-0003 first addendum).
+ * remix3 is the fenced frontier exhibit: pre-release, in no number, and a
+ * receipt naming it must be impossible to mint, not merely against the
+ * rules. Lives HERE in runBatch rather than the CLI so the reproduce path
+ * and direct library imports hit the same wall (a CLI-only guard would be
+ * bypassable by everything that matters).
+ */
+const FENCED_VARIANT_PREFIXES = new Set(["remix3"]);
+
+/** A target path's segments, resolved EXACTLY the way the runner's
+ *  effectiveUrl will (`new URL(path, origin)`): a naive split on the raw
+ *  string reads a different first segment for a no-leading-slash spec
+ *  ("remix3/editorial/") or a dot-segment one ("/./remix3/editorial/") —
+ *  and every consumer of "the path's segments" must share ONE derivation
+ *  or they disagree about which page was measured (verify-slice finding,
+ *  correctness lens: the fence resolved while the receipt's
+ *  variant/surface labels split the raw string). */
+export function resolvedPathSegments(path: string): string[] {
+  return new URL(path, "https://resolve.invalid").pathname.split("/");
+}
+
+export function assertBenchableTarget(path: string): void {
+  // The fence must hold against the spec shapes the runner accepts, not
+  // just the ones the suite writes (verify-slice finding — the raw-split
+  // form was bypassable by anything URL() normalizes).
+  const prefix = resolvedPathSegments(path)[1] ?? "";
+  if (FENCED_VARIANT_PREFIXES.has(prefix)) {
+    throw new Error(
+      `${path}: "${prefix}" is a fenced exhibit — excluded from every benchmark number ` +
+        `(remix3-frontier FINDINGS §7(c); ADR-0003 first addendum). The runner refuses ` +
+        `the target so no receipt can ever carry it.`,
+    );
+  }
+}
+
+export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
+  // Canonicalize every target path ONCE, at the entry (the one-derivation
+  // rule on resolvedPathSegments): downstream, target.path feeds
+  // effectiveUrl, the receipt's path/variant/surface labels, the samples
+  // map keys, AND the CPU source's serving-path derivation
+  // (cpu.ts servingWorkers splits raw) — normalizing here keeps every one
+  // of those consumers reading the same segments (verify-slice finding,
+  // seams lens: a no-leading-slash target previously aborted a local-CPU
+  // batch mid-run with an error naming a worker that doesn't exist).
+  const spec: BatchSpec = {
+    ...rawSpec,
+    targets: rawSpec.targets.map((t) => ({
+      ...t,
+      path: new URL(t.path, "https://resolve.invalid").pathname,
+    })),
+  };
   const profile = getProfile(spec.profileId);
   if (!profile) throw new Error(`unknown profile id: ${spec.profileId}`);
   for (const t of spec.targets) {
+    assertBenchableTarget(t.path);
     if (!INTERACTIONS[t.interactionId]) {
       throw new Error(`unknown interaction id: ${t.interactionId} (${t.path})`);
     }
@@ -159,7 +212,10 @@ export async function runBatch(spec: BatchSpec): Promise<ReceiptT> {
     }
 
     const targets = spec.targets.map((target) => {
-      const [, variant = "", surface = ""] = target.path.split("/");
+      // Same derivation as the fence and effectiveUrl (resolvedPathSegments
+      // doc comment): a receipt's variant/surface labels must name the page
+      // that was actually measured.
+      const [, variant = "", surface = ""] = resolvedPathSegments(target.path);
       const column = (key: ColumnKey) => {
         const runs = samples.get(`${target.path}\0${key}`) ?? [];
         const cpuValues = cpuMs.get(`${target.path}\0${key}`) ?? [];

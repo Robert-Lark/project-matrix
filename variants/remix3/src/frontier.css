@@ -1,0 +1,85 @@
+/*
+ * Exhibit-only styling for the two fenced subtrees (the plaque rides the
+ * shared components/plaque.css; this file dresses the frames demo). Variant-
+ * owned DELIVERY, not contract: both subtrees are dropped from the drift
+ * comparison, and style elements/links are ADR-0008 serialization freedoms.
+ * Register: the plaque's pressing-plant stamp, extended — dashed fence
+ * boundary, tracked small caps, semantic tokens only (the store stays quiet,
+ * ADR-0006 §1; never color alone, forced-colors safe).
+ *
+ * remix/ui's css() mixin is deliberately NOT used for any of this: it would
+ * put rmxc-* classes and a <style data-rmx> into the served document, and
+ * the drift registry's measured-clean outcome (PERMITTED_NOISE has no
+ * remix3 entry) is worth more to the exhibit than demonstrating an optional
+ * styling idiom the spike already proved works.
+ */
+
+.pm-frontier-demo {
+  border: 1px dashed var(--color-border);
+  border-inline-start: 3px solid var(--color-text-muted);
+  padding: var(--space-inset-sm) var(--space-inset);
+  margin-block: var(--space-stack);
+  max-width: 60ch;
+}
+
+.pm-frontier-demo__kicker {
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin: 0 0 var(--space-stack-xs);
+}
+
+.pm-frontier-demo__title {
+  font: var(--weight-medium) var(--text-body) / 1.4 var(--font-ui);
+  color: var(--color-text);
+  margin: 0 0 var(--space-stack-xs);
+}
+
+.pm-frontier-demo__lede {
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text);
+  margin: 0 0 var(--space-stack-sm);
+}
+
+.pm-frontier-demo__card {
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-stack-xs);
+}
+
+.pm-frontier-demo__step {
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 var(--space-stack-xs);
+}
+
+.pm-frontier-demo__heading {
+  font: var(--weight-medium) var(--text-body) / 1.4 var(--font-ui);
+  color: var(--color-text);
+  margin: 0 0 var(--space-stack-xs);
+}
+
+.pm-frontier-demo__body {
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text);
+  margin: 0 0 var(--space-stack-xs);
+}
+
+.pm-frontier-demo__controls {
+  margin: 0;
+}
+
+.pm-frontier-demo__controls a {
+  color: var(--color-accent);
+}
+
+.pm-frontier-demo__controls a:hover {
+  color: var(--color-accent-hover);
+}
+
+.pm-frontier-demo__controls a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

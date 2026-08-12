@@ -134,6 +134,58 @@ describe("the reading (ADR-0004 §6; C2)", () => {
   });
 });
 
+describe("fenced variant exhibit (editorial-build slice F; ADR-0005 §7 / ADR-0008 §3)", () => {
+  const editorialCtx = {
+    variant: "vanilla",
+    surface: "editorial",
+    pathname: "/vanilla/editorial/",
+    search: "",
+    location: "local",
+  };
+
+  it("the switcher lists the exhibit as a tagged fenced anchor — the offer carries the boundary", () => {
+    const html = renderChrome(editorialCtx);
+    const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain('class="pm-chrome__cell pm-chrome__cell--fenced"');
+    expect(switcherRow).toContain('href="/remix3/editorial/"');
+    expect(switcherRow).toContain("pre-release 3.0.0-beta.5");
+  });
+
+  it("the exhibit is never a reading-table column and never counted in Served-by", () => {
+    const html = renderChrome(editorialCtx);
+    const table = html.match(/<table[\s\S]*?<\/table>/)?.[0] ?? "";
+    expect(table).not.toContain("remix3");
+    // Counts derive from variants/plannedVariants alone: five live, five
+    // planned — the fenced exhibit moves neither number.
+    expect(html).toContain("Served by 5 of 5 planned variants today.");
+  });
+
+  it("serving the exhibit marks its own fenced cell current and explains the missing lab column", () => {
+    const html = renderChrome({
+      ...editorialCtx,
+      variant: "remix3",
+      pathname: "/remix3/editorial/",
+    });
+    const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(switcherRow).toContain(
+      'class="pm-chrome__cell pm-chrome__cell--current pm-chrome__cell--fenced" aria-current="page">remix3<',
+    );
+    expect(switcherRow).not.toContain('href="/remix3/');
+    // The RUM-only statement (FINDINGS §7(c)2): the note names the policy,
+    // the table still reads the benchmarked five, the live slots remain.
+    expect(html).toContain("data-pm-hud-fenced");
+    expect(html).toContain("no lab snapshot exists for it, by policy");
+    const table = html.match(/<table[\s\S]*?<\/table>/)?.[0] ?? "";
+    expect(table).not.toContain("remix3");
+    expect(html).toContain('data-pm-hud-live="LCP"');
+  });
+
+  it("a core variant's page still swaps TO the exhibit with the query preserved", () => {
+    const html = renderChrome({ ...editorialCtx, search: "?profile=slow-4g-mid-phone" });
+    expect(html).toContain('href="/remix3/editorial/?profile=slow-4g-mid-phone"');
+  });
+});
+
 describe("data-strategy surface (ADR-0005 §2/§8)", () => {
   const plpCtx = {
     variant: "react-next",

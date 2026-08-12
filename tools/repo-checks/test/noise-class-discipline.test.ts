@@ -37,6 +37,13 @@ const BEHAVIOR_PROBES = [
   "q:key",
   "on-document:qinit",
   "on-window:storage",
+  // remix3's frame-navigation mechanism (editorial-build slice F), listed
+  // ahead of need like on-window: — nothing registers rmx-* today (the
+  // remix3 registration is measured-empty), but a future pin bump that
+  // puts these on compared DOM must register them as MECHANISM, never
+  // residue.
+  "rmx-target",
+  "rmx-src",
 ];
 
 describe("behavior attributes never hide in the inert-residue class (ADR-0008)", () => {

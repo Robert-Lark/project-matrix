@@ -24,9 +24,11 @@ import { loadServedSnapshot, snapshotNameFor } from "./snapshot";
 import {
   captureStablePixels,
   comparePixels,
+  solidPng,
   extractNormalizedDom,
   firstDomDivergence,
   neutralizeChrome,
+  neutralizeFenced,
   profileContextOptions,
   startRepoServer,
   NO_NOISE,
@@ -280,6 +282,42 @@ function assertPixelsEqual(
       `${result.a.width}×${result.a.height} vs ${result.b.width}×${result.b.height} ` +
       `— screenshots in .dev-logs/drift/`,
   );
+}
+
+/* ── ADVISORY funnels (editorial-build slice F; ADR-0003 first addendum) ──
+   The remix3 frontier exhibit's drift comparison RUNS on every suite pass —
+   same normalizer, same master, same evidence files — but a mismatch WARNS
+   instead of failing: a weekly-cadence beta must not be able to block the
+   matrix's deploy, and a broken-beyond-repair exhibit is handled by the
+   fence label, not by holding the pipeline hostage. The distinction is
+   encoded, not skipped: these wrap the SAME assert helpers (one evidence
+   path), catch only the comparison's own throw, and return the verdict so
+   callers can still hard-assert non-vacuity (page served, chrome present,
+   fenced count exact). Green-by-default: the pre-merge identity guard
+   (variants/remix3/test) pins equality against the master at commit time,
+   so an advisory warning here means REAL drift, not chronic noise. */
+function advisoryDomEqual(label: string, reference: string, actual: string): boolean {
+  try {
+    assertDomEqual(label, reference, actual);
+    return true;
+  } catch (err) {
+    console.warn(
+      `ADVISORY (never fails CI — ADR-0003 first addendum): ${(err as Error).message}`,
+    );
+    return false;
+  }
+}
+
+function advisoryPixelsEqual(label: string, reference: Buffer, actual: Buffer): boolean {
+  try {
+    assertPixelsEqual(label, reference, actual);
+    return true;
+  } catch (err) {
+    console.warn(
+      `ADVISORY (never fails CI — ADR-0003 first addendum): ${(err as Error).message}`,
+    );
+    return false;
+  }
 }
 
 describe("the gate's own dependencies resolve inside the repo", () => {
@@ -847,6 +885,91 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
       await context.close();
     }, 120_000);
   }
+});
+
+describe("editorial: remix3 (fenced frontier) vs the master — ADVISORY, never blocking (editorial-build slice F)", () => {
+  it("the comparison RUNS under NO_NOISE + the scoped fenced drop; only its verdict is advisory", async () => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const masterPage = await openTracked(context, masterDomUrl);
+    // The master carries NO fenced element (hard assertion — the drop's
+    // non-vacuity is one-sided by design: 2 on the exhibit, 0 on the master).
+    expect(await masterPage.locator("[data-pm-fenced]").count()).toBe(0);
+    const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+    await masterPage.close();
+    expect(masterDom).not.toBe("");
+    expect(masterDom).toContain("pm-editorial");
+
+    const page = await openTracked(context, `${ORIGIN}/remix3/editorial/`);
+    // Hard assertions — the advisory verdict means nothing if these fail:
+    // the page serves, the chrome is injected, and EXACTLY the two fenced
+    // subtrees (plaque + frames demo) ride the fence — a third would be an
+    // unlabeled exclusion and must fail loudly, not drop silently.
+    expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+    expect(await page.locator("[data-pm-fenced]").count()).toBe(2);
+    // The demo's mechanism attributes exist in the raw page (so the drop is
+    // doing real work) …
+    const raw = await page.content();
+    expect(raw).toContain("rmx-target");
+    // … and remix3's measured-empty noise registration is earned on the
+    // COMPARED content (the slice-D scoping lesson): after the fenced drop
+    // and the normalizer's own delivery stripping, no rmx-shaped residue
+    // and no fence hook survives into what the gate actually compares.
+    const dom = await extractNormalizedDom(page, NO_NOISE, undefined, true);
+    expect(dom).not.toBe("");
+    expect(dom).toContain("pm-editorial");
+    expect(dom).not.toContain("pm-chrome");
+    expect(dom).not.toContain("data-pm-fenced");
+    expect(dom).not.toMatch(/\srmx-/);
+    expect(PERMITTED_NOISE["remix3"]).toBeUndefined();
+
+    // The advisory verdict: evidence + warning on mismatch, never a throw.
+    advisoryDomEqual("dom-remix3-editorial", masterDom, dom);
+    await page.close();
+    await context.close();
+  }, 90_000);
+
+  for (const profileId of PROFILE_IDS) {
+    it(`pixels compared under profile ${profileId} — chrome and fenced subtrees removed, verdict advisory`, async () => {
+      const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
+      const masterPage = await openTracked(context, masterPixelUrl);
+      expect(await neutralizeChrome(masterPage)).toBe(0);
+      expect(await neutralizeFenced(masterPage)).toBe(0);
+      await settleImages(masterPage);
+      const referenceShot = await captureTracked(masterPage);
+      await masterPage.close();
+
+      const page = await openTracked(context, `${ORIGIN}/remix3/editorial/`);
+      expect(await neutralizeChrome(page)).toBe(1);
+      // Removal counts are hard assertions (the scoped-drop rule): exactly
+      // the plaque + the frames demo.
+      expect(await neutralizeFenced(page)).toBe(2);
+      await settleImages(page);
+      const shot = await captureTracked(page);
+      advisoryPixelsEqual(`pixels-${profileId}-remix3-editorial`, referenceShot, shot);
+      await page.close();
+      await context.close();
+    }, 120_000);
+  }
+
+  it("the advisory funnels demonstrably cannot block: real drift warns and returns, never throws — BOTH funnels", () => {
+    // The mechanism proof (ISSUE F acceptance: "advisory drift wired and
+    // demonstrably non-blocking") — fed DELIBERATELY divergent inputs, each
+    // funnel must survive and report false. BOTH funnels, separately: they
+    // are independent try/catch blocks sharing no code path, and the pixel
+    // legs are green-by-default, so an unproven pixel funnel would first
+    // execute its catch on the day real beta drift appears — in CI, blocking
+    // the deploy, the exact outcome the advisory decision exists to prevent
+    // (verify-slice finding, conformance lens: the first draft proved only
+    // the DOM half). If someone later rewires the remix3 legs through the
+    // throwing helpers, the legs above fail the moment real drift appears —
+    // this test pins the funnels themselves.
+    expect(advisoryDomEqual("advisory-mechanism-proof", "<p>a</p>", "<p>b</p>")).toBe(false);
+    expect(advisoryDomEqual("advisory-mechanism-proof", "<p>a</p>", "<p>a</p>")).toBe(true);
+    const red = solidPng(4, 4, [255, 0, 0]);
+    const blue = solidPng(4, 4, [0, 0, 255]);
+    expect(advisoryPixelsEqual("advisory-mechanism-proof-px", red, blue)).toBe(false);
+    expect(advisoryPixelsEqual("advisory-mechanism-proof-px", red, solidPng(4, 4, [255, 0, 0]))).toBe(true);
+  });
 });
 
 describe("the deliberate-drift fixture fails the pixel check", () => {

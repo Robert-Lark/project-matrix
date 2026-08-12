@@ -142,13 +142,25 @@ function switcherCells(ctx: ChromeContext, controls: SurfaceControls): string {
     const current = strategies.find((s) => presetIsCurrent(ctx, s));
     return `<span class="pm-chrome__cell pm-chrome__cell--current" aria-current="page">${esc(current?.label ?? ctx.variant)}</span>`;
   }
-  return controls.variants
-    .map((v) =>
-      v === ctx.variant
-        ? `<span class="pm-chrome__cell pm-chrome__cell--current" aria-current="page">${esc(v)}</span>`
-        : `<a class="pm-chrome__cell" href="${esc(swapHref(ctx.pathname, ctx.search, v))}">${esc(v)}</a>`,
-    )
-    .join("");
+  const liveCells = controls.variants.map((v) =>
+    v === ctx.variant
+      ? `<span class="pm-chrome__cell pm-chrome__cell--current" aria-current="page">${esc(v)}</span>`
+      : `<a class="pm-chrome__cell" href="${esc(swapHref(ctx.pathname, ctx.search, v))}">${esc(v)}</a>`,
+  );
+  // Fenced variant exhibits (editorial-build slice F): a live anchor IN the
+  // control, tag attached — the offer itself carries the boundary
+  // (FINDINGS §7(c)2) — but never a plain cell a visitor could mistake for
+  // a benchmarked variant, and never counted anywhere (ADR-0005 §7).
+  const fencedCells = (controls.fencedExhibits ?? []).map((f) => {
+    // &nbsp;, not a plain space: the cell starts an inline formatting
+    // context, so a leading collapsible space renders flush
+    // ("remix3pre-release…" — caught on a real screenshot).
+    const tag = `<span class="pm-chrome__note">&nbsp;${esc(f.tag)}</span>`;
+    return f.variant === ctx.variant
+      ? `<span class="pm-chrome__cell pm-chrome__cell--current pm-chrome__cell--fenced" aria-current="page">${esc(f.variant)}${tag}</span>`
+      : `<a class="pm-chrome__cell pm-chrome__cell--fenced" href="${esc(swapHref(ctx.pathname, ctx.search, f.variant))}">${esc(f.variant)}${tag}</a>`;
+  });
+  return [...liveCells, ...fencedCells].join("");
 }
 
 /* ── Panel sections (pinned on-page headings: This surface · The reading ·
@@ -218,9 +230,20 @@ function readingSection(ctx: ChromeContext, controls: SurfaceControls): string {
     return `<tr><th scope="row" class="pm-chrome__th">${esc(metric)}</th>${cells}</tr>`;
   }).join("");
 
+  // Serving a fenced exhibit: the table still reads the BENCHMARKED
+  // variants (fenced ones structurally have no column — the `columns`
+  // builder above never sees them), and this line says why this page's own
+  // numbers are absent (FINDINGS §7(c)2: the HUD on a fenced variant shows
+  // the visitor's RUM but no lab snapshot — none exists, by policy).
+  const fencedHere = (controls.fencedExhibits ?? []).find((f) => f.variant === ctx.variant);
+  const fencedNote = fencedHere
+    ? `<p class="pm-chrome__note" data-pm-hud-fenced>This variant (${esc(fencedHere.variant)}, ${esc(fencedHere.tag)}) is a fenced exhibit — no lab snapshot exists for it, by policy. The table reads the benchmarked variants; the live readout below is still your real visit.</p>`
+    : "";
+
   return [
     `<section class="pm-chrome__section">`,
     `<h3 class="pm-chrome__h">The reading</h3>`,
+    fencedNote,
     `<p class="pm-chrome__row"><span class="pm-chrome__key">lab profile</span>${profileCells}<span class="pm-chrome__note">selects the displayed snapshot — never re-throttles this page</span></p>`,
     `<div class="pm-chrome__scroll" role="region" aria-label="Published lab readings" tabindex="0">`,
     `<table class="pm-chrome__table">`,

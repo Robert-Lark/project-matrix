@@ -168,7 +168,7 @@ describe("switcher semantics (ADR-0004 §4–§5, §7)", () => {
     const body = await (await get("/placeholder-ssr/sample/")).text();
     expect(body).toContain('aria-current="page">placeholder-ssr<');
     expect(body).toContain('href="/placeholder-static/sample/"');
-    for (const never of ["vanilla", "react-next", "astro", "qwik", "htmx"]) {
+    for (const never of ["vanilla", "react-next", "astro", "qwik", "htmx", "remix3"]) {
       expect(body).not.toContain(`href="/${never}/`);
     }
   });

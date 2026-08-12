@@ -11,5 +11,6 @@ export {
   profileContextOptions,
   extractNormalizedDom,
   neutralizeChrome,
+  neutralizeFenced,
   captureStablePixels,
 } from "./gate";

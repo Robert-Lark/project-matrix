@@ -22,6 +22,7 @@
     { "binding": "ASTRO", "service": "pm-astro" },
     { "binding": "QWIK", "service": "pm-qwik" },
     { "binding": "HTMX", "service": "pm-htmx" },
+    { "binding": "REMIX3", "service": "pm-remix3" },
     { "binding": "EDGE", "service": "pm-edge" },
     { "binding": "BLOG", "service": "pm-blog" }
   ],

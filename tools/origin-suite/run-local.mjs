@@ -20,11 +20,11 @@ const ORIGIN = "http://127.0.0.1:8787";
 // One HTTP port + one inspector port per Worker, in spawn order below:
 // front 8787/9230, placeholder-static 8788/9231, placeholder-ssr 8789/9232,
 // edge 8790/9233, blog 8791/9234, vanilla 8792/9235, react-next 8793/9236,
-// astro 8794/9237, qwik 8795/9238, htmx 8796/9239. Each pair is declared in
-// that Worker's own `dev` script.
+// astro 8794/9237, qwik 8795/9238, htmx 8796/9239, remix3 8797/9240. Each
+// pair is declared in that Worker's own `dev` script.
 const PORTS = [
-  8787, 8788, 8789, 8790, 8791, 8792, 8793, 8794, 8795, 8796,
-  9230, 9231, 9232, 9233, 9234, 9235, 9236, 9237, 9238, 9239,
+  8787, 8788, 8789, 8790, 8791, 8792, 8793, 8794, 8795, 8796, 8797,
+  9230, 9231, 9232, 9233, 9234, 9235, 9236, 9237, 9238, 9239, 9240,
 ];
 const logDir = join(suiteDir, ".dev-logs");
 mkdirSync(logDir, { recursive: true });
@@ -198,6 +198,7 @@ try {
   startWorker("variants/astro", "astro");
   startWorker("variants/qwik", "qwik");
   startWorker("variants/htmx", "htmx");
+  startWorker("variants/remix3", "remix3");
   startWorker("workers/blog", "blog");
   startWorker("workers/front", "front");
 
@@ -210,6 +211,7 @@ try {
   await waitFor(`${ORIGIN}/astro/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/qwik/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/htmx/editorial/`, 60_000);
+  await waitFor(`${ORIGIN}/remix3/editorial/`, 60_000);
   await waitFor(`${ORIGIN}/api/plp`, 60_000);
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 

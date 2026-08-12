@@ -88,7 +88,16 @@ const waitForCount = (page: Page, value: string) =>
     value,
   );
 
-for (const variant of SURFACE_CONTROLS["editorial"]!.variants) {
+// Fenced exhibits serve the same cart contract (the fence excludes NUMBERS,
+// not function — FINDINGS §4): the cart must survive a swap to and from
+// remix3 exactly like any core variant, so the whole parametrized battery
+// covers it too. Derived from the arrays, never typed (slice F).
+const CART_VARIANTS = [
+  ...SURFACE_CONTROLS["editorial"]!.variants,
+  ...(SURFACE_CONTROLS["editorial"]!.fencedExhibits ?? []).map((f) => f.variant),
+];
+
+for (const variant of CART_VARIANTS) {
   const PAGE = `${ORIGIN}/${variant}/editorial/`;
 
   describe(`the cart contract at /${variant}/editorial/`, () => {

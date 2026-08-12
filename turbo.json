@@ -131,6 +131,33 @@
       // build product, not just the obvious directory.)
       "outputs": ["dist/**", "server/**"]
     },
+    "@pm/remix3#build": {
+      "dependsOn": ["topo", "^build"],
+      // Not snapshot-parameterized: remix3 is a REQUEST-TIME variant
+      // (editorial-build slice F — trays fetched through the edge Worker per
+      // request), no PM_SNAPSHOT anywhere, exactly like @pm/qwik#build. And
+      // like qwik's snapshot policy, src/snapshot.mjs statically imports the
+      // fixture's committed manifest.json/curation.json — but here wrangler
+      // bundles that module at dev/deploy time, OUTSIDE this build task
+      // (build.mjs only assembles assets), so those files are not inputs;
+      // nothing cached embeds them (the htmx precedent).
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["dist/**"]
+    },
+    "@pm/remix3#test": {
+      // The pre-merge master-identity guard + the Worker's branded-503
+      // boundary (variants/remix3/test) render this variant's page for BOTH
+      // snapshots through the real Worker path and compare against the
+      // reference renderer's output. Same under-declarable-inputs reasoning
+      // as @pm/qwik#test below: the real inputs span the reference render/
+      // tree and both committed snapshots, so an under-declared input would
+      // replay a stale PASS. Uncached, correctness over ~1s.
+      //
+      // No dependsOn build: nothing here imports generated build output —
+      // the guard drives the Worker module directly (request-time variant,
+      // no baked snapshot module).
+      "cache": false
+    },
     "@pm/qwik#test": {
       // The pre-merge master-identity guard (variants/qwik/test) renders this
       // variant's components for BOTH snapshots and compares each against the

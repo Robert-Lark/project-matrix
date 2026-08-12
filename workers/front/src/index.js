@@ -26,6 +26,12 @@ const VARIANTS = {
   astro: "ASTRO",
   qwik: "QWIK",
   htmx: "HTMX",
+  // The fenced frontier exhibit (editorial-build slice F): dispatched and
+  // chrome-injected like any variant — the fence excludes NUMBERS, not the
+  // composed origin's mechanics (ADR-0004 second addendum). The bench
+  // runner refuses /remix3/* targets; the switcher renders it as a fenced
+  // cell, never a reading-table column.
+  remix3: "REMIX3",
 };
 
 // Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass
@@ -81,6 +87,19 @@ export default {
         bindingName === "BLOG" ||
         !contentType.includes("text/html")
       ) {
+        return upstream;
+      }
+
+      // remix3's frame PARTIALS are HTML that is not a page (editorial-build
+      // slice F): server-rendered fragments the exhibit's frames reload over
+      // the wire. The slot contract is a PAGE contract — injecting chrome
+      // into a fragment or error-logging its designed slotlessness would
+      // both be wrong — so partials pass through byte-identical (the
+      // q-data.json precedent from slice D). Deliberately variant-scoped,
+      // not a plane-wide "/frames/" convention: no other variant serves HTML
+      // partials today; the PLP build (htmx loaders+PE) should generalize
+      // this deliberately when it does.
+      if (variant === "remix3" && url.pathname.startsWith("/remix3/editorial/frames/")) {
         return upstream;
       }
 
