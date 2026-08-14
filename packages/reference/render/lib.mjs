@@ -95,6 +95,56 @@ export function metaLine(summary) {
   return summary.year == null ? summary.format : `${summary.format} · ${summary.year}`;
 }
 
+/**
+ * The full format COMPOSITION of a release — every component, in tray order.
+ *
+ * A Discogs `formats` array says what is IN the package; it is not a menu.
+ * Crate release 896191 is one $30.00 product whose three entries are two
+ * vinyl variants AND a CD, and 39 crate releases carry a component named
+ * "All Media" — the marker for a release that spans several media. The data
+ * contract carries exactly one `priceFrom` and one `numForSale` per release
+ * (`ReleaseSummary`), so no component has a price, a stock count or a cart
+ * identity of its own. That is why the PDP renders this as DATA and the
+ * format RADIO GROUP was cut (ADR-0008 addendum A, 2026-08-15): a control
+ * offering a choice the data cannot honour could only be wired by inventing
+ * per-format prices, and this site publishes no number without a receipt.
+ *
+ * One component renders exactly as `ReleaseSummary.format` does — capture
+ * builds that field from `formats[0]` by this same rule (snapshot-capture
+ * `normalize.ts`) — plus an `N × ` prefix wherever the tray records more
+ * than one of a medium, the single fact `format` drops (130 of the crate's
+ * 439 single-format releases are 2×LP or larger and show no quantity today).
+ * Components join with "; ", the separator the label list already uses.
+ */
+export function formatComposition(formats) {
+  return formats
+    .map((f) => {
+      const body =
+        f.descriptions.length > 0 ? `${f.name}, ${f.descriptions.join(", ")}` : f.name;
+      return f.qty > 1 ? `${f.qty} × ${body}` : body;
+    })
+    .join("; ");
+}
+
+/**
+ * A glyph that stands in for absent data, with the name it needs to be heard.
+ *
+ * A lone "—" is not an accessible name: a screen reader announces it as "em
+ * dash" or, with punctuation verbosity low, says nothing at all — so "no
+ * price" and "a rendering fault" become indistinguishable, the same reasoning
+ * `tracklist.css` already applies to an empty duration cell. The glyph is
+ * hidden from AT and a real phrase is supplied beside it; this is the pattern
+ * `pdp.mjs`'s steppers and the tracklist's "#" header already use, made a
+ * rule so the remaining instances could be found and a repo-check could keep
+ * them gone (`tools/repo-checks/test/master-glyph-names.test.ts`).
+ *
+ * Both arguments are AUTHORED literals, never tray data — a caller with a
+ * tray value has content, not an absence, and must escape it itself.
+ */
+export function namedGlyph(glyph, name) {
+  return `<span aria-hidden="true">${glyph}</span><span class="pm-sr-only">${name}</span>`;
+}
+
 /** Image srcs stay EXACTLY as the tray carries them (/assets/img/…): the
  *  variants serve those paths, and the drift gate compares attribute values
  *  verbatim — the gate's static server aliases /assets/img/* onto the
@@ -143,9 +193,13 @@ export function detailById(snapshot, id) {
 /**
  * The PDP's RENDERING CLASS for one detail tray — the three STRUCTURAL
  * branches the master set gates (whole elements appear or disappear):
- *  - `formats`  : multi-format renders a <fieldset> radio group; single-format
- *                 renders no fieldset and adds a <dt>Format</dt> pair to the
- *                 meta list instead (439/500 in the crate, 239/240 fixture);
+ *  - `formats`  : since ADR-0008 addendum A cut the format control this axis
+ *                 is a CONTENT difference, not a structural one — every master
+ *                 renders the same <dt>Format</dt> pair, and single-format
+ *                 (439/500 crate, 239/240 fixture) carries ONE component
+ *                 where multi-format lists several, "; " separated. The axis
+ *                 is still modelled because that is still the branch 439 of
+ *                 500 releases take, and the master set still isolates it;
  *  - `priced`   : unpriced renders an em-dash amount + "none for sale" + the
  *                 disabled CTA (44/500 crate, 24/240 fixture). `priceFrom ==
  *                 null ⟺ numForSale === 0` holds with ZERO exceptions in both
@@ -157,11 +211,14 @@ export function detailById(snapshot, id) {
  * NOT the branches `render/pdp.mjs` takes — it takes three more, and this
  * class does not model them, so no master gates them (verify-slice 2026-08-14,
  * three lenses). They are KNOWINGLY UNGATED, recorded rather than implied:
- *  - `:65`  omits the whole notes <section> when `!d.notes`
+ *  - `:61`  omits the whole notes <section> when `!d.notes`
  *           (fixture 1/240, crate 61/500 — no fixture master takes this arm);
- *  - `:91`  renders an sr-only "No duration listed" for a null track duration
+ *  - `:87`  renders an sr-only "No duration listed" for a null track duration
  *           (fixture 68/240, crate 259/500);
- *  - `:125` renders "—" for a null year (fixture 19/240, crate 0/500).
+ *  - `:121` renders a NAMED em-dash for a null year (fixture 19/240, crate
+ *           0/500) — a bare "—" until 2026-08-15, see `namedGlyph`.
+ * (Those three citations were `:65`/`:91`/`:125` and each moved by four lines
+ * when `formatBlock` was deleted. Re-derived, not adjusted by arithmetic.)
  * The committed masters render from the FIXTURE, and 0 of the 4 take ANY of
  * those three arms. Closing the gap means widening this class AND the master
  * set; until then the coverage guard proves per-axis coverage of the three

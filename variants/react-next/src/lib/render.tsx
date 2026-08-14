@@ -153,7 +153,7 @@ function ReleaseCard({ release }: { release: ReleaseDetail }) {
         <p className="pm-release-card__artist">{release.artist}</p>
         <p className="pm-release-card__meta">{metaLine(release)}</p>
         <div className="pm-release-card__foot">
-          <span className="pm-release-card__price">{price ?? "—"}</span>
+          <span className="pm-release-card__price">{price ?? (<><span aria-hidden="true">—</span><span className="pm-sr-only">No price listed</span></>)}</span>
           <span className="pm-release-card__stock">{stockLine(release.numForSale)}</span>
         </div>
       </div>

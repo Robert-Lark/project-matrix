@@ -1,15 +1,30 @@
 /**
- * PDP — interactivity earns its JS (ADR-0002 guardrail: gallery, cart,
- * quantity, format all genuine). Degenerate states are contract (panel
- * finding): single-format releases (439/500) render a static meta line, no
- * radio group; unpriced/zero-stock renders em-dash + "none for sale" +
- * disabled CTA. The live-origin demonstration ships as a FENCED plaque with
- * ADR-0002 §3's mandatory copy.
+ * PDP — interactivity earns its JS. The advertised interactions are gallery
+ * switch, ZOOM, quantity and add-to-cart, and every one of them is genuine:
+ * ADR-0008 addendum A (2026-08-15) makes that a rule — this surface does not
+ * ship a control that cannot do what its markup says it does.
+ *
+ * The FORMAT RADIO GROUP that ADR-0002's propagated guardrail named is CUT,
+ * not wired. `formats` is the composition of ONE physical release — what is
+ * in the package — and the tray carries one `priceFrom` and one `numForSale`
+ * for the whole release, so the group could only have been wired by inventing
+ * per-format prices, on a site whose rule is that nothing publishes a number
+ * without a receipt (evidence: `lib.mjs` formatComposition). The data it held
+ * is not lost: the meta list now renders the full composition for EVERY
+ * release, where before only single-format ones showed a format at all.
+ *
+ * Degenerate states are contract (panel finding): unpriced/zero-stock renders
+ * a named em-dash + "none for sale" + a disabled CTA; a null year renders the
+ * same named em-dash. Bare glyphs are barred — `lib.mjs` namedGlyph says why.
+ * The live-origin demonstration ships as a FENCED plaque with ADR-0002 §3's
+ * mandatory copy.
  */
 import {
   esc,
   formatPrice,
   formatDuration,
+  formatComposition,
+  namedGlyph,
   stockLine,
   featuredIds,
   detailById,
@@ -40,25 +55,6 @@ function galleryBlock(d, origin) {
           <button class="pm-gallery__zoom" type="button" aria-pressed="false">Zoom</button>
         </figure>${thumbs}
       </div>`;
-}
-
-function formatBlock(d) {
-  if (d.formats.length <= 1) return "";
-  return `
-        <fieldset class="pm-format">
-          <legend class="pm-format__legend">Format</legend>
-          ${d.formats
-            .map((f, i) => {
-              const label = [f.name, f.qty > 1 ? `${f.qty}×` : "", ...(f.descriptions ?? [])]
-                .filter(Boolean)
-                .join(" · ");
-              return `<label class="pm-format__option">
-            <input class="pm-format__input" type="radio" name="format" value="${i}"${i === 0 ? " checked" : ""}>
-            <span class="pm-format__label">${esc(label)}</span>
-          </label>`;
-            })
-            .join("\n          ")}
-        </fieldset>`;
 }
 
 function notesBlock(d) {
@@ -101,7 +97,6 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
   const d = detailById(snapshot, id ?? featuredIds(snapshot).pdp);
   const price = formatPrice(d.priceFrom);
   const sold = d.numForSale === 0;
-  const singleFormat = d.formats.length <= 1;
 
   const content = `      <article class="pm-pdp">
         <p class="pm-pdp__back"><a href="${HOSTS.plp}">Back to all records</a></p>
@@ -110,7 +105,7 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
           <div class="pm-pdp__buy">
             <h1 class="pm-pdp__title">${esc(d.title)}</h1>
             <p class="pm-pdp__artist">${esc(d.artist)}</p>
-            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? "—"}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>${formatBlock(d)}
+            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("—", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
             <div class="pm-qty">
               <label class="pm-qty__label" for="qty">Quantity</label>
               <div class="pm-qty__group">
@@ -122,7 +117,8 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
             <div><button class="pm-button" type="button"${sold ? " disabled" : ""}>${sold ? "None for sale" : "Add to cart"}</button></div>
             <dl class="pm-pdp__meta">
               <dt>Label</dt><dd>${esc(d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; "))}</dd>
-              ${singleFormat ? `<dt>Format</dt><dd>${esc(d.format)}</dd>\n              ` : ""}<dt>Year</dt><dd>${d.year ?? "—"}</dd>
+              <dt>Format</dt><dd>${esc(formatComposition(d.formats))}</dd>
+              <dt>Year</dt><dd>${d.year ?? namedGlyph("—", "No year listed")}</dd>
               <dt>Genre</dt><dd>${esc([...d.genres, ...d.styles].join(", "))}</dd>
             </dl>
           </div>
@@ -143,7 +139,6 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
     depth: 2 + extraDepth,
     css: [
       "components/gallery.css",
-      "components/format-switch.css",
       "components/qty.css",
       "components/tracklist.css",
       "components/prose.css",

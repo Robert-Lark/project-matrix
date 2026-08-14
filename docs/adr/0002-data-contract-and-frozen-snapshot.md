@@ -153,6 +153,17 @@ out of scope here — it is the `data-strategy-lab` variable, layered on top.
   (gallery/zoom, add-to-cart with client cart state, quantity, format switch) even
   though the commerce backend is thin — the render-axis "interactivity earns its
   JS" flip depends on it. Feeds `design-system` and the future PDP build.
+  > **AMENDED 2026-08-15 — the interaction set is gallery/zoom, add-to-cart
+  > with client cart state, and quantity. FORMAT SWITCH IS OUT** (ADR-0008
+  > addendum A). This clause was written at planning time, before anyone read
+  > what `formats` contains: it is the composition of ONE physical release —
+  > what is in the package — not a menu. §4 of this same ADR carries one
+  > `lowest_price` and one `num_for_sale` PER RELEASE, so no component can
+  > have a price, a stock count or a cart identity, and the control could only
+  > have been wired by inventing per-format prices. The composition renders as
+  > DATA on every PDP instead. The rest of the guardrail stands, and the
+  > render-axis thesis does not depend on the cut control: `pdp-gallery-switch`
+  > and `pdp-add-to-cart` are the surface's planned measured interactions.
 - **New downstream ticket:** `snapshot-capture` (Task) — run the capture
   (respecting rate-limit headers with backoff), download images, normalize to the
   two trays, Zod-validate, land in R2 with a dated manifest + commit SHA. Includes

@@ -187,7 +187,13 @@ comparison, stated).
   single-format (439/500) renders a static meta line, no radio; unpriced
   (44/500) renders em-dash + "none for sale" + disabled CTA. Thumbs are
   buttons named "View image N of M: {alt}", selected = `aria-current`;
-  fieldset/legend on the format radios; named qty steppers. The
+  fieldset/legend on the format radios; named qty steppers.
+  > **PARTLY SUPERSEDED — see addendum A (2026-08-15).** The format radios are
+  > CUT: `formats` is the composition of one release, not a menu, so the group
+  > offered a choice the data cannot honour. Every release now renders a
+  > `<dt>Format</dt>` pair carrying the full composition, and the em-dash
+  > states are NAMED (`lib.mjs` namedGlyph) rather than bare. The rest of this
+  > paragraph stands. The
   live-origin demonstration is a fenced plaque with ADR-0002 §3's copy.
   Reference PDP: id 896191 (3 formats, priced, 5 images — the rich path).
 - **PLP** — toolbar (count from the tray, search + sort as GET forms) ·
@@ -505,3 +511,272 @@ per-axis coverage of the three STRUCTURAL branches only. The `priceFrom == null 
 numForSale === 0` equivalence that `pdp.mjs` leans on (it reads two different
 fields for one branch) is asserted against the trays themselves: zero
 violations in both committed snapshots.
+
+## Addendum A — a control that cannot act does not ship (2026-08-15)
+
+_Cited in code as "ADR-0008 addendum A". The two addenda above are unlettered;
+lettering starts here so a comment can point at one claim, which is the
+practice ADR-0001 already follows._
+
+The vanilla PDP shipped to ~500 deployed pages with **two of its four
+advertised interactions dead**, and a third control styled by nothing. None of
+it was a coding slip: each was a place where the spec layer described a
+behaviour and nothing in the repo could tell whether the behaviour existed.
+
+**The rule this addendum adds, normative for every surface:** a control the
+markup advertises must be able to do what it says, or it must not be in the
+markup. Shipping it inert is not a third option — it is the "falsely
+interactive" state ADR-0008 §7 already disclaims, and on a benchmarked surface
+it also silently zeroes the same cell in every paradigm at once.
+
+### 1. Zoom — WIRED
+
+`render/pdp.mjs` rendered `<button class="pm-gallery__zoom" aria-pressed="false">`
+and `gallery.css` implemented the pressed state, but `variants/vanilla/src/pdp.js`
+never referenced it (`grep -c zoom` → 0) and `aria-pressed` is not CSS-settable.
+A JS-on visitor heard "Zoom, toggle button, not pressed", pressed it, and got
+the same result forever — **WCAG 4.1.2 name/role/value**, on the site that
+ships an accessibility exhibit. The enhancement now writes the attribute and
+nothing else; the attribute is both the accessible state and the selector the
+stylesheet scales from, so a visual state cannot exist without the
+programmatic one. **Every paradigm owes this toggle**, and `gallery.css`'s
+contract comment now says so.
+
+### 2. The format radio group — CUT, not wired
+
+This reverses the recommendation the unit was handed ("take the cut for zoom,
+never for format"), on evidence that recommendation did not have. It is the
+load-bearing decision of the unit, so the argument is recorded in full.
+
+**A Discogs `formats` array is the composition of ONE physical release — what
+is in the package — not a menu of things to buy.** From this repo's own
+sources:
+
+- `packages/data-contract/src/schema.ts:45` types `format` as the *primary*
+  format label, and `tools/snapshot-capture/src/normalize.ts:127` builds it
+  from `formats[0]`: there is a primary component and there are others.
+- `schema.ts:47-48` carries exactly one `priceFrom` and one `numForSale` **per
+  release**. No component has a price, a stock count, or a cart identity of its
+  own, anywhere in the contract.
+- Crate release `896191` is one **$30.00** product whose three `formats`
+  entries are two vinyl variants **and** a CD. **39** crate releases carry a
+  component literally named **"All Media"** — Discogs' marker for a release
+  spanning several media as one product. (Counts tool-derived from
+  `tools/snapshot-capture/crate/details.json`.)
+
+So the group offered a choice the data cannot honour. Wiring it as specified —
+price, stock line, meta list and cart payload following the selection — was
+not a bigger version of the zoom fix; it was **impossible without inventing
+per-format prices**, on a site whose first rule is that nothing publishes a
+number without a receipt. A fabricated price beside a real one is worse than a
+dead control, and it is the exact shape of rigging this project exists to be
+unable to do.
+
+The counter-argument, answered: cutting it does **not** gut the PDP's claim to
+be the surface where interactivity is genuine. What remains is gallery switch,
+zoom, the quantity stepper and add-to-cart — four genuine interactions, and
+both of the surface's PLANNED interactions (`pdp-gallery-switch`,
+`pdp-add-to-cart`) are untouched. "Planned", not "registered", and the
+distinction is the kind this record exists to keep: `INTERACTIONS`
+(`collect.ts:26`) holds `none`, `body-click` and `editorial-add-to-cart` and
+nothing else — NEITHER PDP id appears anywhere in the codebase yet, so the cut
+removed nothing the instrument was going to measure.
+
+**Nothing is lost from the page but the lie.** The `formats` data now renders
+as data: the meta list carries the full composition (`lib.mjs`
+`formatComposition`) for **every** release, where before only single-format
+releases showed a format at all — so the 61 multi-format crate releases gain
+information they never had, and the 130 single-format releases whose tray
+records a quantity now show it ("2 × Vinyl, LP, Album"). For a single
+component of quantity 1 the composition reproduces `format` byte-for-byte,
+so **309 of the crate's 500 PDP meta lines are byte-unchanged and 191 move**
+(239/1 in the fixture) — derived by rendering both forms over every tray, not
+reasoned. That equality is asserted, not assumed
+(`tools/repo-checks/test/variant-master-identity.test.ts`).
+
+**ADR-0002's propagated guardrail is amended here**, not silently dropped: the
+interaction set the render-axis flip is measured over is now **gallery/zoom,
+add-to-cart with client cart state, and quantity**. The guardrail named format
+switch at planning time, before anyone had looked at what `formats` contains.
+
+`format-switch.css` is unchanged and still ships — its surviving consumer is
+**checkout's shipping-method group**, which is a real choice. The component
+was never the defect; the PDP's application of it was. The PDP no longer links
+the sheet.
+
+### 3. `pm-pdp__scroll` — STYLED
+
+`pdp.mjs` emitted `role="region" tabindex="0"` (the scrollable-region pattern)
+and the class matched **0 lines** across `packages/tokens/css/`. Every PDP page
+with a tracklist gave keyboard users a focus stop on a container that could
+not scroll, and the WCAG 1.4.10 reflow protection the wrapper exists for was
+absent. `pdp.css` now gives it `overflow-x: auto`.
+
+### 3b. The thumb strip — WRAPPED (found by the guard, on real data)
+
+The JS-ON leg above was written to check the tracklist wrapper and instead
+failed on something bigger, and only against a **crate-seeded** plane. The
+gallery's thumb strip was a flex row with no wrap: it can never be narrower
+than its content, and because a grid item's default `min-width` is `auto`, the
+gallery column grew to match and pushed the **document** into horizontal
+scrolling. Four thumbs at 72 px plus gaps need 312 px inside a 280 px column.
+
+**316 of the crate's 500 releases carry four or more images** (1–5 images:
+90 / 64 / 30 / 71 / 245, tool-derived), so this was live WCAG 1.4.10 on the
+majority of deployed PDP pages. It survived every check because the FIXTURE's
+probe release has **two** images — CI never reached the case. `gallery.css`
+now sets `flex-wrap: wrap`; measured before and after at 320 px, the document's
+`scrollWidth` goes 332 → 320 for a 4-image release and 412 → 320 for a
+5-image one, with thumbs on two rows. Wrapping rather than scrolling, because a
+scroll container would need its own focus stop and the 72 px target size
+(WCAG 2.5.8) has to survive either way.
+
+The reflow leg now probes the **widest gallery in the served snapshot** rather
+than any gallery, and fails closed if that is under four images — the fixture's
+release 9000016 has five, so CI exercises the case from now on. Two lessons
+are worth keeping: a leg pointed at "some release with a gallery" proved
+nothing, and **the fixture is not a scale model of the crate**.
+
+### 4. The guards, and why two were needed
+
+The defects were invisible because of a structural gap, not bad luck:
+
+- **The drift gate is JS-OFF by construction** (ADR-0008 §7). Both dead
+  controls had correct, identical, gate-passing markup the entire time.
+- **`@pm/vanilla` contributes ZERO tasks to turbo's 30** (`turbo run lint
+  typecheck test --dry=json` → 75 nodes, 30 with a real command, none of them
+  this workspace), and no test anywhere read `renderPdpPage`. "Turbo 30/30"
+  had never covered this variant at all, and the 740 pages matching was an
+  **unguarded true statement** — which by this repo's standard is the defect.
+
+Three guards close it, all sabotage-proven against the tree that shipped:
+
+1. `tools/repo-checks/test/pdp-controls-wired.test.ts` — every script-only
+   state attribute the master renders must be written by the variant's
+   enhancement, and every control must be named by it or listed in a
+   reasoned native-behaviour registry. Run against the `pdp.js` on `main` it
+   fails **nine** ways. It is in the 30, so it **blocks a merge**.
+2. `variant-master-identity.test.ts` gains a fourth `describe` comparing
+   `renderPdp` against `renderPdpPage` for **every** detail tray in **both**
+   snapshots — 740 pages in ~90 ms, covering the render-class combinations
+   the crate has and the fixture does not.
+3. `tools/origin-suite/suite/pdp-controls.browser.test.ts` — the JS-ON leg
+   that did not exist. Its headline assertion is generic on purpose: **no
+   button on the page may change nothing when pressed**. A check naming zoom
+   would say nothing about the next control.
+
+### 4b. The verification pass found a regression this slice INTRODUCED
+
+Recorded because it is the strongest evidence in the addendum that the
+adversarial pass earns its cost, and because the fix is a spec-layer move.
+
+`.pm-sr-only` — the utility that makes `namedGlyph` work — was defined in
+`components/gallery.css:152`, and **only the PDP links that sheet**. So the
+moment `namedGlyph` put visually-hidden text on the PLP master (5 instances)
+and the checkout master (1), those pages had no rule to hide it with: text
+written exclusively for assistive technology would have rendered as visible
+"— No price listed". A repo-wide grep would have said the class existed. It
+did exist; it just did not exist ON THE PAGE THAT USED IT.
+
+The utility now lives in `surfaces/shell.css`, which `head()` links on every
+surface — the correct home for a whole-system utility, and the reason the
+defect could not recur for the a11y, editorial or how-it-was-built surfaces
+either.
+
+**The CSS cost, because moving a rule onto every page is a published-cell
+change and the first draft of this addendum only accounted for the JS.**
+`surfaces/shell.css` is linked by `head()` on EVERY surface, so the utility
+and its contract comment ride every page including the editorial ones whose
+CSS cell is published: **+629 B raw / +243 B brotli-q11** (1,835 → 2,464 raw).
+`components/gallery.css`, PDP-only, is **+822 B raw / +376 B brotli-q11** for
+the zoom and thumb-wrap contracts minus the rule that left. The comments were
+trimmed to their load-bearing form first — the narrative lives here, and the
+sheets are served raw (`variants/vanilla/build.mjs` copies the CSS tree with
+`cpSync`; no minifier strips a comment before the wire), so prose in a
+stylesheet is prose on every visitor's connection. The editorial re-run the
+ruler unit owes re-measures this too.
+
+The general guard is `tools/repo-checks/test/master-styles-resolve.test.ts`:
+**every `pm-` class a committed master renders must resolve to a rule in a
+sheet that master links.** It is the `pm-pdp__scroll` defect made impossible —
+markup contract ahead of stylesheet — and it is sabotage-proven against both
+instances: remove the `.pm-pdp__scroll` rule and FOUR masters fail; rename
+`.pm-sr-only` and SIX do (the four PDP masters plus plp and checkout — a
+seventh failure is the separate test pinning where the utility lives, and
+counting it as a master was wrong). Three pre-existing unstyled classes are frozen in
+a reasoned `OWED` registry (`pm-plp__head`, `pm-plp__results`,
+`pm-checkout__form` — all on unbuilt surfaces, all owed to their surface's
+build), and a further test fails if that registry ever describes more or fewer
+classes than are actually unstyled, so it cannot quietly outlive its debt.
+
+Two things the guard's own first draft got wrong, kept here because they are
+the same lesson twice: it matched class names with `String.includes`, so
+`.pm-sr-only` was "defined" by `.pm-sr-only-MOVED` and its sabotage proof
+PASSED; and it matched inside CSS COMMENTS, where this package names classes
+constantly. It now matches whole selector tokens in comment-stripped CSS.
+
+### 4c. The instrument advertised the control too
+
+`SURFACE_CONTROLS.pdp.proves` — the sentence the chrome renders into EVERY
+measured page — read "gallery, cart, quantity, format". Amending three
+documents while leaving that string would have had the INSTRUMENT advertise an
+interaction the surface does not have: the same falsehood as the dead control,
+one layer up, and this one is served to visitors. It now reads "gallery, zoom,
+quantity, cart", which also promotes zoom from unmentioned to named now that
+it works.
+
+The three new guards were also vanilla-hardcoded, which is invisible today
+(vanilla is the only live PDP variant) and worthless the moment a second one
+lands. The browser leg now runs `describe.each(SURFACE_CONTROLS.pdp.variants)`
+— the `cart.browser.test.ts` idiom, so it extends with no edit — and the
+pre-merge guard keeps a variant→enhancement map with a **completeness
+assertion**: if `variants` ever names a variant the map does not, the guard
+FAILS rather than continuing to report green on vanilla alone. Sabotage-proven
+by moving astro live: `expected [ 'astro' ] to deeply equal []`.
+
+### 5. Bare glyphs are barred
+
+Swept up in the same pass, because it is the same class — markup that says
+something to sighted users and nothing to anyone else. `pdp.mjs` rendered
+`${price ?? "—"}` and `<dd>${d.year ?? "—"}</dd>`; a lone "—" announces as "em
+dash" or, at the common punctuation-verbosity default, as silence, making
+absent data and a rendering fault indistinguishable — the reasoning
+`tracklist.css` had already applied to empty duration cells. `lib.mjs`
+`namedGlyph` is now the rule, and
+`tools/repo-checks/test/master-glyph-names.test.ts` enforces it over every
+committed master: any element whose entire text is short and carries neither a
+letter nor a digit must be hidden from assistive tech with words supplied
+beside it, or named. Against the masters on `main` it finds **seven**
+instances — the PDP's unpriced amount, five release-card prices in the PLP
+master, and checkout's cart-total placeholder. The null-year arm was invisible
+to every other check because all four resolved masters have years.
+
+### Consequences
+
+- The four committed PDP masters are re-rendered; `variants/vanilla` is
+  re-rendered and re-deployed. The PDP has no published receipts, so no
+  reading is invalidated by the markup change.
+- `CART_CONTRACT` gains a **uniqueness** clause. It had always *stated* "one
+  entry per release id" without *checking* it, so a duplicate passed
+  validation and the two implementations then disagreed — one add on
+  `{"v":1,"items":[{"id":7,"qty":1},{"id":7,"qty":1}]}` gave **3** on
+  editorial (first match) and **4** on the PDP (every match). The rule now
+  checks what it always claimed. Cost, re-derived over all six cart files
+  (`git show origin/main:F` vs `git show HEAD:F`, brotli via node zlib at
+  quality 11): the clause plus its comment costs **+262 to +294 B raw and +80
+  to +105 B brotli-q11**. The closest thing to a wire figure is vanilla's
+  `cart.js`, which ships raw and goes **1,122 → 1,205 B brotli-q11 (+7.4%)**,
+  or roughly +5% of the published 1.69 KB editorial initial-JS cell. Two
+  honest limits on that number: only vanilla, htmx and remix3 ship their source
+  raw — react-next, astro and qwik are bundled, so their source delta is an
+  UPPER bound on what reaches the wire — and Cloudflare compresses materially
+  worse than local q11 (3.68× vs 4.46×, measured 2026-08-14), the very
+  mismatch `bench-instrumentation-dilution` exists to settle. (`pdp.js`'s own
+  +1,446 B raw / +371 B brotli is NOT this clause: it is dominated by the zoom
+  handler and its comment.) The re-run that unit already owes absorbs all of
+  it.
+- The release-card and checkout glyph repairs are **byte-neutral on every page
+  served today** (no featured release is unpriced in either snapshot), so the
+  editorial receipts are untouched by them; the five landed variants'
+  re-typings were corrected in the same commit so spec and re-implementation
+  cannot drift apart in a branch no test exercises.

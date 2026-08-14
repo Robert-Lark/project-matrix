@@ -203,6 +203,9 @@ importers:
       '@pm/drift-gate':
         specifier: workspace:*
         version: link:../drift-gate
+      '@pm/switcher':
+        specifier: workspace:*
+        version: link:../../packages/switcher
       '@types/fontkit':
         specifier: ^2.0.9
         version: 2.0.9

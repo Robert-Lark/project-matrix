@@ -93,8 +93,12 @@ _Avoid_: "the server", "prod" — there is one shared plane, not a per-variant s
 
 **Product interactivity**:
 The genuine client-side interaction on a PDP (image gallery/zoom, add-to-cart with
-cart state, quantity, format switch). Distinct from commerce-backend fidelity, and
-kept rich because the render-axis thesis depends on it.
+cart state, quantity). Distinct from commerce-backend fidelity, and kept rich
+because the render-axis thesis depends on it. **Format switch was removed from
+this set on 2026-08-15** (ADR-0008 addendum A): a Discogs `formats` array is the
+composition of one physical release, not a menu of things to buy, and the tray
+carries one price and one stock count for the whole release — so the control
+could only have been wired by inventing per-format prices.
 
 ### Data strategies (PLP)
 

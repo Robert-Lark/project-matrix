@@ -50,7 +50,12 @@ function read(): Cart {
           Number.isInteger(item.id) &&
           Number.isInteger(item.qty) &&
           item.qty >= 1,
-      )
+      ) &&
+      // One entry per release id (contract). Unchecked until 2026-08-15,
+      // which let a duplicate read as valid and then be counted differently
+      // by different surfaces.
+      new Set((parsed as Cart).items.map((item) => item.id)).size ===
+        (parsed as Cart).items.length
     ) {
       return parsed as Cart;
     }

@@ -30,7 +30,7 @@ export function ReleaseCard(handle: Handle<{ release: Detail }>) {
           <p class="pm-release-card__artist">{release.artist}</p>
           <p class="pm-release-card__meta">{metaLine(release)}</p>
           <div class="pm-release-card__foot">
-            <span class="pm-release-card__price">{price ?? "—"}</span>
+            <span class="pm-release-card__price">{price ?? (<><span aria-hidden="true">—</span><span class="pm-sr-only">No price listed</span></>)}</span>
             <span class="pm-release-card__stock">{stockLine(release.numForSale)}</span>
           </div>
         </div>

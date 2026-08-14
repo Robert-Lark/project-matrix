@@ -22,7 +22,15 @@
  * URL-as-receipt (both rejected — session ADR). Within-surface condition
  * links (facets, sort, pages) stay relative/query-only.
  */
-import { esc, formatPrice, stockLine, metaLine, thumbSrc, imageSrc } from "./lib.mjs";
+import {
+  esc,
+  formatPrice,
+  stockLine,
+  metaLine,
+  namedGlyph,
+  thumbSrc,
+  imageSrc,
+} from "./lib.mjs";
 
 /** Designated hosts (spec of record; SURFACE_CONTROLS carries them too). */
 export const HOSTS = {
@@ -59,9 +67,20 @@ export const HOSTS = {
  *   test is parameterised over the EDITORIAL surface only).
  * - Validity: a missing, unparseable, or schema-failing value (wrong `v`,
  *   non-array `items`, any entry without an integer `id` and integer
- *   `qty ≥ 1`) is treated as the EMPTY cart; the next successful add
- *   overwrites it. A failed `setItem` (quota, storage off) changes nothing
- *   and announces nothing.
+ *   `qty ≥ 1`, or a REPEATED `id`) is treated as the EMPTY cart; the next
+ *   successful add overwrites it. A failed `setItem` (quota, storage off)
+ *   changes nothing and announces nothing.
+ * - Uniqueness (pdp-controls, 2026-08-15): "one entry per release id" was
+ *   stated above from the beginning but was NOT part of the checked rule, so
+ *   a duplicate id passed validation and the two implementations then
+ *   disagreed about it — `{"v":1,"items":[{"id":7,"qty":1},{"id":7,"qty":1}]}`
+ *   plus one add gives **3 on editorial** (it bumps the FIRST match) and
+ *   **4 on the PDP** (it bumps EVERY match). No writer here can produce that
+ *   value, which is exactly why it survived: an unguarded true statement.
+ *   The rule now checks what it always claimed, so the two readers cannot
+ *   disagree — the divergence is removed rather than documented. Cost, paid
+ *   knowingly: one `Set` size compare in each of the seven `read()`s, on
+ *   client bytes the editorial batch publishes.
  * - Count: the sum of `qty` over `items`. On every shell page load the
  *   enhancement populates each `[data-pm-cart-count]` slot with
  *   `badge(count)` — empty string when 0 (the canonical empty state).
@@ -175,11 +194,11 @@ export function releaseCard(summary, { imgAttrs = "", origin = "" } = {}) {
     <p class="pm-release-card__artist">${esc(summary.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(summary))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? "—"}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(summary.numForSale))}</span>
     </div>
   </div>
 </li>`;
 }
 
-export { esc, formatPrice, stockLine, metaLine, thumbSrc, imageSrc };
+export { esc, formatPrice, stockLine, metaLine, namedGlyph, thumbSrc, imageSrc };
