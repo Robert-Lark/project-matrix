@@ -147,7 +147,14 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
   if (!profile) throw new Error(`unknown profile id: ${spec.profileId}`);
   for (const t of spec.targets) {
     assertBenchableTarget(t.path);
-    if (!INTERACTIONS[t.interactionId]) {
+    // Object.hasOwn, not a bare lookup: the id is operator-supplied and a
+    // prototype key ("valueOf", "toString") resolves to an inherited
+    // FUNCTION here — truthy, and callable in measureVisit — so the batch
+    // would run, click nothing, and mint a schema-valid receipt with INP
+    // null and zero interaction bytes that nothing distinguishes from a
+    // real one (verify-slice, correctness lens; the repo's recurring
+    // prototype-key class).
+    if (!Object.hasOwn(INTERACTIONS, t.interactionId)) {
       throw new Error(`unknown interaction id: ${t.interactionId} (${t.path})`);
     }
   }
@@ -289,6 +296,7 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
         "document bytes are decomposed (ADR-0001 §3 addendum): the single compressed document transferSize is attributed to html/js/data and to STRIPPED instrumentation markup by uncompressed content share — inline executable script counts as JS (so an inlined bundle is not reported as 0 KB), inline non-executable script (application/json, qwik/json, …) counts as data, and the injected chrome markup + its /_pm/ tags are stripped like the /_pm/ subresource payloads (ADR-0001 §6). The share is exact only if each part compresses at the document's average ratio.",
         "ttfb sub-phases (travelMs/serverMs) are attributed BENEATH any CDP network emulation: Chromium rebases navigation-timing under applied throttling (demonstrated 2026-07-10: a 500ms emulated latency delivers on the wall clock but responseStart still reads ~1ms), so the decomposition reflects the plane's REAL serving — compare it across variants, not against the profile's emulated RTT. FCP/LCP/INP paint/interaction timestamps are wall-clock and DO reflect the applied profile.",
         "every run is a fresh browser context (first-time visitor): the browser HTTP cache is a held-constant, not a measured axis — the cold/warm columns measure the edge tier (ADR-0002 §8).",
+        "PRECONDITION for a comparable re-run against a DEPLOYED plane: the effective URLs below must be warmed until they serve compressed before measuring. A brand-new URL's first hit is a cache MISS that Cloudflare serves UNCOMPRESSED (the class tools/origin-suite's wireEncoding warms against), and because the run nonce is part of the URL, a reproduce with a fresh nonce makes every URL brand new — so run 1 of every target pays an inflated, non-comparable transfer. `bench reproduce --nonce <this receipt's environment.runNonce>` re-drives the exact published URLs so they can be pre-warmed; without it the reproduction is same-paths/profile/runs/interaction with fresh cache state, not same-URL.",
       ],
       targets,
     };
@@ -305,7 +313,9 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
 export function specFromReceipt(
   receipt: ReceiptT,
   repoRoot: string,
-  overrides?: Partial<Pick<BatchSpec, "origin" | "cpuSource" | "runLocation">>,
+  overrides?: Partial<
+    Pick<BatchSpec, "origin" | "cpuSource" | "runLocation" | "runNonce">
+  >,
 ): BatchSpec {
   if (receipt.profile.specVersion !== PROFILE_SPEC_VERSION) {
     throw new Error(
@@ -324,5 +334,14 @@ export function specFromReceipt(
     repoRoot,
     cpuSource: overrides?.cpuSource,
     runLocation: overrides?.runLocation,
+    // A reproduce mints FRESH cache state by default (a new nonce), which
+    // is the honest reproduction — but it also makes every effective URL
+    // brand new, and on the deployed plane a brand-new URL's first hit is
+    // an UNCOMPRESSED cache MISS (the slice-C class). An operator who wants
+    // to pre-warm the exact URLs before measuring can pass the nonce
+    // through; without this the flag added for that purpose was
+    // unreachable from the advertised reproduce path (verify-slice,
+    // anti-rigging lens).
+    runNonce: overrides?.runNonce,
   };
 }

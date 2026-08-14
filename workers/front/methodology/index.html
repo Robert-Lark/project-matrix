@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Methodology — how Project Matrix numbers are made</title>
+  <meta name="description" content="Every fairness rule behind the published numbers, in plain language: the ruler, the profiles, the byte accounting, the noise rule, the instrument's own cost, and the honest list of what this data cannot claim.">
+  <meta name="theme-color" content="%%TOKEN_PAPER%%">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%%TOKEN_VINYL_URI%%'/%3E%3Ccircle cx='50' cy='50' r='17' fill='%%TOKEN_PAPER_SUNK_URI%%'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%%TOKEN_VINYL_URI%%'/%3E%3C/svg%3E">
+
+  <!-- The methodology page (ADR-0001 §9): a static singleton on the canonical
+       plane, served assets-first like home (ADR-0007 §6 precedent) — no
+       injected chrome, off the benchmarked matrix. Every specific number on
+       this page is substituted at build from a committed artifact (the
+       chrome-constant probe output, the published receipts, the crate
+       manifest) — hand-typing a number here is how a wrong claim ships.
+       Its long-term home is the "How it was built" surface (ADR-0008 §8),
+       which is unbuilt; this standalone page is the recorded interim. -->
+  <link rel="preload" href="/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/pm/css/fonts.css">
+  <style>
+/*%%PM_TOKENS_CSS%%*/
+  </style>
+  <style>
+/*%%PM_METHODOLOGY_CSS%%*/
+  </style>
+</head>
+<body>
+  <a class="skip pm-button" href="#main">Skip to content</a>
+
+  <header class="masthead">
+    <div class="shell masthead__row">
+      <a class="masthead__mark" href="/">Project&nbsp;Matrix</a>
+      <span class="masthead__byline">methodology</span>
+      <a class="masthead__link" href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <main id="main" class="shell doc">
+    <h1>How the numbers are made</h1>
+    <p class="doc__lede">
+      One store, several rendering architectures, one ruler. This page states
+      every rule the published numbers follow — and, just as load-bearing,
+      what those numbers cannot claim. If a rule here and a number on the
+      site ever disagree, that is a bug:
+      <a href="https://github.com/Robert-Lark/project-matrix/issues" rel="noopener">send me the URL</a>.
+    </p>
+
+    <h2 id="lab-and-field">Lab and field never mix</h2>
+    <p>
+      Two kinds of numbers exist here. <strong>Lab</strong> numbers come from
+      scripted, throttled, repeated runs — they are the only numbers ever
+      compared across architectures, because they are reproducible.
+      <strong>Field</strong> numbers are the live readout of your own visit —
+      the reality check, shown per page, never used to rank architectures
+      (nobody controls who visits what). A bench run's beacons are captured
+      by the harness and never reach the field collector, so lab traffic
+      can't pollute field data either.
+    </p>
+
+    <h2 id="ruler">One ruler</h2>
+    <p>
+      The same pinned <a href="/_pm/measure.js">web-vitals build</a> measures
+      every page, lab and field, so TTFB, FCP, LCP, CLS and INP mean exactly
+      the same thing everywhere. Bytes are read from the browser's own
+      network accounting — compressed bytes actually transferred, including
+      response headers, never decoded sizes.
+    </p>
+
+    <h2 id="profiles">Three published profiles</h2>
+    <p>
+      Every lab run applies one of three pinned test profiles at the
+      automation layer: <em>fast WiFi + laptop</em> (project-defined — no
+      widely-published WiFi preset exists), <em>average broadband + desktop</em>
+      and <em>slow 4G + mid-range phone</em> (both pinned to Lighthouse's
+      published defaults, the second with a 4× CPU slowdown). The exact
+      values live in
+      <a href="https://github.com/Robert-Lark/project-matrix/blob/main/packages/measurement/src/profiles.ts" rel="noopener">the versioned profile spec</a>,
+      and every receipt records what was actually applied, so a value change
+      can never silently reframe an old number.
+    </p>
+
+    <h2 id="batches">One batch, %%LAB_RUNS%% runs per cell, two cache columns</h2>
+    <p>
+      All architectures are measured in one batch — runs interleaved
+      round-robin, so a noisy moment lands on every variant, not on whichever
+      URL happened to be measuring. The published value is the median of
+      %%LAB_RUNS%% runs, never a best-of, and every cell carries that
+      median's min–max band across those runs so you can see when a gap sits
+      inside the noise. One honest detail: a metric a run could not produce is
+      recorded as absent rather than as a zero, so a cell's median is over the
+      runs that produced a value — the receipt lists all %%LAB_RUNS%% either
+      way, so the count behind any cell is checkable. Cold and warm are
+      separate columns measuring the edge data tier; the browser cache is held
+      constant instead — every run is a fresh browser context, a first-time
+      visitor. <strong>The reading table
+      publishes the WARM column</strong> — steady state, per ADR-0001's
+      "warm as headline, cold as a labeled callout" — no matter what cache
+      knob the page you are reading it on carries; the linked receipt holds
+      the cold column beside it. Numbers publish as dated snapshots pinned to
+      a commit, never live-updated.
+    </p>
+
+    <h2 id="bytes">What the bytes mean</h2>
+    <p>
+      Transferred bytes are bucketed — HTML, JavaScript, CSS, fonts, images,
+      data — with <strong>initial JavaScript as the headline</strong>: that is
+      where the render-axis story lives. Three rules keep the buckets honest:
+    </p>
+    <ul>
+      <li><strong>Inline bytes count.</strong> A script inlined into the
+        document is attributed to the JavaScript bucket by its share of the
+        uncompressed document (an inlined bundle is not "0 KB of JS").
+        The stated limit: the share is exact only if every part compresses at
+        the document's average ratio — a reproducible attribution, not
+        per-byte compressed truth.</li>
+      <li><strong>Serialized state is data, not code.</strong> A script tag
+        the browser will not execute (JSON state, import maps) counts as
+        data. <strong>The stated caveat that follows:</strong> React's App
+        Router ships its hydration state as <em>executable</em> script, so it
+        counts as JavaScript; Qwik ships equivalent state as <em>inert</em>
+        JSON, so it counts as data. The initial-JS row therefore includes
+        serialized hydration state for executable-payload frameworks and
+        excludes it for inert-payload ones — a real asymmetry of the
+        paradigms' own delivery choices, stated here rather than silently
+        reclassified. No initial-JS comparison between two hydrating
+        frameworks is published as a verdict without this caveat riding it.</li>
+      <li><strong>The instrument strips itself out.</strong> The switcher/HUD
+        chrome this site injects — its markup, stylesheet, font, and the
+        ruler itself — is excluded from every bucket by known path, and the
+        excluded bytes are <em>reported</em> in each receipt, so the
+        exclusion is checkable, not vacuous.</li>
+    </ul>
+
+    <h2 id="noise">The noise rule</h2>
+    <p>
+      Every cell publishes its median with the min–max band across that
+      batch's runs, and every receipt carries the raw runs behind both.
+      Comparative language — "faster", "lighter", any verdict — is permitted
+      only where the compared bands do not overlap. Where they overlap, the site says exactly this:
+      <em>indistinguishable at this sample size</em>. The publication
+      pipeline enforces the rule mechanically: a fit sentence whose receipts
+      don't support it fails the build.
+    </p>
+
+    <h2 id="instrument-cost">The instrument's own cost</h2>
+    <p>
+      Byte-stripping removes the injected instrument from the counted bytes;
+      it cannot remove the instrument's parse, style and font work from the
+      timing metrics. So that cost is measured — the same page, with and
+      without the chrome, both served compressed exactly as the plane serves
+      them. %%CC_STATEMENT%%
+      Every architecture carries the identical instrument, so no column gets
+      a different strip. The constant itself, though, is one measurement of
+      one page under one profile: it is the order of magnitude of what the
+      instrument costs, not a per-variant or per-profile equality — a page
+      that parses more before first paint absorbs it differently, which is
+      the same reason throttled cells here carry no verdicts.
+    </p>
+
+    <h2 id="environment">Where these runs execute</h2>
+    <p>
+      %%LAB_BATCH_STATEMENT%% The target environment this project
+      records — a pinned, documented cloud runner, two geographic locations,
+      and a WebPageTest cross-check — activates in a later unit.
+    </p>
+    <p>
+      Two consequences, binding until then. First: throttled-profile timing
+      cells publish <em>numbers</em>, never <em>verdicts</em> — the throttle
+      is request-level emulation (see the limits below) and the cross-check
+      that would confirm a throttled verdict directionally does not exist
+      yet, so the published fit line rides bytes, which no throttle touches.
+      Second: official batches never run inside a deploy gate. The
+      post-deploy smoke asserts receipt <em>shape</em> and provenance; a
+      performance magnitude asserted on a shared CI runner would go red for
+      reasons that are not regressions and block the plane for none.
+    </p>
+
+    <h2 id="limits">Limits of this data</h2>
+    <ul>
+      <li>Throttling is CDP request-level emulation above the transport
+        stack: no TCP slow-start, no connection setup, no request
+        parallelism. That limit is not paradigm-neutral — it interacts with
+        round-trip count — which is exactly why throttled cells carry no
+        verdicts yet.</li>
+      <li>TTFB's travel/server split is attributed beneath the emulation
+        (Chromium rebases navigation timing under throttle): compare the
+        split across variants; never read it against the profile's emulated
+        round-trip time.</li>
+      <li>The origin computes over a frozen crate of %%SNAP_COUNT%% releases
+        (frozen %%SNAP_DATE%%): absolute server think-time and CPU are
+        floors, not production magnitudes. Comparisons transfer;
+        extrapolations don't.</li>
+      <li>Every lab number is a Chromium number.</li>
+      <li>INP is always <em>INP (scripted)</em>: real event-timing entries
+        under a named, scripted interaction — on the editorial surface, the
+        page's one designed interaction, Add&nbsp;to&nbsp;cart, clicked with no
+        warm-up click before it.</li>
+      <li>Post-load idle work is deliberately settled onto the <em>load</em>
+        side before both the byte snapshot and the click. That is what keeps
+        the initial/interaction split from varying run to run, but it has a
+        stated consequence in both directions: a framework whose preloader
+        runs at idle (Qwik) has those bytes counted in its initial-JS row,
+        and the fetch half of any deferred handler binding is finished before
+        the click, so the INP row reflects what remains at click time —
+        resolving and running the handler, not downloading it.</li>
+      <li>Cost cells: none are published. The cost model prices CPU-ms from
+        the deployed plane's own telemetry, which is not armed yet; a local
+        CPU profile of a remote origin is refused by the harness outright.</li>
+      <li>The live field readout displays no percentile below fifty samples
+        per segment — a portfolio's traffic is honest about being small.</li>
+      <li>Privacy: the field beacon carries variant, surface, environment,
+        cache state and serving location. No identifiers, no cookies, no
+        PII.</li>
+    </ul>
+
+    <h2 id="reproduce">Reproduce it</h2>
+    <p>
+      Every published number links a receipt: profile, date, commit, run
+      location, the exact URLs driven, and every raw run. The harness is
+      public. One command re-runs any receipt's batch — same paths, profile,
+      run count and interaction — and mints a new dated receipt:
+    </p>
+    <pre><code>git clone https://github.com/Robert-Lark/project-matrix
+pnpm install
+pnpm bench reproduce &lt;receipt.json&gt; --origin https://pm-front.robresearch87.workers.dev</code></pre>
+    <p>
+      One honest caveat about that command. Each batch tags its URLs with a
+      run-isolation nonce, and a reproduce mints a fresh one — so it drives
+      the same pages under fresh cache state, not the identical URL strings.
+      That matters on a live plane, because a brand-new URL's first hit is a
+      cache miss served uncompressed, which inflates the first of the seven
+      runs. Pass <code>--nonce</code> with the receipt's own
+      <code>environment.runNonce</code> to re-drive the exact published URLs
+      and warm them first; the receipt states this precondition itself.
+    </p>
+    <p>
+      The pre-release Remix&nbsp;3 frontier build is excluded from every
+      number <em>by mechanism</em>: the runner refuses any
+      <code>/remix3/</code> URL before it launches a browser, so a receipt
+      naming it cannot exist. The Apollo misapplication exhibit is fenced by
+      declaration for now — labeled on its surface, never given a column or
+      counted in any cell — and the runner-side refusal that makes Remix 3's
+      fence a mechanism extends to it when the catalogue surface it lives on
+      is built.
+    </p>
+  </main>
+
+  <footer class="doc-footer">
+    <div class="shell">
+      <p>
+        <a href="/">Home</a> ·
+        <a href="/vanilla/editorial/">The editorial surface</a> ·
+        <a href="/api/snapshot">The snapshot manifest</a> ·
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">The harness itself</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

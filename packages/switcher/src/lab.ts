@@ -40,6 +40,17 @@ export interface PublishedReading {
   value: number;
   unit: "ms" | "KB" | "";
   receipt: LabReceipt;
+  /**
+   * The median's min–max band across the batch's runs (ADR-0001 addendum C:
+   * "cells now also publish the median with its min–max band"). Without it
+   * the table invites comparisons the noise does not support — two medians
+   * 44 ms apart whose bands overlap completely read as a difference, and
+   * the only way to falsify that is to download the receipt and compute the
+   * band by hand, which is the "it's in the receipt" answer the addendum
+   * pre-rejected. Optional so a single-run or unmeasured cell degrades to
+   * the bare median rather than inventing a band.
+   */
+  band?: { min: number; max: number };
 }
 
 /** One surface's published bundle. Keyed by column (variant, or data

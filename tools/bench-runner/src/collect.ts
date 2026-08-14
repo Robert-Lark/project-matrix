@@ -36,12 +36,18 @@ export const INTERACTIONS: Readonly<
   /** The editorial surface's ONE designed interaction (ADR-0008 §8): the
    *  featured release's Add to cart. Selected by accessible role + name —
    *  the canonical markup contract every variant must serve identically —
-   *  and clicked COLD, no warm-up: the first click's latency IS the honest
-   *  scripted INP, including any lazy handler binding a paradigm defers to
-   *  that moment (resumability defers the binding, not the bytes — the
-   *  slice-D measurement this surface's reading must not hide). The event
-   *  registers regardless of when the handler resolves, so the event-timing
-   *  entry the INP pipeline needs exists even where binding is deferred. */
+   *  and clicked with NO warm-up click before it, so the first click's
+   *  latency is what the receipt records.
+   *
+   *  Stated precisely, because the harness bounds what this can claim: the
+   *  runner deliberately settles post-load idle work BEFORE the click
+   *  (ADR-0001 addendum I, so the initial/interaction byte split is
+   *  deterministic). A paradigm that defers handler FETCHING to idle has
+   *  therefore finished fetching by click time, and this number measures
+   *  what remains at that moment — resolving and running the handler — not
+   *  the download. The event-timing entry the INP pipeline needs exists
+   *  either way, since the event registers regardless of when the handler
+   *  resolves. */
   "editorial-add-to-cart": async (page) => {
     await page.getByRole("button", { name: "Add to cart" }).click();
   },
@@ -322,7 +328,11 @@ export async function measureVisit(
   profile: TestProfile,
   spec: VisitSpec,
 ): Promise<{ sample: RunSampleT; applied: ApplyResult }> {
-  const interaction = INTERACTIONS[spec.interactionId];
+  // Object.hasOwn: a prototype key would resolve to an inherited function
+  // and silently measure NO interaction (see batch.ts's matching guard).
+  const interaction = Object.hasOwn(INTERACTIONS, spec.interactionId)
+    ? INTERACTIONS[spec.interactionId]
+    : undefined;
   if (!interaction) {
     throw new Error(`unknown interaction id: ${spec.interactionId}`);
   }
@@ -403,9 +413,19 @@ export async function measureVisit(
     // vanished from interactionBytes AND totalBytes). Bounded by settleCapMs so
     // a request wedged in flight surfaces as absent interaction bytes for the
     // suite to judge instead of hanging or being disguised.
+    // Whether that wait actually reached idle, RECORDED. A timeout here and
+    // a genuinely quiet interaction both yield zero interaction bytes, so
+    // "nothing was fetched for the click" — the strongest empirical claim
+    // the published fit line makes — was indistinguishable from "the runner
+    // stopped waiting" in the artifact. It is a real distinction: requests
+    // still in flight never appear in resource timing at all (verify-slice,
+    // anti-rigging lens).
+    let interactionSettled = true;
     await page
       .waitForLoadState("networkidle", { timeout: settleCapMs })
-      .catch(() => {});
+      .catch(() => {
+        interactionSettled = false;
+      });
     const afterEntries = await resourceEntries(page);
 
     // Wait for the interaction's own event-timing entry to EXIST before
@@ -587,6 +607,7 @@ export async function measureVisit(
 
     const sample: RunSampleT = {
       docCacheState,
+      interactionSettled,
       ttfb: {
         travelMs: nav.requestStart - nav.startTime,
         serverMs: nav.responseStart - nav.requestStart,

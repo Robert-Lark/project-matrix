@@ -123,6 +123,11 @@ async function main(): Promise<number> {
       options: {
         origin: { type: "string" },
         "local-cpu": { type: "boolean", default: false },
+        // Reproduce mints a FRESH nonce by default (fresh cache state, the
+        // honest reproduction). Pass the published receipt's own nonce to
+        // re-drive the exact effective URLs — the only way to pre-warm them
+        // first against the first-hit-uncompressed class.
+        nonce: { type: "string" },
         out: { type: "string" },
       },
     });
@@ -143,6 +148,7 @@ async function main(): Promise<number> {
     const spec = specFromReceipt(receipt, repoRoot, {
       origin: values.origin,
       cpuSource: cpuSource(values["local-cpu"]),
+      runNonce: values.nonce,
     });
     writeReceipt(await runBatch(spec), values.out);
     return 0;

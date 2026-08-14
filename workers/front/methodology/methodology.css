@@ -1,0 +1,113 @@
+/*
+ * Methodology page — composition (ADR-0001 §9; first editorial bench batch).
+ * ----------------------------------------------------------------------------
+ * A static singleton off the benchmarked matrix, home-surface precedent
+ * (ADR-0007 §6): render-critical CSS inlined at build, canonical font markup,
+ * no injected chrome. Consumes the shared semantic tokens only — no literal
+ * color anywhere, no new primitive (ADR-0006 §1; ADR-0007 §7 precedent for
+ * page-level compositions reaching shared tokens directly).
+ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { scroll-padding-block-start: var(--pm-space-5); }
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: var(--text-body) / 1.55 var(--font-ui);
+}
+
+.shell {
+  max-inline-size: 44rem;
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+a { color: var(--color-accent); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { color: var(--color-accent-hover); }
+a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+.num {
+  font-family: var(--font-metric);
+  font-variant-numeric: var(--numeric-metric);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.skip { position: absolute; left: -9999px; z-index: 10; }
+.skip:focus { left: var(--pm-space-4); top: var(--pm-space-4); }
+
+/* ── Masthead (home's grammar) ─────────────────────────────────────────── */
+.masthead { border-block-end: 1px solid var(--color-border); }
+.masthead__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-inline);
+  padding-block: var(--pm-space-3);
+}
+.masthead__mark {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  text-decoration: none;
+}
+.masthead__mark:hover { color: var(--color-accent-hover); }
+.masthead__byline {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  margin-inline-start: var(--space-inline);
+}
+.masthead__link { margin-inline-start: auto; font-size: var(--text-small); }
+
+/* ── Document body ─────────────────────────────────────────────────────── */
+.doc { padding-block: var(--pm-space-6) var(--pm-space-6); }
+
+.doc h1 {
+  font-size: var(--text-headline, var(--pm-size-4));
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-block: 0 var(--pm-space-3);
+}
+
+.doc__lede {
+  font-size: var(--text-large, var(--pm-size-2));
+  color: var(--color-text-muted);
+  margin-block: 0 var(--pm-space-5);
+}
+
+.doc h2 {
+  font-size: var(--pm-size-3);
+  line-height: 1.25;
+  margin-block: var(--pm-space-5) var(--pm-space-2);
+}
+
+.doc p, .doc li { max-inline-size: 65ch; }
+.doc ul { padding-inline-start: 1.2em; }
+.doc li { margin-block-end: var(--pm-space-2); }
+
+.doc pre {
+  background: color-mix(in srgb, var(--pm-neutral-950) 4%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  padding: var(--pm-space-3);
+  overflow-x: auto;
+  font-size: var(--text-small);
+}
+.doc code { font-family: var(--font-metric); }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.doc-footer {
+  border-block-start: 1px solid var(--color-border);
+  padding-block: var(--pm-space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}

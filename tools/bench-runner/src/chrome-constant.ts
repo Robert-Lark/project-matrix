@@ -19,6 +19,13 @@
  *    accounting strips (the chrome subtree, its /_pm/ head links, the
  *    measurement script tag — decomposeDocument's own boundaries), before
  *    the browser ever parses them.
+ *  - The fulfilled bodies are RE-COMPRESSED with brotli and served with
+ *    `content-encoding: br`, because the two conditions differ by exactly
+ *    the chrome's bytes and the hop only cancels the parts that are equal.
+ *    Serving the decoded body would put ~8 KB of uncompressed markup on a
+ *    throttled wire where the plane puts low-single-digit KB compressed, and
+ *    the transfer term of the delta would be an artifact of the probe rather
+ *    than a property of the chrome (verify-slice, anti-rigging lens).
  *  - Paint/shift metrics come from the browser's own performance timeline
  *    via an init-script observer, IDENTICALLY in both conditions — the
  *    injected ruler cannot measure its own absence, so neither condition
@@ -31,6 +38,8 @@
  *    interaction-time cost.
  */
 import { chromium, type Browser, type Page } from "playwright";
+import { brotliCompressSync } from "node:zlib";
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -58,6 +67,37 @@ interface ProbeMetrics {
   longTaskMs: number | null;
 }
 
+/**
+ * Provenance of the chrome the constant actually describes. The strip's cost
+ * scales with what it renders: the EMPTY state (30 em-dash cells, no fit
+ * sentence) is ~3 KB smaller than the POPULATED state (30 receipt anchors +
+ * the derived fit line). Measuring against a plane that carries no
+ * publication would state a constant for a chrome that no longer ships —
+ * so the probe records what it measured and the front build refuses a
+ * constant measured against an unpopulated chrome (verify-slice,
+ * anti-rigging lens).
+ */
+export interface MeasuredChrome {
+  bytes: number;
+  sha256: string;
+  /** Did the measured fragment carry published readings (receipt anchors)? */
+  populated: boolean;
+}
+
+function measuredChromeOf(body: string): MeasuredChrome {
+  const fragment =
+    body.match(
+      /<aside\b[^>]*\bid="pm-chrome"[\s\S]*?<\/aside>\s*<script[^>]*\/_pm\/measure\.js[^>]*><\/script>/i,
+    )?.[0] ??
+    body.match(/<aside\b[^>]*\bid="pm-chrome"[\s\S]*?<\/aside>/i)?.[0] ??
+    "";
+  return {
+    bytes: Buffer.byteLength(fragment, "utf8"),
+    sha256: createHash("sha256").update(fragment).digest("hex"),
+    populated: /class="pm-chrome__reading"/.test(fragment),
+  };
+}
+
 declare global {
   interface Window {
     __pmProbe?: { fcp: number | null; lcp: number | null; cls: number; longTaskMs: number };
@@ -69,6 +109,7 @@ async function probeVisit(
   profile: TestProfile,
   url: string,
   condition: "with" | "without",
+  onMeasuredChrome?: (m: MeasuredChrome) => void,
 ): Promise<ProbeMetrics> {
   const context = await browser.newContext(profileContextOptions(profile));
   const page: Page = await context.newPage();
@@ -86,10 +127,29 @@ async function probeVisit(
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) probe.lcp = e.startTime;
       }).observe({ type: "largest-contentful-paint", buffered: true });
+      // CLS by the SESSION-WINDOW MAXIMUM — the definition web-vitals (the
+      // site's one ruler) applies, not the superseded running total: a
+      // window closes after a 1 s gap or 5 s of duration, and CLS is the
+      // largest window's sum. A total would print a number that no session
+      // window would ever report, on a page whose methodology claims CLS
+      // means the same thing everywhere (verify-slice, conformance lens).
+      let winSum = 0;
+      let winStart = 0;
+      let winPrev = 0;
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) {
           const shift = e as PerformanceEntry & { value: number; hadRecentInput: boolean };
-          if (!shift.hadRecentInput) probe.cls += shift.value;
+          if (shift.hadRecentInput) continue;
+          if (
+            winSum !== 0 &&
+            (shift.startTime - winPrev >= 1000 || shift.startTime - winStart >= 5000)
+          ) {
+            winSum = 0;
+          }
+          if (winSum === 0) winStart = shift.startTime;
+          winPrev = shift.startTime;
+          winSum += shift.value;
+          if (winSum > probe.cls) probe.cls = winSum;
         }
       }).observe({ type: "layout-shift", buffered: true });
       new PerformanceObserver((list) => {
@@ -106,13 +166,20 @@ async function probeVisit(
       const upstream = await route.fetch();
       const body = await upstream.text();
       const headers = { ...upstream.headers() };
-      delete headers["content-encoding"];
       delete headers["content-length"];
       delete headers["transfer-encoding"];
+      // Preserve the WIRE shape: the conditions differ by exactly the
+      // chrome's bytes, so those bytes must cross the throttled connection
+      // compressed, as the plane sends them. Re-compressing here (rather
+      // than passing the decoded body and dropping content-encoding) keeps
+      // the delta's transfer term a property of the chrome.
+      if (condition === "with") onMeasuredChrome?.(measuredChromeOf(body));
+      const served = condition === "without" ? stripChrome(body) : body;
+      headers["content-encoding"] = "br";
       await route.fulfill({
         status: upstream.status(),
         headers,
-        body: condition === "without" ? stripChrome(body) : body,
+        body: brotliCompressSync(Buffer.from(served, "utf8")),
       });
     });
 
@@ -188,15 +255,28 @@ async function main(): Promise<number> {
     browser = await chromium.launch({ channel: "chrome" });
   }
   const samples: Record<"with" | "without", ProbeMetrics[]> = { with: [], without: [] };
+  let measuredChrome: MeasuredChrome | null = null;
   try {
     for (let run = 0; run < runs; run++) {
       for (const condition of ["with", "without"] as const) {
-        samples[condition].push(await probeVisit(browser, profile, url, condition));
+        samples[condition].push(
+          await probeVisit(browser, profile, url, condition, (m) => {
+            // Every with-run must see the SAME chrome, or the delta mixes
+            // two different fragments.
+            if (measuredChrome && measuredChrome.sha256 !== m.sha256) {
+              throw new Error(
+                `the served chrome changed mid-probe (${measuredChrome.sha256.slice(0, 12)} → ${m.sha256.slice(0, 12)}) — the delta would mix two fragments`,
+              );
+            }
+            measuredChrome = m;
+          }),
+        );
       }
     }
   } finally {
     await browser.close();
   }
+  if (!measuredChrome) throw new Error("no chrome fragment was observed — nothing to measure");
 
   const withMed = medians(samples.with);
   const withoutMed = medians(samples.without);
@@ -210,11 +290,17 @@ async function main(): Promise<number> {
     target: values.target,
     profile: { id: profile.id, specVersion: PROFILE_SPEC_VERSION },
     runsPerCondition: runs,
+    // WHICH chrome this constant describes (see MeasuredChrome): the strip's
+    // cost scales with what it renders, so the artifact carries the measured
+    // fragment's size and hash, and whether it was the populated state.
+    measuredChrome,
     method: [
       "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition strips exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — before parse",
+      "both fulfilled bodies are re-compressed with brotli and served content-encoding: br, so the bytes the two conditions differ by cross the throttled connection compressed exactly as the plane sends them — serving the decoded body would make the delta's transfer term an artifact of the probe",
       "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
+      "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
       "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
-      "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms); interaction-time cost is not claimed",
+      "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality",
     ],
     conditions: {
       with: { runs: samples.with, medians: withMed },

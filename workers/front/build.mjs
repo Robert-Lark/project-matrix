@@ -14,10 +14,27 @@
 //    same document served live at /api/snapshot — so the page's on-surface
 //    receipts (release count, freeze date, commit) structurally cannot drift
 //    from the plane's. Hand-typing them is how a wrong SHA ships.
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+//
+// The published-runs artifacts (first editorial bench batch, ADR-0008 §3's
+// owner obligation) are built here too: the per-surface lab bundle at
+// /_pm/lab/{surface}.json is GENERATED from the committed receipts under
+// lab/receipts/ — the served file and the bundle the Worker imports and
+// hands renderChrome are the SAME artifact, so they cannot drift — and the
+// methodology page (ADR-0001 §9) is composed like home, every number on it
+// substituted from a committed artifact, never typed.
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { FIT } from "./lab/fit.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(join(root, "package.json"));
@@ -30,11 +47,12 @@ const tokensRoot = dirname(
 );
 
 rmSync(dist, { recursive: true, force: true });
-mkdirSync(join(dist, "_pm"), { recursive: true });
+mkdirSync(join(dist, "_pm", "lab", "receipts"), { recursive: true });
 mkdirSync(join(dist, "pm", "css"), { recursive: true });
 mkdirSync(join(dist, "pm", "fonts"), { recursive: true });
+mkdirSync(join(dist, "methodology"), { recursive: true });
 
-// ── The home surface ────────────────────────────────────────────────────
+// ── Shared substitution plumbing ────────────────────────────────────────
 const manifest = JSON.parse(
   readFileSync(
     join(root, "..", "..", "tools", "snapshot-capture", "crate", "manifest.json"),
@@ -68,7 +86,6 @@ const buttonCss = readFileSync(
   join(tokensRoot, "css", "components", "button.css"),
   "utf8",
 );
-const homeCss = readFileSync(join(root, "home", "home.css"), "utf8");
 
 // Head colors (theme-color, favicon) cannot read CSS custom properties, so
 // they are substituted from the REAL token file at build — a re-pour of the
@@ -80,6 +97,314 @@ const token = (name) => {
 };
 const uriHex = (hex) => hex.replace("#", "%23");
 
+// ── /_pm/lab/* — the published-runs artifacts (ADR-0008 §3; ADR-0001 §9) ──
+// Inputs are COMMITTED: lab/receipts/{surface}-{profile}.json (raw batch
+// receipts) + lab/chrome-constant.json (the addendum-F probe artifact) +
+// lab/fit.mjs (the fit templates). C2 as build mechanism: every reading
+// carries its receipt by construction, and a fit sentence the receipts do
+// not support REFUSES to build (ADR-0001 addendum C).
+const KB = 1024;
+const roundTo = (v, places) => Math.round(v * 10 ** places) / 10 ** places;
+
+function bundleFromReceipt(receipt, fitSpec, receiptUrl) {
+  const receiptMeta = {
+    profile: receipt.profile.id,
+    date: receipt.date.slice(0, 10),
+    commitSha: receipt.commit.sha,
+    location: receipt.runLocation.label,
+    url: receiptUrl,
+  };
+  // The min–max band across the batch's runs, rounded exactly as its
+  // median is (ADR-0001 addendum C: cells publish the median WITH its
+  // band). Derived from the same raw runs the overlap check reads — a
+  // single measured run yields no band rather than a fake zero-width one.
+  const bandOf = (runs, pick, round) => {
+    const values = runs.map(pick).filter((v) => typeof v === "number" && Number.isFinite(v));
+    if (values.length < 2) return undefined;
+    return { min: round(Math.min(...values)), max: round(Math.max(...values)) };
+  };
+  const reading = (value, unit, band) =>
+    value === null ? undefined : { value, unit, receipt: receiptMeta, ...(band ? { band } : {}) };
+  const columns = {};
+  for (const target of receipt.targets) {
+    // Warm/steady-state is the headline column (ADR-0001 §5); the receipt
+    // the cell links carries the cold column beside it.
+    const med = target.columns.warm.medians;
+    const runs = target.columns.warm.runs;
+    const cell = {};
+    const put = (metric, r) => {
+      if (r) cell[metric] = r;
+    };
+    const kb = (v) => roundTo(v / KB, 2);
+    put(
+      "initial JS",
+      reading(
+        med.initialJsBytes === null ? null : kb(med.initialJsBytes),
+        "KB",
+        bandOf(runs, (r) => r.kb.initialJsBytes, kb),
+      ),
+    );
+    for (const [metric, key] of [
+      ["TTFB", "TTFB"],
+      ["FCP", "FCP"],
+      ["LCP", "LCP"],
+      ["INP (scripted)", "INP"],
+    ]) {
+      const v = med.webVitals[key];
+      put(
+        metric,
+        reading(
+          v === null ? null : Math.round(v),
+          "ms",
+          bandOf(runs, (r) => r.webVitals[key], Math.round),
+        ),
+      );
+    }
+    put(
+      "CLS",
+      reading(
+        med.webVitals.CLS === null ? null : roundTo(med.webVitals.CLS, 3),
+        "",
+        bandOf(runs, (r) => r.webVitals.CLS, (v) => roundTo(v, 3)),
+      ),
+    );
+    columns[target.variant] = cell;
+  }
+
+  // The fit line (ADR-0001 addendum C): comparative framing only when the
+  // compared byte bands do not overlap. The sentence enumerates EVERY
+  // variant, so every variant's band must be separable — checking only the
+  // min and max pair would be near-vacuous (the extremes of a spread are
+  // the one pair that can hardly overlap) while the sentence still implies
+  // an order for the three columns between them (verify-slice,
+  // anti-rigging lens). Bands are min–max over the raw warm runs, never the
+  // medians.
+  const jsMedian = (t) => t.columns.warm.medians.initialJsBytes;
+  const band = (t) => {
+    const values = t.columns.warm.runs
+      .map((r) => r.kb.initialJsBytes)
+      .filter((v) => typeof v === "number" && Number.isFinite(v));
+    // An empty or short run list must not silently pass the overlap test:
+    // Math.min of nothing is Infinity, which reads as "no overlap" and
+    // would publish a verdict backed by no samples at all.
+    if (values.length !== receipt.runsPerUrl) {
+      throw new Error(
+        `front lab: ${t.variant} has ${values.length} usable initial-JS samples but the batch ran ${receipt.runsPerUrl} — refusing to derive a band from an incomplete run set`,
+      );
+    }
+    return { min: Math.min(...values), max: Math.max(...values) };
+  };
+  const ordered = [...receipt.targets].sort((a, b) => jsMedian(a) - jsMedian(b));
+  for (let i = 1; i < ordered.length; i++) {
+    const lower = band(ordered[i - 1]);
+    const upper = band(ordered[i]);
+    if (lower.max >= upper.min && upper.max >= lower.min) {
+      return { columns, bandsOverlap: true };
+    }
+  }
+  // Refuse claims the receipts don't back: the sentence says no variant
+  // fetches a byte for the click — verify it in BOTH columns' medians.
+  for (const t of receipt.targets) {
+    for (const column of [t.columns.warm, t.columns.cold]) {
+      if (column.medians.interactionBytes !== 0) {
+        throw new Error(
+          `front lab: the fit sentence claims no interaction fetch, but ${t.variant} measured ` +
+            `${column.medians.interactionBytes} B — refusing to publish an unsupported claim ` +
+            `(ADR-0001 addendum C / C2)`,
+        );
+      }
+      // Zero bytes only means "fetched nothing" if the runner actually
+      // reached network idle; a swallowed settle timeout produces the same
+      // zero. Unrecorded counts as unverified — the claim is the site's
+      // strongest, so it publishes only from runs that prove it.
+      for (const run of column.runs) {
+        if (run.interactionSettled !== true) {
+          throw new Error(
+            `front lab: the fit sentence claims no interaction fetch, but a ${t.variant} run did not ` +
+              `record reaching network idle after the click (interactionSettled=${String(run.interactionSettled)}) — ` +
+              `zero bytes is unverified there, so the claim cannot publish`,
+          );
+        }
+      }
+    }
+  }
+  const kb = Object.fromEntries(
+    receipt.targets.map((t) => [t.variant, roundTo(jsMedian(t) / KB, 2)]),
+  );
+  // The template names specific variants; the batch must carry exactly
+  // those. Exact, not subset — a sixth variant also invalidates a sentence
+  // that enumerates five.
+  const have = Object.keys(kb).sort().join(",");
+  const want = [...fitSpec.requires].sort().join(",");
+  if (have !== want) {
+    throw new Error(
+      `front lab: the fit sentence names [${want}] but this batch measured [${have}] — rewrite the template rather than publish a sentence about variants it did not measure`,
+    );
+  }
+  const sentence = fitSpec.sentence(kb);
+  // Belt over mechanism: any unsubstituted value reaching the one line the
+  // site publishes as a verdict refuses the build.
+  if (/undefined|NaN/.test(sentence)) {
+    throw new Error(`front lab: the fit sentence contains an unsubstituted value: ${sentence}`);
+  }
+  return { columns, fit: { sentence, receipt: receiptMeta } };
+}
+
+const labDir = join(root, "lab");
+const labReceiptsDir = join(labDir, "receipts");
+const labProfiles = {};
+let editorialReceipts = [];
+for (const file of readdirSync(labReceiptsDir).sort()) {
+  if (!file.endsWith(".json")) continue;
+  const receipt = JSON.parse(readFileSync(join(labReceiptsDir, file), "utf8"));
+  if (receipt.kind !== "pm-bench-receipt" || receipt.receiptVersion !== 1) {
+    throw new Error(`front lab: ${file} is not a v1 pm-bench-receipt`);
+  }
+  // A published receipt must come from a CLEAN checkout — a dirty pin is
+  // exactly what a hostile reader flags (ADR-0001 §9).
+  if (receipt.commit.dirty !== false) {
+    throw new Error(`front lab: ${file} was minted from a dirty tree — not publishable`);
+  }
+  if (!file.startsWith("editorial-")) {
+    throw new Error(`front lab: ${file} names no known surface (editorial-* expected)`);
+  }
+  if (Object.hasOwn(labProfiles, receipt.profile.id)) {
+    throw new Error(`front lab: duplicate receipt for profile ${receipt.profile.id}`);
+  }
+  labProfiles[receipt.profile.id] = {
+    surface: "editorial",
+    profile: receipt.profile.id,
+    ...bundleFromReceipt(receipt, FIT.editorial, `/_pm/lab/receipts/${file}`),
+  };
+  editorialReceipts.push(receipt);
+  cpSync(join(labReceiptsDir, file), join(dist, "_pm", "lab", "receipts", file));
+}
+// No committed receipts is a LEGITIMATE state, not an error: it is the
+// state every unbuilt surface is in, and the state this surface is in
+// between a code change and the batch that re-measures it. The bundle still
+// builds (empty), the chrome renders its designed empty states everywhere,
+// and the pages that quote lab numbers say so plainly — the same rule as
+// every other number here: none without its artifact.
+const published = editorialReceipts.length > 0;
+writeFileSync(
+  join(dist, "_pm", "lab", "editorial.json"),
+  JSON.stringify({ surface: "editorial", profiles: labProfiles }, null, 2) + "\n",
+);
+
+// The chrome constant (ADR-0001 addendum F) is OPTIONAL-BUT-VALIDATED, and
+// deliberately so: it measures the cost of the POPULATED chrome, which only
+// exists once this build has produced the lab bundle above — so the first
+// build of a new publication necessarily runs before its constant can be
+// measured. Rather than let that bootstrap tempt a hand-written placeholder,
+// the page renders a designed "not yet measured" statement when the artifact
+// is absent (C2 applied to the constant itself: no number without its
+// artifact), and applies the full refusal set when it is present.
+const chromeConstantPath = join(labDir, "chrome-constant.json");
+const chromeConstant = existsSync(chromeConstantPath)
+  ? JSON.parse(readFileSync(chromeConstantPath, "utf8"))
+  : null;
+if (chromeConstant) {
+  if (chromeConstant.kind !== "pm-chrome-constant" || chromeConstant.commit.dirty !== false) {
+    throw new Error("front lab: chrome-constant.json malformed or minted from a dirty tree");
+  }
+// A missing measurement must refuse the build exactly as a dirty receipt
+// does: without this, a null delta (every run's metric null) substitutes as
+// "0 ms" and a renamed field as "NaN ms" — a measured-sounding constant for
+// something never measured, which the %% marker guard cannot see
+// (verify-slice, correctness lens).
+  for (const metric of ["FCP", "LCP", "CLS", "longTaskMs"]) {
+    if (!Number.isFinite(chromeConstant.deltaMedians?.[metric])) {
+      throw new Error(
+        `front lab: chrome-constant delta for ${metric} is not a finite number — a constant that was never measured cannot publish`,
+      );
+    }
+  }
+  // The constant must describe the chrome that SHIPS. The strip's cost
+  // scales with what it renders, and the populated state (receipt anchors +
+  // the fit sentence) is ~3 KB larger than the empty state — so a constant
+  // measured against a plane carrying no publication understates the
+  // shipping chrome (verify-slice, anti-rigging lens).
+  if (chromeConstant.measuredChrome?.populated !== true) {
+    throw new Error(
+      "front lab: the chrome constant was measured against an UNPOPULATED chrome (no published readings in the fragment) — re-measure against a plane serving this publication",
+    );
+  }
+  cpSync(chromeConstantPath, join(dist, "_pm", "lab", "chrome-constant.json"));
+}
+
+// The default-profile bundle backs home's build-derived numbers (the chrome
+// itself defaults to avg-broadband-desktop — packages/switcher chrome.ts).
+let labFacts = null;
+if (published) {
+  const defaultBundle = labProfiles["avg-broadband-desktop"];
+  if (!defaultBundle) {
+    throw new Error("front lab: no receipt for the default profile (avg-broadband-desktop)");
+  }
+  const defaultJsCells = Object.values(defaultBundle.columns).map(
+    (cell) => cell["initial JS"],
+  );
+  if (defaultJsCells.some((c) => typeof c?.value !== "number")) {
+    throw new Error("front lab: a default-profile column lacks an initial-JS reading");
+  }
+  const defaultJsKb = defaultJsCells.map((c) => c.value);
+  labFacts = {
+    date: editorialReceipts[0].date.slice(0, 10),
+    sha7: editorialReceipts[0].commit.sha.slice(0, 7),
+    runs: editorialReceipts[0].runsPerUrl,
+    location: editorialReceipts[0].runLocation.label,
+    profileCount: editorialReceipts.length,
+    variantCount: editorialReceipts[0].targets.length,
+    jsMin: Math.min(...defaultJsKb),
+    jsMax: Math.max(...defaultJsKb),
+    // The receipt behind home's spread — taken from the readings themselves,
+    // never composed from a filename.
+    receiptUrl: defaultJsCells[0].receipt.url,
+  };
+  // Batch integrity: every published receipt shares one SHA and one batch
+  // discipline — a mixed-SHA publication is not one publication.
+  for (const r of editorialReceipts) {
+    if (r.commit.sha !== editorialReceipts[0].commit.sha) {
+      throw new Error("front lab: published receipts span more than one commit SHA");
+    }
+    if (r.runsPerUrl !== labFacts.runs || r.targets.length !== labFacts.variantCount) {
+      throw new Error("front lab: published receipts disagree on batch shape");
+    }
+    // Date and run location are read from receipt[0] but PUBLISHED as
+    // statements about the whole batch ("ran <date>", "labeled in every
+    // receipt as <location>"). Same class as the mixed-SHA refusal above: a
+    // batch straddling UTC midnight, or one receipt minted on a different
+    // machine once the pinned runner lands, would publish a claim the linked
+    // receipts falsify one click away (verify-slice, seams + conformance).
+    if (r.date.slice(0, 10) !== labFacts.date) {
+      throw new Error("front lab: published receipts span more than one date");
+    }
+    if (r.runLocation.label !== labFacts.location) {
+      throw new Error("front lab: published receipts span more than one run location");
+    }
+  }
+}
+
+// ── The home surface ────────────────────────────────────────────────────
+const homeCss = readFileSync(join(root, "home", "home.css"), "utf8");
+
+// Composed statements rather than bare number markers, so a page never has a
+// number-shaped hole to fill when nothing is published. Same rule as the
+// chrome's own empty states: say what is true, or say that nothing is.
+const labRuns = labFacts ? String(labFacts.runs) : "seven";
+const homeSpread = labFacts
+  ? `Measured on average broadband: <a class="quiet-link" href="${esc(labFacts.receiptUrl)}">` +
+    `<span class="num">${esc(labFacts.jsMin)}–${esc(labFacts.jsMax)}&nbsp;KB</span></a> of JavaScript ` +
+    `for the same article, published <span class="num">${esc(labFacts.date)}</span>.`
+  : `The five builds are public; their measured readings publish with the next batch.`;
+const batchStatement = labFacts
+  ? `The current published batch ran <span class="num">${esc(labFacts.date)}</span> at commit ` +
+    `<span class="num">${esc(labFacts.sha7)}</span>: ${esc(labFacts.variantCount)} variants × ` +
+    `${esc(labFacts.profileCount)} profiles × two cache columns × ${esc(labFacts.runs)} runs, against ` +
+    `the live plane, from a quiet, single-purpose local machine — labeled honestly in every receipt ` +
+    `as <span class="num">${esc(labFacts.location)}</span>, an unpinned developer machine.`
+  : `No batch is published for this surface right now, so no reading table on this site carries a ` +
+    `number — the cells show an em-dash until one does.`;
+
 // Function replacements: with a string replacement, `$'`/`$&`/`$$` in the
 // CSS would be replacement patterns — a future `[href$='…']` selector would
 // silently duplicate the document tail past the %% guard.
@@ -90,6 +415,10 @@ const home = readFileSync(join(root, "home", "index.html"), "utf8")
   .replaceAll("%%SNAP_DATE%%", () => esc(manifest.capturedAt))
   .replaceAll("%%SNAP_SHA7%%", () => esc(manifest.commitSha.slice(0, 7)))
   .replaceAll("%%SNAP_SOURCE%%", () => esc(manifest.source))
+  // ADR-0001 §9: every published number links its receipt — including the
+  // one on the front door. The whole clause is composed above from the same
+  // bundle the values come from, so the href cannot drift from what it backs.
+  .replaceAll("%%LAB_ED_SPREAD%%", () => homeSpread)
   .replaceAll("%%TOKEN_PAPER%%", () => token("--pm-neutral-0"))
   .replaceAll("%%TOKEN_VINYL_URI%%", () => uriHex(token("--pm-neutral-950")))
   .replaceAll("%%TOKEN_PAPER_SUNK_URI%%", () => uriHex(token("--pm-neutral-50")));
@@ -97,6 +426,47 @@ if (home.includes("%%")) {
   throw new Error("front: unsubstituted %% marker left in home/index.html");
 }
 writeFileSync(join(dist, "index.html"), home);
+
+// ── The methodology page (ADR-0001 §9) ──────────────────────────────────
+// A static singleton like home; every number substituted from a committed
+// artifact (the chrome-constant probe, the published receipts, the crate
+// manifest). Signed deltas render their own sign so the copy cannot claim a
+// direction the artifact doesn't.
+const signedMs = (v) => {
+  // Throw rather than fall through to the negative branch: a non-number
+  // reaching here would render "−NaN ms" as a measured constant.
+  if (!Number.isFinite(v)) throw new Error(`front: non-finite chrome-constant delta (${v})`);
+  return v === 0 ? "0" : v > 0 ? `+${roundTo(v, 1)}` : `−${roundTo(-v, 1)}`;
+};
+const methodologyCss = readFileSync(join(root, "methodology", "methodology.css"), "utf8");
+const cc = chromeConstant;
+// One composed statement, so the page has no number-shaped hole to fill when
+// the constant has not been measured yet (C2 applied to the constant: the
+// page states its absence rather than printing a zero).
+const ccStatement = cc
+  ? `It is stated as a constant: <strong>${esc(signedMs(cc.deltaMedians.FCP))}&nbsp;ms first paint, ` +
+    `${esc(signedMs(cc.deltaMedians.LCP))}&nbsp;ms largest paint, ${esc(roundTo(cc.deltaMedians.CLS, 3))} layout shift, ` +
+    `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong> — ${esc(cc.runsPerCondition)} runs per ` +
+    `condition under the <span class="num">${esc(cc.profile.id)}</span> profile, measured ${esc(cc.date.slice(0, 10))} ` +
+    `at commit <span class="num">${esc(cc.commit.sha.slice(0, 7))}</span> on <span class="num">${esc(cc.target)}</span> ` +
+    `against ${esc(cc.origin)} (<a href="/_pm/lab/chrome-constant.json">the raw probe artifact</a>).`
+  : `That measurement has not been published for the current chrome yet, so no constant is stated here — ` +
+    `the same rule the reading tables follow: no number without its artifact.`;
+const methodology = readFileSync(join(root, "methodology", "index.html"), "utf8")
+  .replace("/*%%PM_TOKENS_CSS%%*/", () => `${tokensCss}\n${buttonCss}`)
+  .replace("/*%%PM_METHODOLOGY_CSS%%*/", () => methodologyCss)
+  .replaceAll("%%SNAP_COUNT%%", () => esc(manifest.releaseCount))
+  .replaceAll("%%SNAP_DATE%%", () => esc(manifest.capturedAt))
+  .replaceAll("%%CC_STATEMENT%%", () => ccStatement)
+  .replaceAll("%%LAB_BATCH_STATEMENT%%", () => batchStatement)
+  .replaceAll("%%LAB_RUNS%%", () => esc(labRuns))
+  .replaceAll("%%TOKEN_PAPER%%", () => token("--pm-neutral-0"))
+  .replaceAll("%%TOKEN_VINYL_URI%%", () => uriHex(token("--pm-neutral-950")))
+  .replaceAll("%%TOKEN_PAPER_SUNK_URI%%", () => uriHex(token("--pm-neutral-50")));
+if (methodology.includes("%%")) {
+  throw new Error("front: unsubstituted %% marker left in methodology/index.html");
+}
+writeFileSync(join(dist, "methodology", "index.html"), methodology);
 
 // Canonical font loading (ADR-0003 §8): the identical files, served from this
 // Worker's own assets at /pm/* — only the base path differs per consumer.
@@ -132,4 +502,6 @@ cpSync(
   join(dist, "_pm", "measure.js"),
 );
 
-console.log("front: dist assembled (home surface + /pm fonts + /_pm instrumentation)");
+console.log(
+  "front: dist assembled (home + methodology + /pm fonts + /_pm instrumentation + lab bundle)",
+);
