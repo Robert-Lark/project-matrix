@@ -121,7 +121,13 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl) {
   const bandOf = (runs, pick, round) => {
     const values = runs.map(pick).filter((v) => typeof v === "number" && Number.isFinite(v));
     if (values.length < 2) return undefined;
-    return { min: round(Math.min(...values)), max: round(Math.max(...values)) };
+    const min = round(Math.min(...values));
+    const max = round(Math.max(...values));
+    // A zero-width band carries no information — "0.42–0.42" says only what
+    // the median already said — and 30 of them cost real bytes against the
+    // fragment budget (ADR-0008 §5). Omitted: the cell is then the median
+    // alone, which is exactly what a band of zero width means.
+    return min === max ? undefined : { min, max };
   };
   const reading = (value, unit, band) =>
     value === null ? undefined : { value, unit, receipt: receiptMeta, ...(band ? { band } : {}) };
