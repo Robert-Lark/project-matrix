@@ -449,13 +449,26 @@ const cc = chromeConstant;
 // One composed statement, so the page has no number-shaped hole to fill when
 // the constant has not been measured yet (C2 applied to the constant: the
 // page states its absence rather than printing a zero).
+const ccLocal = cc ? /^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)(:|\/|$)/.test(cc.origin) : false;
 const ccStatement = cc
   ? `It is stated as a constant: <strong>${esc(signedMs(cc.deltaMedians.FCP))}&nbsp;ms first paint, ` +
     `${esc(signedMs(cc.deltaMedians.LCP))}&nbsp;ms largest paint, ${esc(roundTo(cc.deltaMedians.CLS, 3))} layout shift, ` +
-    `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong> — ${esc(cc.runsPerCondition)} runs per ` +
-    `condition under the <span class="num">${esc(cc.profile.id)}</span> profile, measured ${esc(cc.date.slice(0, 10))} ` +
-    `at commit <span class="num">${esc(cc.commit.sha.slice(0, 7))}</span> on <span class="num">${esc(cc.target)}</span> ` +
-    `against ${esc(cc.origin)} (<a href="/_pm/lab/chrome-constant.json">the raw probe artifact</a>).`
+    `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong>, plus ` +
+    `<strong>${esc(cc.measuredChrome.wireBytesBrotli)}&nbsp;bytes</strong> on the wire — ` +
+    `${esc(cc.runsPerCondition)} runs per condition under the ` +
+    `<span class="num">${esc(cc.profile.id)}</span> profile, measured ${esc(cc.date.slice(0, 10))} at commit ` +
+    `<span class="num">${esc(cc.commit.sha.slice(0, 7))}</span> on <span class="num">${esc(cc.target)}</span> ` +
+    `(<a href="/_pm/lab/chrome-constant.json">the raw probe artifact</a>). The two halves are kept apart on ` +
+    `purpose: both conditions are padded to identical document bytes so the timing figure is the chrome's ` +
+    `processing and subresource cost — a render-blocking stylesheet, a preloaded mono, and the ruler — ` +
+    `while what it adds to the document on the wire is the byte figure beside it.` +
+    (ccLocal
+      ? ` It was measured on the local composed origin rather than the live plane, for a reason worth stating: ` +
+        `the constant has to describe the chrome that ships, readings and all, and the live plane cannot render ` +
+        `that chrome until this publication is deployed to it. Re-measuring there is a recorded obligation. ` +
+        `Local first paint is not a production number; the difference between the two conditions is what is ` +
+        `published, and both conditions ran on the same plane under the same emulated network.`
+      : ``)
   : `That measurement has not been published for the current chrome yet, so no constant is stated here — ` +
     `the same rule the reading tables follow: no number without its artifact.`;
 const methodology = readFileSync(join(root, "methodology", "index.html"), "utf8")

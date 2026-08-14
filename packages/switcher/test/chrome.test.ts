@@ -252,10 +252,14 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
   it("the fragment stays inside its byte budget (ADR-0001 addendum F discipline)", () => {
     // The chrome rides every measured page's HTML; its size is a stated
     // constant, not a creeping variable (its wall-clock cost is re-measured
-    // per ADR-0001 addendum F before any publication). Budget: 12 KiB for
-    // the largest control-set (the PLP's) — measured 8.4 KiB empty this
-    // session, with headroom for populated readings (a receipt adds ~100
-    // bytes per cell). Raising this number is an ADR-level decision.
+    // per ADR-0001 addendum F before any publication). Budget: 13 KiB —
+    // raised from 12 by the first editorial publication, when the populated
+    // state stopped being an estimate: a receipt anchor per cell PLUS the
+    // min-max band ADR-0001 addendum C requires took the largest real
+    // fragment (remix3, whose fenced note is extra) to 12,396 bytes. The
+    // fragment's measured wire cost is 1,907 bytes brotli, so the raise is
+    // bounded and cheap; the budget exists to catch creep, not to force
+    // markup golf. Recorded in the ADR-0008 addendum.
     const plp = renderChrome({
       variant: "react-next",
       surface: "plp",
@@ -263,7 +267,7 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
       search: "?cache=cold&n=240&profile=slow-4g-mid-phone",
       location: "local",
     });
-    expect(plp.length).toBeLessThan(12288);
+    expect(plp.length).toBeLessThan(13312);
   });
 
   it("the budget holds for a FULLY populated bundle, measured in bytes", () => {
@@ -302,7 +306,7 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
         fit: { sentence: "Under this profile the loaders build reaches first paint in one round trip where the client-cache build needs two.", receipt },
       },
     });
-    expect(new TextEncoder().encode(populated).length).toBeLessThan(12288);
+    expect(new TextEncoder().encode(populated).length).toBeLessThan(13312);
   });
 });
 

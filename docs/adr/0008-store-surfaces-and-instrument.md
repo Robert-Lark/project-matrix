@@ -382,3 +382,37 @@ match the master byte-for-byte after parsing:
 - The DRAFT, panel findings, and board captures under
   `docs/prototypes/surface-design/` are the exploration record and
   "How it was built" source material.
+
+## Addendum — the fragment budget, re-set against a real populated state (2026-08-14)
+
+§5 set the chrome fragment's byte budget at **12 KiB**, measured 8.4 KiB
+empty "with headroom for populated readings (a receipt adds ~100 bytes per
+cell)". The first editorial publication turned that estimate into a
+measurement, and the estimate was low: a populated editorial fragment
+carries 30 receipt-linked cells **plus** the min–max band ADR-0001
+addendum C requires in each — and the largest real fragment (the remix3
+exhibit's, whose fenced note and tagged cell are extra) measured **12,396
+bytes**, over budget.
+
+Two changes, both recorded rather than one silently absorbed:
+
+1. **Zero-width bands are omitted.** A band whose min equals its max states
+   only what the median already stated. Dropping them removed 7 of 30 on
+   this surface and 306 bytes; the band element is also `<small>` rather
+   than `<span>` — the element for fine print qualifying an adjacent value,
+   and 11 bytes cheaper per cell.
+2. **The budget is now 13 KiB** (13,312 bytes), which leaves the largest
+   real fragment ~1.2 KiB of headroom instead of the 5 bytes the 12 KiB
+   number left after bands landed. The raise is bounded and cheap by
+   measurement, not by assertion: the fragment's cost **on the wire** is
+   1,907 bytes brotli (ADR-0001 addendum L), and the chrome's measured
+   timing cost is dominated by its subresources — a render-blocking
+   stylesheet, a preloaded mono, and the ruler — not by the fragment's own
+   markup. The budget's purpose is to catch creep, and it still does; it
+   should not force markup golf against a number chosen before the
+   populated state existed.
+
+The obligation §5 attaches to the budget is unchanged: the chrome's
+runtime cost is re-measured before publication (ADR-0001 addendum F/L),
+and that measurement now runs against the POPULATED chrome by mechanism —
+the front build refuses a constant measured against any other.

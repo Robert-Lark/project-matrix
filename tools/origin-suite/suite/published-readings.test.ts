@@ -205,7 +205,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     }
   });
 
-  it.skipIf(!hasPublication)("the POPULATED fragment stays inside the 12 KiB byte budget on every profile (ADR-0008 §5)", async () => {
+  it.skipIf(!hasPublication)("the POPULATED fragment stays inside the 13 KiB byte budget on every profile (ADR-0008 §5 addendum)", async () => {
     // The switcher package asserts the budget on fixtures; this is the REAL
     // bundle through the REAL injection path. remix3's page renders the
     // largest fragment (the fenced note + tagged cell ride along).
@@ -216,7 +216,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
           /<aside id="pm-chrome"[\s\S]*?<\/aside><script src="\/_pm\/measure\.js" defer><\/script>/,
         )?.[0];
         expect(fragment, `${variant} ?profile=${id}`).toBeDefined();
-        expect(new TextEncoder().encode(fragment!).length).toBeLessThan(12288);
+        expect(new TextEncoder().encode(fragment!).length).toBeLessThan(13312);
       }
     }
   });

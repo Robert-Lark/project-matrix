@@ -125,7 +125,10 @@ function labCell(reading: PublishedReading | undefined): string {
   const band =
     b && typeof b.min === "number" && typeof b.max === "number" &&
     Number.isFinite(b.min) && Number.isFinite(b.max)
-      ? `<span class="pm-chrome__band">${esc(String(b.min))}–${esc(String(b.max))}</span>`
+      // <small>, not <span>: it is the element for fine print qualifying the
+      // value beside it, and it costs 11 bytes less per cell against the
+      // fragment budget — 23 cells of it on this surface.
+      ? `<small class="pm-chrome__band">${esc(String(b.min))}–${esc(String(b.max))}</small>`
       : "";
   // No per-cell title tooltip: the href IS the receipt (profile, date,
   // commit, location live at the linked artifact) — 24 tooltips cost ~2.4 KB

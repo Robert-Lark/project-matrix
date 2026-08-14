@@ -2871,9 +2871,21 @@ reading-table cell was a designed em-dash; the chrome's empty state promised
 "when a number lands here it carries its receipt — or it doesn't land at
 all." This unit made that promise come due for the editorial surface.
 
-**Order of operations was the whole design.** The receipts must pin a CLEAN
-sha whose variant code equals the deployed plane's, so the unit is two
-commits by structural necessity, not preference: commit A arms the harness
+**Order of operations was the whole design, and it decided the commit
+count.** A receipt records `commit.dirty` as the tree stood WHEN IT WAS
+MEASURED, and the publication build refuses a dirty receipt — so every
+artifact has to be minted from a committed tree, and the code it measures
+has to be committed before it. That makes this unit **six commits**, each
+one a measurement boundary rather than a preference: arm the harness →
+build the pipeline → mint the receipts → fix the constant's method → drop
+zero-width bands → mint the constant. They cannot be squashed: the
+receipts pin `85b97c4` and the constant pins `b6dcdf1` by SHA, and
+rewriting history would leave both pointing at commits that never existed.
+That is a real tension with the one-commit-per-branch habit, flagged
+rather than papered over. The rule paid for itself twice — editing docs
+while a batch ran produced three unpublishable receipts, and the constant's
+own artifact file, left in the tree from a previous run, dirtied the tree
+for the next one. Commit A arms the harness
 (the `editorial-add-to-cart` interaction — the surface's ONE designed
 interaction, clicked with no warm-up so the first click's latency is what
 lands — though see the verification postscript: the harness settles idle work
@@ -2885,16 +2897,20 @@ then does anything measure. Commit B
 publishes — receipts, bundle pipeline, methodology page, home flips, this
 record.
 
-**The chrome constant (ADR-0001 addendum F, first real measurement):**
-+76 ms FCP, +76 ms LCP, 0 CLS, 0 long-task ms — with/without delta of
-medians, 7 runs per condition, slow-4g-mid-phone, /vanilla/editorial/ on
-the deployed plane. The geometric-inertness claim (ADR-0008 §1) held
-exactly: zero layout shift either way. The cost is the head-injected
-stylesheet + mono font contention on a throttled network — precisely the
-thing byte-stripping cannot remove, now stated instead of silent. First
-probe run failed on the corp TLS proxy (`route.fetch` runs in Node, which
-doesn't trust the MITM CA; the browser itself uses the system keychain) —
-the documented NODE_EXTRA_CA_CERTS pattern fixed it.
+**The chrome constant (ADR-0001 addendum F).** Final figures, after the
+verification pass rewrote the method twice (see the postscript):
+**+232 ms FCP, +236 ms LCP, 0 CLS, 0 long-task ms, plus 1,907 bytes
+brotli on the wire** — 7 runs per condition, slow-4g, `/vanilla/editorial/`
+against a local plane serving this publication, clean `b6dcdf1`. The
+geometric-inertness claim (ADR-0008 §1) held exactly: zero layout shift
+either way. The timing figure is what byte-stripping structurally cannot
+remove — a render-blocking `/_pm/chrome.css`, a preloaded mono, and the
+ruler itself, all real fetches on a slow connection. It is ~3× the first
+figure this unit produced, and the honest reading is that the first one
+was measuring a smaller chrome through a distorted lens. First probe run
+also failed on the corp TLS proxy (`route.fetch` runs in Node, which
+doesn't trust the MITM CA; the browser uses the system keychain) — the
+documented NODE_EXTRA_CA_CERTS pattern fixed it.
 
 **The batches:** a throwaway 1-run warm-up batch first (gets every page's
 subresources cached at this colo; receipt discarded), then curl pre-warm of
@@ -2921,15 +2937,22 @@ records, published as 0.42 KB. Direction and magnitude both match;
 the local-plane ground truth was measured without CF headers. This is the
 citation-vs-measurement discipline doing its job in the cheap direction.
 
-**What the receipts say (warm medians, avg-broadband-desktop):** initial
-JS — astro 0.42 KB, vanilla 1.69, htmx 19.38, qwik 29.48, react-next
-154.85. TTFB server-side splits static from request-time cleanly (~128 ms
-vs ~285 ms), which drives LCP (~450 vs ~660 ms). CLS 0.00 on every
-variant. INP (scripted, cold add-to-cart click) 24 ms everywhere — even
-under the 4× CPU profile — because the surface's one interaction is a
-storage write by design, and qwik's QRL is already resolved by click time
-(the harness settles the idle preloader onto the initial byte side first).
-Interaction bytes: 0 on every variant, both columns.
+**What the published receipts say** (warm medians, avg-broadband-desktop,
+from the final batch at `85b97c4`): initial JS — astro **0.42 KB**,
+vanilla **1.69**, htmx **19.38**, qwik **29.48**, react-next **154.88**.
+TTFB splits the build-time variants from the request-time ones cleanly
+(~120 ms vs ~226 ms), which carries into LCP (412/428 ms against
+536/552/552). CLS **0.00 everywhere** — the surfaces were designed for
+that (ADR-0008 §8's sized image slots) and the instrument is inert by
+construction. INP (scripted) 24–32 ms across the board: the surface's one
+interaction is a storage write by design, so this cell is honest about
+measuring almost nothing — the interesting INP number belongs to the
+checkout surface, where the ADR puts it. Interaction bytes **0 on every
+variant, both columns, every run settled**. Under slow-4G the LCP order
+holds and the spread narrows (astro 776 · vanilla 796 · htmx 832 · qwik
+864 · react-next 876) — 154 KB of JavaScript costs less than a naive
+reading expects on a page whose LCP is text, which is exactly the kind of
+result the fit line must not overstate.
 
 **Publication is a build mechanism, not a review policy.** The front build
 generates `/_pm/lab/editorial.json` from the committed receipts — the
@@ -2954,6 +2977,20 @@ framework list inside the ruler (M). The qwik framing call: the fit line
 names each paradigm's own cost in the locked axis order — "resumability's
 29.48 KB (up front — deferred binding, not deferred bytes)" — and makes no
 react-next-vs-qwik apples-to-apples claim.
+
+**Final-tree proof:** origin suite **335/335 fixture** and **334/335
+crate** (the one miss is the known pre-existing git-ignored thumbnail,
+`9861004-primary.thumb.avif`, 404 on this machine — the same single miss
+every slice since D has recorded), turbo lint/typecheck/test **30/30**,
+`wrangler deploy --dry-run` clean, switcher units 29/29. Eleven of those
+suite tests are new: the publication is asserted outside-in — the served
+bundle's every reading carries a complete receipt, every receipt URL
+dereferences to a clean SHA-pinned v1 receipt whose warm medians DERIVE
+the served value, all receipts pin one SHA, the chrome renders those exact
+numbers under each `?profile=`, the fenced exhibit reads the benchmarked
+columns without gaining one, the methodology page's stated constant equals
+the served artifact, home's spread equals the bundle's min/max, and the
+populated fragment stays inside its budget on every profile.
 
 **The methodology page** (ADR-0001 §9) lives at `/methodology/`, a
 front-Worker static singleton on the home-surface delivery precedent;
@@ -3041,16 +3078,26 @@ guarantee.
 **Sabotage-proven before commit** (the slice-D discipline): a receipt with
 `dirty: true` refuses the build; a receipt whose medians contradict the
 fit's no-fetch-on-click clause refuses the build; runs edited so the
-extremes' byte bands overlap build `bandsOverlap: true` with the fit
+compared byte bands overlap build `bandsOverlap: true` with the fit
 DROPPED (the chrome renders "Indistinguishable at this sample size"), and
-restoring the receipt restores the fit. The REAL populated fragments
-measure 10,595–11,026 B across all three profiles on both a core page and
-the fenced remix3 page — inside the 12 KiB budget with ~1.2 KiB headroom —
-now pinned end-to-end by an origin-suite assertion against the served
-pages. The populated panel and the methodology page were both
-screenshot-verified (the money shot: five receipt-linked columns, the
-derived fit line with its receipt, the limits link, remix3 tagged in the
-switcher with no table column).
+restoring the receipt restores the fit. The populated panel and the
+methodology page were both screenshot-verified — five receipt-linked
+columns each carrying its band, the derived fit line with its receipt, the
+limits link, remix3 tagged in the switcher with no table column.
+
+**The byte budget, which the bands blew.** ADR-0008 §5 set the fragment
+budget at 12 KiB when the populated state was still an estimate ("headroom
+for populated readings"). With a receipt anchor AND an addendum-C band per
+cell, the real fragments measured 11,723–12,396 B across the three
+profiles — the largest (remix3, whose fenced note is extra) 108 bytes OVER,
+and vanilla passing with 5 bytes to spare, which is not headroom, it is
+luck. Two fixes, both recorded in an ADR-0008 addendum: zero-width bands
+are omitted (a band whose min equals its max says only what the median
+said — 7 of 30 cells here, 306 bytes), the band element is `<small>` rather
+than `<span>` (the element for fine print, 11 bytes cheaper per cell), and
+the budget moves to 13 KiB. The raise is justified by measurement, not
+assertion: the fragment's cost on the wire is 1,907 B brotli, and the
+chrome's timing cost is dominated by its subresources, not its markup.
 
 ## Methodology notes
 

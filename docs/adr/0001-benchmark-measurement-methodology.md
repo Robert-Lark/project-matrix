@@ -294,19 +294,62 @@ cross-check exists (addendum A): throttled-profile timing cells publish
 numbers, never verdicts — the published fit line rides bytes, which no
 throttle touches.
 
+*A second limit on the timing cells, stated because it is not obvious.*
+The batch measured the plane as it served at measurement time — carrying
+the PRE-publication chrome, since the publication had not shipped to it
+yet. The chrome that ships with these numbers is larger (receipt anchors
+and bands per cell), and its cost is the addendum-L constant. So the
+published TIMING cells slightly understate what a visitor now meets, by
+something bounded by that constant; the BYTE cells are unaffected, because
+chrome bytes are stripped as instrumentation by known path (§6). This is
+inherent to publishing measurements of a plane you are about to change,
+and the honest resolution is the dated-snapshot model §9 already commits
+to: **re-run the batch against the deployed plane after this ships** —
+one command, and the receipts carry their own reproduce path.
+
 **L. The chrome constant (addendum F / ADR-0008 §5 obligation, measured).**
-With/without-chrome delta of medians, 7 runs per condition,
-slow-4g-mid-phone (the harshest published profile), /vanilla/editorial/ on
-the deployed plane, 2026-08-14 UTC at a clean 23a0e7e: **+76 ms FCP,
-+76 ms LCP, 0 CLS, 0 ms long tasks.** The instrument's byte cost is
-stripped (§6); this timing cost cannot be, so it is published as a stated
-constant on the methodology page with the raw artifact at
-`/_pm/lab/chrome-constant.json`. The strip's geometric-inertness claim
-(ADR-0008 §1) held: zero layout shift either way. Method (both conditions
-pay an identical interception hop; the without-condition strips exactly
-decomposeDocument's three instrumentation regions; metrics from the
-browser's own timeline in both — the injected ruler cannot measure its own
-absence): tools/bench-runner/src/chrome-constant.ts.
+Published as TWO figures that are not blended, because they are not the
+same kind of cost: a **processing** delta and a **wire** cost. Measured on
+`/vanilla/editorial/`, 7 runs per condition, slow-4g-mid-phone (the harshest
+published profile), 2026-08-14 at a clean `b6dcdf1`: **+232 ms FCP,
++236 ms LCP, 0 CLS, 0 ms long tasks, plus 1,907 bytes brotli on the wire.**
+The strip's geometric-inertness claim (ADR-0008 §1) holds — zero layout
+shift either way. Artifact: `/_pm/lab/chrome-constant.json`.
+
+*Method, and why it changed twice.* Both conditions intercept the document
+and pay an identical hop; the without-condition replaces
+decomposeDocument's three instrumentation regions with inert comments of
+EQUAL byte length, so the document transfer term cancels and the timing
+delta is the chrome's processing + subresource cost (a render-blocking
+`/_pm/chrome.css`, the preloaded instrument mono, `measure.js` — all real
+fetches from the real plane). What the chrome adds to the document on the
+wire is measured separately with brotli and reported beside it. Metrics
+come from the browser's own timeline in both conditions (the injected ruler
+cannot measure its own absence) and CLS is the session-window maximum, the
+definition web-vitals publishes everywhere else here.
+
+*A superseded figure, recorded rather than quietly replaced.* An earlier
+run of this obligation published **+76 ms FCP/LCP**. It was wrong twice
+over, both caught by verify-slice: it served both conditions the DECODED
+document, so the chrome's ~8 KB crossed a throttled wire uncompressed and
+part of the delta was an artifact of the probe; and it ran against the
+DEPLOYED plane, which carries no publication and therefore renders the
+EMPTY-state chrome — ~3 KB smaller than the populated strip that ships.
+Re-compressing the fulfilled body is not available (Playwright's
+`route.fulfill` ignores a declared `content-encoding`; measured: a corrupt
+3,660-byte document with no chrome node, against 18,146 for a plain
+fulfil), which is why equal-byte padding is the mechanism. The probe now
+records the fragment it measured (bytes, sha256, populated) and **the
+front build REFUSES a constant measured against an unpopulated chrome**.
+
+*Origin, stated.* Because the constant must describe the chrome that
+ships, it is measured against a LOCAL composed origin serving this
+publication (`run-local.mjs PM_HOLD=1` — the only thing that builds every
+variant with the matching snapshot selector). Local first paint is not a
+production number; the DIFFERENCE is what publishes, and both conditions
+ran on the same plane under the same emulated network. **Bound
+obligation:** re-measure against the deployed plane once this ships, when
+that plane can render the chrome being measured.
 
 **M. The addendum-G cross-framework asymmetry, resolved: publish with the
 stated caveat, never reclassify.** The executable→JS byte rule stands —
