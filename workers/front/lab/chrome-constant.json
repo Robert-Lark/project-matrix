@@ -1,0 +1,142 @@
+{
+  "kind": "pm-chrome-constant",
+  "date": "2026-08-14T06:26:03.823Z",
+  "commit": {
+    "sha": "b6dcdf1039a07f3ce4b98a571cc339b09fb29edc",
+    "dirty": false
+  },
+  "origin": "http://127.0.0.1:8787",
+  "target": "/vanilla/editorial/",
+  "profile": {
+    "id": "slow-4g-mid-phone",
+    "specVersion": 1
+  },
+  "runsPerCondition": 7,
+  "measuredChrome": {
+    "bytes": 11977,
+    "sha256": "8acb6e29b4c96fc385bce6380e83607901e3be73d92cc2a61a5dfd290285b031",
+    "populated": true,
+    "wireBytesBrotli": 1907,
+    "documentBytesUncompressed": 17971
+  },
+  "method": [
+    "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
+    "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources — chrome.css, the instrument mono, measure.js — which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in. Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding — measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
+    "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
+    "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
+    "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
+    "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality"
+  ],
+  "conditions": {
+    "with": {
+      "runs": [
+        {
+          "FCP": 696,
+          "LCP": 860,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 680,
+          "LCP": 844,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 692,
+          "LCP": 860,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 688,
+          "LCP": 852,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 696,
+          "LCP": 860,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 684,
+          "LCP": 844,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 704,
+          "LCP": 868,
+          "CLS": 0,
+          "longTaskMs": 0
+        }
+      ],
+      "medians": {
+        "FCP": 692,
+        "LCP": 860,
+        "CLS": 0,
+        "longTaskMs": 0
+      }
+    },
+    "without": {
+      "runs": [
+        {
+          "FCP": 460,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 460,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 452,
+          "LCP": 608,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 460,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 456,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 460,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 468,
+          "LCP": 632,
+          "CLS": 0,
+          "longTaskMs": 0
+        }
+      ],
+      "medians": {
+        "FCP": 460,
+        "LCP": 624,
+        "CLS": 0,
+        "longTaskMs": 0
+      }
+    }
+  },
+  "deltaMedians": {
+    "FCP": 232,
+    "LCP": 236,
+    "CLS": 0,
+    "longTaskMs": 0
+  }
+}
