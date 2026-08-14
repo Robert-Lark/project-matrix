@@ -33,6 +33,18 @@ export const INTERACTIONS: Readonly<
   "body-click": async (page) => {
     await page.locator("main h1").first().click();
   },
+  /** The editorial surface's ONE designed interaction (ADR-0008 §8): the
+   *  featured release's Add to cart. Selected by accessible role + name —
+   *  the canonical markup contract every variant must serve identically —
+   *  and clicked COLD, no warm-up: the first click's latency IS the honest
+   *  scripted INP, including any lazy handler binding a paradigm defers to
+   *  that moment (resumability defers the binding, not the bytes — the
+   *  slice-D measurement this surface's reading must not hide). The event
+   *  registers regardless of when the handler resolves, so the event-timing
+   *  entry the INP pipeline needs exists even where binding is deferred. */
+  "editorial-add-to-cart": async (page) => {
+    await page.getByRole("button", { name: "Add to cart" }).click();
+  },
 };
 
 export interface ApplyResult {
