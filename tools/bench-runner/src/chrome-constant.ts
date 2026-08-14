@@ -60,6 +60,43 @@ export function stripChrome(body: string): string {
     .replace(/<script\b[^>]*src="[^"]*\/_pm\/[^"]*"[^>]*><\/script>/gi, "");
 }
 
+/**
+ * The same strip, but each removed region is replaced by an inert HTML
+ * comment of EQUAL byte length, so both conditions' documents are the same
+ * size on the wire.
+ *
+ * Why this instead of re-compressing: the plane sends one brotli stream, and
+ * the two conditions differ by exactly the chrome's bytes — so serving both
+ * DECODED would put ~8 KB of extra uncompressed markup on a throttled wire
+ * in the with-condition only, and a large part of the measured delta would
+ * be an artifact of the probe rather than a property of the chrome
+ * (verify-slice, anti-rigging lens). Fulfilling a pre-compressed body is not
+ * available: Playwright's route.fulfill does not honour a declared
+ * content-encoding, and the browser receives a corrupt document (measured —
+ * 3,660 bytes and no chrome node, against 18,146 and a chrome node for a
+ * plain fulfil).
+ *
+ * Padding makes the document transfer term IDENTICAL and therefore cancel,
+ * so what the delta measures is the chrome's PROCESSING cost — tokenizing,
+ * styling, laying out, and its own subresources (chrome.css, the instrument
+ * mono, measure.js), which are still real requests to the real plane and
+ * still compressed normally. The document bytes the chrome would add on the
+ * wire are reported separately, brotli-measured, so the two components are
+ * each what they claim to be rather than blended into one number.
+ */
+export function stripChromeEqualBytes(body: string): string {
+  const pad = (region: string) => {
+    // "<!--" + "-->" is 7 bytes; a region shorter than that cannot be padded
+    // to length (none is — the smallest is a /_pm/ link tag).
+    const inner = Buffer.byteLength(region, "utf8") - 7;
+    return inner >= 0 ? `<!--${" ".repeat(inner)}-->` : "";
+  };
+  return body
+    .replace(/<aside\b[^>]*\bid="pm-chrome"[\s\S]*?<\/aside>/i, pad)
+    .replace(/<link\b[^>]*\/_pm\/[^>]*>/gi, pad)
+    .replace(/<script\b[^>]*src="[^"]*\/_pm\/[^"]*"[^>]*><\/script>/gi, pad);
+}
+
 interface ProbeMetrics {
   FCP: number | null;
   LCP: number | null;
@@ -82,6 +119,16 @@ export interface MeasuredChrome {
   sha256: string;
   /** Did the measured fragment carry published readings (receipt anchors)? */
   populated: boolean;
+  /**
+   * What the chrome costs ON THE WIRE, measured the way the plane sends it:
+   * brotli of the served document minus brotli of the same document with the
+   * instrumentation regions removed. The timing delta deliberately excludes
+   * this (both conditions are padded to equal document bytes), so it is
+   * reported here rather than blended into a number that would then be
+   * neither one thing nor the other.
+   */
+  wireBytesBrotli: number;
+  documentBytesUncompressed: number;
 }
 
 function measuredChromeOf(body: string): MeasuredChrome {
@@ -91,10 +138,13 @@ function measuredChromeOf(body: string): MeasuredChrome {
     )?.[0] ??
     body.match(/<aside\b[^>]*\bid="pm-chrome"[\s\S]*?<\/aside>/i)?.[0] ??
     "";
+  const brotliLen = (s: string) => brotliCompressSync(Buffer.from(s, "utf8")).length;
   return {
     bytes: Buffer.byteLength(fragment, "utf8"),
     sha256: createHash("sha256").update(fragment).digest("hex"),
     populated: /class="pm-chrome__reading"/.test(fragment),
+    wireBytesBrotli: brotliLen(body) - brotliLen(stripChrome(body)),
+    documentBytesUncompressed: Buffer.byteLength(body, "utf8"),
   };
 }
 
@@ -174,13 +224,14 @@ async function probeVisit(
       // than passing the decoded body and dropping content-encoding) keeps
       // the delta's transfer term a property of the chrome.
       if (condition === "with") onMeasuredChrome?.(measuredChromeOf(body));
-      const served = condition === "without" ? stripChrome(body) : body;
-      headers["content-encoding"] = "br";
-      await route.fulfill({
-        status: upstream.status(),
-        headers,
-        body: brotliCompressSync(Buffer.from(served, "utf8")),
-      });
+      // Equal document bytes in both conditions (see stripChromeEqualBytes):
+      // the transfer term cancels, so the delta is the chrome's processing
+      // cost. route.fetch() yields the DECODED body, so content-encoding
+      // must go — Playwright will not serve a pre-compressed one.
+      delete headers["content-encoding"];
+      const served =
+        condition === "without" ? stripChromeEqualBytes(body) : body;
+      await route.fulfill({ status: upstream.status(), headers, body: served });
     });
 
     await page.goto(url, { waitUntil: "load" });
@@ -295,8 +346,8 @@ async function main(): Promise<number> {
     // fragment's size and hash, and whether it was the populated state.
     measuredChrome,
     method: [
-      "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition strips exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — before parse",
-      "both fulfilled bodies are re-compressed with brotli and served content-encoding: br, so the bytes the two conditions differ by cross the throttled connection compressed exactly as the plane sends them — serving the decoded body would make the delta's transfer term an artifact of the probe",
+      "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
+      "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources — chrome.css, the instrument mono, measure.js — which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in. Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding — measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
       "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
       "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
       "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
