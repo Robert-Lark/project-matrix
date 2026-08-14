@@ -3,16 +3,18 @@
  * named buttons; the input works JS-off, the buttons are per-paradigm
  * behavior (they update the input's value, which announces itself).
  *
- * Canonical markup:
+ * Canonical markup — the glyph is aria-hidden and the sr-only span carries the
+ * whole accessible name. A BARE glyph makes the name "−Decrease quantity"
+ * (pdp-build; the same pattern the tracklist header uses for its "#"):
  *   <div class="pm-qty">
  *     <label class="pm-qty__label" for="qty">Quantity</label>
  *     <div class="pm-qty__group">
- *       <button class="pm-qty__step" type="button">−<span class="pm-sr-only">
- *         Decrease quantity</span></button>
+ *       <button class="pm-qty__step" type="button"><span aria-hidden="true">−
+ *         </span><span class="pm-sr-only">Decrease quantity</span></button>
  *       <input class="pm-qty__input" id="qty" name="qty" type="number"
  *              inputmode="numeric" min="1" max="99" value="1">
- *       <button class="pm-qty__step" type="button">+<span class="pm-sr-only">
- *         Increase quantity</span></button>
+ *       <button class="pm-qty__step" type="button"><span aria-hidden="true">+
+ *         </span><span class="pm-sr-only">Increase quantity</span></button>
  *     </div>
  *   </div>
  */

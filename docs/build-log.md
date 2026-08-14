@@ -3307,10 +3307,15 @@ renders itself away, because `ccLocal` is false for an https origin: the
 obligation discharges in the copy, by mechanism, not by an editor
 remembering.
 
-**The batch confirmed addendum K's prediction and nothing more.** Timing
-cells moved up (LCP +30 to +120 ms, TTFB +30 to +55 ms on the request-time
-three); byte cells did not. Published timing is now a measurement of the
-plane a visitor actually meets.
+**The batch confirmed addendum K's prediction in direction, not uniformly.**
+(Corrected 2026-08-14: this read "Timing cells moved up (LCP +30 to +120 ms,
+TTFB +30 to +55 ms on the request-time three); byte cells did not" — the
+receipts committed in the same commit falsify it.) Across the 30 LCP medians
+the range is **−36 to +128 ms, 26 up and 4 down**; the four that moved down
+are vanilla and astro on slow-4g in both columns. Request-time TTFB moved
+**+29.7 to +72.2 ms**. Byte cells held for four of five variants — astro
+moved 0.42 → 0.37 KB, which is the ruler defect below and not a byte change.
+Published timing is now a measurement of the plane a visitor actually meets.
 
 ### What the re-run found: the instrument flatters its own best number
 
@@ -3365,8 +3370,14 @@ snapshots, and the guard is sabotage-proven — reverting the predicate fails
 three tests with an error naming the duplicate ids.
 
 Asserted: per-axis coverage with isolation. Deliberately **not** asserted:
-full combination coverage — the crate has 16 combinations and the master set
-is 4. Claiming it would be the record-not-code class. The
+full combination coverage — three binary axes span **8** combinations, the
+crate populates **7** and the fixture **4**, against a master set of 4.
+(Corrected 2026-08-14 from "the crate has 16 combinations", which was
+derivable from nothing; the counts are now derived in the test rather than
+typed.) Also not asserted, and now named rather than implied: the three
+NON-structural branches `pdp.mjs` takes — absent notes, null track duration,
+null year — which `pdpRenderClass` does not model and no fixture master
+exercises. Claiming either would be the record-not-code class. The
 `priceFrom == null ⟺ numForSale === 0` equivalence that `pdp.mjs` leans on
 (it reads two fields for one branch) is asserted against the trays: zero
 violations in both snapshots.
@@ -3395,7 +3406,22 @@ rejected `assetsInlineLimit` precedent.
 The recorded per-variant trap was real: every vanilla asset URL was the
 literal `"../"`, correct only for a page exactly one level deep. The asset
 base is now derived from page depth, and all 16 relative refs from a built
-PDP page are asserted to resolve on disk.
+PDP page were CHECKED to resolve on disk.
+
+**Corrected 2026-08-14: "are asserted" claimed a standing gate that does not
+exist.** The check was a one-time manual one; nothing re-runs it. `@pm/vanilla`
+contributes ZERO tasks to `turbo run lint typecheck test` (`--dry=json`: 30
+real commands, none of them vanilla's), so "Turbo 30/30 on the final tree" is
+the same 30 tasks that were green before the PDP existed — it cannot cover
+this variant at all. The failure that invites: a later surface at depth 1
+copies `{ depth: 2 }` from `build.mjs:84`, and every stylesheet, both font
+preloads and `pdp.js` 404 on 240–500 pages with nothing red. The vanilla PDP
+also has no pre-merge variant-master identity guard — the mechanism every
+other variant×surface pair has — so its "matches all four masters" rests on a
+one-time in-process check too. (Re-verified 2026-08-14: all four masters and
+in fact all 740 pages still match in both snapshots. It is an unguarded TRUE
+statement, which by this repo's own record-not-code standard is the defect.)
+Both gaps are owed by the PDP's remaining work.
 
 ### What did NOT land, and why
 

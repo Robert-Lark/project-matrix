@@ -89,19 +89,32 @@
      that a visual defect cannot exist without the programmatic one. */
   const qty = document.getElementById("qty");
   const steppers = [...document.querySelectorAll(".pm-qty__step")];
+  const qtyMin = () => parseInt(qty?.min || "1", 10);
+  const qtyMax = () => parseInt(qty?.max || "99", 10);
+  // `max` does NOT constrain typed input — it only fails constraint
+  // validation, and this input is in no form, so validation never runs
+  // (MDN, input/number: "You can still manually enter a number outside
+  // these bounds"). Clamping HERE is what makes the comment above true:
+  // before this, typing 250 added 250 to the cart, and then pressing
+  // "Increase quantity" DROPPED the field to 99.
   const qtyValue = () => {
     const parsed = parseInt(qty?.value ?? "1", 10);
-    return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+    if (!Number.isFinite(parsed)) return qtyMin();
+    return Math.min(qtyMax(), Math.max(qtyMin(), parsed));
   };
   if (qty && steppers.length === 2) {
-    const min = parseInt(qty.min || "1", 10);
-    const max = parseInt(qty.max || "99", 10);
     const step = (delta) => {
-      const next = Math.min(max, Math.max(min, qtyValue() + delta));
-      qty.value = String(next);
+      qty.value = String(
+        Math.min(qtyMax(), Math.max(qtyMin(), qtyValue() + delta)),
+      );
     };
     steppers[0].addEventListener("click", () => step(-1));
     steppers[1].addEventListener("click", () => step(1));
+    // A typed value out of range is normalised as soon as the field is
+    // left, so what the visitor sees is what add-to-cart will use.
+    qty.addEventListener("change", () => {
+      qty.value = String(qtyValue());
+    });
   }
 
   /* ── Add to cart ───────────────────────────────────────────────────────

@@ -450,7 +450,10 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
 });
 
 describe("the new surface masters are healthy (surface-design session)", () => {
-  // The eight fixture-rendered masters (packages/reference/render/build.mjs).
+  // The fixture-rendered masters (packages/reference/render/build.mjs).
+  // Count deliberately not written — it read "eight" while pdp-build added
+  // three nested PDP masters, so those three received no health coverage at
+  // all until this was corrected.
   // No variant comparisons yet — no variant serves these surfaces; each
   // follow-on build adds its own gate leg. What IS proven now:
   //  (a) the DOM normalizer runs clean against each master (self-equivalence
@@ -464,6 +467,11 @@ describe("the new surface masters are healthy (surface-design session)", () => {
   const NEW_MASTERS = [
     "editorial",
     "pdp",
+    // The PDP's three degenerate masters (pdp-build). Nested names work here:
+    // the evidence key slash-replaces below.
+    "pdp/single-format",
+    "pdp/unpriced",
+    "pdp/one-image",
     "plp",
     "checkout",
     "a11y",

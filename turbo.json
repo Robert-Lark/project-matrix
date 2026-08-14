@@ -210,6 +210,11 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/**",
+        // The PDP master-set guards call loadSnapshot("crate") as well as
+        // ("fixture") — without this the crate trays can change and the
+        // cached PASS replays against data the test never read (pdp-build
+        // added the crate leg; this input did not follow it).
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/*.json",
         "$TURBO_ROOT$/docs/adr/*.md",
         "$TURBO_ROOT$/docs/build-log.md"
       ]

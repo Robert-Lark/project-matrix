@@ -316,6 +316,14 @@ published profile), 2026-08-14 at a clean `58d5101`: **+224 ms FCP,
 The strip's geometric-inertness claim (ADR-0008 §1) holds — zero layout
 shift either way. Artifact: `/_pm/lab/chrome-constant.json`.
 
+> **SUPERSEDED — see addendum N.** These figures were measured on a LOCAL
+> composed origin. The constant that publishes is the deployed-plane
+> measurement: **+104 ms FCP / +104 ms LCP / 1,913 B brotli**, against a
+> byte-identical fragment. The "0 ms long tasks" figure above is a median
+> that hides a one-sided signal (0–64 ms across 7 runs, every non-zero
+> sample in the with-chrome condition). The "Bound obligation" closing this
+> addendum is discharged — and, per N, structurally re-incurred.
+
 *Method, and why it changed twice.* Both conditions intercept the document
 and pay an identical hop; the without-condition replaces
 decomposeDocument's three instrumentation regions with inert comments of
@@ -401,3 +409,65 @@ The methodology page (§9) lives at `/methodology/` as a front-Worker
 static singleton — the "How it was built" surface (ADR-0008 §8) is its
 long-term home and is unbuilt; the standalone page is the recorded
 interim.
+
+**N. Both addendum-K and addendum-L obligations, DISCHARGED against the
+deployed plane — and what the discharge did not settle.** Measured
+2026-08-14 at a clean `7c5be98`, the SHA main carried when the plane served
+it.
+
+*The chrome constant, re-measured (discharges L's bound obligation).*
+Same method, same profile (slow-4g-mid-phone, `/vanilla/editorial/`, 7 runs
+per condition), now against the deployed origin: **+104 ms FCP, +104 ms
+LCP, 0 CLS, plus 1,913 bytes brotli on the wire.** The measured fragment is
+byte-identical to the local one (12,023 B, `populated: true`), so this is
+the same chrome measured on a different plane.
+
+*The superseded figure, recorded rather than quietly replaced* (the
+discipline this addendum's predecessor set for its own +76 ms figure, now
+applied to L's): **+224 ms FCP / +216 ms LCP / 1,908 B, measured on a LOCAL
+composed origin, is superseded.** The deployed timing delta is less than
+half the local one. What is NOT established is why: the obvious reading is
+that local subresource service inflated the local delta, but the two probes
+did not serve identical pages (18,635 B local against 18,017 B deployed),
+so the comparison is not clean and the causal claim is withdrawn. The
+figure that publishes is the deployed one; the local one is recorded as
+superseded, not explained.
+
+*The long-task figure carries a band, and it is one-sided.* The constant
+publishes "0 ms long tasks" as a MEDIAN, and the median hides a real
+signal: 2 of the 7 with-chrome runs recorded 55 ms and 64 ms, against 0 ms
+in all 7 without-chrome runs. Reported honestly the figure is **0 ms
+median, 0–64 ms across 7 runs, every non-zero sample in the with-chrome
+condition**. Addendum C's band rule binds every published cell, and the
+constant is a published cell on the same page as the reading table; it
+publishes with its bands from this addendum forward.
+
+*The batch, re-run (discharges K's obligation).* Three profiles, one nonce,
+all ten effective URLs pre-warmed to compressed first, `interactionSettled`
+true on every run. K predicted timing up, bytes flat. **Bytes held. Timing
+did NOT move uniformly up:** across the 30 LCP medians (5 variants × 3
+profiles × cold+warm) the range is **−36 to +128 ms, with 26 up and 4
+down** — on slow-4g, the harshest published profile, BOTH build-time
+variants moved down in both columns (warm: vanilla −20, astro −16; cold:
+vanilla −24, astro −36). Request-time TTFB moved **+29.7 to +72.2 ms**.
+The prediction held on the request-time variants and on the two faster
+profiles, and inverted for vanilla and astro on slow-4g, where the chrome's
+cost sits inside the profile's own noise. Recorded because an earlier
+draft of this discharge stated "+30 to +120 ms" and "timing cells moved
+up", both falsified by the receipts committed alongside them.
+
+*What the discharge did NOT settle — two open holes, both filed.*
+(1) **The constant describes the chrome measured BEFORE the deploy it
+enables.** The front build regenerates the chrome fragment from the
+receipts, so the fragment that ships is not the fragment the probe hashed
+(here 11,931 B against 12,023 B — 0.8%, but the mechanism is unbounded and
+grows with each surface added to the strip). The build's only identity
+check is `populated`, which both fragments satisfy. The obligation is
+therefore structurally re-incurred by its own discharge, and calling it
+simply "discharged" would be the vacuous class. (2) **Nothing ties a
+receipt's `commit.sha` to the code the plane was serving.** `commitPin`
+reads the LOCAL checkout; with `--origin` now pointing at a remote plane
+for the first time, the SHA describes the machine that drove the browser,
+not the tree under measurement. Both are recorded as open work on the
+`bench-instrumentation-dilution` unit's ticket, which is the next ruler
+change and the natural place to close them.

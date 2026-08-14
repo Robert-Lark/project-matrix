@@ -17,7 +17,10 @@ const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(pkgRoot, "index.html"), "utf8");
 
 /** Every committed surface golden master (sample is hand-pinned, issue #6;
- *  the other eight render from the fixture via render/build.mjs). */
+ *  the rest render from the fixture via render/build.mjs). The count is
+ *  deliberately NOT written here — it said "eight" through three master
+ *  additions (pdp-build made it eleven), so the assertions below derive it
+ *  from this list instead. */
 const MASTERS = [
   "sample",
   "editorial",
@@ -142,7 +145,8 @@ describe("regeneration (§4.3 — the committed masters can never go stale)", ()
       lib.loadSnapshot("fixture"),
     );
 
-    // The renderer owns exactly the eight non-sample masters.
+    // The renderer owns exactly the non-sample masters (derived from MASTERS,
+    // never counted by hand).
     expect(Object.keys(rendered).sort()).toEqual(
       MASTERS.filter((s) => s !== "sample")
         .map((s) => `${s}/index.html`)
@@ -153,9 +157,10 @@ describe("regeneration (§4.3 — the committed masters can never go stale)", ()
       // how-it-was-built reads docs/adr/*.md + docs/build-log.md at render
       // time, so byte-equality here would pin the whole docs tree — and docs
       // change nearly every session in this repo (ADR-0008 landed mid-build
-      // of this very test). Judgment call, recorded: the eight data-rendered
-      // masters are regeneration-checked byte-for-byte; how-built is held to
-      // its structural markers below and re-rendered when docs move.
+      // of this very test). Judgment call, recorded: every data-rendered
+      // master EXCEPT how-it-was-built is regeneration-checked byte-for-byte;
+      // how-built is held to its structural markers below and re-rendered
+      // when docs move.
       if (rel === "how-it-was-built/index.html") continue;
       expect(output, `${rel} is stale — re-run: node render/build.mjs`).toBe(
         readFileSync(join(pkgRoot, "surfaces", rel), "utf8"),
@@ -182,8 +187,8 @@ describe("regeneration (§4.3 — the committed masters can never go stale)", ()
   });
 });
 
-describe("the PDP master set gates every rendering branch (pdp-build)", () => {
-  // `render/pdp.mjs` takes three INDEPENDENT branches — the format fieldset,
+describe("the PDP master set gates its three structural branches (pdp-build)", () => {
+  // `render/pdp.mjs` takes three STRUCTURAL branches — the format fieldset,
   // the priced/unpriced buy panel, and the thumb list — and `build.mjs`
   // rendered exactly one master (the rich featured release), so all three
   // degenerate arms were ungated by construction while being the COMMON path
@@ -191,11 +196,19 @@ describe("the PDP master set gates every rendering branch (pdp-build)", () => {
   //
   // What is asserted here is the mechanism, not a sentence in a comment:
   // every branch takes BOTH of its values across the master set, each
-  // degenerate master differs from a sibling by exactly ONE branch, and no
-  // two masters render the same release. Deliberately NOT asserted: that
-  // every *combination* is gated — the crate has 16 combinations and the
-  // masters are 4. Per-axis coverage with isolation is the claim the set
-  // actually supports, and overclaiming it is the record-not-code class.
+  // degenerate master differs from the single-format CENTRE by exactly ONE
+  // branch, and no two masters render the same release.
+  //
+  // Deliberately NOT asserted, and both gaps are named rather than implied
+  // (verify-slice 2026-08-14 caught the earlier wording overclaiming both):
+  //  1. COMBINATION coverage. Three binary axes span 8 combinations; the crate
+  //     populates 7 and the fixture 4, against a master set of 4. The counts
+  //     are DERIVED below, not typed — an earlier draft said "16", which is
+  //     not derivable from anything in the model.
+  //  2. The three NON-structural branches pdp.mjs also takes — absent notes,
+  //     a null track duration, a null year (see `pdpRenderClass`'s comment).
+  //     `pdpRenderClass` does not model them, so no master gates them: 0 of
+  //     the 4 fixture masters take any of those arms. Knowingly ungated.
   const load = async () => {
     const lib = await import(
       pathToFileURL(join(pkgRoot, "render", "lib.mjs")).href
@@ -252,6 +265,27 @@ describe("the PDP master set gates every rendering branch (pdp-build)", () => {
       }
     });
   }
+
+  it("the combination counts the record quotes are the counts the data has", async () => {
+    // The record (ADR-0008, this file's comment above) states how much the
+    // master set does NOT cover. That disclaimer is itself a published claim,
+    // so it is derived here rather than typed — the failure mode it replaces
+    // is the "16 combinations" figure, which matched no snapshot and no model.
+    const lib = await load();
+    const AXES = 3;
+    expect(2 ** AXES).toBe(8); // three binary axes span 8 combinations
+    const present = (name: string) =>
+      new Set(
+        lib
+          .loadSnapshot(name)
+          .details.map((d: unknown) => lib.pdpRenderClassKey(d)),
+      ).size;
+    expect(present("fixture")).toBe(4);
+    expect(present("crate")).toBe(7);
+    // ...and the master set is 4, which is what makes combination coverage a
+    // thing the set cannot claim.
+    expect(Object.keys(lib.pdpMasterIds(lib.loadSnapshot("fixture"))).length).toBe(4);
+  });
 
   it("the unpriced branch is exactly the zero-stock branch, in both snapshots", async () => {
     // pdp.mjs renders the em-dash amount from `priceFrom == null` and the

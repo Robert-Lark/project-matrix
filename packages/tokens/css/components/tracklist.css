@@ -3,15 +3,24 @@
  * durations format in render as m:ss / h:mm:ss from durationSeconds
  * (data-not-UI, ADR-0002 §6) — the canonical rule lives in
  * packages/reference/render/lib.mjs and binds every paradigm. Null durations
- * (2,288 of the crate's 5,116 tracklist rows) render an empty cell.
+ * (2,288 of the crate's 4,516 tracklist rows, 78 of the fixture's 1,463)
+ * render an sr-only "No duration listed" — NOT an empty cell: an empty cell
+ * is indistinguishable from a rendering fault to a screen-reader user.
  *
- * Canonical markup:
+ * Canonical markup — the position header's glyph is aria-hidden with an
+ * sr-only name beside it, the same rule qty.css's steppers follow. Both this
+ * block and qty.css's documented the pre-fix bare-glyph form until pdp-build;
+ * this comment is the contract four paradigms re-implement from, so it is
+ * part of the spec, not a note about it.
  *   <table class="pm-tracklist">
  *     <caption class="pm-tracklist__caption">Tracklist</caption>
- *     <thead><tr><th scope="col">№</th><th scope="col">Title</th>
+ *     <thead><tr><th scope="col"><span aria-hidden="true">#</span><span
+ *       class="pm-sr-only">Position</span></th><th scope="col">Title</th>
  *       <th scope="col" class="pm-tracklist__dur">Length</th></tr></thead>
  *     <tbody><tr><td>A1</td><td>…</td>
- *       <td class="pm-tracklist__dur">3:51</td></tr>…</tbody>
+ *       <td class="pm-tracklist__dur">3:51</td></tr>
+ *       <tr><td>A2</td><td>…</td><td class="pm-tracklist__dur"><span
+ *         class="pm-sr-only">No duration listed</span></td></tr>…</tbody>
  *   </table>
  */
 
