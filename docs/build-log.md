@@ -2875,12 +2875,18 @@ all." This unit made that promise come due for the editorial surface.
 count.** A receipt records `commit.dirty` as the tree stood WHEN IT WAS
 MEASURED, and the publication build refuses a dirty receipt — so every
 artifact has to be minted from a committed tree, and the code it measures
-has to be committed before it. That makes this unit **six commits**, each
+has to be committed before it. That makes this unit **eight commits**, each
 one a measurement boundary rather than a preference: arm the harness →
-build the pipeline → mint the receipts → fix the constant's method → drop
-zero-width bands → mint the constant. They cannot be squashed: the
-receipts pin `85b97c4` and the constant pins `58d5101` by SHA, and
-rewriting history would leave both pointing at commits that never existed.
+build the pipeline → mint the receipts → fix the constant's method → mint
+the constant → drop zero-width bands → re-set the byte budget → re-mint
+the constant against the chrome that change produced. They cannot be
+squashed, and this decided the MERGE STRATEGY: the receipts pin `85b97c4`
+and the constant pins `58d5101` by SHA, so a rebase or squash merge would
+rewrite both into hashes absent from main's history — a skeptic cloning
+the repo could not check out the commit a published number names. The
+branch therefore merges with a MERGE COMMIT, preserving every pinned SHA,
+which is the first time this project's linear-history habit has lost to a
+correctness requirement.
 That is a real tension with the one-commit-per-branch habit, flagged
 rather than papered over. The rule paid for itself twice — editing docs
 while a batch ran produced three unpublishable receipts, and the constant's
