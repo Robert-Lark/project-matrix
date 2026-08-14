@@ -311,8 +311,8 @@ one command, and the receipts carry their own reproduce path.
 Published as TWO figures that are not blended, because they are not the
 same kind of cost: a **processing** delta and a **wire** cost. Measured on
 `/vanilla/editorial/`, 7 runs per condition, slow-4g-mid-phone (the harshest
-published profile), 2026-08-14 at a clean `b6dcdf1`: **+232 ms FCP,
-+236 ms LCP, 0 CLS, 0 ms long tasks, plus 1,907 bytes brotli on the wire.**
+published profile), 2026-08-14 at a clean `58d5101`: **+224 ms FCP,
++216 ms LCP, 0 CLS, 0 ms long tasks, plus 1,908 bytes brotli on the wire.**
 The strip's geometric-inertness claim (ADR-0008 §1) holds — zero layout
 shift either way. Artifact: `/_pm/lab/chrome-constant.json`.
 

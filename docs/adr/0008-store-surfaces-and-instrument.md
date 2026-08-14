@@ -405,7 +405,7 @@ Two changes, both recorded rather than one silently absorbed:
    real fragment ~1.2 KiB of headroom instead of the 5 bytes the 12 KiB
    number left after bands landed. The raise is bounded and cheap by
    measurement, not by assertion: the fragment's cost **on the wire** is
-   1,907 bytes brotli (ADR-0001 addendum L), and the chrome's measured
+   1,908 bytes brotli (ADR-0001 addendum L), and the chrome's measured
    timing cost is dominated by its subresources — a render-blocking
    stylesheet, a preloaded mono, and the ruler — not by the fragment's own
    markup. The budget's purpose is to catch creep, and it still does; it

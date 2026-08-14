@@ -1,8 +1,8 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-08-14T06:26:03.823Z",
+  "date": "2026-08-14T06:36:21.946Z",
   "commit": {
-    "sha": "b6dcdf1039a07f3ce4b98a571cc339b09fb29edc",
+    "sha": "58d51011e8c40f7a9c4258f6767ecd3fba205210",
     "dirty": false
   },
   "origin": "http://127.0.0.1:8787",
@@ -13,11 +13,11 @@
   },
   "runsPerCondition": 7,
   "measuredChrome": {
-    "bytes": 11977,
-    "sha256": "8acb6e29b4c96fc385bce6380e83607901e3be73d92cc2a61a5dfd290285b031",
+    "bytes": 12023,
+    "sha256": "c0d823255313f75f9c9fa816f647e009df2ad4dbd5d426e10271681b2b213a4a",
     "populated": true,
-    "wireBytesBrotli": 1907,
-    "documentBytesUncompressed": 17971
+    "wireBytesBrotli": 1908,
+    "documentBytesUncompressed": 18017
   },
   "method": [
     "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
@@ -31,20 +31,20 @@
     "with": {
       "runs": [
         {
-          "FCP": 696,
-          "LCP": 860,
+          "FCP": 700,
+          "LCP": 868,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 676,
+          "LCP": 836,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
           "FCP": 680,
-          "LCP": 844,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 692,
-          "LCP": 860,
+          "LCP": 836,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -61,21 +61,21 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 684,
-          "LCP": 844,
+          "FCP": 616,
+          "LCP": 780,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 704,
-          "LCP": 868,
+          "FCP": 672,
+          "LCP": 840,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 692,
-        "LCP": 860,
+        "FCP": 680,
+        "LCP": 840,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -83,20 +83,20 @@
     "without": {
       "runs": [
         {
-          "FCP": 460,
-          "LCP": 624,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 460,
+          "FCP": 456,
           "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
           "FCP": 452,
-          "LCP": 608,
+          "LCP": 616,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 456,
+          "LCP": 620,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -119,14 +119,14 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 468,
-          "LCP": 632,
+          "FCP": 460,
+          "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 460,
+        "FCP": 456,
         "LCP": 624,
         "CLS": 0,
         "longTaskMs": 0
@@ -134,8 +134,8 @@
     }
   },
   "deltaMedians": {
-    "FCP": 232,
-    "LCP": 236,
+    "FCP": 224,
+    "LCP": 216,
     "CLS": 0,
     "longTaskMs": 0
   }

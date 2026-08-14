@@ -2879,7 +2879,7 @@ has to be committed before it. That makes this unit **six commits**, each
 one a measurement boundary rather than a preference: arm the harness →
 build the pipeline → mint the receipts → fix the constant's method → drop
 zero-width bands → mint the constant. They cannot be squashed: the
-receipts pin `85b97c4` and the constant pins `b6dcdf1` by SHA, and
+receipts pin `85b97c4` and the constant pins `58d5101` by SHA, and
 rewriting history would leave both pointing at commits that never existed.
 That is a real tension with the one-commit-per-branch habit, flagged
 rather than papered over. The rule paid for itself twice — editing docs
@@ -2899,9 +2899,11 @@ record.
 
 **The chrome constant (ADR-0001 addendum F).** Final figures, after the
 verification pass rewrote the method twice (see the postscript):
-**+232 ms FCP, +236 ms LCP, 0 CLS, 0 long-task ms, plus 1,907 bytes
+**+224 ms FCP, +216 ms LCP, 0 CLS, 0 long-task ms, plus 1,908 bytes
 brotli on the wire** — 7 runs per condition, slow-4g, `/vanilla/editorial/`
-against a local plane serving this publication, clean `b6dcdf1`. The
+against a local plane serving this publication, clean `58d5101` (re-measured
+once more after the band element changed: a constant must describe the chrome
+that actually ships, which is the whole point of the guard). The
 geometric-inertness claim (ADR-0008 §1) held exactly: zero layout shift
 either way. The timing figure is what byte-stripping structurally cannot
 remove — a render-blocking `/_pm/chrome.css`, a preloaded mono, and the
@@ -3096,7 +3098,7 @@ are omitted (a band whose min equals its max says only what the median
 said — 7 of 30 cells here, 306 bytes), the band element is `<small>` rather
 than `<span>` (the element for fine print, 11 bytes cheaper per cell), and
 the budget moves to 13 KiB. The raise is justified by measurement, not
-assertion: the fragment's cost on the wire is 1,907 B brotli, and the
+assertion: the fragment's cost on the wire is 1,908 B brotli, and the
 chrome's timing cost is dominated by its subresources, not its markup.
 
 ## Methodology notes
