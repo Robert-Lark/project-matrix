@@ -15,7 +15,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { renderEditorialPage } from "./render.mjs";
+import { renderEditorialPage, renderPdpPage } from "./render.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(root, "..", "..");
@@ -63,6 +63,27 @@ writeFileSync(
   join(dist, "editorial", "index.html"),
   renderEditorialPage(snapshot, featuredId),
 );
+
+// The PDP, one static page per release (pdp-build). This is what the
+// build-time paradigm actually costs on a catalogue surface, and it is
+// published rather than avoided: generation time and dist size scale with
+// the crate, where the request-time variants pay per visit instead. Building
+// only the handful of releases the bench measures would be rigging the
+// variant to fit the instrument (the rejected assetsInlineLimit precedent).
+//
+// The URL is slug-keyed — /vanilla/pdp/{id}-{artist}-{title}/ — which every
+// variant's release card already links to. A non-canonical slug 404s here by
+// construction (no file), and the request-time variants match that
+// deliberately rather than redirecting: a 301 they can serve and this one
+// cannot would be an observable behavioural difference between paradigms on
+// the very surface that measures them.
+let pdpCount = 0;
+for (const detail of snapshot.details) {
+  const dir = join(dist, "pdp", detail.slug);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "index.html"), renderPdpPage(snapshot, detail, { depth: 2 }));
+  pdpCount += 1;
+}
 cpSync(join(tokensRoot, "css"), join(dist, "assets", "pm", "css"), {
   recursive: true,
 });
@@ -70,5 +91,8 @@ cpSync(join(tokensRoot, "fonts"), join(dist, "assets", "pm", "fonts"), {
   recursive: true,
 });
 cpSync(join(root, "src", "cart.js"), join(dist, "assets", "cart.js"));
+cpSync(join(root, "src", "pdp.js"), join(dist, "assets", "pdp.js"));
 
-console.log(`vanilla: editorial rendered from the ${name} snapshot`);
+console.log(
+  `vanilla: editorial + ${pdpCount} PDPs rendered from the ${name} snapshot`,
+);

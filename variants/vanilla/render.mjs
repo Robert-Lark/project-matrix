@@ -91,22 +91,56 @@ const CSS = [
   "surfaces/editorial.css",
 ];
 
+/** The PDP's surface sheets (packages/reference/render/pdp.mjs `css`). */
+const PDP_CSS = [
+  "tokens.css",
+  "surfaces/shell.css",
+  "components/masthead.css",
+  "components/footer.css",
+  "components/button.css",
+  "components/gallery.css",
+  "components/format-switch.css",
+  "components/qty.css",
+  "components/tracklist.css",
+  "components/prose.css",
+  "components/plaque.css",
+  "surfaces/pdp.css",
+];
+
+/**
+ * The asset base for a page `depth` directories below the variant root.
+ *
+ * Every asset URL this variant emits is RELATIVE, and until the PDP every
+ * page sat at exactly one level (`/vanilla/editorial/`), so the base was the
+ * literal "../". A PDP sits one deeper (`/vanilla/pdp/{slug}/`) and every
+ * stylesheet, font and script would 404 unchanged. Deriving the base from
+ * depth — the shape `packages/reference/render/shell.mjs` already uses for
+ * its masters (`"../".repeat(depth)`) — is deliberately preferred to adding a
+ * second literal: two literals is how the first one silently goes wrong when
+ * a third surface lands.
+ */
+const assetBase = (depth) => "../".repeat(depth) + "assets/";
+
 /** The canonical font-loading markup (@pm/tokens/fonts/loading-markup.html)
  *  verbatim modulo the base path — ADR-0003 §8: fonts are a controlled
  *  constant, only the asset base may differ per consumer. */
-const FONT_MARKUP = [
-  `<link rel="preload" href="../assets/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>`,
-  `<link rel="preload" href="../assets/pm/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>`,
-  `<link rel="stylesheet" href="../assets/pm/css/fonts.css">`,
-];
+function fontMarkup(depth) {
+  const a = assetBase(depth);
+  return [
+    `<link rel="preload" href="${a}pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>`,
+    `<link rel="preload" href="${a}pm/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>`,
+    `<link rel="stylesheet" href="${a}pm/css/fonts.css">`,
+  ];
+}
 
-function head(title) {
+function head(title, { depth = 1, css = CSS } = {}) {
+  const a = assetBase(depth);
   return [
     `<meta charset="utf-8">`,
     `<meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<title>${esc(title)}</title>`,
-    ...FONT_MARKUP,
-    ...CSS.map((f) => `<link rel="stylesheet" href="../assets/pm/css/${f}">`),
+    ...fontMarkup(depth),
+    ...css.map((f) => `<link rel="stylesheet" href="${a}pm/css/${f}">`),
   ].join("\n  ");
 }
 
@@ -211,7 +245,208 @@ ${releaseCard(summary)}
     </footer>
   </div>
   <script type="application/json" id="pm-cart-item">${cartItem}</script>
-  <script src="../assets/cart.js" defer></script>
+  <script src="${assetBase(1)}cart.js" defer></script>
+</body>
+</html>
+`;
+}
+
+/* ── The PDP (pdp-build) ───────────────────────────────────────────────────
+   This variant's OWN re-implementation of the canonical PDP markup
+   (packages/reference/render/pdp.mjs is the contract of record; the drift
+   gate polices textual identity against the master re-rendered from the
+   RESOLVED snapshot, both in CI against the fixture and on the deployed
+   plane against the crate — ADR-0008 §9).
+
+   Formatting is NOT re-invented: formatPrice/stockLine above are the
+   canonical rules re-implemented to spec, and formatDuration joins them
+   below. `Intl.NumberFormat` is deliberately not used — the gate compares
+   rendered TEXT, and Intl would drift on the first non-USD or four-digit
+   price (ADR-0008's normative formatting note).
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** Canonical track duration: m:ss, h:mm:ss past an hour, "" when null. */
+function formatDuration(durationSeconds) {
+  if (durationSeconds == null) return "";
+  const s = Math.round(durationSeconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
+/** The 160 px thumb derivative, by the URL convention over the frozen tray
+ *  src (ADR-0008 §11 — the trays themselves are untouched). */
+function thumbSrc(src) {
+  return src.replace(/\.avif$/, ".thumb.avif");
+}
+
+function galleryBlock(d) {
+  const main = d.images[0];
+  // A 1-image release (90/500 in the crate) omits the whole thumb list.
+  const thumbs =
+    d.images.length > 1
+      ? `
+        <ul class="pm-gallery__thumbs" role="list">
+          ${d.images
+            .map(
+              (img, i) => `<li><button class="pm-gallery__thumb" type="button"${i === 0 ? ` aria-current="true"` : ""}>
+            <img src="${esc(thumbSrc(img.src))}" width="160" height="160" alt="" loading="lazy" fetchpriority="low" decoding="async">
+            <span class="pm-sr-only">View image ${i + 1} of ${d.images.length}: ${esc(img.alt)}</span>
+          </button></li>`,
+            )
+            .join("\n          ")}
+        </ul>`
+      : "";
+  return `<div class="pm-gallery">
+        <figure class="pm-gallery__stage">
+          <img class="pm-gallery__main" src="${esc(main.src)}" width="${main.width}" height="${main.height}" alt="${esc(main.alt)}" fetchpriority="high">
+          <button class="pm-gallery__zoom" type="button" aria-pressed="false">Zoom</button>
+        </figure>${thumbs}
+      </div>`;
+}
+
+function formatBlock(d) {
+  // Single-format (439/500 in the crate) renders NO fieldset; the format
+  // instead joins the meta list as a <dt>/<dd> pair below.
+  if (d.formats.length <= 1) return "";
+  return `
+        <fieldset class="pm-format">
+          <legend class="pm-format__legend">Format</legend>
+          ${d.formats
+            .map((f, i) => {
+              const label = [f.name, f.qty > 1 ? `${f.qty}×` : "", ...(f.descriptions ?? [])]
+                .filter(Boolean)
+                .join(" · ");
+              return `<label class="pm-format__option">
+            <input class="pm-format__input" type="radio" name="format" value="${i}"${i === 0 ? " checked" : ""}>
+            <span class="pm-format__label">${esc(label)}</span>
+          </label>`;
+            })
+            .join("\n          ")}
+        </fieldset>`;
+}
+
+function notesBlock(d) {
+  if (!d.notes) return "";
+  const paragraphs = d.notes
+    .split(/\n{2,}/)
+    .map((p) => `<p>${esc(p.trim()).replaceAll("\n", "<br>")}</p>`)
+    .join("\n            ");
+  return `
+      <section class="pm-pdp__section">
+        <h2 class="pm-pdp__section-title">Notes</h2>
+        <div class="pm-prose">
+            ${paragraphs}
+        </div>
+      </section>`;
+}
+
+function tracklistBlock(d) {
+  if (!d.tracklist.length) return "";
+  return `
+      <section class="pm-pdp__section">
+        <div class="pm-pdp__scroll" role="region" aria-label="Tracklist" tabindex="0">
+        <table class="pm-tracklist">
+          <caption class="pm-tracklist__caption">Tracklist</caption>
+          <thead><tr><th scope="col"><span aria-hidden="true">#</span><span class="pm-sr-only">Position</span></th><th scope="col">Title</th><th scope="col" class="pm-tracklist__dur">Length</th></tr></thead>
+          <tbody>
+            ${d.tracklist
+              .map(
+                (t) =>
+                  `<tr><td>${esc(t.position)}</td><td>${esc(t.title)}</td><td class="pm-tracklist__dur">${t.durationSeconds == null ? `<span class="pm-sr-only">No duration listed</span>` : formatDuration(t.durationSeconds)}</td></tr>`,
+              )
+              .join("\n            ")}
+          </tbody>
+        </table>
+        </div>
+      </section>`;
+}
+
+/**
+ * Render one PDP for one detail tray. `depth` is how many directories below
+ * the variant root the page will be written (2 for /vanilla/pdp/{slug}/).
+ *
+ * The masthead marks `plp` current, not a PDP link: there is no PDP entry in
+ * the store nav, and the master pins that deliberately (ADR-0008 §6's
+ * designated-host link map).
+ */
+export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
+  const d = detail;
+  const price = formatPrice(d.priceFrom);
+  const sold = d.numForSale === 0;
+  const singleFormat = d.formats.length <= 1;
+  // The cart enhancement's data hook — delivery, not contract, so the
+  // canonical DOM carries no extra attribute and vanilla stays the NO_NOISE
+  // control. `<` escaped so a tray string cannot close the element early.
+  const cartItem = JSON.stringify({ id: d.id, title: d.title }).replace(/</g, "\\u003c");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  ${head(`${d.title} — ${d.artist} — Long Decay Records`, { depth, css: PDP_CSS })}
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div id="pm-chrome-slot"></div>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/" aria-current="page">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <article class="pm-pdp">
+        <p class="pm-pdp__back"><a href="/react-next/plp/plain/">Back to all records</a></p>
+        <div class="pm-pdp__top">
+          ${galleryBlock(d)}
+          <div class="pm-pdp__buy">
+            <h1 class="pm-pdp__title">${esc(d.title)}</h1>
+            <p class="pm-pdp__artist">${esc(d.artist)}</p>
+            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? "—"}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>${formatBlock(d)}
+            <div class="pm-qty">
+              <label class="pm-qty__label" for="qty">Quantity</label>
+              <div class="pm-qty__group">
+                <button class="pm-qty__step" type="button"><span aria-hidden="true">−</span><span class="pm-sr-only">Decrease quantity</span></button>
+                <input class="pm-qty__input" id="qty" name="qty" type="number" inputmode="numeric" min="1" max="99" value="1">
+                <button class="pm-qty__step" type="button"><span aria-hidden="true">+</span><span class="pm-sr-only">Increase quantity</span></button>
+              </div>
+            </div>
+            <div><button class="pm-button" type="button"${sold ? " disabled" : ""}>${sold ? "None for sale" : "Add to cart"}</button></div>
+            <dl class="pm-pdp__meta">
+              <dt>Label</dt><dd>${esc(d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; "))}</dd>
+              ${singleFormat ? `<dt>Format</dt><dd>${esc(d.format)}</dd>\n              ` : ""}<dt>Year</dt><dd>${d.year ?? "—"}</dd>
+              <dt>Genre</dt><dd>${esc([...d.genres, ...d.styles].join(", "))}</dd>
+            </dl>
+          </div>
+        </div>${tracklistBlock(d)}${notesBlock(d)}
+      <section class="pm-pdp__section">
+        <aside class="pm-plaque pm-plaque--fenced" data-pm-fenced="true">
+          <p class="pm-plaque__kicker">Fenced demonstration</p>
+          <p class="pm-plaque__name"><strong>The live-origin demonstration</strong></p>
+          <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
+          <p class="pm-plaque__claim"><button class="pm-button pm-button--secondary" type="button">Fetch today's price live</button> <output data-pm-live-origin></output></p>
+          <p class="pm-plaque__rule">measured with the same harness · excluded from every benchmark number</p>
+        </aside>
+      </section>
+      </article>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+  <script type="application/json" id="pm-cart-item">${cartItem}</script>
+  <script src="${assetBase(depth)}pdp.js" defer></script>
 </body>
 </html>
 `;
