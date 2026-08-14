@@ -3279,3 +3279,154 @@ class; probes found the caching/timing class). Refutation stays inline, per
 the standing rule. Note #6's evidence against shrinking the pass: keep the
 four lenses — three of them independently found the `<html lang>` blind
 spot, and that redundancy is what makes an adopted finding trustworthy.
+
+## Phase 11 — The PDP, and a ruler that flatters (2026-08-14)
+
+Arc step 3, on branch `pdp-build` off `7c5be98`. The unit's brief was the
+thesis flip: build the PDP in four paradigms and let the numbers say whether
+React/Next is a contender on a surface where interactivity is genuine. Three
+commits landed; the flip is **not** measured, and the reason is the most
+useful thing this session produced.
+
+### The two obligations, discharged first
+
+The editorial publication bound two obligations it structurally could not
+discharge: the chrome constant and the batch both had to be re-measured
+against the deployed plane once that plane could render the populated chrome.
+Both ran first, from a clean tree, before any code was written.
+
+**The constant is less than half what the local plane reported.** Deployed:
+**+104 ms FCP / +104 ms LCP / 0 CLS / 0 long-task ms, plus 1,913 B brotli**,
+against the local **+224 / +216 / 1,908**. The measured fragment is
+byte-identical (12,023 B, `populated: true`), so this is not a different
+chrome — it is the same chrome measured through a truthful lens. The local
+figure was inflated by local subresource service, which is exactly why
+ADR-0001 addendum L bound the re-measure rather than treating the local
+number as final. The methodology page's local-origin caveat paragraph now
+renders itself away, because `ccLocal` is false for an https origin: the
+obligation discharges in the copy, by mechanism, not by an editor
+remembering.
+
+**The batch confirmed addendum K's prediction and nothing more.** Timing
+cells moved up (LCP +30 to +120 ms, TTFB +30 to +55 ms on the request-time
+three); byte cells did not. Published timing is now a measurement of the
+plane a visitor actually meets.
+
+### What the re-run found: the instrument flatters its own best number
+
+astro's initial-JS cell moved **0.42 → 0.37 KB with no astro change**. Chased
+to root cause rather than shrugged at:
+
+`decomposeDocument` apportions the document's compressed `transferSize`
+across html/js/data/instrumentation **by share of UNCOMPRESSED bytes**.
+ADR-0001 addendum G states the limit — the split is exact only if each part
+compresses at the document's average ratio — but nothing had measured how far
+from true that is. Measured on the live `/astro/editorial/`: the document is
+19,381 B uncompressed of which the injected chrome is **12,168 B (63%)**, and
+4,290 B on the wire of which the chrome is **1,885 B (44%)**. The chrome
+compresses **6.46×** against the document average of **4.52×**, so it is
+handed a share proportional to its uncompressed size, takes more compressed
+bytes than it really occupies, and **every other bucket is under-attributed**.
+For astro's inline cart bundle the current rule yields 282.9 B where a
+wire-exact split yields 426.1 B: the published cell **under-reports by 33.6%**.
+
+The bias scales with the chrome, which is why growing it from the empty state
+to the populated one moved the cell. And it runs in the direction that
+flatters the site's leading claim — the smallest JS cell is the fit sentence's
+opener and the minimum of home's published spread. That is precisely the shape
+a hostile reader is entitled to call rigging, so it is filed as
+`bench-instrumentation-dilution` with the measurements, and it is a **hard
+prerequisite for any PDP byte publication** — the same rule that held the
+first editorial batch behind issue #16.
+
+It was deliberately NOT fixed here. A ruler change is a methodology decision
+that belongs in its own unit (Rob's 2026-07-24 precedent), it invalidates
+every committed receipt, and folding it into a surface build would have
+invalidated the two obligation artifacts this unit was bound to produce.
+
+### The spec layer owed the PDP two things
+
+**The degenerate branches were ungated by construction.** ADR-0008 made them
+contract and made the fixture branch-covering, but `render/build.mjs`
+rendered exactly ONE PDP master, from the featured id — the rich path. The
+drift gate only ever compares a variant against a master, so the three
+degenerate arms — the COMMON path, 439/500 single-format, 44/500 unpriced,
+90/500 one-image — had no master to be compared against. There are now four
+masters, nested under the one surface, with `pdpMasterIds` as the single
+derivation shared by the reference build, every variant build and the gate's
+re-render.
+
+Each degenerate master **isolates one branch**. The first draft did not, and
+the flaw was concrete: "lowest id exhibiting the branch" resolves
+`single-format` and `unpriced` to the *same* fixture release (9000001 is
+both), which would have gated two branches together and neither apart. The
+selector now refuses a duplicate set, the isolation is asserted for both
+snapshots, and the guard is sabotage-proven — reverting the predicate fails
+three tests with an error naming the duplicate ids.
+
+Asserted: per-axis coverage with isolation. Deliberately **not** asserted:
+full combination coverage — the crate has 16 combinations and the master set
+is 4. Claiming it would be the record-not-code class. The
+`priceFrom == null ⟺ numForSale === 0` equivalence that `pdp.mjs` leans on
+(it reads two fields for one branch) is asserted against the trays: zero
+violations in both snapshots.
+
+**The qty steppers were not actually named.** ADR-0008 §8 requires "named qty
+steppers" and the master named them with a visually-hidden span — but left
+`−` / `+` as bare text nodes, so the accessible names computed to
+"−Decrease quantity". Two lines above, the tracklist header hid its own `#`
+glyph exactly the right way, so the master was internally inconsistent about
+the same technique. Fixed in the master before the first variant copied it.
+
+### Vanilla ships the surface
+
+The designated host, and the first re-implementation. It matches all four
+masters exactly after whitespace collapse and the delivery strip, so every
+rendering branch is proven rather than the featured one standing in for the
+rest.
+
+The build emits **a page per release** — 240 fixture, 500 crate. That is what
+static generation costs on a catalogue surface, and it is published rather
+than avoided: build time and dist size scale with the crate where the
+request-time variants pay per visit. Building only the releases the bench
+measures would have been rigging the variant to fit the instrument, the
+rejected `assetsInlineLimit` precedent.
+
+The recorded per-variant trap was real: every vanilla asset URL was the
+literal `"../"`, correct only for a page exactly one level deep. The asset
+base is now derived from page depth, and all 16 relative refs from a built
+PDP page are asserted to resolve on disk.
+
+### What did NOT land, and why
+
+The unit is **not** complete. Landed: both obligations, Task 0, the spec
+layer, and the vanilla variant. Not landed: react-next, astro and qwik; the
+drift-gate and origin-suite legs for the PDP; the publication pipeline's
+generalisation off `editorial-`; the interaction registry entries and the
+batches.
+
+Two of those have reasons beyond time. The **PDP byte publication is blocked**
+by `bench-instrumentation-dilution` — publishing a byte headline through a
+ruler now proven to under-report small cells by a third would be the confident
+wrong number this project exists not to produce. And the **live-origin
+demonstration cannot complete on this machine**: ADR-0002 §3 makes it the only
+serve-time Discogs call, the edge Worker has no live route today (verified —
+its routes are `/api/plp`, `/api/pdp/:id`, `/api/snapshot`, `/api/beacon`,
+`/assets/img/*`), and arming it needs a Worker secret, which leaves this
+machine and is Rob's to set. The button is wired and its output slot states
+the absence plainly rather than doing nothing visible — the same rule every
+unpublished number on this site follows.
+
+The astro decision is recorded but unbuilt: **stay static, `getStaticPaths`
+over the catalogue, no `@astrojs/cloudflare`**. astro is the islands exemplar
+on the locked render axis; an SSR adapter would change what the column means
+and confound the cross-surface comparison with a paradigm change rather than a
+surface change. Its snapshot bake needs a second generated module and a
+matching turbo `outputs` entry, or a cache hit ships a page importing a module
+that isn't there.
+
+The CSS-delivery ambiguity in ADR-0003's addendum ("the PDP/PLP builds",
+plural, no owner) is resolved: **the PLP owns it.** Components genuinely
+multiply there, and landing it here would move astro's and Next's LCP for a
+reason that is not interactivity — confounding the one comparison this surface
+exists to make.

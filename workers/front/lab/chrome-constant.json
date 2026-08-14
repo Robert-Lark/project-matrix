@@ -1,11 +1,11 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-08-14T06:36:21.946Z",
+  "date": "2026-08-14T19:06:35.781Z",
   "commit": {
-    "sha": "58d51011e8c40f7a9c4258f6767ecd3fba205210",
+    "sha": "7c5be982b4c6c0e12e3438272b2ab3b1e0b75a60",
     "dirty": false
   },
-  "origin": "http://127.0.0.1:8787",
+  "origin": "https://pm-front.robresearch87.workers.dev",
   "target": "/vanilla/editorial/",
   "profile": {
     "id": "slow-4g-mid-phone",
@@ -16,8 +16,8 @@
     "bytes": 12023,
     "sha256": "c0d823255313f75f9c9fa816f647e009df2ad4dbd5d426e10271681b2b213a4a",
     "populated": true,
-    "wireBytesBrotli": 1908,
-    "documentBytesUncompressed": 18017
+    "wireBytesBrotli": 1913,
+    "documentBytesUncompressed": 18635
   },
   "method": [
     "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
@@ -31,51 +31,51 @@
     "with": {
       "runs": [
         {
-          "FCP": 700,
-          "LCP": 868,
+          "FCP": 928,
+          "LCP": 928,
           "CLS": 0,
-          "longTaskMs": 0
+          "longTaskMs": 55
         },
         {
-          "FCP": 676,
-          "LCP": 836,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 680,
-          "LCP": 836,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 688,
-          "LCP": 852,
+          "FCP": 692,
+          "LCP": 692,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
           "FCP": 696,
-          "LCP": 860,
+          "LCP": 696,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 616,
-          "LCP": 780,
+          "FCP": 704,
+          "LCP": 704,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 672,
-          "LCP": 840,
+          "FCP": 680,
+          "LCP": 680,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 676,
+          "LCP": 676,
+          "CLS": 0,
+          "longTaskMs": 64
+        },
+        {
+          "FCP": 716,
+          "LCP": 716,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 680,
-        "LCP": 840,
+        "FCP": 696,
+        "LCP": 696,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -83,59 +83,59 @@
     "without": {
       "runs": [
         {
-          "FCP": 456,
-          "LCP": 624,
+          "FCP": 568,
+          "LCP": 568,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 452,
-          "LCP": 616,
+          "FCP": 596,
+          "LCP": 596,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 456,
-          "LCP": 620,
+          "FCP": 592,
+          "LCP": 592,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 596,
+          "LCP": 596,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 456,
-          "LCP": 624,
+          "FCP": 592,
+          "LCP": 592,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 580,
+          "LCP": 580,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 580,
+          "LCP": 580,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 456,
-        "LCP": 624,
+        "FCP": 592,
+        "LCP": 592,
         "CLS": 0,
         "longTaskMs": 0
       }
     }
   },
   "deltaMedians": {
-    "FCP": 224,
-    "LCP": 216,
+    "FCP": 104,
+    "LCP": 104,
     "CLS": 0,
     "longTaskMs": 0
   }

@@ -22,6 +22,13 @@ const MASTERS = [
   "sample",
   "editorial",
   "pdp",
+  // The PDP's three DEGENERATE masters (pdp-build): the common path in both
+  // snapshots, and ungated by construction while `build.mjs` rendered only
+  // the rich featured release. Each isolates one branch — see
+  // `render/lib.mjs` pdpMasterIds.
+  "pdp/single-format",
+  "pdp/unpriced",
+  "pdp/one-image",
   "plp",
   "checkout",
   "a11y",
@@ -171,6 +178,97 @@ describe("regeneration (§4.3 — the committed masters can never go stale)", ()
       expect(committedHowBuilt, `committed how-built lost ${marker}`).toContain(
         marker,
       );
+    }
+  });
+});
+
+describe("the PDP master set gates every rendering branch (pdp-build)", () => {
+  // `render/pdp.mjs` takes three INDEPENDENT branches — the format fieldset,
+  // the priced/unpriced buy panel, and the thumb list — and `build.mjs`
+  // rendered exactly one master (the rich featured release), so all three
+  // degenerate arms were ungated by construction while being the COMMON path
+  // (crate: single-format 439/500, unpriced 44/500, 1-image 90/500).
+  //
+  // What is asserted here is the mechanism, not a sentence in a comment:
+  // every branch takes BOTH of its values across the master set, each
+  // degenerate master differs from a sibling by exactly ONE branch, and no
+  // two masters render the same release. Deliberately NOT asserted: that
+  // every *combination* is gated — the crate has 16 combinations and the
+  // masters are 4. Per-axis coverage with isolation is the claim the set
+  // actually supports, and overclaiming it is the record-not-code class.
+  const load = async () => {
+    const lib = await import(
+      pathToFileURL(join(pkgRoot, "render", "lib.mjs")).href
+    );
+    return lib;
+  };
+
+  for (const snapshotName of ["fixture", "crate"] as const) {
+    it(`${snapshotName}: the four masters are distinct and each isolates one branch`, async () => {
+      const lib = await load();
+      const snapshot = lib.loadSnapshot(snapshotName);
+      const ids: Record<string, number> = lib.pdpMasterIds(snapshot);
+      expect(new Set(Object.values(ids)).size).toBe(4);
+
+      const classOf = (slot: string) =>
+        lib.pdpRenderClass(lib.detailById(snapshot, ids[slot]));
+      const rich = classOf("");
+      expect(rich).toEqual({
+        formats: "multi",
+        priced: "priced",
+        gallery: "gallery",
+      });
+
+      const differences = (a: Record<string, string>, b: Record<string, string>) =>
+        Object.keys(a).filter((k) => a[k] !== b[k]);
+
+      // single-format differs from the rich master by the format branch alone.
+      expect(differences(rich, classOf("single-format"))).toEqual(["formats"]);
+      // unpriced and one-image each differ from single-format by one branch,
+      // so the format branch is held constant while theirs moves.
+      const single = classOf("single-format");
+      expect(differences(single, classOf("unpriced"))).toEqual(["priced"]);
+      expect(differences(single, classOf("one-image"))).toEqual(["gallery"]);
+    });
+
+    it(`${snapshotName}: every branch value the snapshot contains is exercised by some master`, async () => {
+      const lib = await load();
+      const snapshot = lib.loadSnapshot(snapshotName);
+      const ids: Record<string, number> = lib.pdpMasterIds(snapshot);
+      const masterClasses = Object.values(ids).map((id) =>
+        lib.pdpRenderClass(lib.detailById(snapshot, id)),
+      );
+      for (const axis of ["formats", "priced", "gallery"] as const) {
+        const inSnapshot = new Set(
+          snapshot.details.map((d: unknown) => lib.pdpRenderClass(d)[axis]),
+        );
+        const inMasters = new Set(masterClasses.map((c) => c[axis]));
+        for (const value of inSnapshot) {
+          expect(
+            inMasters.has(value),
+            `${snapshotName}: releases render ${axis}=${value} but no PDP master does`,
+          ).toBe(true);
+        }
+      }
+    });
+  }
+
+  it("the unpriced branch is exactly the zero-stock branch, in both snapshots", async () => {
+    // pdp.mjs renders the em-dash amount from `priceFrom == null` and the
+    // disabled CTA from `numForSale === 0`. They are two fields, and the
+    // degenerate master only gates them TOGETHER — so the equivalence the
+    // renderer leans on is asserted against the data itself.
+    const lib = await load();
+    for (const name of ["fixture", "crate"] as const) {
+      const snapshot = lib.loadSnapshot(name);
+      const violations = snapshot.details.filter(
+        (d: { priceFrom: unknown; numForSale: number }) =>
+          (d.priceFrom == null) !== (d.numForSale === 0),
+      );
+      expect(
+        violations.length,
+        `${name}: ${violations.length} releases have priceFrom and numForSale disagreeing`,
+      ).toBe(0);
     }
   });
 });

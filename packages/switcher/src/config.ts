@@ -105,8 +105,11 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",
   },
   pdp: {
-    variants: [],
-    plannedVariants: ["vanilla", "react-next", "astro", "qwik"],
+    // vanilla is LIVE (pdp-build); the other three move planned → variants as
+    // each lands, the editorial-slice discipline. The surface is the designated
+    // host's own, so this is also the target of every release card's link.
+    variants: ["vanilla"],
+    plannedVariants: ["react-next", "astro", "qwik"],
     host: "vanilla",
     proves:
       "One product page where the interactivity is genuine — gallery, cart, quantity, format. The render axis where JavaScript has real work to do. Try the swap: the cart survives; the paradigm doesn't.",
