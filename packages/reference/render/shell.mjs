@@ -46,7 +46,17 @@ export const HOSTS = {
  *
  * - Storage: `localStorage[CART_CONTRACT.key]`, JSON:
  *   `{"v":1,"items":[{"id":<releaseId>,"qty":<integer ≥ 1>}]}` — one entry
- *   per release id; adding an id already present increments its `qty`.
+ *   per release id; adding an id already present increases its `qty` by the
+ *   quantity added.
+ * - Quantity added (pdp-build, 2026-08-14): a surface WITHOUT a quantity
+ *   control adds exactly 1 (editorial's single-unit button). A surface WITH
+ *   one adds the CHOSEN quantity, clamped to the input's own min/max — the
+ *   PDP is the only such surface today and the only writer of `qty > 1`.
+ *   Recorded here because this comment is the contract three more PDP
+ *   variants re-implement from: it previously said only "increments", so a
+ *   variant author reading it would have shipped increment-by-one and
+ *   diverged from vanilla with no test able to see it (the cart browser
+ *   test is parameterised over the EDITORIAL surface only).
  * - Validity: a missing, unparseable, or schema-failing value (wrong `v`,
  *   non-array `items`, any entry without an integer `id` and integer
  *   `qty ≥ 1`) is treated as the EMPTY cart; the next successful add

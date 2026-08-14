@@ -3406,7 +3406,22 @@ rejected `assetsInlineLimit` precedent.
 The recorded per-variant trap was real: every vanilla asset URL was the
 literal `"../"`, correct only for a page exactly one level deep. The asset
 base is now derived from page depth, and all 16 relative refs from a built
-PDP page are asserted to resolve on disk.
+PDP page were CHECKED to resolve on disk.
+
+**Corrected 2026-08-14: "are asserted" claimed a standing gate that does not
+exist.** The check was a one-time manual one; nothing re-runs it. `@pm/vanilla`
+contributes ZERO tasks to `turbo run lint typecheck test` (`--dry=json`: 30
+real commands, none of them vanilla's), so "Turbo 30/30 on the final tree" is
+the same 30 tasks that were green before the PDP existed — it cannot cover
+this variant at all. The failure that invites: a later surface at depth 1
+copies `{ depth: 2 }` from `build.mjs:84`, and every stylesheet, both font
+preloads and `pdp.js` 404 on 240–500 pages with nothing red. The vanilla PDP
+also has no pre-merge variant-master identity guard — the mechanism every
+other variant×surface pair has — so its "matches all four masters" rests on a
+one-time in-process check too. (Re-verified 2026-08-14: all four masters and
+in fact all 740 pages still match in both snapshots. It is an unguarded TRUE
+statement, which by this repo's own record-not-code standard is the defect.)
+Both gaps are owed by the PDP's remaining work.
 
 ### What did NOT land, and why
 
