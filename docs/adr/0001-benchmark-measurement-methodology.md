@@ -272,3 +272,132 @@ out regardless — ADR-0009). And binding E ("local workerd sampling profiles ar
 development only") is enforced: `--local-cpu` against a non-loopback `--origin` is
 refused, so an idle-local CPU profile can never be emitted as if it measured a
 remote origin.
+
+## Addendum — first publication: environment, chrome constant, serialization caveat (2026-08-13)
+
+The first editorial bench batch (arc step 2) published the editorial
+surface's readings. Three decisions the earlier addenda bound to "the
+publication arc" are made and recorded here; no §1–§9 decision changes.
+
+**K. Run environment for official batches (issue #16's open design
+question, settled).** Official batches run OUT OF BAND on a quiet,
+single-purpose machine — never inside a CI gate. The post-deploy smoke
+asserts receipt SHAPE and provenance (structure, fence refusal, honest
+nulls), never performance magnitudes: a magnitude asserted on a shared
+runner goes red for reasons that are not regressions (the 2026-07-27
+30-second goto timeout on a months-old page is the recorded instance) and
+blocks the plane for none. The first published batch ran on an unpinned
+local machine, labeled exactly that in every receipt's `runLocation`; §9's
+pinned cloud runner, two-location protocol, and WebPageTest cross-check
+remain downstream obligations. Consequence, binding until the WPT
+cross-check exists (addendum A): throttled-profile timing cells publish
+numbers, never verdicts — the published fit line rides bytes, which no
+throttle touches.
+
+*A second limit on the timing cells, stated because it is not obvious.*
+The batch measured the plane as it served at measurement time — carrying
+the PRE-publication chrome, since the publication had not shipped to it
+yet. The chrome that ships with these numbers is larger (receipt anchors
+and bands per cell), and its cost is the addendum-L constant. So the
+published TIMING cells slightly understate what a visitor now meets, by
+something bounded by that constant; the BYTE cells are unaffected, because
+chrome bytes are stripped as instrumentation by known path (§6). This is
+inherent to publishing measurements of a plane you are about to change,
+and the honest resolution is the dated-snapshot model §9 already commits
+to: **re-run the batch against the deployed plane after this ships** —
+one command, and the receipts carry their own reproduce path.
+
+**L. The chrome constant (addendum F / ADR-0008 §5 obligation, measured).**
+Published as TWO figures that are not blended, because they are not the
+same kind of cost: a **processing** delta and a **wire** cost. Measured on
+`/vanilla/editorial/`, 7 runs per condition, slow-4g-mid-phone (the harshest
+published profile), 2026-08-14 at a clean `58d5101`: **+224 ms FCP,
++216 ms LCP, 0 CLS, 0 ms long tasks, plus 1,908 bytes brotli on the wire.**
+The strip's geometric-inertness claim (ADR-0008 §1) holds — zero layout
+shift either way. Artifact: `/_pm/lab/chrome-constant.json`.
+
+*Method, and why it changed twice.* Both conditions intercept the document
+and pay an identical hop; the without-condition replaces
+decomposeDocument's three instrumentation regions with inert comments of
+EQUAL byte length, so the document transfer term cancels and the timing
+delta is the chrome's processing + subresource cost (a render-blocking
+`/_pm/chrome.css`, the preloaded instrument mono, `measure.js` — all real
+fetches from the real plane). What the chrome adds to the document on the
+wire is measured separately with brotli and reported beside it. Metrics
+come from the browser's own timeline in both conditions (the injected ruler
+cannot measure its own absence) and CLS is the session-window maximum, the
+definition web-vitals publishes everywhere else here.
+
+*A superseded figure, recorded rather than quietly replaced.* An earlier
+run of this obligation published **+76 ms FCP/LCP**. It was wrong twice
+over, both caught by verify-slice: it served both conditions the DECODED
+document, so the chrome's ~8 KB crossed a throttled wire uncompressed and
+part of the delta was an artifact of the probe; and it ran against the
+DEPLOYED plane, which carries no publication and therefore renders the
+EMPTY-state chrome — ~3 KB smaller than the populated strip that ships.
+Re-compressing the fulfilled body is not available (Playwright's
+`route.fulfill` ignores a declared `content-encoding`; measured: a corrupt
+3,660-byte document with no chrome node, against 18,146 for a plain
+fulfil), which is why equal-byte padding is the mechanism. The probe now
+records the fragment it measured (bytes, sha256, populated) and **the
+front build REFUSES a constant measured against an unpopulated chrome**.
+
+*Origin, stated.* Because the constant must describe the chrome that
+ships, it is measured against a LOCAL composed origin serving this
+publication (`run-local.mjs PM_HOLD=1` — the only thing that builds every
+variant with the matching snapshot selector). Local first paint is not a
+production number; the DIFFERENCE is what publishes, and both conditions
+ran on the same plane under the same emulated network. **Bound
+obligation:** re-measure against the deployed plane once this ships, when
+that plane can render the chrome being measured.
+
+**M. The addendum-G cross-framework asymmetry, resolved: publish with the
+stated caveat, never reclassify.** The executable→JS byte rule stands —
+classifying "known framework hydration payloads" as data by role would put
+a hand-maintained framework list inside the ruler, which is exactly the
+kind of judgment call a hostile reader calls rigging. Instead the caveat
+is published where the numbers are read: the methodology page states the
+asymmetry in full (React flight state counts as JS because the browser
+executes it; Qwik's inert JSON counts as data), and the reading section of
+every populated chrome panel links that page directly ("How these numbers
+are made — and what they can't say" — §9's inline limits-of-data
+affordance). No initial-JS comparison between two hydrating frameworks is
+published as a verdict without the caveat riding it; the editorial fit
+line names each paradigm's own cost and makes no react-next-vs-qwik claim.
+
+**Publication shape (ADR-0008 §3's owner obligations, discharged).**
+Published receipts are committed at `workers/front/lab/receipts/` and
+served verbatim from `/_pm/lab/receipts/` (the excluded instrumentation
+path); the per-surface bundle at `/_pm/lab/editorial.json` is BUILT from
+those receipts by the front build — the served file and the bundle the
+Worker imports and hands `renderChrome` are the same artifact, so they
+cannot drift. The reading table's published value is the WARM column
+median (§5: steady-state is the headline; the linked receipt carries cold
+beside it), and **every cell publishes that median WITH its min–max band
+across the batch's runs — addendum C's first clause, which the first draft
+of this publication left unimplemented**: gating only the fit line let the
+table itself invite comparisons inside the noise (verify-slice measured the
+consequence: two LCP medians 44 ms apart whose bands overlapped
+completely). The caption names the band and names the published column, so
+a page read under `?cache=cold` cannot be mistaken for cold numbers. The
+fit sentence is generated from receipt-derived values and the build REFUSES
+it if the receipts do not support its claims: the byte bands of every
+ADJACENT pair must be separable (checking only the spread's extremes is
+near-vacuous while the sentence enumerates all five), the
+no-interaction-fetch clause must hold in every variant's medians in both
+columns, AND every run must have RECORDED reaching network idle after the
+click — zero interaction bytes is also what a swallowed settle timeout
+produces, so `interactionSettled` makes the claim falsifiable from the
+artifact instead of assumed. C2 discipline as build mechanism, not review
+policy. The build also refuses receipts minted from a dirty tree, receipts
+spanning more than one SHA, date or run location, batches whose shapes
+disagree, a fit template naming variants the batch did not measure, and any
+unsubstituted value reaching the published sentence. **No publication is a
+legitimate state**: the bundle builds empty, the chrome keeps its designed
+empty states, and both pages compose an honest "not published yet"
+sentence rather than a number-shaped hole — the same rule every unbuilt
+surface already follows.
+The methodology page (§9) lives at `/methodology/` as a front-Worker
+static singleton — the "How it was built" surface (ADR-0008 §8) is its
+long-term home and is unbuilt; the standalone page is the recorded
+interim.

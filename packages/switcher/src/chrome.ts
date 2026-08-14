@@ -116,10 +116,24 @@ function labCell(reading: PublishedReading | undefined): string {
     return `<td class="pm-chrome__td pm-chrome__none">—</td>`;
   }
   const label = `${esc(String(reading.value))}${reading.unit ? `&nbsp;${esc(String(reading.unit))}` : ""}`;
+  // The min–max band rides beside the median (ADR-0001 addendum C). It sits
+  // OUTSIDE the anchor so the link text stays the number itself, and the
+  // caption — not 30 repetitions of per-cell SR text — explains what the
+  // second figure is. Runtime-defensive like the value above: a malformed
+  // band renders nothing rather than throwing mid-stream.
+  const b = reading.band;
+  const band =
+    b && typeof b.min === "number" && typeof b.max === "number" &&
+    Number.isFinite(b.min) && Number.isFinite(b.max)
+      // <small>, not <span>: it is the element for fine print qualifying the
+      // value beside it, and it costs 11 bytes less per cell against the
+      // fragment budget — 23 cells of it on this surface.
+      ? `<small class="pm-chrome__band">${esc(String(b.min))}–${esc(String(b.max))}</small>`
+      : "";
   // No per-cell title tooltip: the href IS the receipt (profile, date,
   // commit, location live at the linked artifact) — 24 tooltips cost ~2.4 KB
   // against the fragment budget for data one click away (skeptic lens).
-  return `<td class="pm-chrome__td"><a class="pm-chrome__reading" href="${esc(r.url)}">${label}</a></td>`;
+  return `<td class="pm-chrome__td"><a class="pm-chrome__reading" href="${esc(r.url)}">${label}</a>${band}</td>`;
 }
 
 function switcherCells(ctx: ChromeContext, controls: SurfaceControls): string {
@@ -182,7 +196,11 @@ function surfaceSection(controls: SurfaceControls): string {
   ].join("");
 }
 
-function readingSection(ctx: ChromeContext, controls: SurfaceControls): string {
+function readingSection(
+  ctx: ChromeContext,
+  controls: SurfaceControls,
+  lab: SurfaceLabBundle | undefined,
+): string {
   if (controls.singleton) {
     return [
       `<section class="pm-chrome__section">`,
@@ -225,7 +243,7 @@ function readingSection(ctx: ChromeContext, controls: SurfaceControls): string {
 
   const rows = READING_METRICS.map((metric) => {
     const cells = columns
-      .map((c) => labCell(ctx.lab?.columns[c.key]?.[metric]))
+      .map((c) => labCell(lab?.columns[c.key]?.[metric]))
       .join("");
     return `<tr><th scope="row" class="pm-chrome__th">${esc(metric)}</th>${cells}</tr>`;
   }).join("");
@@ -240,6 +258,13 @@ function readingSection(ctx: ChromeContext, controls: SurfaceControls): string {
     ? `<p class="pm-chrome__note" data-pm-hud-fenced>This variant (${esc(fencedHere.variant)}, ${esc(fencedHere.tag)}) is a fenced exhibit — no lab snapshot exists for it, by policy. The table reads the benchmarked variants; the live readout below is still your real visit.</p>`
     : "";
 
+  // The populated state flips the designed empty-state line to the receipt
+  // framing plus the ADR-0001 §9 inline limits-of-data affordance — the
+  // methodology page sits one click from the numbers it qualifies.
+  const hudLab = lab
+    ? `<p data-pm-hud-lab>Every number above links its receipt — profile, date, commit, location. <a href="/methodology/">How these numbers are made — and what they can't say</a>.</p>`
+    : `<p data-pm-hud-lab>No published runs yet. When a number lands here it carries its receipt — profile, date, commit, location — or it doesn't land at all.</p>`;
+
   return [
     `<section class="pm-chrome__section">`,
     `<h3 class="pm-chrome__h">The reading</h3>`,
@@ -247,26 +272,26 @@ function readingSection(ctx: ChromeContext, controls: SurfaceControls): string {
     `<p class="pm-chrome__row"><span class="pm-chrome__key">lab profile</span>${profileCells}<span class="pm-chrome__note">selects the displayed snapshot — never re-throttles this page</span></p>`,
     `<div class="pm-chrome__scroll" role="region" aria-label="Published lab readings" tabindex="0">`,
     `<table class="pm-chrome__table">`,
-    `<caption class="pm-chrome__sr">Published lab readings under the selected profile — an em-dash is a cell with no published run. Lab compares; the live readout below is your reality check.</caption>`,
+    `<caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run. Lab compares; the live readout below is your reality check.</caption>`,
     `<thead><tr><td></td>${head}</tr></thead>`,
     `<tbody>${rows}</tbody>`,
     `</table>`,
     `</div>`,
-    `<p data-pm-hud-lab>No published runs yet. When a number lands here it carries its receipt — profile, date, commit, location — or it doesn't land at all.</p>`,
+    hudLab,
     `</section>`,
   ].join("");
 }
 
-function fitSection(ctx: ChromeContext): string {
+function fitSection(lab: SurfaceLabBundle | undefined): string {
   let line: string;
   // bandsOverlap FIRST: a bundle carrying both a stale fit sentence and
   // bandsOverlap must render the indistinguishable state — ADR-0001 addendum
   // C forbids the verdict (verify-slice, conformance lens).
-  if (ctx.lab?.bandsOverlap) {
+  if (lab?.bandsOverlap) {
     line = `Indistinguishable at this sample size.`;
-  } else if (ctx.lab?.fit) {
-    const r = ctx.lab.fit.receipt;
-    line = `${esc(ctx.lab.fit.sentence)} <a class="pm-chrome__reading" href="${esc(r.url)}">receipt</a>`;
+  } else if (lab?.fit) {
+    const r = lab.fit.receipt;
+    line = `${esc(lab.fit.sentence)} <a class="pm-chrome__reading" href="${esc(r.url)}">receipt</a>`;
   } else {
     line = `No verdict — nothing is published for this page yet.`;
   }
@@ -364,6 +389,16 @@ function controlsSection(ctx: ChromeContext, controls: SurfaceControls): string 
 
 export function renderChrome(ctx: ChromeContext): string {
   const { environment, cacheState } = knobTags(ctx.search);
+  // Lockstep guard: the Worker passes the bundle for the profile IT
+  // resolved; honor it only when it matches the profile THIS renderer
+  // resolves for the same query — otherwise one profile's numbers would
+  // render under another profile's selected cell. The two resolutions share
+  // one algorithm (getProfile ?? default); this guard turns any future
+  // drift into visible em-dashes, never mislabeled data.
+  const selectedProfile =
+    getProfile(new URLSearchParams(ctx.search).get("profile") ?? "") ??
+    PROFILES["avg-broadband-desktop"];
+  const lab = ctx.lab && ctx.lab.profile === selectedProfile.id ? ctx.lab : undefined;
   // Object.hasOwn: the surface segment is client-controlled; a prototype key
   // ("constructor") would resolve to an inherited truthy value, skip the
   // fallback, and crash on .variants (verify-slice correctness lens).
@@ -396,8 +431,8 @@ export function renderChrome(ctx: ChromeContext): string {
     `<summary class="pm-chrome__summary">Instrument<span class="pm-chrome__sr"> — lab readings and your visit</span></summary>`,
     `<div class="pm-chrome__panel" data-pm-hud>`,
     surfaceSection(controls),
-    readingSection(ctx, controls),
-    fitSection(ctx),
+    readingSection(ctx, controls, lab),
+    fitSection(lab),
     visitSection(),
     conditionSection(ctx),
     controlsSection(ctx, controls),

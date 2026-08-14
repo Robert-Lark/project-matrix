@@ -252,10 +252,14 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
   it("the fragment stays inside its byte budget (ADR-0001 addendum F discipline)", () => {
     // The chrome rides every measured page's HTML; its size is a stated
     // constant, not a creeping variable (its wall-clock cost is re-measured
-    // per ADR-0001 addendum F before any publication). Budget: 12 KiB for
-    // the largest control-set (the PLP's) — measured 8.4 KiB empty this
-    // session, with headroom for populated readings (a receipt adds ~100
-    // bytes per cell). Raising this number is an ADR-level decision.
+    // per ADR-0001 addendum F before any publication). Budget: 13 KiB —
+    // raised from 12 by the first editorial publication, when the populated
+    // state stopped being an estimate: a receipt anchor per cell PLUS the
+    // min-max band ADR-0001 addendum C requires took the largest real
+    // fragment (remix3, whose fenced note is extra) to 12,396 bytes. The
+    // fragment's measured wire cost is 1,907 bytes brotli, so the raise is
+    // bounded and cheap; the budget exists to catch creep, not to force
+    // markup golf. Recorded in the ADR-0008 addendum.
     const plp = renderChrome({
       variant: "react-next",
       surface: "plp",
@@ -263,7 +267,7 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
       search: "?cache=cold&n=240&profile=slow-4g-mid-phone",
       location: "local",
     });
-    expect(plp.length).toBeLessThan(12288);
+    expect(plp.length).toBeLessThan(13312);
   });
 
   it("the budget holds for a FULLY populated bundle, measured in bytes", () => {
@@ -302,7 +306,87 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
         fit: { sentence: "Under this profile the loaders build reaches first paint in one round trip where the client-cache build needs two.", receipt },
       },
     });
-    expect(new TextEncoder().encode(populated).length).toBeLessThan(12288);
+    expect(new TextEncoder().encode(populated).length).toBeLessThan(13312);
+  });
+});
+
+describe("published readings (first editorial batch; C2 populated states)", () => {
+  const receipt = {
+    profile: "avg-broadband-desktop" as const,
+    date: "2026-08-14",
+    commitSha: "23a0e7ef4bf54bbad669778e1a4135fe00f82682",
+    location: "local-dev",
+    url: "/_pm/lab/receipts/editorial-avg-broadband-desktop.json",
+  };
+  const editorialCtx = {
+    variant: "vanilla",
+    surface: "editorial",
+    pathname: "/vanilla/editorial/",
+    search: "",
+    location: "local",
+  };
+  const lab = {
+    surface: "editorial",
+    profile: "avg-broadband-desktop" as const,
+    columns: {
+      vanilla: { "initial JS": { value: 1.69, unit: "KB" as const, receipt } },
+      "react-next": { "initial JS": { value: 154.85, unit: "KB" as const, receipt } },
+    },
+    fit: {
+      sentence: "Identical prose, one interaction: the costs differ.",
+      receipt,
+    },
+  };
+
+  it("a populated cell is a receipt-linked value; unpublished cells stay em-dashes", () => {
+    const html = renderChrome({ ...editorialCtx, lab });
+    expect(html).toContain(
+      `<a class="pm-chrome__reading" href="${receipt.url}">1.69&nbsp;KB</a>`,
+    );
+    expect(html).toContain("154.85&nbsp;KB");
+    // Metrics without a published reading (TTFB…, and all of astro/qwik/htmx)
+    // still render the designed em-dash — a partial bundle publishes nothing
+    // it doesn't carry.
+    expect(html).toContain("pm-chrome__none");
+  });
+
+  it("the reading's closing line flips to the receipt framing + the §9 limits link ONLY when populated", () => {
+    const populated = renderChrome({ ...editorialCtx, lab });
+    expect(populated).toContain('href="/methodology/"');
+    expect(populated).toContain("How these numbers are made");
+    expect(populated).not.toContain("No published runs yet");
+    const empty = renderChrome(editorialCtx);
+    expect(empty).toContain("No published runs yet");
+    expect(empty).not.toContain('href="/methodology/"');
+  });
+
+  it("the fit line renders the sentence with its receipt link", () => {
+    const html = renderChrome({ ...editorialCtx, lab });
+    expect(html).toContain("Identical prose, one interaction: the costs differ.");
+    expect(html).toContain(`href="${receipt.url}">receipt</a>`);
+  });
+
+  it("bandsOverlap forces the indistinguishable state even over a stale fit sentence (ADR-0001 addendum C)", () => {
+    const html = renderChrome({
+      ...editorialCtx,
+      lab: { ...lab, bandsOverlap: true },
+    });
+    expect(html).toContain("Indistinguishable at this sample size.");
+    expect(html).not.toContain("the costs differ");
+  });
+
+  it("a bundle for a profile the URL did not select renders NOTHING — the lockstep guard", () => {
+    // The Worker resolves ?profile= with the same algorithm as this renderer;
+    // if they ever drift, the failure must be visible em-dashes, never one
+    // profile's numbers under another profile's selected cell.
+    const html = renderChrome({
+      ...editorialCtx,
+      search: "?profile=slow-4g-mid-phone",
+      lab, // an avg-broadband-desktop bundle
+    });
+    expect(html).not.toContain("1.69");
+    expect(html).toContain("No published runs yet");
+    expect(html).toContain("No verdict — nothing is published for this page yet.");
   });
 });
 

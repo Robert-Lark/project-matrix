@@ -12,11 +12,39 @@
 // the documented `div#pm-chrome-slot` via HTMLRewriter (ADR-0004 §7, spike
 // hardening 2) — HTML only, content-type guarded; everything else passes
 // through byte-identical. The /_pm/* instrumentation path (chrome.css +
-// the pinned measurement bundle) is served assets-first from this Worker's
-// own dist, so instrumentation bytes stay strippable by known path
-// (ADR-0001 §6).
+// the pinned measurement bundle + the published lab receipts and bundles
+// under /_pm/lab/) is served assets-first from this Worker's own dist, so
+// instrumentation bytes stay strippable by known path (ADR-0001 §6). The
+// methodology page (/methodology/, ADR-0001 §9) rides the same assets-first
+// path as home — static singletons, no injected chrome.
 
 import { renderChrome } from "@pm/switcher";
+import { getProfile, PROFILES } from "@pm/measurement";
+// The published-runs bundle (ADR-0008 §3: the front build hands the bundle
+// to renderChrome — nothing fetches). Imported from the BUILT artifact in
+// dist/_pm/lab/, i.e. the very file served at /_pm/lab/editorial.json: the
+// embedded bundle and the served receipt artifact are one object and cannot
+// drift. build.mjs generates it from the committed receipts under lab/.
+import editorialLab from "../dist/_pm/lab/editorial.json";
+
+const LAB_BUNDLES = {
+  [editorialLab.surface]: editorialLab.profiles,
+};
+
+/** The per-surface, per-profile published bundle for this request, or
+ *  undefined (the chrome renders its designed empty states). Profile
+ *  resolution mirrors the chrome's own reading-section selector EXACTLY
+ *  (getProfile(param) ?? default) — a mismatch would render one profile's
+ *  numbers under another profile's selected cell. Object.hasOwn throughout:
+ *  surface and profile are client-controlled (the repo's recurring
+ *  prototype-key class). */
+function labFor(surface, search) {
+  if (!Object.hasOwn(LAB_BUNDLES, surface)) return undefined;
+  const bundles = LAB_BUNDLES[surface];
+  const requested = new URLSearchParams(search).get("profile") ?? "";
+  const resolved = (getProfile(requested) ?? PROFILES["avg-broadband-desktop"]).id;
+  return Object.hasOwn(bundles, resolved) ? bundles[resolved] : undefined;
+}
 
 const VARIANTS = {
   "placeholder-static": "PLACEHOLDER_STATIC",
@@ -103,14 +131,19 @@ export default {
         return upstream;
       }
 
+      const surface = url.pathname.split("/")[2] ?? "";
       const chrome = renderChrome({
         variant,
-        surface: url.pathname.split("/")[2] ?? "",
+        surface,
         pathname: url.pathname,
         search: url.search,
         // Where this response was served from — the beacon's location tag.
         // cf is absent in local dev.
         location: request.cf?.colo ?? "local",
+        // Published readings, when this surface has them under the selected
+        // profile. A fenced exhibit's page passes the same bundle: its
+        // reading table reads the BENCHMARKED variants (ADR-0008 §3).
+        lab: labFor(surface, url.search),
       });
       // Slot cardinality is a page CONTRACT (exactly one): zero slots ships
       // an unmeasured, switcher-less page; two double-inject the measurement

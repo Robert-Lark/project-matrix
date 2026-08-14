@@ -314,6 +314,16 @@ a.pm-chrome__cell:hover {
 
 .pm-chrome__none { color: var(--pm-chrome-ink-muted); }
 
+/* The median's min–max band (ADR-0001 addendum C), set quieter than the
+   median it qualifies but never hidden: two overlapping bands are how a
+   reader sees that a gap is inside the noise. */
+.pm-chrome__band {
+  display: block;
+  color: var(--pm-chrome-ink-muted);
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+}
+
 .pm-chrome__vitals {
   display: flex;
   flex-wrap: wrap;

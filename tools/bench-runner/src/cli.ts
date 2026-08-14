@@ -5,7 +5,8 @@
  *   pnpm bench run --origin http://127.0.0.1:8787 \
  *     --targets /placeholder-static/sample/,/placeholder-ssr/sample/ \
  *     --profile avg-broadband-desktop [--runs 7] [--n 24] \
- *     [--interaction body-click] [--local-cpu] [--out receipts/x.json]
+ *     [--interaction body-click] [--nonce batch-x] [--local-cpu] \
+ *     [--out receipts/x.json]
  *
  *   pnpm bench reproduce <receipt.json> [--origin …] [--local-cpu] [--out …]
  *
@@ -79,6 +80,12 @@ async function main(): Promise<number> {
         n: { type: "string" },
         interaction: { type: "string", default: "body-click" },
         "local-cpu": { type: "boolean", default: false },
+        // Batch-constant run-isolation nonce override (BatchSpec.runNonce).
+        // Lets an operator pre-warm the EXACT effective URLs (the deployed
+        // plane serves a brand-new URL's first hit uncompressed — the
+        // slice-C cache-MISS class) before any measured visit; generated
+        // when absent, exactly as before.
+        nonce: { type: "string" },
         out: { type: "string" },
       },
     });
@@ -101,6 +108,7 @@ async function main(): Promise<number> {
       profileId: values.profile,
       runsPerUrl: parseInt(values.runs, 10),
       n: values.n === undefined ? undefined : parseInt(values.n, 10),
+      runNonce: values.nonce,
       repoRoot,
       cpuSource: cpuSource(values["local-cpu"]),
     };
@@ -115,6 +123,11 @@ async function main(): Promise<number> {
       options: {
         origin: { type: "string" },
         "local-cpu": { type: "boolean", default: false },
+        // Reproduce mints a FRESH nonce by default (fresh cache state, the
+        // honest reproduction). Pass the published receipt's own nonce to
+        // re-drive the exact effective URLs — the only way to pre-warm them
+        // first against the first-hit-uncompressed class.
+        nonce: { type: "string" },
         out: { type: "string" },
       },
     });
@@ -135,6 +148,7 @@ async function main(): Promise<number> {
     const spec = specFromReceipt(receipt, repoRoot, {
       origin: values.origin,
       cpuSource: cpuSource(values["local-cpu"]),
+      runNonce: values.nonce,
     });
     writeReceipt(await runBatch(spec), values.out);
     return 0;

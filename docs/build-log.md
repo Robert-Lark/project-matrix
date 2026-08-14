@@ -2864,6 +2864,249 @@ considered and rejected on polyfill weight) · chrome-devtools MCP (the full
 editor + public browser pass) · headless-Chrome screenshot probe · the
 verify-slice workflow · the origin suite as the non-contamination gate.
 
+## Phase 10 — The first numbers (editorial bench batch, 2026-08-13)
+
+The moment the site stopped being pure instrument. Until this session every
+reading-table cell was a designed em-dash; the chrome's empty state promised
+"when a number lands here it carries its receipt — or it doesn't land at
+all." This unit made that promise come due for the editorial surface.
+
+**Order of operations was the whole design, and it decided the commit
+count.** A receipt records `commit.dirty` as the tree stood WHEN IT WAS
+MEASURED, and the publication build refuses a dirty receipt — so every
+artifact has to be minted from a committed tree, and the code it measures
+has to be committed before it. That makes this unit **eight commits**, each
+one a measurement boundary rather than a preference: arm the harness →
+build the pipeline → mint the receipts → fix the constant's method → mint
+the constant → drop zero-width bands → re-set the byte budget → re-mint
+the constant against the chrome that change produced. They cannot be
+squashed, and this decided the MERGE STRATEGY: the receipts pin `85b97c4`
+and the constant pins `58d5101` by SHA, so a rebase or squash merge would
+rewrite both into hashes absent from main's history — a skeptic cloning
+the repo could not check out the commit a published number names. The
+branch therefore merges with a MERGE COMMIT, preserving every pinned SHA,
+which is the first time this project's linear-history habit has lost to a
+correctness requirement.
+That is a real tension with the one-commit-per-branch habit, flagged
+rather than papered over. The rule paid for itself twice — editing docs
+while a batch ran produced three unpublishable receipts, and the constant's
+own artifact file, left in the tree from a previous run, dirtied the tree
+for the next one. Commit A arms the harness
+(the `editorial-add-to-cart` interaction — the surface's ONE designed
+interaction, clicked with no warm-up so the first click's latency is what
+lands — though see the verification postscript: the harness settles idle work
+BEFORE the click by design, so this measures handler resolution, not handler
+download, and the first draft of that claim overreached; a `--nonce` override
+so the exact effective URLs can be pre-warmed against the slice-C
+first-hit-uncompressed class; the addendum-F chrome-constant probe), and only
+then does anything measure. Commit B
+publishes — receipts, bundle pipeline, methodology page, home flips, this
+record.
+
+**The chrome constant (ADR-0001 addendum F).** Final figures, after the
+verification pass rewrote the method twice (see the postscript):
+**+224 ms FCP, +216 ms LCP, 0 CLS, 0 long-task ms, plus 1,908 bytes
+brotli on the wire** — 7 runs per condition, slow-4g, `/vanilla/editorial/`
+against a local plane serving this publication, clean `58d5101` (re-measured
+once more after the band element changed: a constant must describe the chrome
+that actually ships, which is the whole point of the guard). The
+geometric-inertness claim (ADR-0008 §1) held exactly: zero layout shift
+either way. The timing figure is what byte-stripping structurally cannot
+remove — a render-blocking `/_pm/chrome.css`, a preloaded mono, and the
+ruler itself, all real fetches on a slow connection. It is ~3× the first
+figure this unit produced, and the honest reading is that the first one
+was measuring a smaller chrome through a distorted lens. First probe run
+also failed on the corp TLS proxy (`route.fetch` runs in Node, which
+doesn't trust the MITM CA; the browser uses the system keychain) — the
+documented NODE_EXTRA_CA_CERTS pattern fixed it.
+
+**The batches:** a throwaway 1-run warm-up batch first (gets every page's
+subresources cached at this colo; receipt discarded), then curl pre-warm of
+all ten effective URLs until `content-encoding: br` (the batch nonce is
+batch-constant, so the URLs are knowable in advance — that is what the
+`--nonce` flag is for), then three official batches back-to-back on the
+quiet machine: 5 variants × cold+warm × 7 runs per profile, one nonce
+across all three so the only variable that changes between batches is the
+profile. Every receipt: `dirty: false` at `23a0e7e`.
+
+**The warm-up receipt earned its keep before the official runs spent
+anything.** Its numbers "disagreed" with the recorded ground-truth table
+(astro 0.42 KB vs "~1.2 KB inlined"; vanilla 1.69 vs 1.35; qwik 29.5 vs
+26.8; react-next 154.8 vs 145.1) and every delta had a mechanism, not a
+bug: astro's inline bundle is attributed by COMPRESSED share of the
+document's transferSize (addendum G), and the deployed plane's
+`transferSize` includes CF response headers, which scale with request count
+(qwik +2.7 KB over 7 files, react-next +9.7 KB over ~21 requests). The
+astro arithmetic was reproduced against the live page rather than asserted:
+1,278 B of inline executable script in a 15,033 B served document = an 8.50%
+share; the document's compressed transferSize is ~5.0 KB (4,509 B brotli
+body + ~0.5 KB CF response headers); 8.50% of that is the 425 B the receipt
+records, published as 0.42 KB. Direction and magnitude both match;
+the local-plane ground truth was measured without CF headers. This is the
+citation-vs-measurement discipline doing its job in the cheap direction.
+
+**What the published receipts say** (warm medians, avg-broadband-desktop,
+from the final batch at `85b97c4`): initial JS — astro **0.42 KB**,
+vanilla **1.69**, htmx **19.38**, qwik **29.48**, react-next **154.88**.
+TTFB splits the build-time variants from the request-time ones cleanly
+(~120 ms vs ~226 ms), which carries into LCP (412/428 ms against
+536/552/552). CLS **0.00 everywhere** — the surfaces were designed for
+that (ADR-0008 §8's sized image slots) and the instrument is inert by
+construction. INP (scripted) 24–32 ms across the board: the surface's one
+interaction is a storage write by design, so this cell is honest about
+measuring almost nothing — the interesting INP number belongs to the
+checkout surface, where the ADR puts it. Interaction bytes **0 on every
+variant, both columns, every run settled**. Under slow-4G the LCP order
+holds and the spread narrows (astro 776 · vanilla 796 · htmx 832 · qwik
+864 · react-next 876) — 154 KB of JavaScript costs less than a naive
+reading expects on a page whose LCP is text, which is exactly the kind of
+result the fit line must not overstate.
+
+**Publication is a build mechanism, not a review policy.** The front build
+generates `/_pm/lab/editorial.json` from the committed receipts — the
+served file and the object the Worker imports and hands `renderChrome` are
+one artifact, so they cannot drift. The build REFUSES: a dirty receipt, a
+mixed-SHA publication, disagreeing batch shapes, a missing default-profile
+reading, and any fit sentence whose claims the receipts don't back (band
+non-overlap on the headline metric's extremes; the no-fetch-on-click
+clause re-verified in every variant's medians, both columns). The chrome
+gained exactly two behaviors: the populated hud-lab line (receipt framing
++ the §9 limits link to /methodology/) and a lockstep guard — a bundle
+whose profile doesn't match the renderer's own ?profile= resolution
+renders as em-dashes, never as mislabeled numbers.
+
+**Judgment calls owned and recorded (ADR-0001 addenda K–M):** official
+batches run out of band, never in CI gates (K — the issue-#16 design
+question); throttled timing cells publish numbers, never verdicts, until
+the WPT cross-check exists (K, binding addendum A); the chrome constant is
+stated on the methodology page (L); the addendum-G serialization asymmetry
+is resolved as publish-with-stated-caveat, never a hand-maintained
+framework list inside the ruler (M). The qwik framing call: the fit line
+names each paradigm's own cost in the locked axis order — "resumability's
+29.48 KB (up front — deferred binding, not deferred bytes)" — and makes no
+react-next-vs-qwik apples-to-apples claim.
+
+**Final-tree proof:** origin suite **335/335 fixture** and **334/335
+crate** (the one miss is the known pre-existing git-ignored thumbnail,
+`9861004-primary.thumb.avif`, 404 on this machine — the same single miss
+every slice since D has recorded), turbo lint/typecheck/test **30/30**,
+`wrangler deploy --dry-run` clean, switcher units 29/29. Eleven of those
+suite tests are new: the publication is asserted outside-in — the served
+bundle's every reading carries a complete receipt, every receipt URL
+dereferences to a clean SHA-pinned v1 receipt whose warm medians DERIVE
+the served value, all receipts pin one SHA, the chrome renders those exact
+numbers under each `?profile=`, the fenced exhibit reads the benchmarked
+columns without gaining one, the methodology page's stated constant equals
+the served artifact, home's spread equals the bundle's min/max, and the
+populated fragment stays inside its budget on every profile.
+
+**The methodology page** (ADR-0001 §9) lives at `/methodology/`, a
+front-Worker static singleton on the home-surface delivery precedent;
+every number on it is substituted at build from a committed artifact
+(chrome-constant probe, receipts, crate manifest) — the home-receipts
+anti-drift rule, applied to prose about the method itself.
+
+### Phase 10 postscript — the verification pass that rewrote the unit
+
+**The near-miss worth recording first.** verify-slice was launched against
+the finished publication and came back with four EMPTY findings arrays —
+which reads exactly like a clean pass. It wasn't: all four lenses had died
+on a model limit. The journal said it plainly (`4 started, 0 result`, no
+findings files on disk), and the workflow's own diagnostics warn to read it
+before believing an empty result. Had that been taken at face value, the
+first published numbers on this site would have shipped with no adversarial
+pass at all, and the build log would have carried the sentence
+"verify-slice: 0 findings" — the record-not-code class, self-inflicted, on
+the one unit where credibility is the product. Resumed on a different
+model; the standing rule (`verify-slice-limit-resilience`) is now also a
+rule about how its results are READ.
+
+**The resumed pass: four lenses, 26 findings, 18 distinct, all adopted.**
+It changed the unit's shape, not just its details — three findings
+invalidated artifacts that were already "done":
+
+1. **The chrome constant was measured wrong, twice over.** The probe served
+   both conditions the DECODED document with `content-encoding` stripped,
+   so the ~8 KB of chrome markup the two conditions differ by crossed a
+   throttled wire uncompressed where the plane sends it inside one brotli
+   stream — the interception hop cancels, the size term does not. And it
+   ran against the DEPLOYED plane, which carries no publication, so it
+   measured the EMPTY-state chrome (~3 KB smaller than the populated strip
+   that now ships). Both fixed: both bodies are re-compressed with brotli
+   before fulfilment, and the probe now records the fragment it measured
+   (bytes, sha256, populated) while the build REFUSES a constant measured
+   against an unpopulated chrome. The lens also caught that the probe
+   summed layout shifts into a running total where web-vitals — the site's
+   one ruler — uses the session-window maximum; both read 0 here, but the
+   field was wrong by definition, so it now computes the window.
+2. **The reading table published bare medians.** ADR-0001 addendum C says
+   cells publish the median WITH its min–max band; only the fit line was
+   gated on non-overlap. The lens computed the consequence from the
+   committed receipts: vanilla 448 ms vs astro 492 ms LCP, bands
+   [440–544] and [432–544] — fully overlapping, a 44 ms "difference"
+   entirely inside the noise, on a table ADR-0008 §3 makes the comparison
+   interface. Every cell now carries its band, and the caption says what
+   the second figure is.
+3. **The fit line's strongest claim was unfalsifiable from the artifact.**
+   "None of them fetches another byte for the click" rests on
+   `interactionBytes === 0` — but zero is also what a swallowed settle
+   timeout produces, since a request still in flight never appears in
+   resource timing at all. The runner now records `interactionSettled` per
+   run and the build refuses the claim unless every run proves it. That
+   forced the batches to be RE-RUN on the fixed harness rather than
+   published from receipts that could not support their own sentence.
+
+Also adopted: the methodology page claimed the runner refuses the Apollo
+exhibit's URL — it does not (the fence is a variant-prefix set; Apollo is a
+path under a live variant), so the copy now claims only the mechanism that
+exists and names the PLP build as the place the rest lands; the advertised
+reproduce command said "same URLs" while `specFromReceipt` discarded the
+nonce (copy corrected, `--nonce` threaded through, and the receipt now
+states its own pre-warm precondition in `methodNotes`); `INTERACTIONS` was
+a bare record lookup, so `--interaction valueOf` would have passed both
+guards, clicked nothing, and minted a schema-valid receipt with null INP
+and zero interaction bytes; batch integrity pinned SHA and shape but not
+date or run location, while the page asserts both "in every receipt" (this
+batch ran 28 minutes after UTC midnight); a null or renamed delta would
+have published as "−0 ms" or "−NaN ms"; the fit template's five variant
+keys were validated by nothing, so a rename would publish "islands
+undefined KB" as the site's only verdict; the band guard compared only the
+spread's extremes — the one pair that can hardly overlap — and now checks
+every adjacent pair; and home published a lab-derived spread with no
+receipt link, contradicting §9 and the methodology page one click away.
+
+Two copy overclaims died the same way the slice-F record did: "clicked
+cold, so a paradigm that defers handler binding pays that cost in the open"
+is negated by the harness's own idle-settle before the click (it measures
+handler resolution, not download — the page now says so, and the limits
+list gained the settle rule it was missing), and "this constant rides every
+timing cell equally" generalized a one-page, one-profile measurement into a
+guarantee.
+
+**Sabotage-proven before commit** (the slice-D discipline): a receipt with
+`dirty: true` refuses the build; a receipt whose medians contradict the
+fit's no-fetch-on-click clause refuses the build; runs edited so the
+compared byte bands overlap build `bandsOverlap: true` with the fit
+DROPPED (the chrome renders "Indistinguishable at this sample size"), and
+restoring the receipt restores the fit. The populated panel and the
+methodology page were both screenshot-verified — five receipt-linked
+columns each carrying its band, the derived fit line with its receipt, the
+limits link, remix3 tagged in the switcher with no table column.
+
+**The byte budget, which the bands blew.** ADR-0008 §5 set the fragment
+budget at 12 KiB when the populated state was still an estimate ("headroom
+for populated readings"). With a receipt anchor AND an addendum-C band per
+cell, the real fragments measured 11,723–12,396 B across the three
+profiles — the largest (remix3, whose fenced note is extra) 108 bytes OVER,
+and vanilla passing with 5 bytes to spare, which is not headroom, it is
+luck. Two fixes, both recorded in an ADR-0008 addendum: zero-width bands
+are omitted (a band whose min equals its max says only what the median
+said — 7 of 30 cells here, 306 bytes), the band element is `<small>` rather
+than `<span>` (the element for fine print, 11 bytes cheaper per cell), and
+the budget moves to 13 KiB. The raise is justified by measurement, not
+assertion: the fragment's cost on the wire is 1,908 B brotli, and the
+chrome's timing cost is dominated by its subresources, not its markup.
+
 ## Methodology notes
 
 Cross-cutting workflow learnings — the "how this was built *with AI*" story,

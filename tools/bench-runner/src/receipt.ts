@@ -50,6 +50,15 @@ const WebVitals = z.object({
 export const RunSample = z.object({
   /** x-pm-cache-state of the DOCUMENT response, when the plane sent one. */
   docCacheState: z.string().nullable(),
+  /**
+   * Did the post-interaction wait reach network idle, or hit its cap? Zero
+   * interaction bytes means "nothing was fetched" ONLY when this is true —
+   * a request still in flight when the cap elapses never lands in resource
+   * timing, so the two are indistinguishable without this flag. Optional so
+   * receipts minted before it remain parseable; absent means unrecorded,
+   * which the publication build treats as unverified rather than true.
+   */
+  interactionSettled: z.boolean().optional(),
   ttfb: TtfbDecomposition,
   /** From the injected chrome's own pinned web-vitals build (ADR-0001 §2),
    *  harvested by intercepting its beacons. All-null when the page carries

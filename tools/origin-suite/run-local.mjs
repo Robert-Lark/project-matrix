@@ -224,8 +224,21 @@ try {
       `${dead.length} worker process(es) exited during startup — see tools/origin-suite/.dev-logs/`,
     );
   }
-  console.log("composed origin ready — running the suite");
+  console.log("composed origin ready");
 
+  // PM_HOLD=1: bring the plane up and HOLD it instead of running the suite.
+  // The ADR-0001 addendum-F chrome-constant probe has to measure the chrome
+  // that actually SHIPS — which only exists on a plane serving the current
+  // publication — and this is the only thing that builds every variant with
+  // the matching snapshot selector (a hand-started plane serves whatever
+  // PM_SNAPSHOT its dists were last built with, the recorded slice-D trap).
+  // The existing SIGINT/SIGTERM traps tear it down.
+  if (process.env.PM_HOLD === "1") {
+    console.log("PM_HOLD=1 — plane held; SIGINT/SIGTERM to stop");
+    await new Promise(() => {});
+  }
+
+  console.log("running the suite");
   const suite = spawnSync("pnpm", ["exec", "vitest", "run"], {
     cwd: suiteDir,
     stdio: "inherit",
