@@ -141,17 +141,31 @@ export function detailById(snapshot, id) {
 }
 
 /**
- * The PDP's RENDERING CLASS for one detail tray — the three independent
- * branches `render/pdp.mjs` actually takes, and nothing else:
+ * The PDP's RENDERING CLASS for one detail tray — the three STRUCTURAL
+ * branches the master set gates (whole elements appear or disappear):
  *  - `formats`  : multi-format renders a <fieldset> radio group; single-format
  *                 renders no fieldset and adds a <dt>Format</dt> pair to the
  *                 meta list instead (439/500 in the crate, 239/240 fixture);
  *  - `priced`   : unpriced renders an em-dash amount + "none for sale" + the
  *                 disabled CTA (44/500 crate, 24/240 fixture). `priceFrom ==
  *                 null ⟺ numForSale === 0` holds with ZERO exceptions in both
- *                 committed snapshots — asserted, not assumed (pdp.test.ts);
+ *                 committed snapshots — asserted, not assumed
+ *                 (`test/reference.test.ts`);
  *  - `gallery`  : a 1-image release omits the whole thumb <ul> (90/500 crate,
  *                 1/240 fixture).
+ *
+ * NOT the branches `render/pdp.mjs` takes — it takes three more, and this
+ * class does not model them, so no master gates them (verify-slice 2026-08-14,
+ * three lenses). They are KNOWINGLY UNGATED, recorded rather than implied:
+ *  - `:65`  omits the whole notes <section> when `!d.notes`
+ *           (fixture 1/240, crate 61/500 — no fixture master takes this arm);
+ *  - `:91`  renders an sr-only "No duration listed" for a null track duration
+ *           (fixture 68/240, crate 259/500);
+ *  - `:125` renders "—" for a null year (fixture 19/240, crate 0/500).
+ * The committed masters render from the FIXTURE, and 0 of the 4 take ANY of
+ * those three arms. Closing the gap means widening this class AND the master
+ * set; until then the coverage guard proves per-axis coverage of the three
+ * structural branches, which is what its test name now says.
  */
 export function pdpRenderClass(detail) {
   return {
@@ -194,20 +208,38 @@ export function pdpMasterIds(snapshot) {
       .sort((a, b) => a.id - b.id)[0];
     return match?.id;
   };
-  // Each degenerate pick ISOLATES its branch: it holds the other two at the
-  // rich master's value, so a master differs from its neighbour by exactly
-  // ONE branch. That is ADR-0001 §4's one-variable-at-a-time rule applied to
-  // the gate — without it the first draft picked the same release for
+  // The set is a STAR centred on `single-format`, not a set in which every
+  // pair differs by one branch. Each degenerate pick holds the other two axes
+  // at the SINGLE-FORMAT master's value, so each differs from that centre by
+  // exactly ONE branch — ADR-0001 §4's one-variable-at-a-time rule applied to
+  // the gate. It is NOT true of every pair: `rich` differs from `unpriced` and
+  // from `one-image` by two axes, and those two differ from each other by two
+  // (verify-slice 2026-08-14 — the comment previously named `rich` as the
+  // anchor, which is false: `rich` is multi-format and every degenerate pick
+  // is single).
+  //
+  // Without the isolation the first draft picked the same release for
   // `single-format` and `unpriced` (both resolve to fixture 9000001, the
   // lowest id, which is single AND unpriced), gating the two branches only
   // together and never apart.
+  //
+  // The `formats.length <= 1` clause on `unpriced`/`one-image` is what makes
+  // the star STRUCTURAL rather than accidental. Both snapshots resolve the
+  // same ids with or without it (fixture 9000001/9000017, crate 707725/815241
+  // — the committed masters are byte-unchanged), because 439/500 crate and
+  // 239/240 fixture releases are single-format; that is a property of the
+  // data, not of the derivation, and the derivation must not depend on it.
   const ids = {
     "": featuredIds(snapshot).pdp,
     "single-format": lowestWith(
       (d) => d.formats.length <= 1 && d.priceFrom != null && d.images.length > 1,
     ),
-    unpriced: lowestWith((d) => d.priceFrom == null && d.images.length > 1),
-    "one-image": lowestWith((d) => d.images.length === 1 && d.priceFrom != null),
+    unpriced: lowestWith(
+      (d) => d.formats.length <= 1 && d.priceFrom == null && d.images.length > 1,
+    ),
+    "one-image": lowestWith(
+      (d) => d.formats.length <= 1 && d.images.length === 1 && d.priceFrom != null,
+    ),
   };
   for (const [slot, id] of Object.entries(ids)) {
     if (id == null) {
@@ -226,6 +258,22 @@ export function pdpMasterIds(snapshot) {
         .map(([slot, id]) => `${slot || "rich"}=${id}`)
         .join(", ")}) — each master must render a distinct branch`,
     );
+  }
+  // The STAR property, enforced where it is derived rather than only asserted
+  // downstream: each degenerate master must differ from the `single-format`
+  // centre on exactly ONE axis. The duplicate guard above cannot catch a set
+  // that is distinct but not one-variable — two masters differing on two axes
+  // gate both branches together and neither apart, which is the failure the
+  // whole derivation exists to prevent.
+  const centre = pdpRenderClass(detailById(snapshot, ids["single-format"]));
+  for (const slot of ["unpriced", "one-image"]) {
+    const cls = pdpRenderClass(detailById(snapshot, ids[slot]));
+    const differing = Object.keys(centre).filter((axis) => cls[axis] !== centre[axis]);
+    if (differing.length !== 1) {
+      throw new Error(
+        `${snapshot.name}: PDP master "${slot}" (id ${ids[slot]}, ${pdpRenderClassKey(detailById(snapshot, ids[slot]))}) differs from the single-format centre (${pdpRenderClassKey(detailById(snapshot, ids["single-format"]))}) on ${differing.length} axes [${differing.join(", ")}] — each degenerate master must isolate exactly one branch`,
+      );
+    }
   }
   return ids;
 }

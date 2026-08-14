@@ -405,7 +405,9 @@ Two changes, both recorded rather than one silently absorbed:
    real fragment ~1.2 KiB of headroom instead of the 5 bytes the 12 KiB
    number left after bands landed. The raise is bounded and cheap by
    measurement, not by assertion: the fragment's cost **on the wire** is
-   1,908 bytes brotli (ADR-0001 addendum L), and the chrome's measured
+   1,913 bytes brotli (ADR-0001 addendum N, measured against the deployed
+   plane; the 1,908 B this cited was the superseded local figure), and the
+   chrome's measured
    timing cost is dominated by its subresources — a render-blocking
    stylesheet, a preloaded mono, and the ruler — not by the fragment's own
    markup. The budget's purpose is to catch creep, and it still does; it
@@ -433,8 +435,15 @@ tracklist header hides its own `#` glyph exactly the way this needed
 inconsistent about the same technique. Fixed in the master before the first
 variant copied it; the four committed PDP masters carry it.
 
-**2. The PDP renders FOUR masters, not one — the degenerate branches are
-gated.** §8 made the degenerate states contract ("single-format renders a
+**2. The PDP renders FOUR masters, not one — the degenerate branches CAN now
+be gated.** (Heading corrected 2026-08-14: it read "are gated", which is an
+overclaim. Rendering four masters is a NECESSARY PRECONDITION for gating, not
+gating. No origin-suite leg opens `/{variant}/pdp/…` at all today, so no
+variant is yet compared against any PDP master; those legs land with the first
+variant PDP. The three nested masters were also missing from the master-health
+list in `drift.browser.test.ts`, so until this correction they received no
+normalizer-determinism or pixel-stability coverage either.) §8 made the
+degenerate states contract ("single-format renders a
 static meta line, no radio; unpriced renders em-dash + 'none for sale' +
 disabled CTA") and §9 made the fixture branch-covering, but `render/build.mjs`
 rendered exactly ONE PDP, from the featured id — the rich path. Since the
@@ -446,24 +455,53 @@ The master set is now `pdp/` (rich) plus `pdp/single-format/`, `pdp/unpriced/`
 and `pdp/one-image/`, nested under the one surface rather than becoming
 sibling surfaces (SURFACE_CONTROLS keys off surfaces; there is one PDP surface
 with four rendered states). Which release each renders is derived by
-`render/lib.mjs` `pdpMasterIds` — ONE derivation shared by the reference
-build, every variant build and the gate's re-render, the `resolvedPathSegments`
-lesson applied.
+`render/lib.mjs` `pdpMasterIds` — ONE derivation, consumed today by the
+reference build; the variant builds and the gate's re-render adopt it as their
+PDP legs land (corrected 2026-08-14 from "shared by the reference build, every
+variant build and the gate's re-render", which described the intent rather
+than the wiring). The `resolvedPathSegments` lesson is the reason to have one
+derivation at all.
 
-Each degenerate master **isolates one branch**: it holds the other two at the
-neighbouring master's value, so any two masters differ by exactly one
+Each degenerate master **isolates one branch**: it holds the other two axes at
+the SINGLE-FORMAT master's value, so the set is a STAR centred on
+single-format — each degenerate master differs from that centre by exactly one
 rendering decision (ADR-0001 §4's one-variable-at-a-time rule, applied to the
-gate). The first draft did not, and the flaw was concrete rather than
+gate). Corrected 2026-08-14: this previously said "any two masters differ by
+exactly one rendering decision", which is false for 3 of the 6 pairs — `rich`
+is multi-format and every degenerate pick is single, so `rich`↔`unpriced`,
+`rich`↔`one-image` and `unpriced`↔`one-image` each differ by two axes. The
+test asserted the true (star) property all along; only the prose overclaimed.
+
+The first draft did not isolate at all, and the flaw was concrete rather than
 theoretical — picking "lowest id exhibiting the branch" resolved
 `single-format` and `unpriced` to the *same* release in the fixture (9000001
 is both), which would have gated the two branches only together and neither
-apart. `pdpMasterIds` now refuses a duplicate set outright.
+apart. `pdpMasterIds` now refuses a duplicate set outright, and (2026-08-14)
+enforces the star property in the derivation itself: the `unpriced` and
+`one-image` predicates pin `formats.length <= 1`, and the function throws
+unless each degenerate class differs from the centre on exactly one axis.
+Before that, isolation held only because 439/500 crate and 239/240 fixture
+releases happen to be single-format — a property of the data, not the code.
+Both snapshots resolve the same ids with or without the clause, so the
+committed masters are byte-unchanged.
 
 What is asserted, and what deliberately is not: per-axis coverage with
 isolation IS asserted (`packages/reference/test/reference.test.ts`, sabotage
--proven), for both snapshots. Full *combination* coverage is NOT — the crate
-has 16 combinations and the master set is 4 — and claiming it would be the
-record-not-code class this chain keeps paying for. The `priceFrom == null ⟺
+-proven), for both snapshots. Full *combination* coverage is NOT — three
+binary axes span **8** combinations, of which the crate populates **7** and
+the fixture **4**, against a master set of 4 — and claiming it would be the
+record-not-code class this chain keeps paying for. (Corrected 2026-08-14 from
+"the crate has 16 combinations", which was derivable from nothing; the counts
+are now derived in the test rather than typed. The three combinations the
+crate has and the masters do not are multi/priced/one-image (6 releases),
+multi/unpriced/gallery (2) and single/unpriced/one-image (10).)
+
+Also NOT gated, and named here rather than left implied: `render/pdp.mjs`
+takes three further branches that `pdpRenderClass` does not model — an absent
+notes section, a null track duration, a null year. **0 of the 4 fixture
+masters take any of those arms**, so no master gates them. Closing that gap
+means widening the class and the master set; until then the guard proves
+per-axis coverage of the three STRUCTURAL branches only. The `priceFrom == null ⟺
 numForSale === 0` equivalence that `pdp.mjs` leans on (it reads two different
 fields for one branch) is asserted against the trays themselves: zero
 violations in both committed snapshots.
