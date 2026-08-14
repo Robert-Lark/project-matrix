@@ -114,9 +114,9 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
             <div class="pm-qty">
               <label class="pm-qty__label" for="qty">Quantity</label>
               <div class="pm-qty__group">
-                <button class="pm-qty__step" type="button">−<span class="pm-sr-only">Decrease quantity</span></button>
+                <button class="pm-qty__step" type="button"><span aria-hidden="true">−</span><span class="pm-sr-only">Decrease quantity</span></button>
                 <input class="pm-qty__input" id="qty" name="qty" type="number" inputmode="numeric" min="1" max="99" value="1">
-                <button class="pm-qty__step" type="button">+<span class="pm-sr-only">Increase quantity</span></button>
+                <button class="pm-qty__step" type="button"><span aria-hidden="true">+</span><span class="pm-sr-only">Increase quantity</span></button>
               </div>
             </div>
             <div><button class="pm-button" type="button"${sold ? " disabled" : ""}>${sold ? "None for sale" : "Add to cart"}</button></div>

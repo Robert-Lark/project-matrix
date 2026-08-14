@@ -139,3 +139,93 @@ export function detailById(snapshot, id) {
   if (!detail) throw new Error(`${snapshot.name}: no detail tray for id ${id}`);
   return detail;
 }
+
+/**
+ * The PDP's RENDERING CLASS for one detail tray — the three independent
+ * branches `render/pdp.mjs` actually takes, and nothing else:
+ *  - `formats`  : multi-format renders a <fieldset> radio group; single-format
+ *                 renders no fieldset and adds a <dt>Format</dt> pair to the
+ *                 meta list instead (439/500 in the crate, 239/240 fixture);
+ *  - `priced`   : unpriced renders an em-dash amount + "none for sale" + the
+ *                 disabled CTA (44/500 crate, 24/240 fixture). `priceFrom ==
+ *                 null ⟺ numForSale === 0` holds with ZERO exceptions in both
+ *                 committed snapshots — asserted, not assumed (pdp.test.ts);
+ *  - `gallery`  : a 1-image release omits the whole thumb <ul> (90/500 crate,
+ *                 1/240 fixture).
+ */
+export function pdpRenderClass(detail) {
+  return {
+    formats: detail.formats.length > 1 ? "multi" : "single",
+    priced: detail.priceFrom == null ? "unpriced" : "priced",
+    gallery: detail.images.length > 1 ? "gallery" : "one-image",
+  };
+}
+
+/** The class as one stable string — the key the coverage guard groups on. */
+export function pdpRenderClassKey(detail) {
+  const c = pdpRenderClass(detail);
+  return `${c.formats}/${c.priced}/${c.gallery}`;
+}
+
+/**
+ * The PDP master set: which release each committed master renders, for ANY
+ * snapshot. ONE derivation, shared by the reference build, every variant's
+ * build, and the drift gate's re-render — the `resolvedPathSegments` lesson
+ * (a second derivation is a second opinion about which page was measured).
+ *
+ * The rich path is the FEATURED release: a curated design constant, not a
+ * receipt (ADR-0008 §9). The three degenerate masters are the LOWEST-ID
+ * release exhibiting each branch, because the gate needs a pick that is
+ * stable across re-renders and derivable without a second curated constant —
+ * id order is the only total order the trays carry that is not itself a
+ * rendering property.
+ *
+ * Why masters at all, rather than hand-written per-branch suite assertions:
+ * the drift gate only ever compares a variant against a MASTER, and
+ * `build.mjs` rendered exactly one PDP — so the three degenerate branches,
+ * which are the COMMON path, were ungated by construction. Hand-written
+ * assertions would be a second statement of the contract that can drift from
+ * it (the record-not-code class this repo keeps paying for).
+ */
+export function pdpMasterIds(snapshot) {
+  const lowestWith = (predicate) => {
+    const match = snapshot.details
+      .filter(predicate)
+      .sort((a, b) => a.id - b.id)[0];
+    return match?.id;
+  };
+  // Each degenerate pick ISOLATES its branch: it holds the other two at the
+  // rich master's value, so a master differs from its neighbour by exactly
+  // ONE branch. That is ADR-0001 §4's one-variable-at-a-time rule applied to
+  // the gate — without it the first draft picked the same release for
+  // `single-format` and `unpriced` (both resolve to fixture 9000001, the
+  // lowest id, which is single AND unpriced), gating the two branches only
+  // together and never apart.
+  const ids = {
+    "": featuredIds(snapshot).pdp,
+    "single-format": lowestWith(
+      (d) => d.formats.length <= 1 && d.priceFrom != null && d.images.length > 1,
+    ),
+    unpriced: lowestWith((d) => d.priceFrom == null && d.images.length > 1),
+    "one-image": lowestWith((d) => d.images.length === 1 && d.priceFrom != null),
+  };
+  for (const [slot, id] of Object.entries(ids)) {
+    if (id == null) {
+      throw new Error(
+        `${snapshot.name}: no release isolates the "${slot || "rich"}" PDP branch — the master set cannot be rendered from this snapshot`,
+      );
+    }
+  }
+  // Two masters rendering the same release gate one branch twice and another
+  // never — the exact failure the isolation above exists to prevent, so it is
+  // asserted rather than trusted.
+  const seen = new Set(Object.values(ids));
+  if (seen.size !== Object.keys(ids).length) {
+    throw new Error(
+      `${snapshot.name}: the PDP master set resolves duplicate release ids (${Object.entries(ids)
+        .map(([slot, id]) => `${slot || "rich"}=${id}`)
+        .join(", ")}) — each master must render a distinct branch`,
+    );
+  }
+  return ids;
+}

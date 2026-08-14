@@ -20,7 +20,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadSnapshot } from "./lib.mjs";
+import { loadSnapshot, pdpMasterIds } from "./lib.mjs";
 import { renderEditorial } from "./editorial.mjs";
 import { renderPdp } from "./pdp.mjs";
 import { renderPlp } from "./plp.mjs";
@@ -30,9 +30,43 @@ import { renderHowBuilt } from "./how-built.mjs";
 
 const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
+/**
+ * The PDP renders FOUR masters, not one: the rich path plus the three
+ * degenerate branches, which are the COMMON path in both snapshots
+ * (single-format 439/500 crate, unpriced 44/500, 1-image 90/500). The gate
+ * only ever compares a variant against a master, so a single rich master left
+ * every degenerate branch ungated by construction — see `pdpMasterIds`.
+ *
+ * They nest UNDER the pdp surface (`pdp/unpriced/…`) rather than becoming
+ * sibling surfaces: there is one PDP surface with four rendered states, and
+ * SURFACE_CONTROLS keys off surfaces. Nesting costs one directory of depth,
+ * which is exactly what `extraDepth` exists for.
+ */
+export const PDP_MASTERS = {
+  "": "the rich path — multi-format, priced, full gallery (the featured release)",
+  "single-format": "no <fieldset>; a <dt>Format</dt> pair joins the meta list",
+  unpriced: "em-dash amount · 'none for sale' · the CTA disabled",
+  "one-image": "the thumb <ul> is omitted entirely",
+};
+
+const pdpPage = (slot) => (s, o) =>
+  renderPdp(s, {
+    ...o,
+    id: pdpMasterIds(s)[slot],
+    // A nested master sits one directory deeper than pdp/index.html, so its
+    // relative @pm/tokens links need one more "../" — the renderer's own
+    // parameter, never a second literal.
+    extraDepth: (o.extraDepth ?? 0) + (slot === "" ? 0 : 1),
+  });
+
 export const SURFACE_PAGES = {
   "editorial/index.html": (s, o) => renderEditorial(s, o),
-  "pdp/index.html": (s, o) => renderPdp(s, o),
+  ...Object.fromEntries(
+    Object.keys(PDP_MASTERS).map((slot) => [
+      slot === "" ? "pdp/index.html" : `pdp/${slot}/index.html`,
+      pdpPage(slot),
+    ]),
+  ),
   "plp/index.html": (s, o) => renderPlp(s, o),
   "checkout/index.html": (s, o) => renderCheckout(o),
   "a11y/index.html": (s, o) => renderA11yIndex(o),
