@@ -28,7 +28,7 @@ import {
   type ApplyResult,
 } from "./collect";
 import { commitPin } from "./git";
-import { verifyOriginCommit } from "./origin-commit";
+import { fetchOriginCommit, verifyOriginCommit } from "./origin-commit";
 import { median, RECEIPT_VERSION, type ReceiptT, type RunSampleT } from "./receipt";
 import type { CpuSource } from "./cpu";
 import { UNAVAILABLE_CPU_SOURCE } from "./cpu";
@@ -275,6 +275,31 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
     });
 
     if (appliedResult === null) throw new Error("batch measured nothing");
+    // The attestation is re-fetched AFTER the last run, UNCONDITIONALLY:
+    // push-to-main deploys the plane, so a deploy landing mid-batch would
+    // leave early runs measuring one tree and late runs another, behind a
+    // receipt whose start-of-batch originCommit still matches the local pin
+    // (verify-slice, this unit). Any transition refuses — including
+    // null→non-null, which is exactly what a deploy that ADDS attestation
+    // looks like from a batch started against a pre-attestation plane. Only
+    // null→null stays genuinely undetectable, and the receipt already says
+    // so (originCommit: null). The cross-tree escape covers a DELIBERATE
+    // tree mismatch, never a plane that moved under the measurement.
+    {
+      const after = await fetchOriginCommit(origin);
+      const label = (c: { sha: string } | null) => (c ? c.sha.slice(0, 12) : "unattested");
+      const moved =
+        (originCommit === null) !== (after === null) ||
+        (originCommit !== null &&
+          after !== null &&
+          (after.sha !== originCommit.sha || after.dirty !== originCommit.dirty));
+      if (moved) {
+        throw new Error(
+          `the origin's attested build changed mid-batch (${label(originCommit)} → ${label(after)}) — ` +
+            `the runs straddle a deploy and the receipt would mix two planes; re-run in a quiet deploy window`,
+        );
+      }
+    }
     return {
       kind: "pm-bench-receipt",
       receiptVersion: RECEIPT_VERSION,

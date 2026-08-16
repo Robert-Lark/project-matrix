@@ -194,16 +194,28 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
  * recorded per run in `attribution`, never assumed.
  */
 export interface DocumentAttribution {
-  /** Which rule attributed the document's wire bytes (see block comment). */
+  /** Which rule attributed the document's wire bytes (see block comment).
+   *  The two fallback labels are DISTINCT on purpose: "no-encoded-size"
+   *  means the caller could not supply the compressed body size (so the
+   *  headers-included transferSize was the only target and identity could
+   *  not be verified); "fallback" means calibration ran and every
+   *  leave-one-out marginal vanished on a degenerate document. An auditor
+   *  must be able to tell them apart from the artifact alone. */
   estimator:
     | "loo-brotli-normalised"
     | "uncompressed-share-identity"
+    | "uncompressed-share-no-encoded-size"
     | "uncompressed-share-fallback"
     | "degraded-all-html";
   /** Calibrated brotli quality (loo-brotli-normalised only, else null). */
   quality: number | null;
   /** brotli(body, quality) − the calibration target, in bytes (loo only). */
   calibrationResidualBytes: number | null;
+  /** The document response's content-encoding, recorded verbatim: a brotli
+   *  model calibrated against a NON-brotli compressed wire (gzip, zstd)
+   *  would otherwise be undetectable from the artifact — the publication
+   *  gate refuses to publish a loo split whose wire was not brotli. */
+  contentEncoding: string | null;
 }
 
 export interface DocumentBytes {
@@ -350,6 +362,7 @@ export function decomposeDocument(
   body: string,
   transferSize: number,
   encodedBodySize?: number,
+  contentEncoding: string | null = null,
 ): DocumentBytes {
   const docBytes = utf8Len(body);
   if (docBytes === 0 || transferSize <= 0) {
@@ -358,7 +371,12 @@ export function decomposeDocument(
       js: 0,
       data: 0,
       instrumentation: 0,
-      attribution: { estimator: "degraded-all-html", quality: null, calibrationResidualBytes: null },
+      attribution: {
+        estimator: "degraded-all-html",
+        quality: null,
+        calibrationResidualBytes: null,
+        contentEncoding,
+      },
     };
   }
 
@@ -366,13 +384,33 @@ export function decomposeDocument(
   const uncompressed: Record<PartLabel, number> = { html: 0, js: 0, data: 0, instrumentation: 0 };
   for (const s of segments) uncompressed[s.label] += utf8Len(s.text);
 
-  const target = encodedBodySize !== undefined && encodedBodySize > 0 ? encodedBodySize : transferSize;
+  // The identity claim needs the real compressed-body size: transferSize
+  // includes response HEADER bytes (Resource Timing §4.6.2), so on a small
+  // well-compressed document the fallback target can exceed docBytes and
+  // would otherwise mislabel a compressed response as identity-encoded with
+  // no recorded residual (verify-slice, this unit). Without encodedBodySize
+  // the split still runs — labeled as the fallback it is, never as identity.
+  const hasEncoded = encodedBodySize !== undefined && encodedBodySize > 0;
+  const target = hasEncoded ? encodedBodySize : transferSize;
   let weights: number[];
   let attribution: DocumentAttribution;
-  if (target >= docBytes) {
+  if (hasEncoded && target >= docBytes) {
     // Identity-encoded wire: per-part wire cost IS the uncompressed size.
     weights = PART_ORDER.map((p) => uncompressed[p]);
-    attribution = { estimator: "uncompressed-share-identity", quality: null, calibrationResidualBytes: null };
+    attribution = {
+      estimator: "uncompressed-share-identity",
+      quality: null,
+      calibrationResidualBytes: null,
+      contentEncoding,
+    };
+  } else if (!hasEncoded && target >= docBytes) {
+    weights = PART_ORDER.map((p) => uncompressed[p]);
+    attribution = {
+      estimator: "uncompressed-share-no-encoded-size",
+      quality: null,
+      calibrationResidualBytes: null,
+      contentEncoding,
+    };
   } else {
     const { quality, compressed } = calibrateQuality(body, target);
     // Leave-one-out marginal per part: what the compressed document loses
@@ -393,12 +431,18 @@ export function decomposeDocument(
         estimator: "loo-brotli-normalised",
         quality,
         calibrationResidualBytes: compressed - target,
+        contentEncoding,
       };
     } else {
       // Every marginal vanished (a degenerate document): fall back to the
       // uncompressed share rather than divide by zero — and say so.
       weights = PART_ORDER.map((p) => uncompressed[p]);
-      attribution = { estimator: "uncompressed-share-fallback", quality: null, calibrationResidualBytes: null };
+      attribution = {
+        estimator: "uncompressed-share-fallback",
+        quality: null,
+        calibrationResidualBytes: null,
+        contentEncoding,
+      };
     }
   }
 
@@ -493,6 +537,9 @@ export async function measureVisit(
 
     const response = await page.goto(spec.effectiveUrl, { waitUntil: "load" });
     const docCacheState = response?.headers()["x-pm-cache-state"] ?? null;
+    // Recorded into the byte attribution: a brotli-calibrated split against
+    // a non-brotli compressed wire must be visible in the artifact.
+    const docContentEncoding = response?.headers()["content-encoding"] ?? null;
     // The exact decoded document bytes the browser received (chrome injection
     // already applied) — the raw material for the byte decomposition below. A
     // body that can't be retrieved degrades to "" (all document bytes stay in
@@ -723,7 +770,12 @@ export async function measureVisit(
     // into html/js/data plus STRIPPED instrumentation markup — level from
     // transferSize, ratios from wire-calibrated leave-one-out brotli
     // marginals (decomposeDocument). Counted as one request.
-    const doc = decomposeDocument(servedBody, nav.transferSize, nav.encodedBodySize);
+    const doc = decomposeDocument(
+      servedBody,
+      nav.transferSize,
+      nav.encodedBodySize,
+      docContentEncoding,
+    );
     buckets.html += doc.html;
     buckets.js += doc.js;
     buckets.data += doc.data;

@@ -278,7 +278,29 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
   // what the plane attested must record agreement — a cross-tree or
   // unattested receipt is a legitimate measurement but not a publishable
   // one. Receipts minted before the attestation existed carry no field and
-  // are grandfathered until the ruler re-run replaces them.
+  // are grandfathered — but the grandfather set is BOUNDED BY DATE, not by
+  // absence: absence-based grandfathering would let any future batch
+  // (or a hand-stripped receipt) opt out of provenance forever
+  // (verify-slice, this unit). The cutoff is the day the ruler landed.
+  const PROVENANCE_CUTOFF = "2026-08-16";
+  if (receipt.date.slice(0, 10) >= PROVENANCE_CUTOFF) {
+    if (receipt.originCommit === undefined) {
+      throw new Error(
+        `front lab: ${file} is dated ${receipt.date.slice(0, 10)} but carries no originCommit — receipts minted after ${PROVENANCE_CUTOFF} must attest their origin (ADR-0001 addendum Q)`,
+      );
+    }
+    for (const target of receipt.targets) {
+      for (const column of [target.columns.cold, target.columns.warm]) {
+        for (const run of column.runs) {
+          if (run.kb.docAttribution === undefined) {
+            throw new Error(
+              `front lab: ${file} is dated ${receipt.date.slice(0, 10)} but a ${target.variant} run carries no docAttribution — receipts minted after ${PROVENANCE_CUTOFF} record their estimator (ADR-0001 addendum O)`,
+            );
+          }
+        }
+      }
+    }
+  }
   if (receipt.originCommit !== undefined) {
     const oc = receipt.originCommit;
     if (oc === null) {
@@ -293,6 +315,39 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
       throw new Error(
         `front lab: ${file} measured a plane serving ${oc.sha.slice(0, 12)} but pins ${receipt.commit.sha.slice(0, 12)} — a cross-tree receipt is not publishable`,
       );
+    }
+  }
+  // The estimator that split each run's document bytes must be one the
+  // publication can stand behind (ADR-0001 addendum O). "degraded-all-html"
+  // is the served-body-unavailable fallback — it resurrects the exact
+  // issue-#16 "0 KB JS" defect, honestly labeled, and honest labels do not
+  // publish as cells (the interactionSettled precedent). The fallback
+  // shares likewise cannot publish, and a leave-one-out split calibrated
+  // against a wire that was not brotli is a mis-modeled ratio the artifact
+  // must not launder (verify-slice, this unit).
+  for (const target of receipt.targets) {
+    for (const column of [target.columns.cold, target.columns.warm]) {
+      for (const run of column.runs) {
+        const attribution = run.kb.docAttribution;
+        if (attribution === undefined) continue; // pre-cutoff receipts, bounded above
+        const ok =
+          attribution.estimator === "loo-brotli-normalised" ||
+          attribution.estimator === "uncompressed-share-identity";
+        if (!ok) {
+          throw new Error(
+            `front lab: ${file} has a ${target.variant} run whose document split ran as "${attribution.estimator}" — a degraded or fallback attribution cannot publish (ADR-0001 addendum O)`,
+          );
+        }
+        if (
+          attribution.estimator === "loo-brotli-normalised" &&
+          attribution.contentEncoding !== undefined &&
+          attribution.contentEncoding !== "br"
+        ) {
+          throw new Error(
+            `front lab: ${file} has a ${target.variant} run whose brotli-calibrated split was fitted to a "${attribution.contentEncoding}" wire — not publishable`,
+          );
+        }
+      }
     }
   }
   if (!file.startsWith("editorial-")) {
@@ -346,6 +401,23 @@ if (chromeConstant) {
     if (!Number.isFinite(chromeConstant.deltaMedians?.[metric])) {
       throw new Error(
         `front lab: chrome-constant delta for ${metric} is not a finite number — a constant that was never measured cannot publish`,
+      );
+    }
+  }
+  // The constant is held to the SAME origin-provenance bar as receipts
+  // (ADR-0001 addendum Q): unattested, dirty, or cross-tree constants do
+  // not publish. ONE artifact is exempt by explicit pin — the bootstrap
+  // constant this unit minted against the pre-attestation plane, whose
+  // identity is proven by the fragment hash below instead (its originCommit
+  // is null AS A PRESENT FIELD, so absence-based grandfathering cannot be
+  // forged onto future artifacts). Remove the pin when the post-re-run
+  // deployed-plane re-measure replaces it (addendum O runbook, step 3).
+  const BOOTSTRAP_CONSTANT_COMMIT = "49e00e51a991ee8002b24838c3bf245d2a0ce0c1";
+  if (chromeConstant.commit.sha !== BOOTSTRAP_CONSTANT_COMMIT) {
+    const oc = chromeConstant.originCommit;
+    if (!oc || oc.dirty !== false || oc.sha !== chromeConstant.commit.sha) {
+      throw new Error(
+        "front lab: the chrome constant's origin attestation is missing, dirty, or names a different tree than its commit pin — an unattested or cross-tree constant is not publishable (ADR-0001 addendum Q)",
       );
     }
   }
@@ -549,11 +621,60 @@ const cc = chromeConstant;
 // the constant has not been measured yet (C2 applied to the constant: the
 // page states its absence rather than printing a zero).
 const ccLocal = cc ? /^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)(:|\/|$)/.test(cc.origin) : false;
+// Addendum-N band rule, applied to the constant's own cells: the long-task
+// MEDIAN can hide a one-sided signal (N: two with-chrome runs at 55/64 ms
+// behind a "0 ms" median), and the paint deltas ride real run-to-run spread
+// — so the statement composes across-runs ranges from the artifact's own
+// runs. Both band bounds are DERIVED, never typed (a hard-coded 0 floor is
+// a number the artifact may not contain — verify-slice, this unit).
+const ccRuns = (condition, metric) =>
+  cc ? cc.conditions[condition].runs.map((r) => r[metric]).filter((v) => Number.isFinite(v)) : [];
+const ltAll = cc ? [...ccRuns("with", "longTaskMs"), ...ccRuns("without", "longTaskMs")] : [];
+const ltMax = ltAll.length ? Math.max(...ltAll) : 0;
+const ltMin = ltAll.length ? Math.min(...ltAll) : 0;
+const ltClause =
+  cc && ltMax > 0
+    ? ` (${esc(roundTo(ltMin, 1))}–${esc(roundTo(ltMax, 1))}&nbsp;ms across the runs` +
+      (ccRuns("without", "longTaskMs").every((v) => v === 0) &&
+      ccRuns("with", "longTaskMs").some((v) => v > 0)
+        ? `, every non-zero sample in the with-chrome condition`
+        : ``) +
+      `)`
+    : ``;
+// Paint bands: each condition's across-runs range, so the published delta
+// of medians is readable against the spread it came from (a zero-width
+// range says nothing and is omitted, the bandOf rule above).
+const paintBand = (metric, label) => {
+  const w = ccRuns("with", metric);
+  const wo = ccRuns("without", metric);
+  if (w.length < 2 || wo.length < 2) return "";
+  const fmt = (values) => {
+    const lo = Math.round(Math.min(...values));
+    const hi = Math.round(Math.max(...values));
+    return lo === hi ? `${lo}` : `${lo}–${hi}`;
+  };
+  return `${label} ${fmt(w)}&nbsp;ms with the chrome against ${fmt(wo)}&nbsp;ms without`;
+};
+const paintBands = cc
+  ? [paintBand("FCP", "first paint ran"), paintBand("LCP", "largest paint")]
+      .filter(Boolean)
+      .join("; ")
+  : "";
+const paintBandClause = paintBands
+  ? ` The medians ride real spread — ${paintBands} across the runs behind them.`
+  : "";
 const ccStatement = cc
   ? `It is stated as a constant: <strong>${esc(signedMs(cc.deltaMedians.FCP))}&nbsp;ms first paint, ` +
     `${esc(signedMs(cc.deltaMedians.LCP))}&nbsp;ms largest paint, ${esc(roundTo(cc.deltaMedians.CLS, 3))} layout shift, ` +
-    `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong>, plus ` +
-    `<strong>${esc(cc.measuredChrome.wireBytesBrotli)}&nbsp;bytes</strong> on the wire — ` +
+    `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong>${ltClause}, plus ` +
+    `<strong>${esc(cc.measuredChrome.wireBytesBrotli)}&nbsp;bytes</strong> on the wire` +
+    (cc.measuredChrome.wireCalibrated
+      ? ` — priced at the brotli quality that reproduces the plane's own compressed serving of this page ` +
+        `(quality ${esc(cc.measuredChrome.wireQuality)}, residual ${esc(cc.measuredChrome.calibrationResidualBytes)}&nbsp;B ` +
+        `on ${esc(cc.measuredChrome.encodedBodySize)}&nbsp;B)`
+      : ` — priced at an uncalibrated default quality, because the measured plane served the page uncompressed; ` +
+        `the deployed-plane re-measure replaces this figure`) +
+    `.${paintBandClause} The figures come from ` +
     `${esc(cc.runsPerCondition)} runs per condition under the ` +
     `<span class="num">${esc(cc.profile.id)}</span> profile, measured ${esc(cc.date.slice(0, 10))} at commit ` +
     `<span class="num">${esc(cc.commit.sha.slice(0, 7))}</span> on <span class="num">${esc(cc.target)}</span> ` +

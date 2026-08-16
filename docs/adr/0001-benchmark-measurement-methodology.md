@@ -537,11 +537,15 @@ cost (1,351 B as Cloudflare serves it).
 | **Leave-one-out + normalise (chosen)** | **0.3%** | **−2.2%** |
 | Shapley over the four parts | −0.5% | −3.8% |
 
-Isolated-region compression carries the known small-region bias (astro's
-1,278 B bundle compresses 2.23× alone against 3.68× in context; the
-isolated parts sum to only 0.867× of the wire, a ×1.15 scale-up) and
-measured worst of the three replacements on both probes — rejected on the
-evidence, not on principle. Shapley is order-independent and splits shared
+The decision evidence is COMMITTED, not remembered:
+`tools/bench-runner/estimator-lab/` carries the candidate script and the
+exact Cloudflare-served bodies it ran over (sha256-manifested), so this
+table re-derives offline forever — the live pages will drift, the
+evidence will not. Isolated-region compression carries the known
+small-region bias (astro's 1,278 B bundle compresses 2.23× alone against
+3.68× in context; the isolated parts sum to only 0.867× of the wire, a
+×1.15 scale-up) and measured worst of the three replacements on both
+probes — rejected on the evidence, not on principle. Shapley is order-independent and splits shared
 redundancy fairly, but measured no better than leave-one-out here, costs
 16 compressions per document against 5, and puts game theory on a
 methodology page — rejected as machinery the numbers don't pay for.
@@ -620,9 +624,36 @@ deliberate cross-tree measurement, in which case the artifact carries the
 disagreement (or the null) in plain sight. The publication build refuses
 to publish a receipt whose `originCommit` is null, dirty, or different
 from its commit pin; receipts minted before the attestation existed carry
-no field and are grandfathered until the re-run replaces them. The
+no field and are grandfathered until the re-run replaces them. Both the
+batch and the probe RE-fetch the attestation after their last run and
+refuse when it moved — push-to-main deploys the plane, so a deploy landing
+mid-measurement would otherwise leave early runs measuring one tree and
+late runs another behind a start-of-batch attestation that still matches
+(verify-slice, this unit). The probe additionally binds every document of
+BOTH conditions to the prefetched fragment hash, judged after each visit
+rather than thrown from inside Playwright's route handler, where an error
+has no reliable path back to the awaiting caller. The
 refusal was proven against the real plane this session: the deployed
 origin (which predates its own attestation) is refused by name, and the
 constant re-measured against it below carries `originCommit: null` with
 the escape — the bootstrap, visible in the artifact rather than smoothed
 over.
+
+*The chrome constant, re-measured under both closed holes (2026-08-16Z
+artifact, pinned clean at this unit's code commit).* The deployed plane's
+fragment hashes byte-identical to what this tree's build renders (the P
+gate passes on it, and refuses a sabotaged hash by the fragment's name —
+proven both ways this session), so the cross-tree bootstrap measures the
+right chrome by construction, not by luck. Figures: **+76 ms FCP, +76 ms
+LCP, 0 CLS; long tasks 0 ms MEDIAN, 0–57 ms across 7 runs, every non-zero
+sample in the with-chrome condition** — the same one-sided signal N
+recorded, now composed onto the methodology page from the artifact's own
+runs instead of hidden behind the median. The wire figure is **2,322 B at
+the calibrated q4** (residual +12 B on the 4,705 B compressed body). The
+superseded q11-default pricing understates the same fragment's wire cost
+on the same body by **17.1%** (1,925 B) — the uncalibrated default was
+flattering the instrument, in the same direction and for the same reason
+as the dilution itself. The timing figures supersede N's +104/+104
+(measured against the same plane; the deltas moved with the plane's own
+run-to-run spread, which is why the constant publishes as an order of
+magnitude, never a per-profile equality — addendum F's scope note stands).

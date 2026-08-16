@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "wrangler dev --port 8787 --inspector-port 9230",
-    "deploy": "node stamp-build.mjs && wrangler deploy"
+    "dev": "node stamp-build.mjs && wrangler dev --port 8787 --inspector-port 9230",
+    "deploy": "node build.mjs && wrangler deploy"
   },
   "dependencies": {
     "@pm/measurement": "workspace:*",

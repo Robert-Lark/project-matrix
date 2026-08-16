@@ -52,7 +52,7 @@ import { getProfile, PROFILE_SPEC_VERSION, type TestProfile } from "@pm/measurem
 import { chromeFragmentOf } from "@pm/switcher";
 import { applyProfile, profileContextOptions } from "./collect";
 import { commitPin } from "./git";
-import { verifyOriginCommit, type OriginCommit } from "./origin-commit";
+import { fetchOriginCommit, verifyOriginCommit, type OriginCommit } from "./origin-commit";
 import { median } from "./receipt";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -270,8 +270,7 @@ async function probeVisit(
   profile: TestProfile,
   url: string,
   condition: "with" | "without",
-  onFragmentSha?: (sha256: string) => void,
-): Promise<ProbeMetrics> {
+): Promise<ProbeMetrics & { fragmentSha: string | null }> {
   const context = await browser.newContext(profileContextOptions(profile));
   const page: Page = await context.newPage();
   try {
@@ -323,18 +322,23 @@ async function probeVisit(
     // Document interception, BOTH conditions (the hop cancels out of the
     // delta); only "without" modifies the body. Content-encoding and length
     // headers are dropped because route.fetch() yields the DECODED body.
+    // The fragment sha is RECORDED here and judged by the caller after the
+    // visit, never thrown from inside the route handler: Playwright's route
+    // dispatch has no path to reject the awaited navigation with a
+    // user-handler error, so a throw here is at best an unhandled rejection
+    // and at worst a silently-continuing probe (verify-slice, this unit).
+    // Both conditions record it — the upstream body still carries the
+    // chrome before the strip below, and the LAST without-visit of the
+    // probe would otherwise be the one visit a mid-probe deploy could slip
+    // past.
+    let observedFragmentSha: string | null = null;
     await page.route(url, async (route) => {
       const upstream = await route.fetch();
       const body = await upstream.text();
       const headers = { ...upstream.headers() };
       delete headers["content-length"];
       delete headers["transfer-encoding"];
-      // Preserve the WIRE shape: the conditions differ by exactly the
-      // chrome's bytes, so those bytes must cross the throttled connection
-      // compressed, as the plane sends them. Re-compressing here (rather
-      // than passing the decoded body and dropping content-encoding) keeps
-      // the delta's transfer term a property of the chrome.
-      if (condition === "with") onFragmentSha?.(sha256Hex(chromeFragmentOf(body)));
+      observedFragmentSha = sha256Hex(chromeFragmentOf(body));
       // Equal document bytes in both conditions (see stripChromeEqualBytes):
       // the transfer term cancels, so the delta is the chrome's processing
       // cost. route.fetch() yields the DECODED body, so content-encoding
@@ -372,7 +376,13 @@ async function probeVisit(
     if (condition === "without" && chromeCount !== 0) {
       throw new Error(`without-condition page still carries the chrome — strip failed`);
     }
-    return { FCP: raw.fcp, LCP: raw.lcp, CLS: raw.cls, longTaskMs: raw.longTaskMs };
+    return {
+      FCP: raw.fcp,
+      LCP: raw.lcp,
+      CLS: raw.cls,
+      longTaskMs: raw.longTaskMs,
+      fragmentSha: observedFragmentSha,
+    };
   } finally {
     await context.close();
   }
@@ -413,6 +423,14 @@ async function main(): Promise<number> {
     return 2;
   }
   const runs = parseInt(values.runs, 10);
+  // A malformed --runs must not "succeed" having measured nothing: NaN or 0
+  // skips the loop entirely, and while the publication gate would refuse
+  // the null-delta artifact later, a tool that exits 0 for a measurement
+  // that never ran is a lie at the point of use (verify-slice, this unit).
+  if (!Number.isInteger(runs) || runs < 1) {
+    console.error(`--runs must be a positive integer (got ${values.runs})`);
+    return 2;
+  }
   const targetUrl = new URL(values.target, values.origin);
   const url = targetUrl.toString();
 
@@ -446,20 +464,55 @@ async function main(): Promise<number> {
   const samples: Record<"with" | "without", ProbeMetrics[]> = { with: [], without: [] };
   try {
     for (let run = 0; run < runs; run++) {
-      for (const condition of ["with", "without"] as const) {
-        samples[condition].push(
-          await probeVisit(browser, profile, url, condition, (fragmentSha) => {
-            if (fragmentSha !== measuredChrome.sha256) {
-              throw new Error(
-                `the served chrome changed mid-probe (${measuredChrome.sha256.slice(0, 12)} → ${fragmentSha.slice(0, 12)}) — the delta would mix two fragments`,
-              );
-            }
-          }),
-        );
+      // ABBA pair ordering: a fixed with-then-without order puts every
+      // with-sample systematically half a pair EARLIER than its partner, so
+      // a monotonic environment trend (thermal ramp, drifting network) does
+      // not cancel out of the delta of medians the way random noise does —
+      // alternating the pair order cancels first-order drift too
+      // (verify-slice, this unit; ~2 ms/visit drift visible in the
+      // bootstrap artifact's own runs).
+      const order: ReadonlyArray<"with" | "without"> =
+        run % 2 === 0 ? ["with", "without"] : ["without", "with"];
+      for (const condition of order) {
+        const { fragmentSha, ...metrics } = await probeVisit(browser, profile, url, condition);
+        // Judged HERE, after the visit resolves, for BOTH conditions —
+        // see probeVisit's route-handler note for why.
+        if (fragmentSha !== measuredChrome.sha256) {
+          throw new Error(
+            `the served chrome changed mid-probe (${measuredChrome.sha256.slice(0, 12)} → ` +
+              `${fragmentSha === null ? "no document intercepted" : fragmentSha.slice(0, 12)}) — ` +
+              `the delta would mix two fragments`,
+          );
+        }
+        samples[condition].push(metrics);
       }
     }
   } finally {
     await browser.close();
+  }
+  // Re-fetched AFTER the last visit, UNCONDITIONALLY (the batch runner's
+  // mid-run rule): a deploy landing mid-probe would otherwise leave early
+  // visits measuring one plane and late ones another. Any transition
+  // refuses — including null→non-null, a deploy that ADDS attestation
+  // (this unit's own merge is that deploy); null→null stays genuinely
+  // undetectable and the artifact already says so. The fragment sha above
+  // binds every DOCUMENT to one chrome; this binds the SUBRESOURCES the
+  // probe's delta also rides (chrome.css, the mono, measure.js), which the
+  // sha cannot see.
+  {
+    const after = await fetchOriginCommit(values.origin);
+    const label = (c: OriginCommit | null) => (c ? c.sha.slice(0, 12) : "unattested");
+    const moved =
+      (originCommit === null) !== (after === null) ||
+      (originCommit !== null &&
+        after !== null &&
+        (after.sha !== originCommit.sha || after.dirty !== originCommit.dirty));
+    if (moved) {
+      throw new Error(
+        `the origin's attested build changed mid-probe (${label(originCommit)} → ${label(after)}) — ` +
+          `re-run in a quiet deploy window`,
+      );
+    }
   }
 
   const withMed = medians(samples.with);
@@ -487,7 +540,7 @@ async function main(): Promise<number> {
       "measuredChrome.renderContext records the exact renderChrome() inputs the measured fragment renders under; the front build re-renders the fragment from them against the lab bundle it builds and REFUSES when the sha256 differs (ADR-0001 addendum N hole 1: the constant must describe the chrome that ships, and 'populated' alone cannot tell a current fragment from a stale one)",
       "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
       "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
-      "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
+      "conditions pair-interleaved in ALTERNATING order (with/without, then without/with — ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
       "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality",
     ],
     conditions: {

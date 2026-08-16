@@ -206,6 +206,32 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(sum(d)).toBe(docBytes + 300);
   });
 
+  it("never claims IDENTITY from the transferSize fallback — headers can outweigh compression on a small doc", () => {
+    // transferSize includes response header bytes, so for a small
+    // well-compressed document the fallback target can exceed the decoded
+    // size — which must label itself as the fallback it is, never as a
+    // verified identity encoding (verify-slice, this unit).
+    const small = `<!doctype html><body><p>tiny</p><script>x()</script></body>`;
+    const docBytes = Buffer.byteLength(small, "utf8");
+    const d = decomposeDocument(small, docBytes + 700);
+    // Distinct from "uncompressed-share-fallback" (calibration ran, every
+    // marginal vanished): an auditor must be able to tell "the caller had
+    // no compressed body size" apart from "the document was degenerate".
+    expect(d.attribution.estimator).toBe("uncompressed-share-no-encoded-size");
+    expect(sum(d)).toBe(docBytes + 700);
+  });
+
+  it("records the wire's content-encoding verbatim, so a non-brotli wire cannot hide behind a brotli calibration", () => {
+    const encoded = brotli(doc, 4);
+    const asBr = decomposeDocument(doc, encoded + 300, encoded, "br");
+    expect(asBr.attribution.contentEncoding).toBe("br");
+    const asGzip = decomposeDocument(doc, encoded + 300, encoded, "gzip");
+    expect(asGzip.attribution.contentEncoding).toBe("gzip");
+    // The split still runs (best available ratio model) — the label is what
+    // lets the publication gate refuse it.
+    expect(asGzip.attribution.estimator).toBe("loo-brotli-normalised");
+  });
+
   it("kills the dilution defect: a chrome-only change no longer drags the JS cell (the 0.42→0.37 shape)", () => {
     // The same page under a small chrome and a ~4× larger one — the shape of
     // the recorded defect (empty vs populated strip). Under uncompressed

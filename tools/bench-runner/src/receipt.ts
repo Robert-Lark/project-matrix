@@ -89,6 +89,9 @@ export const RunSample = z.object({
         estimator: z.string(),
         quality: z.number().nullable(),
         calibrationResidualBytes: z.number().nullable(),
+        /** The document response's content-encoding, verbatim — a brotli
+         *  model fitted to a gzip wire must be visible in the artifact. */
+        contentEncoding: z.string().nullable().optional(),
       })
       .optional(),
   }),

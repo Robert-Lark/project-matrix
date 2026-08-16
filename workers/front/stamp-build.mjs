@@ -3,14 +3,18 @@
 // it, record it beside the local commit pin, and REFUSE to measure a plane
 // whose attested SHA disagrees with the checkout driving the browser.
 //
-// Stamped in three places, deliberately: at the end of build.mjs (a bare
-// build produces a complete dist), by the `deploy` script immediately
-// before wrangler (turbo replays a cached dist when the package's inputs
-// are unchanged, and a replayed dist carries the SHA of the commit that
-// BUILT it — the re-stamp makes the attestation describe the tree actually
-// deploying), and by run-local.mjs after its turbo build (same replay, same
-// reason, for the local plane). The runner's verification then makes any
-// path this misses a loud refusal rather than a silent lie.
+// Stamped everywhere dist can go stale against HEAD, deliberately: at the
+// end of build.mjs (a bare build produces a complete dist); by run-local
+// after its turbo build and by the `dev` script before wrangler dev (turbo
+// replays a cached dist when the package's inputs are unchanged, and a
+// replayed dist carries the SHA of the commit that BUILT it). The `deploy`
+// script does NOT merely re-stamp — it re-runs the full build first: a
+// bare stamp would write the current HEAD onto whatever stale dist was
+// lying around, a false attestation worse than none (verify-slice, this
+// unit; front's build is not snapshot-parameterized, so a rebuild inside
+// deploy is safe where the variants' would not be). The runner's
+// verification then makes any path this misses a loud refusal rather than
+// a silent lie.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

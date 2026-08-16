@@ -1,10 +1,11 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-08-14T19:06:35.781Z",
+  "date": "2026-08-16T01:56:32.724Z",
   "commit": {
-    "sha": "7c5be982b4c6c0e12e3438272b2ab3b1e0b75a60",
+    "sha": "49e00e51a991ee8002b24838c3bf245d2a0ce0c1",
     "dirty": false
   },
+  "originCommit": null,
   "origin": "https://pm-front.robresearch87.workers.dev",
   "target": "/vanilla/editorial/",
   "profile": {
@@ -13,15 +14,27 @@
   },
   "runsPerCondition": 7,
   "measuredChrome": {
-    "bytes": 12023,
-    "sha256": "c0d823255313f75f9c9fa816f647e009df2ad4dbd5d426e10271681b2b213a4a",
+    "bytes": 11931,
+    "sha256": "e183111f7dda07d5924562135d6f9f263330e77c55b8fc207e7a317be7c4d4e0",
     "populated": true,
-    "wireBytesBrotli": 1913,
-    "documentBytesUncompressed": 18635
+    "wireBytesBrotli": 2322,
+    "wireQuality": 4,
+    "wireCalibrated": true,
+    "encodedBodySize": 4705,
+    "calibrationResidualBytes": 12,
+    "documentBytesUncompressed": 18543,
+    "renderContext": {
+      "variant": "vanilla",
+      "surface": "editorial",
+      "pathname": "/vanilla/editorial/",
+      "search": "",
+      "location": "SJC"
+    }
   },
   "method": [
     "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
-    "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources — chrome.css, the instrument mono, measure.js — which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in. Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding — measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
+    "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources — chrome.css, the instrument mono, measure.js — which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in: a leave-one-out brotli marginal (full body minus chrome-stripped body) at the quality calibrated against the plane's own compressed serving of the target (measuredChrome.wireQuality; q11 fallback, flagged uncalibrated, when the plane served identity) — the same attribution principle decomposeDocument uses (ADR-0001 §3 addendum 2026-08-15). Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding — measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
+    "measuredChrome.renderContext records the exact renderChrome() inputs the measured fragment renders under; the front build re-renders the fragment from them against the lab bundle it builds and REFUSES when the sha256 differs (ADR-0001 addendum N hole 1: the constant must describe the chrome that ships, and 'populated' alone cannot tell a current fragment from a stale one)",
     "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
     "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
     "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
@@ -31,10 +44,16 @@
     "with": {
       "runs": [
         {
-          "FCP": 928,
-          "LCP": 928,
+          "FCP": 784,
+          "LCP": 784,
           "CLS": 0,
-          "longTaskMs": 55
+          "longTaskMs": 57
+        },
+        {
+          "FCP": 676,
+          "LCP": 676,
+          "CLS": 0,
+          "longTaskMs": 0
         },
         {
           "FCP": 692,
@@ -49,8 +68,8 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 704,
-          "LCP": 704,
+          "FCP": 684,
+          "LCP": 684,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -61,21 +80,15 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 676,
-          "LCP": 676,
-          "CLS": 0,
-          "longTaskMs": 64
-        },
-        {
-          "FCP": 716,
-          "LCP": 716,
+          "FCP": 684,
+          "LCP": 684,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 696,
-        "LCP": 696,
+        "FCP": 684,
+        "LCP": 684,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -83,14 +96,32 @@
     "without": {
       "runs": [
         {
-          "FCP": 568,
-          "LCP": 568,
+          "FCP": 628,
+          "LCP": 628,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 596,
-          "LCP": 596,
+          "FCP": 624,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 608,
+          "LCP": 608,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 608,
+          "LCP": 608,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 620,
+          "LCP": 620,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -103,39 +134,21 @@
         {
           "FCP": 596,
           "LCP": 596,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 592,
-          "LCP": 592,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 580,
-          "LCP": 580,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 580,
-          "LCP": 580,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 592,
-        "LCP": 592,
+        "FCP": 608,
+        "LCP": 608,
         "CLS": 0,
         "longTaskMs": 0
       }
     }
   },
   "deltaMedians": {
-    "FCP": 104,
-    "LCP": 104,
+    "FCP": 76,
+    "LCP": 76,
     "CLS": 0,
     "longTaskMs": 0
   }
