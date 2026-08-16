@@ -3635,3 +3635,68 @@ Decisions of record: **ADR-0008 addendum A**, which also amends ADR-0002's
 propagated interaction guardrail. The next unit is unchanged:
 `bench-instrumentation-dilution` — the ruler — which still hard-blocks any PDP
 byte publication.
+
+## Phase 13 — The ruler stops flattering the house (2026-08-15)
+
+This unit's entire product is a more honest number, and its failure mode is
+publishing a differently-wrong one with more confidence. The defect it
+existed to fix was already stated on the methodology page: the byte ruler
+split the document's compressed transfer by each part's share of the
+*uncompressed* bytes, which is exact only if every part compresses at the
+document's average ratio. The injected chrome — 62.6% of the astro page's
+uncompressed bytes, and the most compressible thing on it — violated that
+hardest, so the instrument over-charged itself and quietly discounted every
+cell it measured, most of all the small JavaScript numbers this site leads
+with. That is the shape a hostile reader calls rigging, and it was visible
+in the site's own receipts: astro's published cell moved 0.42 → 0.37 KB
+between batches when only the chrome had grown.
+
+### The estimator was the unit's open question, and measurement closed it
+
+The handoff recorded the fix as unsettled between two methods that
+disagreed by a third (34–47%). Neither won. The settled rule: transfer size
+stays the authority on the total; each part's share is its **leave-one-out
+marginal** — what the compressed document loses when exactly that part is
+removed — computed at the brotli quality that reproduces the observed wire
+body, re-derived per document and recorded per run with its residual. Two
+probes decided it, both built from the live plane's own pages: swap the
+chrome on a fixed page (the recorded defect's shape) and the old rule moves
+the JS cell 14.1% while leave-one-out moves it 0.3%; inline a copy of
+vanilla's real `cart.js` and the old rule reads 40.5% below what the
+identical file costs served externally, while leave-one-out lands within
+2.2%. The runner-up mattered too: the "fix as written" (compress each
+region alone, normalise) carries a measured small-region bias — the astro
+bundle compresses 2.23× alone against 3.68× in context — and lost on both
+probes. Shapley attribution was computed and rejected: no better, three
+times the work, game theory where a marginal will do. And the
+local-vs-Cloudflare compressor mismatch the ticket carried as an open risk
+collapsed under calibration — q4 reproduces the Cloudflare wire within
+0.1–0.3% on all three delivery shapes. The old rule's under-report, with
+the estimator settled: **40.5–47.5%** on the measured cells.
+
+### The two holes addendum N filed are closed by mechanism, not memory
+
+The chrome constant used to describe whatever fragment was serving when
+the probe ran, while the build regenerated a different one from the
+receipts — its own `populated` gate structurally re-incurred the staleness
+it existed to prevent. The probe now records the fragment's hash and full
+render context; the front build re-renders the fragment it will actually
+ship — the real renderer against the very lab bundle the Worker imports —
+and refuses to build when the hashes differ. And nothing used to tie a
+receipt's commit SHA to the code a remote plane was serving: the plane now
+attests its build at `/_pm/build.json` (re-stamped at both serving paths,
+because a turbo cache replay carries the SHA of the commit that built it),
+and the runner records the attestation beside the local pin and refuses a
+cross-tree batch or probe unless the escape is passed explicitly — in
+which case the artifact shows the disagreement in plain sight. The refusal
+was proven against the real plane, which predates its own attestation and
+is refused by name.
+
+Every committed receipt is invalidated by the ruler change; the cells stay
+live behind the methodology page's floors caveat (caveat, never pull), and
+the third batch re-run — post-merge, on a quiet machine, one nonce, ~7
+minutes — replaces them with numbers that carry their own attribution
+record and origin attestation by construction.
+
+Decisions of record: **ADR-0001 addendum O/P/Q**, with addendum G's
+attribution rule superseded in place.

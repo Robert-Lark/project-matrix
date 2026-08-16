@@ -197,6 +197,17 @@ so none of these had corrupted a real result — the point was to fix the ruler
 first.
 
 **G. Inline resource bytes are attributed by uncompressed share (§3 defect 1).**
+
+> **SUPERSEDED — the attribution rule only; see addendum O.** The carve-out
+> boundaries and classifications below (executable→JS, inert→data,
+> chrome→instrumentation) stand unchanged. The uncompressed-share RATIOS do
+> not: the stated limit ("exact only if each part compresses at the
+> document's average ratio") became measurable on the plane's own receipts —
+> the injected chrome violates it hardest, the bias runs toward flattering
+> the smallest published JS cells, and it scales with the chrome. Attribution
+> is now leave-one-out brotli marginals at a wire-calibrated quality,
+> normalised to `transferSize` (addendum O).
+
 The document response is ONE brotli stream, so its compressed `transferSize`
 cannot be split into per-part compressed sizes by measurement. It is attributed
 to buckets in proportion to each part's share of the UNCOMPRESSED served bytes —
@@ -471,3 +482,147 @@ for the first time, the SHA describes the machine that drove the browser,
 not the tree under measurement. Both are recorded as open work on the
 `bench-instrumentation-dilution` unit's ticket, which is the next ruler
 change and the natural place to close them.
+
+## Addendum — the dilution fix: wire-priced attribution, and both addendum-N holes closed (2026-08-15, `bench-instrumentation-dilution`)
+
+The ruler unit. It supersedes addendum G's attribution rule (marked in
+place above), closes both holes addendum N filed, and invalidates every
+committed receipt — the editorial batch re-runs a third time on the fixed
+ruler, post-merge, per the runbook at the end of O. No §1–§9 decision
+changes; G's carve-out boundaries and classifications stand.
+
+**O. The estimator: leave-one-out brotli marginals at a wire-calibrated
+quality, normalised to `transferSize` (supersedes G's uncompressed-share
+ratios).**
+
+*The defect, measured on the live plane 2026-08-15 (all figures re-derived
+this session against freshly fetched bodies; the astro wire body was
+byte-identical to the 2026-08-14 saved one, 5,243 B).* The instrumentation
+is 12,076 B of `/astro/editorial/`'s 19,289 uncompressed bytes (62.6%) and
+compresses far better than the document average, so uncompressed share
+over-attributed it and under-attributed every other bucket. Against the
+settled estimator below, the old rule under-reported astro's inline-JS
+cell by **47.5%** (347 B → 661 B) and qwik's by **42.6%** (257 B → 448 B);
+on the external-recovery probe it read **40.5% low**. The bias scales with
+the chrome — the mechanism behind the published astro cell moving
+0.42 → 0.37 KB between batches with no astro change — and its direction
+flatters the site's smallest published cells, which is the shape a hostile
+reader is entitled to call rigging. The ticket's earlier "34–47%" range
+was estimator-dependent; with the estimator settled, the measured range on
+the three shapes is **40.5–47.5%**.
+
+*The decision.* `transferSize` remains the authority on the LEVEL. The
+between-part RATIOS are each part's **leave-one-out marginal** — the bytes
+the compressed document loses when exactly that part's regions are removed,
+in document order — computed with brotli at the **quality calibrated per
+document** against the observed compressed body (`encodedBodySize`): scan
+q0–q11, keep the smallest absolute residual, record quality and residual in
+the receipt (`kb.docAttribution`). Largest-remainder apportionment keeps the
+partition exact and non-negative, unchanged. A document served uncompressed
+skips estimation entirely — per-part wire cost IS the uncompressed size, and
+the rule degrades to exact truth, recorded as `uncompressed-share-identity`.
+
+*Why this estimator — measured, not argued.* Candidates were computed on
+the three live delivery shapes (vanilla external-single, astro inlined,
+qwik external-many + qwik/json) under two validity probes: (A) swap the
+chrome fragment on a fixed page — the recorded defect's own shape — and
+watch the JS attribution; (B) inline a copy of vanilla's real `cart.js`
+and compare the attribution against the same file's actual external wire
+cost (1,351 B as Cloudflare serves it).
+
+| Candidate | Probe A drift (chrome swap) | Probe B error (vs external truth) |
+|---|---|---|
+| Uncompressed share (G) | 14.1% | −40.5% |
+| Isolated-region brotli + normalise ("the fix as written") | −1.9% | −5.3% |
+| **Leave-one-out + normalise (chosen)** | **0.3%** | **−2.2%** |
+| Shapley over the four parts | −0.5% | −3.8% |
+
+Isolated-region compression carries the known small-region bias (astro's
+1,278 B bundle compresses 2.23× alone against 3.68× in context; the
+isolated parts sum to only 0.867× of the wire, a ×1.15 scale-up) and
+measured worst of the three replacements on both probes — rejected on the
+evidence, not on principle. Shapley is order-independent and splits shared
+redundancy fairly, but measured no better than leave-one-out here, costs
+16 compressions per document against 5, and puts game theory on a
+methodology page — rejected as machinery the numbers don't pay for.
+Hard-coding q4 (Cloudflare's apparent dynamic quality) was rejected in
+favour of per-document calibration: the calibration is self-verifying,
+records its own residual, and follows the CDN if it changes.
+
+*The quality mismatch, narrowed from a stated risk to a measured residual.*
+Addendum N's era left "local brotli ≠ Cloudflare brotli" as an open ratio
+risk (4,321 B at q11 against 5,243 B on the wire, 4.46× vs 3.68×).
+Calibration closes most of it: q4 reproduces the Cloudflare wire within
+**+6 B / +12 B / −12 B (0.1–0.3%)** on astro / vanilla / qwik respectively.
+The residual is recorded per run, never assumed.
+
+*The new rule's own stated bias.* Disjoint parts' marginals do not sum to
+the whole — redundancy shared BETWEEN parts is saved only when the second
+part goes, so it belongs to no single marginal. Measured shortfall on the
+live shapes: **0.942–0.952×** of the whole, so normalisation scales every
+part up ~×1.05–1.06 pro rata, slightly over-crediting parts that share
+more context than average. Bounded by the probes at ~2% on the cells
+measured — against 40–48% for the rule it replaces. The floors instruction
+on `/methodology/` stays until the batch re-runs, because the LIVE cells
+still carry old-rule numbers.
+
+*Runbook for the re-run (the receipts this invalidates).* (1) Merge
+deploys the fixed ruler, the attestation, and this publication — receipts
+unchanged, floors caveat live. (2) On a quiet machine, checkout at the
+merge SHA, clean: pre-warm all ten effective URLs under one nonce until
+compressed, then the three profiles (~7 minutes measured). New receipts
+carry `originCommit` and `docAttribution` by construction. (3) The new
+receipts change the chrome fragment, so the front build's identity gate
+(P) fires: re-measure the chrome constant against the local composed
+plane serving the new publication (the recorded interim), commit, merge —
+then re-measure against the deployed plane and commit that, the addendum
+L→N cycle now enforced by mechanism. (4) The floors sentence leaves
+`/methodology/` in the re-run commit, with its pin in
+`published-readings.test.ts` moving in the same commit.
+
+**P. Addendum-N hole 1 closed: the constant is bound to the fragment that
+ships, by hash.** The chrome-constant probe records the measured fragment's
+sha256 AND its full render context (variant/surface/pathname/search read
+from the probed target and the fragment's own data attributes, including
+the serving colo). The front build re-renders the fragment — the real
+renderer, esbuild-bundled at build time, against the very lab-bundle
+artifact the Worker imports — under that recorded context, extracts it with
+the probe's own rule (`chromeFragmentOf`, single-sourced in `@pm/switcher`
+so the two sides cannot drift), and **REFUSES the build when the hashes
+differ**. `populated` alone could not tell a current fragment from a stale
+one (both the hashed and the shipping fragment satisfied it — N's 11,931 B
+vs 12,023 B); the hash can. The refusal forces the explicit two-pass
+publish: build → measure against a plane serving THIS publication → commit
+the fresh artifact → rebuild. When the fragment itself changed, the plane
+that can serve it does not exist until deploy — the local composed plane is
+the recorded interim (the addendum-L precedent, its honesty note already
+rendered by the methodology page), and the deployed-plane re-measure
+follows the deploy. The probe separately refuses a fragment that changes
+mid-probe, and a constant whose wire quality could not be calibrated (a
+plane serving identity) is flagged `wireCalibrated: false` in the artifact
+rather than passed off as the deployed figure. The constant's wire figure
+itself now rides the same calibrated leave-one-out principle as the ruler
+(it always was a leave-one-out marginal — previously at an uncalibrated
+default quality).
+
+**Q. Addendum-N hole 2 closed: the plane attests its build, and the runner
+refuses a cross-tree receipt.** The front Worker serves
+`/_pm/build.json` — `{kind, sha, dirty}` — stamped by the front build and
+RE-stamped by both serving paths (the deploy script immediately before
+wrangler, and run-local after its turbo build), because a turbo cache
+replay restores a dist carrying the SHA of the commit that built it, and
+the attestation must describe the tree actually deploying. Batches and
+probes fetch it before anything measures, record it in the artifact as
+`originCommit` beside the local pin, and **refuse** when the origin's SHA
+disagrees with the local checkout or the origin does not attest — unless
+the operator passes `--allow-cross-tree`, the explicit escape for
+deliberate cross-tree measurement, in which case the artifact carries the
+disagreement (or the null) in plain sight. The publication build refuses
+to publish a receipt whose `originCommit` is null, dirty, or different
+from its commit pin; receipts minted before the attestation existed carry
+no field and are grandfathered until the re-run replaces them. The
+refusal was proven against the real plane this session: the deployed
+origin (which predates its own attestation) is refused by name, and the
+constant re-measured against it below carries `originCommit: null` with
+the escape — the bootstrap, visible in the artifact rather than smoothed
+over.

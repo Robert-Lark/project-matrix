@@ -12,8 +12,14 @@ export {
   decomposeDocument,
   measureVisit,
   profileContextOptions,
+  type DocumentAttribution,
   type DocumentBytes,
 } from "./collect";
+export {
+  fetchOriginCommit,
+  verifyOriginCommit,
+  type OriginCommit,
+} from "./origin-commit";
 export {
   InspectorCpuSource,
   LOCAL_PLANE_INSPECTORS,

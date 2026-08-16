@@ -86,6 +86,11 @@ async function main(): Promise<number> {
         // slice-C cache-MISS class) before any measured visit; generated
         // when absent, exactly as before.
         nonce: { type: "string" },
+        // Explicit escape for DELIBERATE cross-tree measurement (ADR-0001
+        // addendum N hole 2): without it the batch refuses an origin whose
+        // attested build SHA (/_pm/build.json) disagrees with the local
+        // checkout, or one that does not attest at all.
+        "allow-cross-tree": { type: "boolean", default: false },
         out: { type: "string" },
       },
     });
@@ -111,6 +116,7 @@ async function main(): Promise<number> {
       runNonce: values.nonce,
       repoRoot,
       cpuSource: cpuSource(values["local-cpu"]),
+      allowCrossTree: values["allow-cross-tree"],
     };
     writeReceipt(await runBatch(spec), values.out);
     return 0;
@@ -128,6 +134,10 @@ async function main(): Promise<number> {
         // re-drive the exact effective URLs — the only way to pre-warm them
         // first against the first-hit-uncompressed class.
         nonce: { type: "string" },
+        // Same escape as `run` (ADR-0001 addendum N hole 2): a reproduce
+        // against a plane serving a different tree than this checkout is a
+        // DIFFERENT measurement, and saying so must be deliberate.
+        "allow-cross-tree": { type: "boolean", default: false },
         out: { type: "string" },
       },
     });
@@ -149,6 +159,7 @@ async function main(): Promise<number> {
       origin: values.origin,
       cpuSource: cpuSource(values["local-cpu"]),
       runNonce: values.nonce,
+      allowCrossTree: values["allow-cross-tree"],
     });
     writeReceipt(await runBatch(spec), values.out);
     return 0;

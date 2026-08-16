@@ -18,6 +18,7 @@
  *  - The scripted interaction is a registry id (reproducible by name); the
  *    resource-timing delta across it is the per-interaction byte cost (§3).
  */
+import { brotliCompressSync, constants as zlibConstants } from "node:zlib";
 import type { Browser, Page } from "playwright";
 import { kbpsToBytesPerSecond, type TestProfile } from "@pm/measurement";
 import { type RunSampleT } from "./receipt";
@@ -130,17 +131,16 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
  * The document response is ONE compressed stream, so its wire cost
  * (`transferSize`) cannot be split into per-part compressed sizes by
  * measurement — brotli is applied over the whole body at once. It is instead
- * attributed to buckets in proportion to each part's share of the UNCOMPRESSED
- * served bytes (ADR-0001 §3 addendum, 2026-08-01): the one reproducible split
- * that sums EXACTLY back to `transferSize` and double-counts nothing. Three
- * parts are carved out of what would otherwise all land in the HTML bucket:
+ * ATTRIBUTED across four parts (ADR-0001 §3 addendum superseding addendum G,
+ * 2026-08-15): `transferSize` stays the authority on the LEVEL, and the
+ * between-part RATIOS come from leave-one-out brotli marginals at a
+ * wire-calibrated quality — see the estimator note below. Three parts are
+ * carved out of what would otherwise all land in the HTML bucket:
  *
  *  - INLINE EXECUTABLE `<script>` (no `src`, JS/module type) → the JS bucket
  *    and the initial-JS headline. Without this an inlined bundle (Astro inlines
  *    its ~1.2 KB cart module) reports "0 KB JS" against the no-runtime control —
- *    the defect this addendum settles (issue #16 defect 1). Byte-identical
- *    enhancement, wildly different reported JS, purely because of the inline
- *    threshold: exactly the confound the render axis must not carry.
+ *    the defect the 2026-08-01 addendum settled (issue #16 defect 1).
  *  - INLINE NON-EXECUTABLE `<script>` (a `type` the browser will not run:
  *    application/json, qwik/json, importmap, …) → the DATA bucket. These are
  *    serialized payloads a paradigm ships (Astro's cart-item JSON, Qwik's
@@ -159,18 +159,60 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
  * serialized data, IS the render-axis variable (ADR-0003 §2) — this split is
  * what makes that variable visible instead of hidden in the HTML total.
  *
- * The share is uncompressed-proportional, exact only if every part compresses
- * at the document's average ratio (JS and prose do not compress identically).
- * It is a stated, reproducible attribution — a floor on honesty, strictly
- * better than reporting inline JS as zero — surfaced in the receipt's byte
- * source and the methodology page's limits, never presented as per-byte
- * compressed truth.
+ * THE ESTIMATOR (bench-instrumentation-dilution; supersedes addendum G's
+ * uncompressed-share rule). Uncompressed share is exact only if every part
+ * compresses at the document's average ratio, and the injected chrome
+ * violates that hardest: it compresses far better than average, so it was
+ * over-attributed and every OTHER bucket under-attributed — measured at
+ * 40–47% on the smallest published JS cells, with the bias growing with the
+ * chrome (astro's published cell moved 0.42→0.37 KB on a chrome-only
+ * change). The rule now is:
+ *
+ *  1. LEVEL: the four parts still sum EXACTLY to `transferSize`
+ *     (largest-remainder apportionment, unchanged).
+ *  2. RATIOS: each part's weight is its leave-one-out marginal — the bytes
+ *     the compressed document LOSES when exactly that part's regions are
+ *     removed — computed with brotli at the quality that best reproduces
+ *     the observed wire body (`encodedBodySize`; scan q0–q11, pick the
+ *     minimum absolute residual, record it). Measured 2026-08-15 on the
+ *     deployed plane, q4 reproduces Cloudflare's wire within 0.1–0.3% on
+ *     all three delivery shapes; the calibration is re-derived per document
+ *     rather than hard-coded, so the ruler follows the CDN.
+ *  3. IDENTITY: a document served uncompressed needs no estimate — per-part
+ *     wire cost IS the uncompressed size, and the rule degrades to exact
+ *     truth (uncompressed share).
+ *
+ * Stated bias, so nobody re-derives it wrong: disjoint parts' marginals do
+ * not sum to the whole (redundancy shared BETWEEN parts is saved only when
+ * the second part goes, so it belongs to no single marginal) — the shortfall
+ * measured 0.94–0.95× on the three real shapes, so normalisation scales
+ * every part up ~×1.05–1.06, slightly over-crediting parts that share more
+ * context than average. Validated against the two failure modes that killed
+ * the old rule: a chrome-only change now moves the JS cell ≤0.3% (was
+ * 14.1%), and an inlined copy of a real file attributes within ~2% of what
+ * the identical file costs served externally (was −40.5%). The residual is
+ * recorded per run in `attribution`, never assumed.
  */
+export interface DocumentAttribution {
+  /** Which rule attributed the document's wire bytes (see block comment). */
+  estimator:
+    | "loo-brotli-normalised"
+    | "uncompressed-share-identity"
+    | "uncompressed-share-fallback"
+    | "degraded-all-html";
+  /** Calibrated brotli quality (loo-brotli-normalised only, else null). */
+  quality: number | null;
+  /** brotli(body, quality) − the calibration target, in bytes (loo only). */
+  calibrationResidualBytes: number | null;
+}
+
 export interface DocumentBytes {
   html: number;
   js: number;
   data: number;
   instrumentation: number;
+  /** How these four numbers were derived — recorded, never assumed. */
+  attribution: DocumentAttribution;
 }
 
 // Inline `<script>` the browser EXECUTES as JS: an empty/absent type, or a
@@ -211,77 +253,173 @@ const utf8Len = (s: string): number =>
     ? new TextEncoder().encode(s).length
     : Buffer.byteLength(s, "utf8");
 
+type PartLabel = "html" | "js" | "data" | "instrumentation";
+const PART_ORDER: readonly PartLabel[] = ["html", "js", "data", "instrumentation"];
+
 /**
- * Decompose one served HTML document's compressed `transferSize` into
- * html/js/data/instrumentation by uncompressed content share (see the block
- * comment above). `body` is the exact decoded bytes the browser received
- * (chrome injection already applied); `transferSize` is the compressed cost.
- * The three carve-outs are DISJOINT regions of the served bytes (the chrome
- * aside contains no `<script>`; the measurement script is its sibling; the
- * `/_pm/` links live in `<head>`), so nothing is counted twice, and HTML is
- * taken as the remainder so the four parts sum exactly to `transferSize`.
+ * Split the served body into an ordered list of labeled segments covering
+ * every byte exactly once. The three carve-outs are DISJOINT regions of the
+ * served bytes (the chrome aside contains no `<script>`; the measurement
+ * script is its sibling; the `/_pm/` links live in `<head>`), so nothing is
+ * counted twice, and HTML is the remainder between them. Kept as ORDERED
+ * segments (not mere byte counts) because the leave-one-out marginals below
+ * compress the document with one part's regions removed, in document order.
  */
-export function decomposeDocument(body: string, transferSize: number): DocumentBytes {
-  const docBytes = utf8Len(body);
-  if (docBytes === 0 || transferSize <= 0) {
-    return { html: Math.max(transferSize, 0), js: 0, data: 0, instrumentation: 0 };
-  }
-
-  let jsUncompressed = 0;
-  let dataUncompressed = 0;
-  let instrUncompressed = 0;
-
+function segmentDocument(body: string): Array<{ label: PartLabel; text: string }> {
+  const marks: Array<{ start: number; end: number; label: PartLabel }> = [];
   // Script content cannot contain "</script>" (the HTML tokenizer ends the
   // element there), so this non-greedy match is exact.
   for (const m of body.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
-    const fullBytes = utf8Len(m[0]);
     const attrs = parseAttrs(m[1] ?? "");
     const src = attrs.get("src");
+    let label: PartLabel;
     if (src !== undefined) {
       // External script: its PAYLOAD is counted from resource timing. Only the
       // instrument's own tag is stripped here (its /_pm/ payload is already
       // excluded); a variant's own external-script TAG stays HTML markup.
-      if (src.includes("/_pm/")) instrUncompressed += fullBytes;
-      continue;
+      if (!src.includes("/_pm/")) continue;
+      label = "instrumentation";
+    } else {
+      const type = (attrs.get("type") ?? "").trim().toLowerCase();
+      label = EXECUTABLE_SCRIPT_TYPES.has(type) ? "js" : "data";
     }
-    const type = (attrs.get("type") ?? "").trim().toLowerCase();
-    if (EXECUTABLE_SCRIPT_TYPES.has(type)) jsUncompressed += fullBytes;
-    else dataUncompressed += fullBytes;
+    marks.push({ start: m.index, end: m.index + m[0].length, label });
   }
-
   // Injected instrumentation markup: the chrome subtree + its `/_pm/` head
   // links (chrome has no nested <aside> and no inline <script>, so these
   // regions are disjoint from the script scan above).
   const chrome = body.match(/<aside\b[^>]*\bid="pm-chrome"[\s\S]*?<\/aside>/i);
-  if (chrome) instrUncompressed += utf8Len(chrome[0]);
+  if (chrome?.index !== undefined) {
+    marks.push({ start: chrome.index, end: chrome.index + chrome[0].length, label: "instrumentation" });
+  }
   for (const m of body.matchAll(/<link\b[^>]*\/_pm\/[^>]*>/gi)) {
-    instrUncompressed += utf8Len(m[0]);
+    marks.push({ start: m.index, end: m.index + m[0].length, label: "instrumentation" });
+  }
+  marks.sort((a, b) => a.start - b.start);
+  const segments: Array<{ label: PartLabel; text: string }> = [];
+  let pos = 0;
+  for (const mark of marks) {
+    // Disjoint by construction on real pages; a pathological overlap keeps
+    // the FIRST mark rather than double-counting bytes.
+    if (mark.start < pos) continue;
+    if (mark.start > pos) segments.push({ label: "html", text: body.slice(pos, mark.start) });
+    segments.push({ label: mark.label, text: body.slice(mark.start, mark.end) });
+    pos = mark.end;
+  }
+  if (pos < body.length) segments.push({ label: "html", text: body.slice(pos) });
+  return segments;
+}
+
+const brotliBytes = (text: string, quality: number): number =>
+  text.length === 0
+    ? 0
+    : brotliCompressSync(Buffer.from(text, "utf8"), {
+        params: { [zlibConstants.BROTLI_PARAM_QUALITY]: quality },
+      }).length;
+
+/** The brotli quality whose whole-document output best reproduces the
+ *  observed wire bytes — scanned q0–q11, smallest absolute residual wins
+ *  (first winner on a tie, so the pick is deterministic). Calibrated per
+ *  document rather than hard-coded so the ruler follows the CDN. */
+function calibrateQuality(
+  body: string,
+  targetBytes: number,
+): { quality: number; compressed: number } {
+  let best: { quality: number; compressed: number } | null = null;
+  for (let q = 0; q <= 11; q++) {
+    const compressed = brotliBytes(body, q);
+    if (!best || Math.abs(compressed - targetBytes) < Math.abs(best.compressed - targetBytes)) {
+      best = { quality: q, compressed };
+    }
+  }
+  return best!;
+}
+
+/**
+ * Decompose one served HTML document's compressed `transferSize` into
+ * html/js/data/instrumentation (see the block comment above): level from
+ * `transferSize`, ratios from leave-one-out brotli marginals at the quality
+ * calibrated against `encodedBodySize` (the compressed body the browser
+ * actually received; falls back to `transferSize` — headers included, and
+ * the recorded residual then shows it — when the caller has no body size).
+ * `body` is the exact decoded bytes the browser received (chrome injection
+ * already applied). An identity-encoded response (no compression on the
+ * wire) uses uncompressed share, which is exact there, not an estimate.
+ */
+export function decomposeDocument(
+  body: string,
+  transferSize: number,
+  encodedBodySize?: number,
+): DocumentBytes {
+  const docBytes = utf8Len(body);
+  if (docBytes === 0 || transferSize <= 0) {
+    return {
+      html: Math.max(transferSize, 0),
+      js: 0,
+      data: 0,
+      instrumentation: 0,
+      attribution: { estimator: "degraded-all-html", quality: null, calibrationResidualBytes: null },
+    };
   }
 
-  // Apportion transferSize across the four buckets by uncompressed share via
+  const segments = segmentDocument(body);
+  const uncompressed: Record<PartLabel, number> = { html: 0, js: 0, data: 0, instrumentation: 0 };
+  for (const s of segments) uncompressed[s.label] += utf8Len(s.text);
+
+  const target = encodedBodySize !== undefined && encodedBodySize > 0 ? encodedBodySize : transferSize;
+  let weights: number[];
+  let attribution: DocumentAttribution;
+  if (target >= docBytes) {
+    // Identity-encoded wire: per-part wire cost IS the uncompressed size.
+    weights = PART_ORDER.map((p) => uncompressed[p]);
+    attribution = { estimator: "uncompressed-share-identity", quality: null, calibrationResidualBytes: null };
+  } else {
+    const { quality, compressed } = calibrateQuality(body, target);
+    // Leave-one-out marginal per part: what the compressed document loses
+    // when that part's regions are removed (in document order — the
+    // carve-outs are non-contiguous). Clamped at 0: brotli can in principle
+    // shrink when bytes are ADDED back, and a negative weight would be a
+    // negative byte attribution.
+    weights = PART_ORDER.map((p) => {
+      if (uncompressed[p] === 0) return 0;
+      const without = segments
+        .filter((s) => s.label !== p)
+        .map((s) => s.text)
+        .join("");
+      return Math.max(0, compressed - brotliBytes(without, quality));
+    });
+    if (weights.some((w) => w > 0)) {
+      attribution = {
+        estimator: "loo-brotli-normalised",
+        quality,
+        calibrationResidualBytes: compressed - target,
+      };
+    } else {
+      // Every marginal vanished (a degenerate document): fall back to the
+      // uncompressed share rather than divide by zero — and say so.
+      weights = PART_ORDER.map((p) => uncompressed[p]);
+      attribution = { estimator: "uncompressed-share-fallback", quality: null, calibrationResidualBytes: null };
+    }
+  }
+
+  // Apportion transferSize across the four buckets by weight via
   // LARGEST-REMAINDER (Hamilton): floor each share, then hand the leftover units
   // to the largest fractional parts. Exact (sums to transferSize) AND every
   // bucket ≥ 0. A plain per-bucket `Math.round` with HTML as the remainder can
   // drive HTML NEGATIVE when several tiny carve-outs each round up (verify-slice,
   // anti-rigging lens: transferSize=2 over 1 B js + 1 B data + 1 B chrome →
-  // html = 2−1−1−1 = −1). HTML's own share is the remainder of the UNCOMPRESSED
-  // bytes (≥ 0: the carve-outs are disjoint subsets), so it is apportioned like
-  // the rest rather than absorbing rounding error.
-  const htmlUncompressed =
-    docBytes - jsUncompressed - dataUncompressed - instrUncompressed;
-  const shares = [
-    htmlUncompressed,
-    jsUncompressed,
-    dataUncompressed,
-    instrUncompressed,
-  ].map((u) => (transferSize * u) / docBytes);
+  // html = 2−1−1−1 = −1). A zero-weight part can never receive a leftover unit:
+  // leftover equals the sum of the fractional parts, which is strictly smaller
+  // than the count of parts with a positive fraction.
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const shares = weights.map((w) => (transferSize * w) / totalWeight);
   const out = shares.map((s) => Math.floor(s));
   const leftover = transferSize - out.reduce((a, b) => a + b, 0);
   const byFraction = shares
     .map((s, i) => ({ i, frac: s - Math.floor(s) }))
     .sort((a, b) => b.frac - a.frac);
   for (let k = 0; k < leftover; k++) out[byFraction[k]!.i]! += 1;
-  return { html: out[0]!, js: out[1]!, data: out[2]!, instrumentation: out[3]! };
+  return { html: out[0]!, js: out[1]!, data: out[2]!, instrumentation: out[3]!, attribution };
 }
 
 async function resourceEntries(page: Page): Promise<ResourceEntry[]> {
@@ -550,6 +688,9 @@ export async function measureVisit(
         responseStart: e.responseStart,
         responseEnd: e.responseEnd,
         transferSize: e.transferSize,
+        // The compressed body the browser received — the calibration target
+        // for the document byte attribution (decomposeDocument).
+        encodedBodySize: e.encodedBodySize,
       };
     });
     if (nav === null) {
@@ -579,9 +720,10 @@ export async function measureVisit(
       buckets[bucketOf(entry.name)] += entry.transferSize;
     }
     // The document itself: decomposed from its single compressed transferSize
-    // into html/js/data plus STRIPPED instrumentation markup by uncompressed
-    // content share (decomposeDocument). Counted as one request.
-    const doc = decomposeDocument(servedBody, nav.transferSize);
+    // into html/js/data plus STRIPPED instrumentation markup — level from
+    // transferSize, ratios from wire-calibrated leave-one-out brotli
+    // marginals (decomposeDocument). Counted as one request.
+    const doc = decomposeDocument(servedBody, nav.transferSize, nav.encodedBodySize);
     buckets.html += doc.html;
     buckets.js += doc.js;
     buckets.data += doc.data;
@@ -638,6 +780,10 @@ export async function measureVisit(
         interactionBytes,
         instrumentationBytes,
         totalBytes: Object.values(buckets).reduce((a, b) => a + b, 0),
+        // Which estimator split the document's wire bytes, at what calibrated
+        // quality, with what residual — the attribution is part of the
+        // receipt, never assumed (ADR-0001 §3 addendum, 2026-08-15).
+        docAttribution: doc.attribution,
       },
       requests: {
         counted,

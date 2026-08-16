@@ -31,10 +31,13 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSync } from "esbuild";
 import { FIT } from "./lab/fit.mjs";
+import { stampBuild } from "./stamp-build.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(join(root, "package.json"));
@@ -271,6 +274,27 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
   if (receipt.commit.dirty !== false) {
     throw new Error(`front lab: ${file} was minted from a dirty tree — not publishable`);
   }
+  // Origin provenance (ADR-0001 addendum N hole 2): a receipt that RECORDS
+  // what the plane attested must record agreement — a cross-tree or
+  // unattested receipt is a legitimate measurement but not a publishable
+  // one. Receipts minted before the attestation existed carry no field and
+  // are grandfathered until the ruler re-run replaces them.
+  if (receipt.originCommit !== undefined) {
+    const oc = receipt.originCommit;
+    if (oc === null) {
+      throw new Error(
+        `front lab: ${file} was minted against an origin that did not attest its build (originCommit: null) — not publishable`,
+      );
+    }
+    if (oc.dirty !== false) {
+      throw new Error(`front lab: ${file} measured a plane built from a dirty tree — not publishable`);
+    }
+    if (oc.sha !== receipt.commit.sha) {
+      throw new Error(
+        `front lab: ${file} measured a plane serving ${oc.sha.slice(0, 12)} but pins ${receipt.commit.sha.slice(0, 12)} — a cross-tree receipt is not publishable`,
+      );
+    }
+  }
   if (!file.startsWith("editorial-")) {
     throw new Error(`front lab: ${file} names no known surface (editorial-* expected)`);
   }
@@ -334,6 +358,81 @@ if (chromeConstant) {
     throw new Error(
       "front lab: the chrome constant was measured against an UNPOPULATED chrome (no published readings in the fragment) — re-measure against a plane serving this publication",
     );
+  }
+  // The IDENTITY gate (ADR-0001 addendum N hole 1). `populated` cannot tell
+  // the current fragment from a stale one: this build regenerates the chrome
+  // from the receipts above, so the fragment that ships is not necessarily
+  // the fragment the probe hashed — 11,931 B against 12,023 B on the first
+  // publication, 0.8% and unbounded, growing with every surface added to
+  // the strip. So the build re-renders the fragment the Worker will serve —
+  // the REAL renderer against the lab bundle built above, under the exact
+  // renderContext the probe recorded — and REFUSES when the sha256 differs.
+  // The discharge cycle this forces is the two-pass publish: build →
+  // measure against a plane serving this publication (the deployed plane
+  // once it ships; the local composed plane as the recorded interim when
+  // the fragment itself changed) → commit the fresh artifact → rebuild.
+  {
+    const mc = chromeConstant.measuredChrome;
+    const rc = mc?.renderContext;
+    if (
+      !rc ||
+      typeof mc.sha256 !== "string" ||
+      [rc.variant, rc.surface, rc.pathname, rc.search, rc.location].some((v) => typeof v !== "string")
+    ) {
+      throw new Error(
+        "front lab: the chrome constant records no renderContext, so the fragment it measured cannot be verified against the fragment this build ships (ADR-0001 addendum N hole 1) — re-measure with tools/bench-runner chrome-constant",
+      );
+    }
+    // The REAL renderer — @pm/switcher is TypeScript source, and this build
+    // runs in plain node, so esbuild bundles it in-process. The lab bundle
+    // is read back from the artifact written above: the Worker imports that
+    // very file, so the comparison rides the exact object it will serve.
+    const bundled = buildSync({
+      stdin: {
+        contents:
+          'export { renderChrome, chromeFragmentOf } from "@pm/switcher"; export { getProfile, PROFILES } from "@pm/measurement";',
+        resolveDir: root,
+        loader: "js",
+      },
+      bundle: true,
+      format: "esm",
+      platform: "node",
+      write: false,
+    });
+    const mod = await import(
+      "data:text/javascript;base64," + Buffer.from(bundled.outputFiles[0].contents).toString("base64")
+    );
+    const servedLab = JSON.parse(readFileSync(join(dist, "_pm", "lab", "editorial.json"), "utf8"));
+    const LAB_BUNDLES = { [servedLab.surface]: servedLab.profiles };
+    // Profile resolution mirrors the Worker's labFor EXACTLY (getProfile ??
+    // default; Object.hasOwn against client-controlled keys).
+    const requested = new URLSearchParams(rc.search).get("profile") ?? "";
+    const resolved = (mod.getProfile(requested) ?? mod.PROFILES["avg-broadband-desktop"]).id;
+    const lab =
+      Object.hasOwn(LAB_BUNDLES, rc.surface) && Object.hasOwn(LAB_BUNDLES[rc.surface], resolved)
+        ? LAB_BUNDLES[rc.surface][resolved]
+        : undefined;
+    const fragment = mod.chromeFragmentOf(
+      mod.renderChrome({
+        variant: rc.variant,
+        surface: rc.surface,
+        pathname: rc.pathname,
+        search: rc.search,
+        location: rc.location,
+        lab,
+      }),
+    );
+    const builtSha = createHash("sha256").update(fragment).digest("hex");
+    if (builtSha !== mc.sha256) {
+      throw new Error(
+        `front lab: the chrome constant describes a fragment this build does not ship — the probe hashed ` +
+          `${mc.sha256.slice(0, 12)} (${mc.bytes} B) but this build renders ${builtSha.slice(0, 12)} ` +
+          `(${Buffer.byteLength(fragment, "utf8")} B) for ${rc.variant}/${rc.surface}${rc.search} at ${rc.location}. ` +
+          `The constant is bound to the chrome that ships (ADR-0001 addendum N hole 1): re-measure against a ` +
+          `plane serving THIS publication — the deployed plane once this ships, or the local composed plane ` +
+          `(run-local, PM_HOLD=1) as the recorded interim — commit the fresh artifact, and rebuild.`,
+      );
+    }
   }
   cpSync(chromeConstantPath, join(dist, "_pm", "lab", "chrome-constant.json"));
 }
@@ -520,6 +619,11 @@ cpSync(
   join(dirname(require.resolve("@pm/measurement/package.json")), "dist", "measure.js"),
   join(dist, "_pm", "measure.js"),
 );
+
+// The build attestation (ADR-0001 addendum N hole 2) — re-stamped by the
+// deploy script and run-local against turbo cache replays; see
+// stamp-build.mjs for why all three call sites exist.
+stampBuild();
 
 console.log(
   "front: dist assembled (home + methodology + /pm fonts + /_pm instrumentation + lab bundle)",
