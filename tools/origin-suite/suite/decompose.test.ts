@@ -23,9 +23,22 @@
  *    share (no estimate needed); the estimator that ran is recorded in
  *    `attribution`, never assumed.
  */
-import { brotliCompressSync, constants as zlibConstants } from "node:zlib";
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  gzipSync,
+  zstdCompressSync,
+  zstdDecompressSync,
+  constants as zlibConstants,
+} from "node:zlib";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { decomposeDocument } from "@pm/bench-runner";
+
+const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const T = 1000; // an arbitrary compressed transferSize; only ratios matter
 
@@ -33,6 +46,12 @@ const brotli = (s: string, q: number) =>
   brotliCompressSync(Buffer.from(s, "utf8"), {
     params: { [zlibConstants.BROTLI_PARAM_QUALITY]: q },
   }).length;
+const zstdBytes = (s: string, level: number) =>
+  zstdCompressSync(Buffer.from(s, "utf8"), {
+    params: { [zlibConstants.ZSTD_c_compressionLevel]: level },
+  }).length;
+const gzipBytes = (s: string, level: number) =>
+  gzipSync(Buffer.from(s, "utf8"), { level }).length;
 
 // A realistic injected chrome subtree + its /_pm/ tags, as the front Worker
 // emits them into the slot / head.
@@ -189,13 +208,60 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
   it("records the estimator that ran: leave-one-out at a calibrated quality when the wire was compressed", () => {
     const encoded = brotli(doc, 4);
     const d = decomposeDocument(doc, encoded + 300, encoded);
-    expect(d.attribution.estimator).toBe("loo-brotli-normalised");
+    expect(d.attribution.estimator).toBe("loo-wire-normalised");
+    expect(d.attribution.codec).toBe("brotli");
     // The calibration must land on (or immediately beside) the quality that
     // actually produced the wire bytes, and say how far off it was.
     expect(d.attribution.quality).not.toBeNull();
     expect(Math.abs(d.attribution.quality! - 4)).toBeLessThanOrEqual(1);
     expect(Math.abs(d.attribution.calibrationResidualBytes!)).toBeLessThan(encoded * 0.02);
     expect(sum(d)).toBe(encoded + 300);
+  });
+
+  it("calibrates with the WIRE'S OWN codec: a zstd wire gets a zstd model, at the level that produced it", () => {
+    // The first attested batch was refused for exactly this: Chromium
+    // negotiates zstd, so the bench browser's documents ride a zstd wire
+    // while br-only clients still get brotli — a brotli model fitted to
+    // that byte count mislabels its own ratios.
+    const encoded = zstdBytes(doc, 2);
+    const d = decomposeDocument(doc, encoded + 300, encoded, "zstd");
+    expect(d.attribution.estimator).toBe("loo-wire-normalised");
+    expect(d.attribution.codec).toBe("zstd");
+    expect(d.attribution.contentEncoding).toBe("zstd");
+    expect(Math.abs(d.attribution.quality! - 2)).toBeLessThanOrEqual(1);
+    expect(Math.abs(d.attribution.calibrationResidualBytes!)).toBeLessThan(encoded * 0.02);
+    expect(d.attribution.calibrationTargetSource).toBe("encoded-body");
+    expect(sum(d)).toBe(encoded + 300);
+    // And the split itself stays in family with the brotli-wire split: the
+    // codecs may differ, the attribution principle must not.
+    const br4 = brotli(doc, 4);
+    const viaBr = decomposeDocument(doc, br4, br4, "br");
+    const drift = Math.abs(d.js / (encoded + 300) - viaBr.js / br4) / (viaBr.js / br4);
+    expect(drift, "zstd-priced and brotli-priced JS shares diverged").toBeLessThan(0.1);
+  });
+
+  it("the level knobs are ALIVE: distant-level targets calibrate to distinct settings (the dead-knob class)", () => {
+    // If a codec's level option went dead (an API change silently ignoring
+    // params), every scanned level would produce one size and calibration
+    // would always land on the FIRST candidate — making the ±1 pins above
+    // pass vacuously against a level-1-flavored target. Distant targets
+    // must calibrate apart, or the knob is not turning.
+    const zLow = decomposeDocument(doc, zstdBytes(doc, 2), zstdBytes(doc, 2), "zstd");
+    const zHigh = decomposeDocument(doc, zstdBytes(doc, 19), zstdBytes(doc, 19), "zstd");
+    expect(zLow.attribution.quality, "zstd level knob is dead").not.toBe(zHigh.attribution.quality);
+    const gLow = decomposeDocument(doc, gzipBytes(doc, 1), gzipBytes(doc, 1), "gzip");
+    const gHigh = decomposeDocument(doc, gzipBytes(doc, 9), gzipBytes(doc, 9), "gzip");
+    expect(gLow.attribution.quality, "gzip level knob is dead").not.toBe(gHigh.attribution.quality);
+  });
+
+  it("the transfer-size fallback fit is labeled as such — a header-padded target is not a body fit", () => {
+    const wire = brotli(doc, 4);
+    const d = decomposeDocument(doc, wire + 700); // no encodedBodySize; headers inflate the target
+    expect(d.attribution.estimator).toBe("loo-wire-normalised");
+    expect(d.attribution.calibrationTargetSource).toBe("transfer-size");
+    // The publication gate refuses this source; the split still runs for
+    // dev use and says exactly what it fitted against.
+    expect(d.attribution.calibrationTargetBytes).toBe(wire + 700);
   });
 
   it("an UNCOMPRESSED document needs no estimate: exact uncompressed share, and it says so", () => {
@@ -227,9 +293,52 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(asBr.attribution.contentEncoding).toBe("br");
     const asGzip = decomposeDocument(doc, encoded + 300, encoded, "gzip");
     expect(asGzip.attribution.contentEncoding).toBe("gzip");
-    // The split still runs (best available ratio model) — the label is what
-    // lets the publication gate refuse it.
-    expect(asGzip.attribution.estimator).toBe("loo-brotli-normalised");
+    // A gzip wire gets the gzip model — codec and encoding stay in lockstep
+    // so the publication gate's model-matches-wire rule can hold.
+    expect(asGzip.attribution.estimator).toBe("loo-wire-normalised");
+    expect(asGzip.attribution.codec).toBe("gzip");
+    // RFC 9110: coding tokens are case-insensitive — "GZIP" selects the
+    // same model instead of falling through to brotli-by-accident.
+    expect(decomposeDocument(doc, encoded + 300, encoded, "GZIP").attribution.codec).toBe("gzip");
+  });
+
+  it("the gzip model honors its level — calibration reproduces a gzip-produced target (the typo'd-options class)", () => {
+    // gzipSync({ leve: 6 }) would compress at the default with no error and
+    // every scanned "level" would produce one size — this pin makes a dead
+    // level knob fail loudly, the way the zstd pin does for zstd.
+    const target = gzipBytes(doc, 6);
+    const d = decomposeDocument(doc, target + 300, target, "gzip");
+    expect(d.attribution.codec).toBe("gzip");
+    expect(Math.abs(d.attribution.quality! - 6)).toBeLessThanOrEqual(1);
+    expect(Math.abs(d.attribution.calibrationResidualBytes!)).toBeLessThan(target * 0.02);
+    expect(d.attribution.calibrationTargetBytes).toBe(target);
+  });
+
+  it("the committed zstd evidence re-derives: sha256, decode, and the +4 B level-2 fit (ADR-0001 addendum O coda)", () => {
+    // The manifest's claim must be CI-checkable, not a one-session
+    // observation: read the committed wire body, verify its manifest hash,
+    // and reproduce the calibration the coda cites. Bounds are loose enough
+    // to survive a node zstd-build drift, tight enough that a corrupted
+    // fixture or a broken model fails.
+    const labDir = join(pkgRoot, "..", "bench-runner", "estimator-lab");
+    const manifest = JSON.parse(readFileSync(join(labDir, "manifest.json"), "utf8")) as {
+      bodies: Array<{ file: string; sha256: string; wireBytes: number }>;
+    };
+    const entry = manifest.bodies.find((b) => b.file === "bodies/vanilla-editorial.zst")!;
+    expect(entry).toBeDefined();
+    const raw = readFileSync(join(labDir, entry.file));
+    expect(raw.length).toBe(entry.wireBytes);
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(entry.sha256);
+    const body = zstdDecompressSync(raw).toString("utf8");
+    const level2 = zstdBytes(body, 2);
+    expect(Math.abs(level2 - entry.wireBytes)).toBeLessThan(entry.wireBytes * 0.01);
+    // The "same page" claim is pinned, not assumed: the zstd wire and the
+    // brotli wire must decode to the identical document (they were fetched
+    // a day apart, straddling a deploy — verified identical, now asserted).
+    const brBody = brotliDecompressSync(
+      readFileSync(join(labDir, "bodies", "vanilla-editorial.br")),
+    ).toString("utf8");
+    expect(body === brBody, "the zstd and brotli evidence bodies are not the same page").toBe(true);
   });
 
   it("kills the dilution defect: a chrome-only change no longer drags the JS cell (the 0.42→0.37 shape)", () => {

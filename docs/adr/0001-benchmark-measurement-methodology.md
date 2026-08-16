@@ -570,6 +570,30 @@ measured — against 40–48% for the rule it replaces. The floors instruction
 on `/methodology/` stays until the batch re-runs, because the LIVE cells
 still carry old-rule numbers.
 
+*Coda (2026-08-16): the wire changed codecs the day this landed, and the
+gate caught it.* The first attested batch after the merge came back
+UNPUBLISHABLE by the unit's own Q gate: every document had ridden a
+**zstd** wire — Chromium negotiates zstd and Cloudflare serves it — while
+every wire this addendum's evidence measured was brotli, because curl-
+and undici-shaped clients request br. Both wires are real; the ruler was
+fitting a brotli model to a zstd byte count and honestly recording the
+mismatch it could not previously see. The estimator therefore generalizes
+exactly as its own principle requires: the leave-one-out marginals are
+computed with **the wire's own codec** at the calibrated setting
+(estimator `loo-wire-normalised`, with `codec` recorded beside quality,
+the calibration target, and the residual), and the publication gate
+refuses a split whose model codec does not match the wire it claims to
+have calibrated against — and one whose matched codec misses its own
+recorded target by more than 2% (64 B floor): codec identity and fit
+quality are independent axes, and the refused batch proved the wrong
+codec can fit within ~1%. Content-coding tokens compare
+case-insensitively (RFC 9110), identically in the runner's model
+selection and the gate's lookup. Measured:
+zstd level 2 reproduces Cloudflare's zstd serving of the same page within
+**+4 B (0.08%)** — the zstd body is committed beside the brotli evidence
+in the estimator lab. The q4 figures above are correct for the brotli
+wire they were measured on; they are now scoped to it.
+
 *Runbook for the re-run (the receipts this invalidates).* (1) Merge
 deploys the fixed ruler, the attestation, and this publication — receipts
 unchanged, floors caveat live. (2) On a quiet machine, checkout at the

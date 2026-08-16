@@ -32,3 +32,11 @@ The calibration table it prints is where "Cloudflare's wire is brotli q4
 within 0.1–0.3%" comes from. The production implementation
 (`../src/collect.ts` `decomposeDocument`) was verified to reproduce this
 lab's numbers exactly on all three bodies.
+
+One body is NOT part of the script's brotli table:
+`bodies/vanilla-editorial.zst` is the **zstandard** wire Chromium actually
+negotiates for the same page (the `.br` bodies are what br-only clients
+get). It backs ADR-0001 addendum O's codec coda — zstd level 2 reproduces
+it within +4 B (0.08%) — and that derivation is CI-pinned by
+`tools/origin-suite/suite/decompose.test.ts`, which verifies the body's
+manifest sha256 and reproduces the level-2 fit on every run.

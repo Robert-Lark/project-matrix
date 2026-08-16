@@ -18,7 +18,13 @@
  *  - The scripted interaction is a registry id (reproducible by name); the
  *    resource-timing delta across it is the per-interaction byte cost (§3).
  */
-import { brotliCompressSync, constants as zlibConstants } from "node:zlib";
+import {
+  brotliCompressSync,
+  deflateSync,
+  gzipSync,
+  zstdCompressSync,
+  constants as zlibConstants,
+} from "node:zlib";
 import type { Browser, Page } from "playwright";
 import { kbpsToBytesPerSecond, type TestProfile } from "@pm/measurement";
 import { type RunSampleT } from "./receipt";
@@ -172,12 +178,15 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
  *     (largest-remainder apportionment, unchanged).
  *  2. RATIOS: each part's weight is its leave-one-out marginal — the bytes
  *     the compressed document LOSES when exactly that part's regions are
- *     removed — computed with brotli at the quality that best reproduces
- *     the observed wire body (`encodedBodySize`; scan q0–q11, pick the
- *     minimum absolute residual, record it). Measured 2026-08-15 on the
- *     deployed plane, q4 reproduces Cloudflare's wire within 0.1–0.3% on
- *     all three delivery shapes; the calibration is re-derived per document
- *     rather than hard-coded, so the ruler follows the CDN.
+ *     removed — computed with THE WIRE'S OWN CODEC at the setting that best
+ *     reproduces the observed wire body (`encodedBodySize`; scan the
+ *     codec's range, pick the minimum absolute residual, record it).
+ *     Measured on the deployed plane: brotli q4 reproduces the br wire
+ *     within 0.1–0.3% on all three delivery shapes (2026-08-15), and zstd
+ *     level 2 reproduces the zstd wire Chromium actually negotiates within
+ *     0.08% (2026-08-16). The calibration is re-derived per document rather
+ *     than hard-coded, so the ruler follows the CDN — in codec as well as
+ *     in setting.
  *  3. IDENTITY: a document served uncompressed needs no estimate — per-part
  *     wire cost IS the uncompressed size, and the rule degrades to exact
  *     truth (uncompressed share).
@@ -202,19 +211,39 @@ export interface DocumentAttribution {
    *  leave-one-out marginal vanished on a degenerate document. An auditor
    *  must be able to tell them apart from the artifact alone. */
   estimator:
-    | "loo-brotli-normalised"
+    | "loo-wire-normalised"
     | "uncompressed-share-identity"
     | "uncompressed-share-no-encoded-size"
     | "uncompressed-share-fallback"
     | "degraded-all-html";
-  /** Calibrated brotli quality (loo-brotli-normalised only, else null). */
+  /**
+   * The compression model the ratios were computed with — THE WIRE'S OWN
+   * CODEC, selected from the response's content-encoding. The first
+   * attested batch (2026-08-16) proved why this cannot be hard-coded:
+   * Chromium negotiates zstd and Cloudflare serves it, while curl-shaped
+   * br-only requests still get brotli — a brotli model fitted to that zstd
+   * wire was caught by the publication gate on its first real run. zstd
+   * level 2 reproduces Cloudflare's zstd wire within 0.08% (measured; the
+   * body is committed in the estimator lab).
+   */
+  codec: "brotli" | "zstd" | "gzip" | "deflate" | null;
+  /** Calibrated codec setting — brotli quality / zstd level / zlib level
+   *  (loo-wire-normalised only, else null). */
   quality: number | null;
-  /** brotli(body, quality) − the calibration target, in bytes (loo only). */
+  /** The calibration target itself — the compressed body the model was
+   *  fitted against — so the residual is judgeable from the artifact alone
+   *  (a residual without its denominator is not a bound). */
+  calibrationTargetBytes: number | null;
+  /** WHAT the target was: the compressed body (the honest fit) or the
+   *  headers-included transferSize fallback when the browser exposed no
+   *  encodedBodySize. A fallback fit is labeled so the publication gate can
+   *  refuse it — a header-padded target is not a body fit (loo only). */
+  calibrationTargetSource: "encoded-body" | "transfer-size" | null;
+  /** model(body, quality) − the calibration target, in bytes (loo only). */
   calibrationResidualBytes: number | null;
-  /** The document response's content-encoding, recorded verbatim: a brotli
-   *  model calibrated against a NON-brotli compressed wire (gzip, zstd)
-   *  would otherwise be undetectable from the artifact — the publication
-   *  gate refuses to publish a loo split whose wire was not brotli. */
+  /** The document response's content-encoding, recorded verbatim: the
+   *  publication gate refuses a split whose model codec does not match the
+   *  wire it claims to have calibrated against. */
   contentEncoding: string | null;
 }
 
@@ -322,24 +351,87 @@ function segmentDocument(body: string): Array<{ label: PartLabel; text: string }
   return segments;
 }
 
-const brotliBytes = (text: string, quality: number): number =>
-  text.length === 0
-    ? 0
-    : brotliCompressSync(Buffer.from(text, "utf8"), {
-        params: { [zlibConstants.BROTLI_PARAM_QUALITY]: quality },
-      }).length;
+type WireCodec = "brotli" | "zstd" | "gzip" | "deflate";
 
-/** The brotli quality whose whole-document output best reproduces the
- *  observed wire bytes — scanned q0–q11, smallest absolute residual wins
- *  (first winner on a tie, so the pick is deterministic). Calibrated per
- *  document rather than hard-coded so the ruler follows the CDN. */
+interface CodecModel {
+  codec: WireCodec;
+  qualities: readonly number[];
+  compress: (text: string, quality: number) => number;
+}
+
+const BROTLI_MODEL: CodecModel = {
+  codec: "brotli",
+  qualities: Array.from({ length: 12 }, (_, q) => q),
+  compress: (text, quality) =>
+    brotliCompressSync(Buffer.from(text, "utf8"), {
+      params: { [zlibConstants.BROTLI_PARAM_QUALITY]: quality },
+    }).length,
+};
+
+/**
+ * The compression model matching the wire's own content-encoding. The
+ * calibration principle ("the setting that reproduces the observed wire")
+ * only holds when the MODEL is the wire's codec: Chromium negotiates zstd
+ * and Cloudflare serves it, so the bench browser's documents ride a zstd
+ * wire while br-only clients still get brotli — a brotli model fitted to
+ * the zstd byte count mislabels its own ratios (caught by the publication
+ * gate on the first attested batch, 2026-08-16). Unknown encodings fall
+ * back to the brotli model; the codec field then shows the mismatch and
+ * the publication gate refuses it.
+ */
+function modelForEncoding(contentEncoding: string | null): CodecModel {
+  // RFC 9110 §8.4.1: content-coding tokens are case-insensitive, and the
+  // header is list-valued. Selection normalizes; the RECORDED value stays
+  // verbatim. A multi-coding list ("gzip, br") deliberately falls through
+  // to the default: no single model prices a double-coded wire, and the
+  // publication gate then refuses it by the codec/wire mismatch rather
+  // than by accident of string comparison.
+  const token = contentEncoding === null ? null : contentEncoding.trim().toLowerCase();
+  switch (token) {
+    case "zstd":
+      return {
+        codec: "zstd",
+        qualities: Array.from({ length: 19 }, (_, i) => i + 1),
+        compress: (text, quality) =>
+          zstdCompressSync(Buffer.from(text, "utf8"), {
+            params: { [zlibConstants.ZSTD_c_compressionLevel]: quality },
+          }).length,
+      };
+    case "gzip":
+    case "x-gzip": // RFC 9110 §8.4.1.3: x-gzip is an alias for gzip
+      return {
+        codec: "gzip",
+        qualities: Array.from({ length: 9 }, (_, i) => i + 1),
+        compress: (text, quality) => gzipSync(Buffer.from(text, "utf8"), { level: quality }).length,
+      };
+    case "deflate":
+      return {
+        codec: "deflate",
+        qualities: Array.from({ length: 9 }, (_, i) => i + 1),
+        compress: (text, quality) =>
+          deflateSync(Buffer.from(text, "utf8"), { level: quality }).length,
+      };
+    default:
+      return BROTLI_MODEL;
+  }
+}
+
+const compressedBytes = (model: CodecModel, text: string, quality: number): number =>
+  text.length === 0 ? 0 : model.compress(text, quality);
+
+/** The codec setting whose whole-document output best reproduces the
+ *  observed wire bytes — scanned over the model's full range, smallest
+ *  absolute residual wins (first winner on a tie, so the pick is
+ *  deterministic). Calibrated per document rather than hard-coded so the
+ *  ruler follows the CDN — in codec as well as in setting. */
 function calibrateQuality(
+  model: CodecModel,
   body: string,
   targetBytes: number,
 ): { quality: number; compressed: number } {
   let best: { quality: number; compressed: number } | null = null;
-  for (let q = 0; q <= 11; q++) {
-    const compressed = brotliBytes(body, q);
+  for (const q of model.qualities) {
+    const compressed = compressedBytes(model, body, q);
     if (!best || Math.abs(compressed - targetBytes) < Math.abs(best.compressed - targetBytes)) {
       best = { quality: q, compressed };
     }
@@ -373,7 +465,10 @@ export function decomposeDocument(
       instrumentation: 0,
       attribution: {
         estimator: "degraded-all-html",
+        codec: null,
         quality: null,
+        calibrationTargetBytes: null,
+        calibrationTargetSource: null,
         calibrationResidualBytes: null,
         contentEncoding,
       },
@@ -399,7 +494,10 @@ export function decomposeDocument(
     weights = PART_ORDER.map((p) => uncompressed[p]);
     attribution = {
       estimator: "uncompressed-share-identity",
+      codec: null,
       quality: null,
+      calibrationTargetBytes: null,
+      calibrationTargetSource: null,
       calibrationResidualBytes: null,
       contentEncoding,
     };
@@ -407,29 +505,36 @@ export function decomposeDocument(
     weights = PART_ORDER.map((p) => uncompressed[p]);
     attribution = {
       estimator: "uncompressed-share-no-encoded-size",
+      codec: null,
       quality: null,
+      calibrationTargetBytes: null,
+      calibrationTargetSource: null,
       calibrationResidualBytes: null,
       contentEncoding,
     };
   } else {
-    const { quality, compressed } = calibrateQuality(body, target);
+    const model = modelForEncoding(contentEncoding);
+    const { quality, compressed } = calibrateQuality(model, body, target);
     // Leave-one-out marginal per part: what the compressed document loses
     // when that part's regions are removed (in document order — the
-    // carve-outs are non-contiguous). Clamped at 0: brotli can in principle
-    // shrink when bytes are ADDED back, and a negative weight would be a
-    // negative byte attribution.
+    // carve-outs are non-contiguous). Clamped at 0: a codec can in
+    // principle shrink when bytes are ADDED back, and a negative weight
+    // would be a negative byte attribution.
     weights = PART_ORDER.map((p) => {
       if (uncompressed[p] === 0) return 0;
       const without = segments
         .filter((s) => s.label !== p)
         .map((s) => s.text)
         .join("");
-      return Math.max(0, compressed - brotliBytes(without, quality));
+      return Math.max(0, compressed - compressedBytes(model, without, quality));
     });
     if (weights.some((w) => w > 0)) {
       attribution = {
-        estimator: "loo-brotli-normalised",
+        estimator: "loo-wire-normalised",
+        codec: model.codec,
         quality,
+        calibrationTargetBytes: target,
+        calibrationTargetSource: hasEncoded ? "encoded-body" : "transfer-size",
         calibrationResidualBytes: compressed - target,
         contentEncoding,
       };
@@ -439,7 +544,10 @@ export function decomposeDocument(
       weights = PART_ORDER.map((p) => uncompressed[p]);
       attribution = {
         estimator: "uncompressed-share-fallback",
+        codec: null,
         quality: null,
+        calibrationTargetBytes: null,
+        calibrationTargetSource: null,
         calibrationResidualBytes: null,
         contentEncoding,
       };

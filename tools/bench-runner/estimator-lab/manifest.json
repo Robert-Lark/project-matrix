@@ -1,9 +1,11 @@
 {
   "kind": "pm-estimator-lab-evidence",
-  "purpose": "The measured evidence behind ADR-0001 addendum O's estimator decision (bench-instrumentation-dilution): the exact Cloudflare-served bodies the candidate estimators were computed over, so the decision table re-derives offline forever — the live pages will drift, these bytes will not.",
+  "purpose": "The measured evidence behind ADR-0001 addendum O's estimator decision (bench-instrumentation-dilution): the exact Cloudflare-served bodies the candidate estimators were computed over, so the decision table re-derives offline forever \u2014 the live pages will drift, these bytes will not.",
   "fetched": "2026-08-15",
   "origin": "https://pm-front.robresearch87.workers.dev",
-  "fetchHeaders": { "accept-encoding": "br" },
+  "fetchHeaders": {
+    "accept-encoding": "br"
+  },
   "bodies": [
     {
       "file": "bodies/astro-editorial.br",
@@ -39,7 +41,18 @@
       "wireBytes": 1351,
       "sha256": "a912159a241631be89e2c852e6fcf3e44e6ac492b0fcc48d963d4cc8f4339405",
       "note": "probe B's external ground truth: the same bytes inlined must attribute close to this wire cost"
+    },
+    {
+      "file": "bodies/vanilla-editorial.zst",
+      "path": "/vanilla/editorial/",
+      "wireBytes": 5020,
+      "sha256": "06b5a74a6fa3781ad68fbe90ee7679e61286543f47423c5c7aff1bcff8057acd",
+      "fetched": "2026-08-16",
+      "fetchHeaders": {
+        "accept-encoding": "zstd"
+      },
+      "note": "the zstd wire Chromium actually negotiates (the br bodies above are what br-only clients get) \u2014 zstd level 2 reproduces it within +4 B / 0.08%; behind ADR-0001 addendum O's codec coda"
     }
   ],
-  "run": "node estimator-lab.mjs (node >= 18; brotli via node:zlib; deterministic given these bodies)"
+  "run": "node estimator-lab.mjs (node >= 18 for the brotli probes; node >= 24 for any zstd re-derivation \u2014 zlib.zstdCompressSync; deterministic given these bodies). The zstd entry is CI-pinned by tools/origin-suite/suite/decompose.test.ts."
 }
