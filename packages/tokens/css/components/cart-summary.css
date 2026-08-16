@@ -17,7 +17,15 @@
  *         <span class="pm-cart__what">…</span>               title × qty, price)
  *         <span class="pm-cart__price">…</span></li>
  *     <p class="pm-cart__total"><span>Total</span>
- *        <span class="pm-cart__price" data-pm-cart-total>—</span></p>
+ *        <span class="pm-cart__price" data-pm-cart-total><span
+ *          aria-hidden="true">—</span><span class="pm-sr-only">No total
+ *          yet</span></span></p>
+ *   (the empty-total glyph is NAMED — `lib.mjs` namedGlyph, 2026-08-15:
+ *    a lone em dash announces as "em dash" or as silence, so "no total
+ *    yet" and "the total failed to render" sounded identical. This
+ *    comment is the contract the checkout build re-implements from, so
+ *    it changes in the same commit as the markup — the qty.css /
+ *    tracklist.css lesson.)
  *   </section>
  */
 

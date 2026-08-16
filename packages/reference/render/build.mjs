@@ -44,8 +44,15 @@ const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
  */
 export const PDP_MASTERS = {
   "": "the rich path — multi-format, priced, full gallery (the featured release)",
-  "single-format": "no <fieldset>; a <dt>Format</dt> pair joins the meta list",
-  unpriced: "em-dash amount · 'none for sale' · the CTA disabled",
+  // Since ADR-0008 addendum A cut the format radio group, the multi/single
+  // axis is a CONTENT difference, not a structural one: every master renders
+  // the same <dt>Format</dt> pair, and this one carries a single component
+  // where the rich path lists several, "; " separated (lib.mjs
+  // formatComposition). `pdpRenderClass` still models the axis for exactly
+  // that reason — a one-component composition is the branch 439 of the
+  // crate's 500 releases take.
+  "single-format": "one format component in the meta list's Format pair",
+  unpriced: "named em-dash amount · 'none for sale' · the CTA disabled",
   "one-image": "the thumb <ul> is omitted entirely",
 };
 

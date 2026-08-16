@@ -55,8 +55,11 @@
 }
 
 /* Zoomed state rides the button's aria-pressed (state off native attributes,
-   never JS classes — ADR-0003 §5); the transform is compositor-only and
-   collapses under reduced motion via the semantic gate. */
+   never JS classes — ADR-0003 §5); compositor-only, and it collapses under
+   reduced motion via the semantic gate. EVERY PARADIGM OWES THE TOGGLE:
+   `aria-pressed` is not CSS-settable, so this rule alone renders a button
+   that announces a state it can never enter (WCAG 4.1.2 — what vanilla
+   shipped until 2026-08-15). Zoom survives a thumb switch by design. */
 .pm-gallery__main {
   transition: transform var(--motion-base) var(--motion-ease); /* compositor-only */
 }
@@ -86,8 +89,17 @@
   outline-offset: var(--focus-offset);
 }
 
+/* Thumbs WRAP. Unwrapped, the strip is one flex row that can never be
+   narrower than its content, and a grid item's default `min-width: auto` then
+   grows the gallery column to match — pushing the DOCUMENT into horizontal
+   scrolling, which WCAG 1.4.10 forbids at 320 px. Four 72 px thumbs plus gaps
+   need 312 px in a 280 px column, and 316 of the crate's 500 releases carry
+   four or more images. Wrapping rather than scrolling: a scroll container
+   would need its own focus stop, and the 72 px target size (WCAG 2.5.8) has
+   to survive either way. */
 .pm-gallery__thumbs {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-inline);
   list-style: none;
   margin: 0;
@@ -123,12 +135,6 @@
   outline-offset: var(--focus-offset);
 }
 
-/* Visually-hidden accessible-name text (thumb names, etc.) */
-.pm-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
+/* `.pm-sr-only` moved to surfaces/shell.css on 2026-08-15: a whole-system
+   utility defined in a component sheet reached only the pages that linked the
+   component (ADR-0008 addendum A §4b). */

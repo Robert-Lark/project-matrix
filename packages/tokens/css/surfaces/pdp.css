@@ -12,19 +12,32 @@
  *         <p class="pm-pdp__artist">…</p>
  *         <p class="pm-pdp__price"><span class="pm-pdp__amount">$30.00</span>
  *            <span class="pm-pdp__stock">3 for sale</span></p>
- *         [<fieldset class="pm-format">…]      (only when formats.length > 1)
  *         <div class="pm-qty">…</div>
  *         <button class="pm-button">Add to cart</button>
- *         <dl class="pm-pdp__meta">…label · catno · year · genres…</dl>
+ *         <dl class="pm-pdp__meta">…label · FORMAT · year · genres…</dl>
  *       </div>
  *     </div>
- *     <section class="pm-pdp__section">…tracklist…</section>
+ *     <section class="pm-pdp__section">
+ *       <div class="pm-pdp__scroll" role="region" aria-label="Tracklist"
+ *            tabindex="0">…tracklist…</div></section>
  *     <section class="pm-pdp__section">…notes (pm-prose)…</section>
  *     <section class="pm-pdp__section">…live-origin demonstration plaque…</section>
  *   </article>
  *
+ * There is NO format control (ADR-0008 addendum A, 2026-08-15). A Discogs
+ * `formats` array is the composition of one physical release, not a menu, and
+ * the tray carries one price and one stock count for the whole release — so
+ * the radio group this file used to document could only have been wired by
+ * inventing per-format prices. `format-switch.css` still ships, unchanged, to
+ * CHECKOUT, whose shipping-method group is a real choice; the PDP no longer
+ * links it. The composition renders in the meta list for EVERY release
+ * (`lib.mjs` formatComposition), where before only single-format releases
+ * showed a format at all.
+ *
  * Unpriced/zero-stock state (44 of the crate's 500): the amount renders an
- * em-dash, the stock line renders "none for sale", the CTA ships disabled.
+ * aria-hidden em-dash beside an sr-only "No price listed" (`lib.mjs`
+ * namedGlyph — a bare glyph is not an accessible name), the stock line renders
+ * "none for sale", the CTA ships disabled. A null year renders the same way.
  */
 
 .pm-pdp__back {
@@ -55,28 +68,12 @@
   margin-block-end: var(--space-section);
 }
 
+/* The narrow layout changes ONE thing: the two columns become one. The four
+   .pm-pdp__back rules that used to sit here were verbatim copies of the four
+   above — a paste artifact declaring the same values at the same specificity,
+   so they computed to nothing and only cost bytes on every PDP page. */
 @media (max-width: 52em) {
-  .pm-pdp__back {
-  margin: 0 0 var(--space-stack);
-  font: var(--text-small) / 1.3 var(--font-ui);
-}
-
-.pm-pdp__back a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--target-min);
-  color: var(--color-accent);
-  text-decoration: none;
-}
-
-.pm-pdp__back a:hover { text-decoration: underline; text-underline-offset: 0.25em; }
-
-.pm-pdp__back a:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
-.pm-pdp__top { grid-template-columns: 1fr; }
+  .pm-pdp__top { grid-template-columns: 1fr; }
 }
 
 .pm-pdp__buy {
@@ -137,4 +134,21 @@
 .pm-pdp__section-title {
   margin: 0 0 var(--space-stack);
   font: var(--weight-bold) var(--text-title) / 1.3 var(--font-ui);
+}
+
+/* The tracklist's scrollable region. This rule is the whole reason the
+   wrapper's `role="region" tabindex="0"` is legitimate: a table whose
+   min-content width exceeds the column — one long unbreakable track title at
+   320 px, or any title at 400% zoom — would otherwise push the DOCUMENT into
+   horizontal scrolling, which is exactly what WCAG 1.4.10 reflow forbids.
+   Contained here, the overflow scrolls inside the region, and the tabindex
+   gives a keyboard-only user the way in that a scroll container otherwise has
+   no way to offer.
+
+   The wrapper shipped from surface-design to pdp-build with NO rule anywhere
+   (the class matched 0 lines in this package), so every PDP page with a
+   tracklist gave keyboard users a focus stop on a container that could not
+   scroll, and the protection the wrapper exists for was absent. */
+.pm-pdp__scroll {
+  overflow-x: auto;
 }

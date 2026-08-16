@@ -88,6 +88,205 @@ describe("vanilla editorial equals the master textually, both snapshots (pre-mer
 });
 
 /**
+ * The PDP's version of the vanilla guard — and the one that would have caught
+ * the pdp-controls unit's whole reason for existing.
+ *
+ * The editorial guard above compares ONE page per snapshot, because editorial
+ * IS one page. The PDP is ~500, and the four committed masters cover four of
+ * the eight render classes `pdpRenderClass` can express. So this loops EVERY
+ * detail tray in both snapshots rather than only `pdpMasterIds` — 740 pages,
+ * cheap because neither renderer needs a browser, a server or an image byte,
+ * and it covers the render-class combinations the crate has and the fixture
+ * does not.
+ *
+ * Why it did not exist before: `@pm/vanilla` contributes ZERO tasks to
+ * turbo's 30 (`pnpm exec turbo run lint typecheck test --dry=json` → 75
+ * nodes, 30 with a real command, `@pm/vanilla#test`/`#typecheck` both
+ * `<NONEXISTENT>`), and no test anywhere read `renderPdpPage`. "Turbo 30/30
+ * on the final tree" had therefore never covered this variant at all, and the
+ * 740 pages matching was an UNGUARDED true statement — which by this repo's
+ * standard is the defect, not the reassurance. This guard lives in
+ * `@pm/repo-checks`, whose `test` script IS one of the 30, so it blocks a
+ * merge the way the editorial ones do.
+ *
+ * What it cannot see, recorded so nobody mistakes its scope: it compares
+ * SERVED MARKUP, JS-off. Both of the dead controls this unit repaired were
+ * dead only with JS ON — the markup was correct and identical on both sides
+ * the whole time. That blind spot is closed separately, by
+ * `tools/origin-suite/suite/pdp-controls.browser.test.ts`.
+ */
+describe("vanilla's PDP equals the master textually, every tray, both snapshots", () => {
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: renderPdpPage matches renderPdp for every detail tray`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const reference = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+      );
+      const vanilla = await import(
+        pathToFileURL(join(repoRoot, "variants", "vanilla", "render.mjs")).href
+      );
+
+      const snapshot = lib.loadSnapshot(name);
+      const details = snapshot.details as { id: number }[];
+      expect(details.length).toBeGreaterThan(0);
+
+      // `renderPdp`'s default extraDepth is 0 → depth 2, which is the depth
+      // `build.mjs` writes vanilla's pages at (/vanilla/pdp/{slug}/). Passing
+      // it explicitly on the variant side keeps the two derivations visible
+      // side by side rather than agreeing by default.
+      const mismatched: number[] = [];
+      for (const detail of details) {
+        const master = stripDelivery(reference.renderPdp(snapshot, { origin: "", id: detail.id }));
+        const variant = stripDelivery(vanilla.renderPdpPage(snapshot, detail, { depth: 2 }));
+        if (variant !== master) mismatched.push(detail.id);
+      }
+      expect(mismatched, `${mismatched.length} of ${details.length} PDP pages drifted`).toEqual([]);
+
+      // Non-vacuity: the loop above passes trivially if either renderer
+      // returns "" for everything, and it would have passed identically on
+      // the tree that shipped two dead controls. Pin that real PDP markup was
+      // compared, and that the format CONTROL is gone from both sides while
+      // the format DATA survives on both (ADR-0008 addendum A).
+      const sample = stripDelivery(
+        vanilla.renderPdpPage(snapshot, details[0], { depth: 2 }),
+      );
+      expect(sample).toContain("pm-pdp");
+      expect(sample).toContain("pm-gallery__zoom");
+      expect(sample).toContain("<dt>Format</dt>");
+      expect(sample).not.toContain("pm-format");
+    });
+  }
+
+  /**
+   * The STYLESHEET LIST, which `stripDelivery` deliberately throws away.
+   *
+   * That strip is right for markup — the head is a delivery freedom — but it
+   * means nothing in the repo compared which sheets a variant links against
+   * which sheets the master links, and this unit changed exactly that axis:
+   * `components/format-switch.css` left the PDP's list when the control was
+   * cut. Had `pdp.mjs` dropped it and `variants/vanilla/render.mjs` kept it,
+   * every check would have stayed green while the variant shipped a sheet of
+   * dead rules — or, in the other direction, shipped a page missing the rules
+   * its markup depends on, which is the `.pm-sr-only` failure mode one level
+   * up.
+   *
+   * Compared by the tail after `css/`, because the two sides legitimately
+   * differ in how they REACH the package: the master walks up to
+   * `node_modules/@pm/tokens/css/…`, the variant serves its own copied tree at
+   * `assets/pm/css/…`. Order is compared too — cascade order is a rendering
+   * property, not a freedom.
+   */
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: vanilla's PDP links exactly the master's stylesheets, in order`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const reference = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+      );
+      const vanilla = await import(
+        pathToFileURL(join(repoRoot, "variants", "vanilla", "render.mjs")).href
+      );
+      const snapshot = lib.loadSnapshot(name);
+      const detail = (snapshot.details as { id: number }[])[0]!;
+
+      const sheets = (html: string): string[] =>
+        [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) => {
+          const at = m[1]!.lastIndexOf("/css/");
+          if (at === -1) throw new Error(`stylesheet href outside the css tree: ${m[1]}`);
+          return m[1]!.slice(at + 1);
+        });
+
+      const master = sheets(reference.renderPdp(snapshot, { origin: "", id: detail.id }));
+      const variant = sheets(vanilla.renderPdpPage(snapshot, detail, { depth: 2 }));
+      expect(master.length, "the master links no stylesheets").toBeGreaterThan(5);
+      expect(variant).toEqual(master);
+      // The cut control's sheet is gone from BOTH, and the guard would notice
+      // if it returned to either (ADR-0008 addendum A).
+      expect(master).not.toContain("css/components/format-switch.css");
+      expect(variant).not.toContain("css/components/format-switch.css");
+    });
+  }
+
+  /**
+   * The masters are a SUBSET of what the loop above covers, but they are the
+   * only PDP pages the browser drift gate ever opens — so their four render
+   * classes are pinned by id here too. A master silently resolving to a
+   * release of the wrong class would leave the gate comparing four pages of
+   * the same shape while still passing.
+   */
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: each committed PDP master still renders its own class`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const snapshot = lib.loadSnapshot(name);
+      const ids: Record<string, number> = lib.pdpMasterIds(snapshot);
+      const classes = Object.fromEntries(
+        Object.entries(ids).map(([slot, id]) => [
+          slot,
+          lib.pdpRenderClassKey(lib.detailById(snapshot, id)),
+        ]),
+      );
+      expect(new Set(Object.values(classes)).size).toBe(Object.keys(ids).length);
+      expect(classes[""]).toContain("multi/");
+      expect(classes["single-format"]).toBe("single/priced/gallery");
+      expect(classes["unpriced"]).toBe("single/unpriced/gallery");
+      expect(classes["one-image"]).toBe("single/priced/one-image");
+    });
+  }
+
+  /**
+   * `formatComposition` and capture-time `normalize.ts` build a format string
+   * from the same tray by the same rule, in two different repos' worth of
+   * code — the "second derivation is a second opinion" class. For a single
+   * component of quantity 1 they must produce the IDENTICAL string (that
+   * equality is why cutting the format control left 309 of the crate's 500
+   * PDP meta lines byte-unchanged while 191 moved — 439 is the single-format
+   * COUNT, a different number, and an earlier draft of this comment confused
+   * them), and for quantity > 1 the composition must differ by exactly the
+   * prefix `format` drops.
+   */
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: formatComposition agrees with the tray's own format field`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const snapshot = lib.loadSnapshot(name);
+      type Detail = { format: string; formats: { name: string; qty: number }[] };
+      const singles = (snapshot.details as Detail[]).filter((d) => d.formats.length === 1);
+      expect(singles.length).toBeGreaterThan(0);
+      let plain = 0;
+      let quantified = 0;
+      for (const d of singles) {
+        const composed = lib.formatComposition(d.formats);
+        if (d.formats[0]!.qty > 1) {
+          expect(composed).toBe(`${d.formats[0]!.qty} × ${d.format}`);
+          quantified += 1;
+        } else {
+          expect(composed).toBe(d.format);
+          plain += 1;
+        }
+      }
+      // NOT `plain + quantified === singles.length` — every iteration
+      // increments exactly one counter, so that holds whatever
+      // formatComposition returns. Assert the COVERAGE each snapshot actually
+      // provides instead: both arms are exercised on the crate, and the
+      // fixture provably exercises only the plain one, which is why the crate
+      // leg is the load-bearing half of this pair.
+      expect(plain).toBeGreaterThan(0);
+      if (name === "crate") {
+        expect(quantified, "the crate must exercise the N × arm").toBe(130);
+      } else {
+        expect(quantified, "the fixture has no single-format release with qty > 1").toBe(0);
+      }
+    });
+  }
+});
+
+/**
  * htmx's version of the same guard (editorial-build slice E) — the vanilla
  * MECHANISM exactly (byte-strict after the delivery strip), because the
  * renderer is the same species: plain template literals mirroring the

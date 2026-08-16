@@ -11,7 +11,7 @@
  * paradigm adds novalidate at hydration when its own validation takes over
  * (verify-slice, conformance lens).
  */
-import { page } from "./shell.mjs";
+import { namedGlyph, page } from "./shell.mjs";
 
 function field({ id, label, type = "text", autocomplete, inputmode, hint, span = "" }) {
   const hintId = hint ? `${id}-hint` : null;
@@ -90,7 +90,7 @@ export function renderCheckout({ extraDepth = 0 } = {}) {
             <h2 class="pm-cart__title">Order summary</h2>
             <p class="pm-cart__empty">Your cart is empty — items appear here as you add them from the store.</p>
             <ul class="pm-cart__lines" role="list"></ul>
-            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>—</span></p>
+            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>${namedGlyph("—", "No total yet")}</span></p>
           </section>
         </div>
       </div>`;

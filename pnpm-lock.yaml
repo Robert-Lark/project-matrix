@@ -105,6 +105,9 @@ importers:
       '@pm/measurement':
         specifier: workspace:*
         version: link:../../packages/measurement
+      '@pm/switcher':
+        specifier: workspace:*
+        version: link:../../packages/switcher
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.2
@@ -203,6 +206,9 @@ importers:
       '@pm/drift-gate':
         specifier: workspace:*
         version: link:../drift-gate
+      '@pm/switcher':
+        specifier: workspace:*
+        version: link:../../packages/switcher
       '@types/fontkit':
         specifier: ^2.0.9
         version: 2.0.9
@@ -579,6 +585,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/tokens
     devDependencies:
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       wrangler:
         specifier: ^4.110.0
         version: 4.110.0(@cloudflare/workers-types@5.20260718.1)

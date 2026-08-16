@@ -23,7 +23,11 @@
         Array.isArray(cart.items) &&
         cart.items.every(
           (i) => i && Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty >= 1,
-        )
+        ) &&
+        // One entry per release id (contract). Unchecked until 2026-08-15,
+        // which let a duplicate read as valid and then be counted differently
+        // by different surfaces.
+        new Set(cart.items.map((i) => i.id)).size === cart.items.length
       ) {
         return cart;
       }
@@ -79,6 +83,28 @@
         if (i === index) other.setAttribute("aria-current", "true");
         else other.removeAttribute("aria-current");
       }
+    });
+  }
+
+  /* ── Zoom ──────────────────────────────────────────────────────────────
+     A real toggle button. State lives on `aria-pressed` — a native attribute
+     that is BOTH the accessible state and the selector gallery.css scales the
+     stage from, so a visual state cannot exist without the programmatic one
+     (ADR-0003 §5, the same rule the stepper and the thumbs follow).
+
+     This shipped INERT on 500 deployed pages: the markup announced "Zoom,
+     toggle button, not pressed" and nothing anywhere wrote the attribute
+     (`aria-pressed` is not CSS-settable), so pressing it did nothing forever
+     — WCAG 4.1.2 name/role/value. Zoom deliberately survives a thumb switch:
+     the visitor asked to look closely, and swapping the image does not
+     withdraw that request. */
+  const zoom = document.querySelector(".pm-gallery__zoom");
+  if (zoom) {
+    zoom.addEventListener("click", () => {
+      zoom.setAttribute(
+        "aria-pressed",
+        zoom.getAttribute("aria-pressed") === "true" ? "false" : "true",
+      );
     });
   }
 

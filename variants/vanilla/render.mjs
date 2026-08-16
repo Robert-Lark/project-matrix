@@ -41,6 +41,29 @@ function metaLine(summary) {
   return summary.year == null ? summary.format : `${summary.format} · ${summary.year}`;
 }
 
+/** Canonical format composition (lib.mjs rules of record): every component of
+ *  the release in tray order, "N × " where the tray records more than one of
+ *  a medium, components joined with "; ". A Discogs `formats` array is what
+ *  is IN the package, not a menu — which is why the PDP renders it as data
+ *  and carries no format control (ADR-0008 addendum A). */
+function formatComposition(formats) {
+  return formats
+    .map((f) => {
+      const body =
+        f.descriptions.length > 0 ? `${f.name}, ${f.descriptions.join(", ")}` : f.name;
+      return f.qty > 1 ? `${f.qty} × ${body}` : body;
+    })
+    .join("; ");
+}
+
+/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "—"
+ *  announces as "em dash" or as nothing, making absent data and a rendering
+ *  fault sound alike — so the glyph is hidden and a real phrase rides beside
+ *  it. Both arguments are authored literals, never tray data. */
+function namedGlyph(glyph, name) {
+  return `<span aria-hidden="true">${glyph}</span><span class="pm-sr-only">${name}</span>`;
+}
+
 /* ── The per-snapshot essays — committed CONTENT, re-typed verbatim from the
       contract of record (packages/reference/render/editorial.mjs). Prose
       narrates allusively; every precise number interpolates tray fields;
@@ -99,7 +122,6 @@ const PDP_CSS = [
   "components/footer.css",
   "components/button.css",
   "components/gallery.css",
-  "components/format-switch.css",
   "components/qty.css",
   "components/tracklist.css",
   "components/prose.css",
@@ -155,7 +177,7 @@ function releaseCard(summary) {
     <p class="pm-release-card__artist">${esc(summary.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(summary))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? "—"}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(summary.numForSale))}</span>
     </div>
   </div>
@@ -306,27 +328,6 @@ function galleryBlock(d) {
       </div>`;
 }
 
-function formatBlock(d) {
-  // Single-format (439/500 in the crate) renders NO fieldset; the format
-  // instead joins the meta list as a <dt>/<dd> pair below.
-  if (d.formats.length <= 1) return "";
-  return `
-        <fieldset class="pm-format">
-          <legend class="pm-format__legend">Format</legend>
-          ${d.formats
-            .map((f, i) => {
-              const label = [f.name, f.qty > 1 ? `${f.qty}×` : "", ...(f.descriptions ?? [])]
-                .filter(Boolean)
-                .join(" · ");
-              return `<label class="pm-format__option">
-            <input class="pm-format__input" type="radio" name="format" value="${i}"${i === 0 ? " checked" : ""}>
-            <span class="pm-format__label">${esc(label)}</span>
-          </label>`;
-            })
-            .join("\n          ")}
-        </fieldset>`;
-}
-
 function notesBlock(d) {
   if (!d.notes) return "";
   const paragraphs = d.notes
@@ -375,7 +376,6 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
   const d = detail;
   const price = formatPrice(d.priceFrom);
   const sold = d.numForSale === 0;
-  const singleFormat = d.formats.length <= 1;
   // The cart enhancement's data hook — delivery, not contract, so the
   // canonical DOM carries no extra attribute and vanilla stays the NO_NOISE
   // control. `<` escaped so a tray string cannot close the element early.
@@ -406,7 +406,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
           <div class="pm-pdp__buy">
             <h1 class="pm-pdp__title">${esc(d.title)}</h1>
             <p class="pm-pdp__artist">${esc(d.artist)}</p>
-            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? "—"}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>${formatBlock(d)}
+            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("—", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
             <div class="pm-qty">
               <label class="pm-qty__label" for="qty">Quantity</label>
               <div class="pm-qty__group">
@@ -418,7 +418,8 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
             <div><button class="pm-button" type="button"${sold ? " disabled" : ""}>${sold ? "None for sale" : "Add to cart"}</button></div>
             <dl class="pm-pdp__meta">
               <dt>Label</dt><dd>${esc(d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; "))}</dd>
-              ${singleFormat ? `<dt>Format</dt><dd>${esc(d.format)}</dd>\n              ` : ""}<dt>Year</dt><dd>${d.year ?? "—"}</dd>
+              <dt>Format</dt><dd>${esc(formatComposition(d.formats))}</dd>
+              <dt>Year</dt><dd>${d.year ?? namedGlyph("—", "No year listed")}</dd>
               <dt>Genre</dt><dd>${esc([...d.genres, ...d.styles].join(", "))}</dd>
             </dl>
           </div>

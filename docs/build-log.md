@@ -3456,3 +3456,247 @@ plural, no owner) is resolved: **the PLP owns it.** Components genuinely
 multiply there, and landing it here would move astro's and Next's LCP for a
 reason that is not interactivity — confounding the one comparison this surface
 exists to make.
+
+---
+
+## Phase 12 — Two controls that did nothing (2026-08-15)
+
+The PDP had shipped. It served 200 on ~500 URLs in production, it matched all
+four masters, and turbo was 30/30 on the tree that produced it. Two of its four
+advertised interactions did nothing at all.
+
+That is the phase in one sentence, and the interesting part is not the bug. It
+is that **every single check this repo owns was green while it was true.** The
+drift gate compared the served markup and found it identical, correctly — the
+markup *was* identical, and correct. The masters regenerated and matched. The
+identity guards passed. What none of them could ask was whether pressing the
+button did anything, because the gate runs **JS-off by construction** (that is
+the right choice for a rendering benchmark) and because `@pm/vanilla`
+contributes **zero package tasks** to turbo's 30, so nothing pre-merge had ever
+read `pdp.js` at all.
+
+### The decision, and where it went against its instructions
+
+The handoff framed the unit as a binary per control — make them real, or cut
+them explicitly — and recommended: take the cut for zoom if you must, **never**
+for format, because "a store that takes the wrong format is a correctness bug".
+
+Zoom was easy and the recommendation held: five lines, the stylesheet already
+implemented the pressed state, and `aria-pressed` is not CSS-settable, so the
+button had been announcing a state it could never enter. WCAG 4.1.2, live, on
+the site that ships an accessibility exhibit.
+
+Format went the other way, and it is worth being precise about why, because the
+argument came from data nobody had looked at. **A Discogs `formats` array is
+not a menu.** It is the composition of one physical release — what is in the
+package. The repo says so in its own sources: the schema types `format` as the
+*primary* label, capture builds it from `formats[0]`, and `priceFrom` and
+`numForSale` are one apiece **per release**. Crate release 896191 is a single
+$30.00 product whose three entries are two vinyl variants *and* a CD. Thirty-
+nine crate releases carry a component literally named **"All Media"**, which is
+Discogs' marker for exactly this.
+
+So there was no wrong format to take an order for. There was no choice at all.
+Wiring the group as specified — price, stock, meta and cart payload following
+the selection — would have required **inventing a price per component**, which
+is a fabricated number sitting beside a real one on a site whose whole claim is
+that nothing publishes without a receipt. That is worse than a dead control,
+and it is the precise shape of rigging this project exists to be unable to do.
+
+The counter-argument the handoff raised was that cutting it guts the PDP's
+claim to be where interactivity is genuine. Counting says otherwise: gallery
+switch, zoom, quantity and add-to-cart remain, and both of the surface's
+**planned** interactions are untouched — `pdp-gallery-switch` and
+`pdp-add-to-cart`. Planned, not registered: the bench registry holds `none`,
+`body-click` and `editorial-add-to-cart`, and neither PDP id exists in the
+codebase yet, so the cut removed nothing the instrument was going to measure. And the cut removes nothing but the
+lie: the composition now renders as data in the meta list for *every* release,
+where before only single-format ones showed a format at all. The 61
+multi-format crate releases gain information they never had; the 130 whose tray
+records a quantity finally show it. For a single component of quantity 1 the
+composition reproduces the tray's own `format` string byte-for-byte, which is
+why 309 of 500 meta lines did not move while 191 did — and that equality is
+now asserted rather than assumed, because two derivations of one string is two
+opinions. (439 is the single-format COUNT and it is a different number; 130 of
+those 439 gain a quantity prefix. This paragraph said 439 twice, three lines
+below the 130 that refutes it.)
+
+### The guards, and the one that was quietly worthless
+
+Four landed, and all four were sabotage-proven against the tree that actually
+shipped rather than against a hypothetical:
+
+- The **controls-wired** repo-check — every script-only state attribute the
+  master renders must be written by the enhancement — fails **nine ways**
+  against the `pdp.js` on `main`. It is in the 30, so it blocks a merge.
+- The **PDP identity guard** compares both renderers over **every** detail tray
+  in **both** snapshots: 740 pages in ~90 ms. Sabotaged, it reports 1 of 240
+  fixture and 152 of 500 crate.
+- The **bare-glyph** guard finds **seven** instances in the masters on `main`.
+- The **JS-ON browser leg**, which did not exist, headlined by a deliberately
+  generic sweep: no button may change nothing when pressed.
+
+It also found something bigger than what it was written for, and only against
+a **crate-seeded** plane. The gallery's thumb strip was a flex row with no
+wrap, so it could never be narrower than its content; a grid item's default
+`min-width: auto` then grew the gallery column to match and pushed the whole
+document sideways. Four 72 px thumbs plus gaps want 312 px in a 280 px column,
+and **316 of the crate's 500 releases carry four or more images**. That is
+WCAG 1.4.10 failing on the majority of deployed PDP pages, and it had survived
+everything — because the fixture's probe release has **two** images, so CI had
+never once reached the case. One line of `flex-wrap: wrap` takes the document's
+scrollWidth at 320 px from 332 to 320 on a four-image release and from 412 to
+320 on a five-image one. The leg now probes the *widest* gallery in whatever
+snapshot is served, and fails closed if that is under four images. **The
+fixture is not a scale model of the crate**, and a test pointed at "some
+release with a gallery" was proving nothing.
+
+That last one is the phase's second lesson, and it was self-inflicted. Its
+first draft compared `document.body.innerHTML` before and after each click —
+and it **passed against the build with the dead Zoom button**. The injected
+chrome's HUD writes a live LCP readout after the first interaction, so *every*
+click changed the body. Measured, not guessed: the first difference was
+`data-pm-hud-live="LCP"` going from "–" to "60ms". A guard written to catch
+this exact class of defect was itself vacuous, in this exact class of way,
+against this exact defect.
+
+The repair was to scope the probe to `.pm-page` — the same boundary the drift
+normalizer draws, for the same reason — and to add the assertion that should
+have been there first: **the probe must be still when nothing is pressed.**
+With that, the sweep immediately produced a *second* false positive, flagging a
+decrement button clicked at its input's minimum. That is a control correctly
+refusing, not an inert one, so the sweep now primes each control before probing
+it — number inputs to mid-range, an exclusive selector's siblings switched
+first — with both rules stated in terms of what the markup is rather than which
+control it is, so they keep working for controls nobody has written yet.
+
+### The pass caught a regression this phase INTRODUCED
+
+The most useful thing the adversarial pass did was not confirm the work. It
+found a defect created by the repair.
+
+`.pm-sr-only` — the class that makes a named glyph *hidden* — lived in
+`components/gallery.css`, and **only the PDP links that sheet.** The moment
+the glyph repair put visually-hidden text on the PLP master (five instances)
+and checkout's cart total, those pages had no rule to hide it with: text
+written exclusively for screen readers would have rendered as visible
+"— No price listed". A repo-wide grep would have said the class existed. It
+did. It just did not exist on the page using it.
+
+The utility moved to `surfaces/shell.css`, which every surface links, and the
+general guard is now `master-styles-resolve`: **every `pm-` class a master
+renders must resolve to a rule in a sheet that master links.** That is the
+`pm-pdp__scroll` defect made impossible, and it is sabotage-proven against
+both — remove the scroll rule and four masters fail; rename the utility and
+six do. Its own first draft got two things wrong that are worth keeping on the
+record: it matched class names with `String.includes`, so `.pm-sr-only` was
+"defined" by `.pm-sr-only-MOVED` and the sabotage proof PASSED; and it matched
+inside CSS comments, where this package names classes constantly.
+
+The same pass also found that the INSTRUMENT still advertised the cut control
+— `SURFACE_CONTROLS.pdp.proves` read "gallery, cart, quantity, format" and is
+served into every measured page — and that all three new guards were
+vanilla-hardcoded, invisible today and worthless the moment a second PDP
+variant lands. The browser leg now iterates the registry; the pre-merge guard
+fails outright if a live variant has no registered enhancement.
+
+### What it cost, in bytes, because a published cell moved
+
+Two of these changes land on pages whose numbers are published, so they are
+measured rather than waved at. The cart contract's uniqueness clause costs
+**+262–294 B raw / +80–105 B brotli-q11** across the six cart files; vanilla's
+`cart.js` ships raw and goes 1,122 → 1,205 B brotli (+7.4%). Moving the
+hidden-text utility into the shell stylesheet puts **+629 B raw / +243 B
+brotli on EVERY page**, editorial included — these sheets are copied to the
+wire without a minifier, so a contract comment is real bytes on a real
+connection, and the comments were trimmed to their load-bearing form before
+the number was taken. The editorial re-run the ruler unit already owes
+re-measures all of it.
+
+### Swept up, because it is the same class
+
+`CART_CONTRACT` had always *stated* "one entry per release id" and had never
+*checked* it, so a duplicate passed validation and the two implementations then
+disagreed about it: one add gave **3** on editorial (which bumps the first
+match) and **4** on the PDP (which bumps every match). No writer here can
+produce that value, which is exactly why it survived — an unguarded true
+statement, the same shape as the 740 pages that matched. The rule now checks
+what it always claimed, in all seven implementations.
+
+And the bare glyphs: `${price ?? "—"}` and `${d.year ?? "—"}`. A lone em dash
+announces as "em dash", or at the common verbosity default as silence, so
+"nothing for sale" and "the price failed to render" become the same
+experience — the reasoning the tracklist had applied to empty duration cells
+since surface-design, never applied to its neighbours. The year arm was
+invisible to every check that exists because all four resolved masters have
+years.
+
+Decisions of record: **ADR-0008 addendum A**, which also amends ADR-0002's
+propagated interaction guardrail. The next unit is unchanged:
+`bench-instrumentation-dilution` — the ruler — which still hard-blocks any PDP
+byte publication.
+
+## Phase 13 — The ruler stops flattering the house (2026-08-15)
+
+This unit's entire product is a more honest number, and its failure mode is
+publishing a differently-wrong one with more confidence. The defect it
+existed to fix was already stated on the methodology page: the byte ruler
+split the document's compressed transfer by each part's share of the
+*uncompressed* bytes, which is exact only if every part compresses at the
+document's average ratio. The injected chrome — 62.6% of the astro page's
+uncompressed bytes, and the most compressible thing on it — violated that
+hardest, so the instrument over-charged itself and quietly discounted every
+cell it measured, most of all the small JavaScript numbers this site leads
+with. That is the shape a hostile reader calls rigging, and it was visible
+in the site's own receipts: astro's published cell moved 0.42 → 0.37 KB
+between batches when only the chrome had grown.
+
+### The estimator was the unit's open question, and measurement closed it
+
+The handoff recorded the fix as unsettled between two methods that
+disagreed by a third (34–47%). Neither won. The settled rule: transfer size
+stays the authority on the total; each part's share is its **leave-one-out
+marginal** — what the compressed document loses when exactly that part is
+removed — computed at the brotli quality that reproduces the observed wire
+body, re-derived per document and recorded per run with its residual. Two
+probes decided it, both built from the live plane's own pages: swap the
+chrome on a fixed page (the recorded defect's shape) and the old rule moves
+the JS cell 14.1% while leave-one-out moves it 0.3%; inline a copy of
+vanilla's real `cart.js` and the old rule reads 40.5% below what the
+identical file costs served externally, while leave-one-out lands within
+2.2%. The runner-up mattered too: the "fix as written" (compress each
+region alone, normalise) carries a measured small-region bias — the astro
+bundle compresses 2.23× alone against 3.68× in context — and lost on both
+probes. Shapley attribution was computed and rejected: no better, three
+times the work, game theory where a marginal will do. And the
+local-vs-Cloudflare compressor mismatch the ticket carried as an open risk
+collapsed under calibration — q4 reproduces the Cloudflare wire within
+0.1–0.3% on all three delivery shapes. The old rule's under-report, with
+the estimator settled: **40.5–47.5%** on the measured cells.
+
+### The two holes addendum N filed are closed by mechanism, not memory
+
+The chrome constant used to describe whatever fragment was serving when
+the probe ran, while the build regenerated a different one from the
+receipts — its own `populated` gate structurally re-incurred the staleness
+it existed to prevent. The probe now records the fragment's hash and full
+render context; the front build re-renders the fragment it will actually
+ship — the real renderer against the very lab bundle the Worker imports —
+and refuses to build when the hashes differ. And nothing used to tie a
+receipt's commit SHA to the code a remote plane was serving: the plane now
+attests its build at `/_pm/build.json` (re-stamped at both serving paths,
+because a turbo cache replay carries the SHA of the commit that built it),
+and the runner records the attestation beside the local pin and refuses a
+cross-tree batch or probe unless the escape is passed explicitly — in
+which case the artifact shows the disagreement in plain sight. The refusal
+was proven against the real plane, which predates its own attestation and
+is refused by name.
+
+Every committed receipt is invalidated by the ruler change; the cells stay
+live behind the methodology page's floors caveat (caveat, never pull), and
+the third batch re-run — post-merge, on a quiet machine, one nonce, ~7
+minutes — replaces them with numbers that carry their own attribution
+record and origin attestation by construction.
+
+Decisions of record: **ADR-0001 addendum O/P/Q**, with addendum G's
+attribution rule superseded in place.

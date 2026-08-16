@@ -48,6 +48,13 @@ function metaLine(release) {
   return release.year == null ? release.format : `${release.format} · ${release.year}`;
 }
 
+/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "—"
+ *  announces as "em dash" or as nothing, so the glyph is hidden and a real
+ *  phrase rides beside it. Both arguments are authored literals. */
+function namedGlyph(glyph, name) {
+  return `<span aria-hidden="true">${glyph}</span><span class="pm-sr-only">${name}</span>`;
+}
+
 /* ── The per-snapshot essays — committed CONTENT, re-typed verbatim from the
       contract of record (packages/reference/render/editorial.mjs). Prose
       narrates allusively; every precise number interpolates tray fields;
@@ -188,7 +195,7 @@ function releaseCard(release) {
     <p class="pm-release-card__artist">${esc(release.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(release))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? "—"}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(release.numForSale))}</span>
     </div>
   </div>

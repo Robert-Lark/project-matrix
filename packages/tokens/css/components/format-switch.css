@@ -1,17 +1,25 @@
 /*
- * Component module — format switch. The PDP's format selection: a real radio
- * group styled as a segmented control. Works JS-off (native radios); state
- * styles off :checked, never classes.
+ * Component module — a radio group styled as a segmented control. Works
+ * JS-off (native radios); state styles off :checked, never classes.
  *
- * Canonical markup (RENDERED ONLY WHEN formats.length > 1 — 439/500 crate
- * releases are single-format, tool-derived; at n=1 the format renders as a
- * static meta line instead, no control):
+ * ITS ONE CONSUMER IS CHECKOUT'S SHIPPING METHOD (checkout.mjs). The PDP used
+ * to render a FORMAT group from this module and no longer does — ADR-0008
+ * addendum A, 2026-08-15. A Discogs `formats` array is the composition of one
+ * physical release (what is in the package), not a menu of things to buy: the
+ * tray carries one `priceFrom` and one `numForSale` for the whole release, so
+ * selecting a "format" could change nothing without inventing a price. The
+ * group shipped unwired on 500 deployed pages and the cut, not the wiring, is
+ * what makes the page honest. The class name is kept — renaming a component
+ * three paradigms have not yet re-implemented buys nothing, and shipping's is
+ * a REAL choice, which is what this control is for.
+ *
+ * Canonical markup:
  *   <fieldset class="pm-format">
- *     <legend class="pm-format__legend">Format</legend>
+ *     <legend class="pm-format__legend">Shipping method</legend>
  *     <label class="pm-format__option">
- *       <input class="pm-format__input" type="radio" name="format"
- *              value="0" checked>
- *       <span class="pm-format__label">Vinyl · 2×LP</span>
+ *       <input class="pm-format__input" type="radio" name="shipping"
+ *              value="standard" checked>
+ *       <span class="pm-format__label">Standard — free, 5–8 days</span>
  *     </label> …
  *   </fieldset>
  *

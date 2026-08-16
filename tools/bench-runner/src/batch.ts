@@ -28,6 +28,7 @@ import {
   type ApplyResult,
 } from "./collect";
 import { commitPin } from "./git";
+import { fetchOriginCommit, verifyOriginCommit } from "./origin-commit";
 import { median, RECEIPT_VERSION, type ReceiptT, type RunSampleT } from "./receipt";
 import type { CpuSource } from "./cpu";
 import { UNAVAILABLE_CPU_SOURCE } from "./cpu";
@@ -53,6 +54,14 @@ export interface BatchSpec {
   cpuSource?: CpuSource;
   /** Repo root for the commit pin. */
   repoRoot: string;
+  /**
+   * Explicit escape for DELIBERATE cross-tree measurement (ADR-0001
+   * addendum N hole 2): without it the batch refuses an origin whose
+   * attested build SHA disagrees with the local pin, or one that does not
+   * attest at all. With it, the receipt records the disagreement (or the
+   * null) in plain sight.
+   */
+  allowCrossTree?: boolean;
 }
 
 type ColumnKey = "cold" | "warm";
@@ -162,6 +171,16 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
   const nonce = spec.runNonce ?? `bench-${Date.now().toString(36)}`;
   const origin = spec.origin.replace(/\/$/, "");
   const cpu = spec.cpuSource ?? UNAVAILABLE_CPU_SOURCE;
+  const commit = commitPin(spec.repoRoot);
+  // Origin provenance BEFORE any browser launches (ADR-0001 addendum N
+  // hole 2): the receipt must name the tree the plane was serving, not just
+  // the tree that drove the browser — and a disagreement refuses the batch
+  // unless the operator escapes it explicitly.
+  const originCommit = await verifyOriginCommit(
+    origin,
+    commit.sha,
+    spec.allowCrossTree === true,
+  );
 
   let browser: Browser;
   try {
@@ -256,12 +275,38 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
     });
 
     if (appliedResult === null) throw new Error("batch measured nothing");
+    // The attestation is re-fetched AFTER the last run, UNCONDITIONALLY:
+    // push-to-main deploys the plane, so a deploy landing mid-batch would
+    // leave early runs measuring one tree and late runs another, behind a
+    // receipt whose start-of-batch originCommit still matches the local pin
+    // (verify-slice, this unit). Any transition refuses — including
+    // null→non-null, which is exactly what a deploy that ADDS attestation
+    // looks like from a batch started against a pre-attestation plane. Only
+    // null→null stays genuinely undetectable, and the receipt already says
+    // so (originCommit: null). The cross-tree escape covers a DELIBERATE
+    // tree mismatch, never a plane that moved under the measurement.
+    {
+      const after = await fetchOriginCommit(origin);
+      const label = (c: { sha: string } | null) => (c ? c.sha.slice(0, 12) : "unattested");
+      const moved =
+        (originCommit === null) !== (after === null) ||
+        (originCommit !== null &&
+          after !== null &&
+          (after.sha !== originCommit.sha || after.dirty !== originCommit.dirty));
+      if (moved) {
+        throw new Error(
+          `the origin's attested build changed mid-batch (${label(originCommit)} → ${label(after)}) — ` +
+            `the runs straddle a deploy and the receipt would mix two planes; re-run in a quiet deploy window`,
+        );
+      }
+    }
     return {
       kind: "pm-bench-receipt",
       receiptVersion: RECEIPT_VERSION,
       date: new Date().toISOString(),
-      commit: commitPin(spec.repoRoot),
+      commit,
       origin,
+      originCommit,
       runLocation:
         spec.runLocation ??
         { label: "local-dev", source: "unpinned developer machine (the pinned cloud runner + two-location protocol activate downstream, ADR-0001 §9)" },
@@ -293,7 +338,7 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
       },
       methodNotes: [
         "settle is signal-based, never a fixed window: the interaction byte boundary waits for the network to go idle and the vitals-beacon flush waits for delivery to quiesce, each bounded by harness.settleMs so an absent signal surfaces as absent bytes / a null vital rather than hanging (ADR-0001 §9; tools/drift-gate/README.md 'wait for the real signal, never a proxy'). Any post-load idle work (e.g. Qwik's preloader) is awaited onto the INITIAL byte side before the boundary snapshot, so the initial/interaction split is deterministic across runs.",
-        "document bytes are decomposed (ADR-0001 §3 addendum): the single compressed document transferSize is attributed to html/js/data and to STRIPPED instrumentation markup by uncompressed content share — inline executable script counts as JS (so an inlined bundle is not reported as 0 KB), inline non-executable script (application/json, qwik/json, …) counts as data, and the injected chrome markup + its /_pm/ tags are stripped like the /_pm/ subresource payloads (ADR-0001 §6). The share is exact only if each part compresses at the document's average ratio.",
+        "document bytes are decomposed (ADR-0001 §3 addendum, 2026-08-15, superseding addendum G's uncompressed-share rule): the single compressed document transferSize stays the authority on the TOTAL, and the split between html/js/data/STRIPPED instrumentation markup takes its ratios from leave-one-out brotli marginals — what the compressed document loses when exactly that part is removed — at the quality calibrated per document against the observed compressed body (recorded per run in kb.docAttribution with its residual). Inline executable script counts as JS (an inlined bundle is not 0 KB), inline non-executable script (application/json, qwik/json, …) counts as data, and the injected chrome markup + its /_pm/ tags are stripped like the /_pm/ subresource payloads (ADR-0001 §6). An uncompressed document needs no estimate and uses exact uncompressed share. Stated bias: disjoint parts' marginals under-sum the whole (shared redundancy belongs to no single part, measured 0.94–0.95x on the live shapes), so normalisation scales parts up ~x1.05 pro-rata.",
         "ttfb sub-phases (travelMs/serverMs) are attributed BENEATH any CDP network emulation: Chromium rebases navigation-timing under applied throttling (demonstrated 2026-07-10: a 500ms emulated latency delivers on the wall clock but responseStart still reads ~1ms), so the decomposition reflects the plane's REAL serving — compare it across variants, not against the profile's emulated RTT. FCP/LCP/INP paint/interaction timestamps are wall-clock and DO reflect the applied profile.",
         "every run is a fresh browser context (first-time visitor): the browser HTTP cache is a held-constant, not a measured axis — the cold/warm columns measure the edge tier (ADR-0002 §8).",
         "PRECONDITION for a comparable re-run against a DEPLOYED plane: the effective URLs below must be warmed until they serve compressed before measuring. A brand-new URL's first hit is a cache MISS that Cloudflare serves UNCOMPRESSED (the class tools/origin-suite's wireEncoding warms against), and because the run nonce is part of the URL, a reproduce with a fresh nonce makes every URL brand new — so run 1 of every target pays an inflated, non-comparable transfer. `bench reproduce --nonce <this receipt's environment.runNonce>` re-drives the exact published URLs so they can be pre-warmed; without it the reproduction is same-paths/profile/runs/interaction with fresh cache state, not same-URL.",
@@ -314,7 +359,7 @@ export function specFromReceipt(
   receipt: ReceiptT,
   repoRoot: string,
   overrides?: Partial<
-    Pick<BatchSpec, "origin" | "cpuSource" | "runLocation" | "runNonce">
+    Pick<BatchSpec, "origin" | "cpuSource" | "runLocation" | "runNonce" | "allowCrossTree">
   >,
 ): BatchSpec {
   if (receipt.profile.specVersion !== PROFILE_SPEC_VERSION) {
@@ -343,5 +388,6 @@ export function specFromReceipt(
     // unreachable from the advertised reproduce path (verify-slice,
     // anti-rigging lens).
     runNonce: overrides?.runNonce,
+    allowCrossTree: overrides?.allowCrossTree,
   };
 }

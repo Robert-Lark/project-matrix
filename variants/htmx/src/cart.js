@@ -23,7 +23,11 @@
         Array.isArray(cart.items) &&
         cart.items.every(
           (i) => i && Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty >= 1,
-        )
+        ) &&
+        // One entry per release id (contract). Unchecked until 2026-08-15,
+        // which let a duplicate read as valid and then be counted differently
+        // by different surfaces.
+        new Set(cart.items.map((i) => i.id)).size === cart.items.length
       ) {
         return cart;
       }

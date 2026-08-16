@@ -1,0 +1,45 @@
+{
+  "kind": "pm-estimator-lab-evidence",
+  "purpose": "The measured evidence behind ADR-0001 addendum O's estimator decision (bench-instrumentation-dilution): the exact Cloudflare-served bodies the candidate estimators were computed over, so the decision table re-derives offline forever — the live pages will drift, these bytes will not.",
+  "fetched": "2026-08-15",
+  "origin": "https://pm-front.robresearch87.workers.dev",
+  "fetchHeaders": { "accept-encoding": "br" },
+  "bodies": [
+    {
+      "file": "bodies/astro-editorial.br",
+      "path": "/astro/editorial/",
+      "wireBytes": 5243,
+      "sha256": "29d15a063b5fe0bd95b2f2dc137d7f72adcb917d043c8e3fe295691320cb9f0a",
+      "note": "the inlined-delivery shape; wire body byte-identical to the ticket's 2026-08-14 saved measurement"
+    },
+    {
+      "file": "bodies/vanilla-editorial.br",
+      "path": "/vanilla/editorial/",
+      "wireBytes": 4705,
+      "sha256": "eb069824053de8f69057056a748135c3574c73fbdf9dfcbab0db4a8a86b97a8d",
+      "note": "the external-single shape; also the chrome-constant probe's target page"
+    },
+    {
+      "file": "bodies/qwik-editorial.br",
+      "path": "/qwik/editorial/",
+      "wireBytes": 5880,
+      "sha256": "a29a11de80bdc0ac04592c2d83c04f6976827009fc822471480af669708a5f51",
+      "note": "the external-many + inert qwik/json shape"
+    },
+    {
+      "file": "bodies/vanilla-pdp.br",
+      "path": "/vanilla/pdp/953800-stars-of-the-lid-and-their-refinement-of-the-decline/",
+      "wireBytes": 4559,
+      "sha256": "c8a06e0e2bd3b274c09cc44067ceb33f1d5eab157d03baf0789382abb3578a7c",
+      "note": "probe A's real EMPTY-state chrome donor (the PDP has no published receipts)"
+    },
+    {
+      "file": "bodies/cart-js.br",
+      "path": "/vanilla/assets/cart.js",
+      "wireBytes": 1351,
+      "sha256": "a912159a241631be89e2c852e6fcf3e44e6ac492b0fcc48d963d4cc8f4339405",
+      "note": "probe B's external ground truth: the same bytes inlined must attribute close to this wire cost"
+    }
+  ],
+  "run": "node estimator-lab.mjs (node >= 18; brotli via node:zlib; deterministic given these bodies)"
+}

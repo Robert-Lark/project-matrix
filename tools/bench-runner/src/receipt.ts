@@ -76,6 +76,24 @@ export const RunSample = z.object({
     instrumentationBytes: z.number(),
     /** Sum of buckets (excludes instrumentation by construction). */
     totalBytes: z.number(),
+    /**
+     * How the document's single compressed transferSize was split into
+     * html/js/data/instrumentation (ADR-0001 §3 addendum, 2026-08-15):
+     * the estimator that ran, the wire-calibrated brotli quality, and the
+     * calibration residual in bytes. Optional so receipts minted before the
+     * ruler change remain parseable; absent means the superseded
+     * uncompressed-share rule attributed the document.
+     */
+    docAttribution: z
+      .object({
+        estimator: z.string(),
+        quality: z.number().nullable(),
+        calibrationResidualBytes: z.number().nullable(),
+        /** The document response's content-encoding, verbatim — a brotli
+         *  model fitted to a gzip wire must be visible in the artifact. */
+        contentEncoding: z.string().nullable().optional(),
+      })
+      .optional(),
   }),
   requests: z.object({
     /** Request count, instrumentation excluded. */
@@ -133,6 +151,23 @@ export const Receipt = z.object({
     dirty: z.boolean(),
   }),
   origin: z.string(),
+  /**
+   * What the ORIGIN attested it was serving (/_pm/build.json), recorded
+   * beside the local pin above (ADR-0001 addendum N hole 2): `commit.sha`
+   * names the tree that DROVE the browser; this names the tree the plane
+   * was BUILT from. The runner refuses a batch whose origin SHA disagrees
+   * with the local pin unless the cross-tree escape is passed explicitly —
+   * and a receipt minted that way shows the disagreement right here.
+   * Optional so pre-provenance receipts remain parseable; null means the
+   * origin did not attest (no /_pm/build.json) and the escape was used.
+   */
+  originCommit: z
+    .object({
+      sha: z.string(),
+      dirty: z.boolean(),
+    })
+    .nullable()
+    .optional(),
   /** Two-location protocol activates downstream (pinned cloud runner);
    *  the label ships now so it is never retrofitted (issue #7). */
   runLocation: z.object({

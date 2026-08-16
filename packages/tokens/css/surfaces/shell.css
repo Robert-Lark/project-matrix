@@ -53,3 +53,19 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
+
+/* Visually-hidden text — a WHOLE-SYSTEM utility, and it lives in this sheet
+   because `head()` links it on every surface. Defined in a COMPONENT sheet it
+   reached only the pages linking that component, and `namedGlyph`'s text
+   rendered visibly everywhere else (ADR-0008 addendum A §4b; guarded by
+   repo-checks/master-styles-resolve). clip-path, never display:none or
+   visibility:hidden — both drop the text from the accessibility tree, which
+   is the opposite of the point. */
+.pm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

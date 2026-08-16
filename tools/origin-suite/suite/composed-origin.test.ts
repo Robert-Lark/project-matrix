@@ -47,6 +47,20 @@ describe("front Worker: own assets + dispatch", () => {
     expect(body).not.toContain("%%"); // no unsubstituted build markers
   });
 
+  it("/_pm/build.json attests the build the plane serves (ADR-0001 addendum N hole 2)", async () => {
+    const res = await get("/_pm/build.json");
+    expect(res.status).toBe(200);
+    const attestation = (await res.json()) as { kind: string; sha: string; dirty: boolean };
+    expect(attestation.kind).toBe("pm-build");
+    expect(attestation.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(typeof attestation.dirty).toBe("boolean");
+    // Shape only, deliberately: the local suite runs on work-in-progress
+    // trees (dirty, HEAD moving), and the post-deploy smoke asserts shape,
+    // never magnitudes. The EQUALITY check — origin SHA versus the checkout
+    // that minted a receipt — is the bench runner's refusal at mint time,
+    // not a plane invariant.
+  });
+
   it("the home surface's on-page receipts match the committed crate manifest", async () => {
     // Home is a crate-receipt surface: its etched/inline numbers come from
     // tools/snapshot-capture/crate/manifest.json at build time (ADR-0007) —

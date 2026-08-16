@@ -63,7 +63,11 @@ function isValidCart(value: unknown): value is Cart {
         Number.isInteger((i as CartItem).id) &&
         Number.isInteger((i as CartItem).qty) &&
         (i as CartItem).qty >= 1,
-    )
+    ) &&
+    // One entry per release id (contract). Unchecked until 2026-08-15, which
+    // let a duplicate read as valid and then be counted differently by
+    // different surfaces.
+    new Set(cart.items.map((i) => (i as CartItem).id)).size === cart.items.length
   );
 }
 

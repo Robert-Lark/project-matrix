@@ -184,6 +184,27 @@ describe("regeneration (§4.3 — the committed masters can never go stale)", ()
         marker,
       );
     }
+
+    // The exemption above buys tolerance for docs PROSE, and it was quietly
+    // buying tolerance for a stale INDEX too: this surface generates its
+    // build-log list from the phase headings, so adding a phase silently left
+    // the committed master a phase behind, with "re-rendered when docs move"
+    // as the only thing standing between the record and the page. That is the
+    // unguarded-true-statement shape this repo keeps paying for, so the INDEX
+    // is pinned even though the prose is not (pdp-controls, 2026-08-15 — the
+    // omission that prompted it was this session's own Phase 12).
+    const phases = [
+      ...readFileSync(join(pkgRoot, "..", "..", "docs", "build-log.md"), "utf8").matchAll(
+        /^## Phase (\d+)\b/gm,
+      ),
+    ].map((m) => m[1]!);
+    expect(phases.length, "no phase headings found — the pattern moved").toBeGreaterThan(10);
+    for (const n of phases) {
+      expect(
+        committedHowBuilt,
+        `committed how-built is missing Phase ${n} — re-run: node render/build.mjs`,
+      ).toContain(`id="phase-${n}"`);
+    }
   });
 });
 

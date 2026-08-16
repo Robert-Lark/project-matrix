@@ -2,7 +2,7 @@
   "name": "@pm/repo-checks",
   "version": "0.1.0",
   "private": true,
-  "description": "CI guards for the monorepo's structural guarantees (ADR-0004 §2, ADR-0003 §1): strict dependency isolation between workspaces and no shared component-runtime package. Dev/CI only — never shipped.",
+  "description": "CI guards for the monorepo's structural guarantees (ADR-0004 \u00a72, ADR-0003 \u00a71): strict dependency isolation between workspaces and no shared component-runtime package. Dev/CI only \u2014 never shipped.",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -11,6 +11,7 @@
   "devDependencies": {
     "@pm/data-contract": "workspace:*",
     "@pm/drift-gate": "workspace:*",
+    "@pm/switcher": "workspace:*",
     "@types/fontkit": "^2.0.9",
     "@types/node": "^24.0.0",
     "@types/react": "^19",

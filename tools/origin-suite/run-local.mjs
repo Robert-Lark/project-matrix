@@ -149,6 +149,16 @@ const build = spawnSync("pnpm", ["exec", "turbo", "run", "build"], {
 });
 if (build.status !== 0) process.exit(build.status ?? 1);
 
+// Re-stamp the front Worker's build attestation (ADR-0001 addendum N hole
+// 2): a turbo cache replay above restores a dist carrying the SHA of the
+// commit that BUILT it, and the plane this script starts must attest the
+// tree it actually serves (workers/front/stamp-build.mjs).
+const stamp = spawnSync("node", ["stamp-build.mjs"], {
+  cwd: join(repoRoot, "workers/front"),
+  stdio: "inherit",
+});
+if (stamp.status !== 0) process.exit(stamp.status ?? 1);
+
 // Fresh edge-Worker state per run: the bypass→miss→hit assertions need a KV
 // that this run's requests haven't already warmed. Then seed local R2 with a
 // frozen snapshot — the synthesized fixture by default (the CI seed, always;

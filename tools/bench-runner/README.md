@@ -83,6 +83,16 @@ URLs, profile, run count, interactions — refuses version-skewed receipts
 date, fresh nonce, current SHA). Receipts from a dirty tree say so
 (`commit.dirty`).
 
+**Origin provenance (ADR-0001 addendum N hole 2).** Before anything
+measures, `run`, `reproduce`, and the chrome-constant probe fetch the
+plane's own attestation at `/_pm/build.json` and record it in the artifact
+as `originCommit` beside the local pin. An origin whose attested SHA
+disagrees with the checkout — or one that does not attest — is REFUSED, so
+a reproduce cannot silently measure a different tree than the receipt
+names. `--allow-cross-tree` is the explicit escape for deliberate
+cross-tree measurement; the artifact then carries the disagreement (or the
+null) in plain sight, and the publication build refuses to publish it.
+
 Like `@pm/origin-suite`, no `test` script: the runner is proven at the
 composed-origin seam by `tools/origin-suite/suite/bench.browser.test.ts`
 (tiny batch, all acceptance criteria asserted), which also runs in the

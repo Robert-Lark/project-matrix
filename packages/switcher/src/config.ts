@@ -111,8 +111,13 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     variants: ["vanilla"],
     plannedVariants: ["react-next", "astro", "qwik"],
     host: "vanilla",
+    // "format" was in this sentence until 2026-08-15 and is out with the
+    // control (ADR-0008 addendum A). It is SERVED on every measured page, so
+    // leaving it would have had the instrument advertise an interaction the
+    // surface does not have — the same falsehood as the dead control, one
+    // layer up.
     proves:
-      "One product page where the interactivity is genuine — gallery, cart, quantity, format. The render axis where JavaScript has real work to do. Try the swap: the cart survives; the paradigm doesn't.",
+      "One product page where the interactivity is genuine — gallery, zoom, quantity, cart. The render axis where JavaScript has real work to do. Try the swap: the cart survives; the paradigm doesn't.",
   },
   plp: {
     variants: [],
