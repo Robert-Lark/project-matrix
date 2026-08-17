@@ -1,12 +1,15 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-08-16T01:56:32.724Z",
+  "date": "2026-08-17T01:41:59.720Z",
   "commit": {
-    "sha": "49e00e51a991ee8002b24838c3bf245d2a0ce0c1",
+    "sha": "019449f01e58b35ba619d36dcafd0dc1a6201065",
     "dirty": false
   },
-  "originCommit": null,
-  "origin": "https://pm-front.robresearch87.workers.dev",
+  "originCommit": {
+    "sha": "019449f01e58b35ba619d36dcafd0dc1a6201065",
+    "dirty": false
+  },
+  "origin": "http://127.0.0.1:8787",
   "target": "/vanilla/editorial/",
   "profile": {
     "id": "slow-4g-mid-phone",
@@ -14,15 +17,15 @@
   },
   "runsPerCondition": 7,
   "measuredChrome": {
-    "bytes": 11931,
-    "sha256": "e183111f7dda07d5924562135d6f9f263330e77c55b8fc207e7a317be7c4d4e0",
+    "bytes": 12072,
+    "sha256": "e3395e8cb1fecc668f8588be6147021560d2ef1e9a5c266b654eaf868764bf4a",
     "populated": true,
-    "wireBytesBrotli": 2322,
-    "wireQuality": 4,
+    "wireBytesBrotli": 2171,
+    "wireQuality": 5,
     "wireCalibrated": true,
-    "encodedBodySize": 4705,
-    "calibrationResidualBytes": 12,
-    "documentBytesUncompressed": 18543,
+    "encodedBodySize": 4096,
+    "calibrationResidualBytes": 0,
+    "documentBytesUncompressed": 18066,
     "renderContext": {
       "variant": "vanilla",
       "surface": "editorial",
@@ -37,58 +40,58 @@
     "measuredChrome.renderContext records the exact renderChrome() inputs the measured fragment renders under; the front build re-renders the fragment from them against the lab bundle it builds and REFUSES when the sha256 differs (ADR-0001 addendum N hole 1: the constant must describe the chrome that ships, and 'populated' alone cannot tell a current fragment from a stale one)",
     "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
     "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
-    "conditions round-robin interleaved; the published constant is the delta of medians (with − without)",
+    "conditions pair-interleaved in ALTERNATING order (with/without, then without/with — ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
     "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality"
   ],
   "conditions": {
     "with": {
       "runs": [
         {
-          "FCP": 784,
-          "LCP": 784,
+          "FCP": 828,
+          "LCP": 972,
           "CLS": 0,
-          "longTaskMs": 57
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 592,
+          "LCP": 760,
+          "CLS": 0,
+          "longTaskMs": 55
         },
         {
           "FCP": 676,
-          "LCP": 676,
+          "LCP": 832,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 692,
-          "LCP": 692,
+          "FCP": 668,
+          "LCP": 832,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 696,
-          "LCP": 696,
+          "FCP": 576,
+          "LCP": 744,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 684,
-          "LCP": 684,
+          "FCP": 668,
+          "LCP": 832,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 680,
-          "LCP": 680,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 684,
-          "LCP": 684,
+          "FCP": 664,
+          "LCP": 824,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 684,
-        "LCP": 684,
+        "FCP": 668,
+        "LCP": 832,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -96,59 +99,59 @@
     "without": {
       "runs": [
         {
-          "FCP": 628,
-          "LCP": 628,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 624,
+          "FCP": 460,
           "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 608,
-          "LCP": 608,
+          "FCP": 456,
+          "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 608,
-          "LCP": 608,
+          "FCP": 460,
+          "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 620,
-          "LCP": 620,
+          "FCP": 456,
+          "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 592,
-          "LCP": 592,
+          "FCP": 456,
+          "LCP": 616,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 596,
-          "LCP": 596,
+          "FCP": 460,
+          "LCP": 624,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 464,
+          "LCP": 628,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 608,
-        "LCP": 608,
+        "FCP": 460,
+        "LCP": 624,
         "CLS": 0,
         "longTaskMs": 0
       }
     }
   },
   "deltaMedians": {
-    "FCP": 76,
-    "LCP": 76,
+    "FCP": 208,
+    "LCP": 208,
     "CLS": 0,
     "longTaskMs": 0
   }

@@ -3700,3 +3700,21 @@ record and origin attestation by construction.
 
 Decisions of record: **ADR-0001 addendum O/P/Q**, with addendum G's
 attribution rule superseded in place.
+
+### The re-run, and the codec the wire changed to (2026-08-16/17 coda)
+
+The ruler merged, deployed green, and the owed third batch promptly proved
+the unit right in a way nobody predicted: the first attested batch came
+back unpublishable because every document had ridden a **zstandard** wire.
+Chromium negotiates zstd and Cloudflare serves it; every wire the
+estimator's evidence had measured was brotli, because curl-shaped clients
+ask for br. The gate built against a hypothetical gzip proxy caught the
+actual CDN on its first real run — which is the difference between a rule
+and a reflex. The estimator generalized the way its own principle demands
+(the marginals are priced by the wire's own codec — zstd level 2
+reproduces Cloudflare's zstd serving within 0.08%), a second batch paid
+the dirty-pin trap, and the third ran clean at the merge SHA: one date,
+one attested SHA, 210 conforming runs. The corrected cells published:
+astro's headline moved 0.37 → 0.76 KB — the dilution, undone in public,
+with the receipt chain to prove it. The floors caveat left the
+methodology page in the same commit as the receipts that made it false.
