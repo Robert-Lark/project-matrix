@@ -244,12 +244,11 @@ describe("/methodology/ — the ADR-0001 §9 page, chrome-free, numbers from art
     // numbers are read.
     expect(body).toContain("counts as JavaScript");
     // The dilution correction (ADR-0001 §3 addendum, 2026-08-15) is stated
-    // the same way: the estimator by name, and — until the batch re-runs on
-    // the fixed ruler — the instruction to read the smallest JS cells as
-    // floors. When the re-run lands, the floors sentence leaves the page and
-    // this pin moves with it, in the same commit.
+    // the same way: the estimator by name, and the record that the batch
+    // re-ran on the fixed ruler (the floors caveat left the page in the
+    // same commit as the re-run's receipts — this pin moved with it).
     expect(body).toContain("leave-one-out");
-    expect(body).toContain("JavaScript cells as floors, not measurements");
+    expect(body).toContain("re-ran on the fixed ruler");
     expect(body).not.toContain("data-pm-chrome");
     expect(body).not.toContain('id="pm-chrome-slot"');
   });

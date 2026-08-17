@@ -115,20 +115,23 @@
         attribution, and the rule is stated: the measured transfer size
         stays the total, and each part's share is its leave-one-out
         marginal — what the compressed document loses when exactly that
-        part is removed — computed at the brotli quality that reproduces
-        the observed wire bytes, re-derived per document and recorded in
-        every receipt with its residual (0.1–0.3% on every live page shape
-        when this rule was set). <strong>This rule replaced a defective one,
-        and the correction is stated rather than hidden:</strong> until
-        2026-08-15 the split used each part's share of the
-        <em>uncompressed</em> document, which over-attributed this page's
-        own instrumentation (it compresses far better than the document
-        average) and under-attributed every other bucket — measured at
-        40–48% on the smallest published JavaScript cells, a bias that grew
-        with the instrumentation and flattered the smallest numbers on this
-        site. The reading tables still carry the old rule's numbers until
-        the batch re-runs on the fixed ruler; until then, read the smallest
-        JavaScript cells as floors, not measurements. The new rule's own
+        part is removed — computed with the wire's own codec at the
+        setting that reproduces the observed wire bytes (brotli for a
+        brotli wire, zstandard for the zstandard wire modern browsers
+        negotiate), re-derived per document and recorded in every receipt
+        with codec, setting, target, and residual (0.1–0.3% brotli, 0.08%
+        zstandard, on the live pages when this rule was set).
+        <strong>This rule replaced a defective one, and the correction is
+        stated rather than hidden:</strong> until 2026-08-15 the split used
+        each part's share of the <em>uncompressed</em> document, which
+        over-attributed this page's own instrumentation (it compresses far
+        better than the document average) and under-attributed every other
+        bucket — measured at 40–48% on the smallest published JavaScript
+        cells, a bias that grew with the instrumentation and flattered the
+        smallest numbers on this site. The batch re-ran on the fixed ruler
+        on 2026-08-17 — every published cell now derives from wire-priced
+        attribution, and each receipt records the estimator, codec,
+        setting, and residual that produced it. The rule's own
         stated limit: disjoint parts' marginals do not sum to the whole
         (redundancy shared between parts belongs to no single one — 0.94–0.95×
         of the whole on the live shapes), so every part is scaled up ~5% pro
