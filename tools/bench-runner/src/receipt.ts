@@ -79,7 +79,7 @@ export const RunSample = z.object({
     /**
      * How the document's single compressed transferSize was split into
      * html/js/data/instrumentation (ADR-0001 §3 addendum, 2026-08-15):
-     * the estimator that ran, the wire-calibrated brotli quality, and the
+     * the estimator that ran, the wire-calibrated codec and setting, and the
      * calibration residual in bytes. Optional so receipts minted before the
      * ruler change remain parseable; absent means the superseded
      * uncompressed-share rule attributed the document.
@@ -87,10 +87,20 @@ export const RunSample = z.object({
     docAttribution: z
       .object({
         estimator: z.string(),
+        /** The compression model the ratios used — the wire's own codec
+         *  (brotli/zstd/gzip/deflate), null for the non-loo estimators. */
+        codec: z.string().nullable().optional(),
         quality: z.number().nullable(),
+        /** The compressed body the model was fitted against — the
+         *  residual's denominator, so the fit is judgeable from the
+         *  artifact alone. */
+        calibrationTargetBytes: z.number().nullable().optional(),
+        /** "encoded-body" (the honest fit) or "transfer-size" (the
+         *  headers-included fallback — publishable never). */
+        calibrationTargetSource: z.string().nullable().optional(),
         calibrationResidualBytes: z.number().nullable(),
-        /** The document response's content-encoding, verbatim — a brotli
-         *  model fitted to a gzip wire must be visible in the artifact. */
+        /** The document response's content-encoding, verbatim — a model
+         *  fitted to a different wire must be visible in the artifact. */
         contentEncoding: z.string().nullable().optional(),
       })
       .optional(),

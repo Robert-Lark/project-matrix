@@ -322,30 +322,95 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
   // is the served-body-unavailable fallback — it resurrects the exact
   // issue-#16 "0 KB JS" defect, honestly labeled, and honest labels do not
   // publish as cells (the interactionSettled precedent). The fallback
-  // shares likewise cannot publish, and a leave-one-out split calibrated
-  // against a wire that was not brotli is a mis-modeled ratio the artifact
-  // must not launder (verify-slice, this unit).
+  // shares likewise cannot publish, and a leave-one-out split whose MODEL
+  // CODEC does not match the wire it claims to have calibrated against is
+  // a mis-modeled ratio the artifact must not launder — the very first
+  // attested batch was refused here, fitted with brotli against the zstd
+  // wire Chromium negotiates (verify-slice + the 2026-08-16 batch).
+  const CODEC_FOR_ENCODING = {
+    br: "brotli",
+    zstd: "zstd",
+    gzip: "gzip",
+    "x-gzip": "gzip", // RFC 9110 §8.4.1.3 alias, matching the runner
+    deflate: "deflate",
+  };
+  const COMPRESSED_ENCODINGS = new Set(Object.keys(CODEC_FOR_ENCODING));
   for (const target of receipt.targets) {
     for (const column of [target.columns.cold, target.columns.warm]) {
       for (const run of column.runs) {
         const attribution = run.kb.docAttribution;
         if (attribution === undefined) continue; // pre-cutoff receipts, bounded above
         const ok =
-          attribution.estimator === "loo-brotli-normalised" ||
+          attribution.estimator === "loo-wire-normalised" ||
           attribution.estimator === "uncompressed-share-identity";
         if (!ok) {
           throw new Error(
             `front lab: ${file} has a ${target.variant} run whose document split ran as "${attribution.estimator}" — a degraded or fallback attribution cannot publish (ADR-0001 addendum O)`,
           );
         }
-        if (
-          attribution.estimator === "loo-brotli-normalised" &&
-          attribution.contentEncoding !== undefined &&
-          attribution.contentEncoding !== "br"
-        ) {
-          throw new Error(
-            `front lab: ${file} has a ${target.variant} run whose brotli-calibrated split was fitted to a "${attribution.contentEncoding}" wire — not publishable`,
-          );
+        // An IDENTITY claim on a wire that declared a compressed coding is
+        // anomalous (a tiny or incompressible document where framing
+        // outweighed compression): the label says exact truth, the header
+        // says otherwise, and a contradiction does not publish.
+        if (attribution.estimator === "uncompressed-share-identity") {
+          const encodingToken =
+            typeof attribution.contentEncoding === "string"
+              ? attribution.contentEncoding.trim().toLowerCase()
+              : attribution.contentEncoding;
+          if (encodingToken && COMPRESSED_ENCODINGS.has(encodingToken)) {
+            throw new Error(
+              `front lab: ${file} has a ${target.variant} run labeled identity-encoded while the wire declared "${attribution.contentEncoding}" — a contradiction cannot publish (ADR-0001 addendum O)`,
+            );
+          }
+        }
+        if (attribution.estimator === "loo-wire-normalised") {
+          // RFC 9110: content-coding tokens are case-insensitive — the
+          // lookup normalizes exactly as the runner's model selection does,
+          // so a legitimate "GZIP" cannot be refused by string accident.
+          const encodingToken =
+            typeof attribution.contentEncoding === "string"
+              ? attribution.contentEncoding.trim().toLowerCase()
+              : attribution.contentEncoding;
+          const wanted = CODEC_FOR_ENCODING[encodingToken];
+          if (!wanted || attribution.codec !== wanted) {
+            throw new Error(
+              `front lab: ${file} has a ${target.variant} run whose "${attribution.codec}" model was fitted to a "${attribution.contentEncoding}" wire — the ratios must be priced by the wire's own codec (ADR-0001 addendum O)`,
+            );
+          }
+          // A loo attribution ALWAYS carries its calibration numbers by
+          // construction, so absence here is a stripped or malformed
+          // artifact — REQUIRED, not skipped: an absence-skippable bound
+          // is an opt-out (verify-slice, this slice).
+          if (
+            !Number.isFinite(attribution.calibrationTargetBytes) ||
+            !Number.isFinite(attribution.calibrationResidualBytes)
+          ) {
+            throw new Error(
+              `front lab: ${file} has a ${target.variant} run whose loo attribution omits its calibration target/residual — a fit that cannot be judged cannot publish (ADR-0001 addendum O)`,
+            );
+          }
+          // The target must be the compressed BODY: the transfer-size
+          // fallback includes response headers, so its "fit" pads the
+          // denominator — honest for dev use, publishable never.
+          if (attribution.calibrationTargetSource !== "encoded-body") {
+            throw new Error(
+              `front lab: ${file} has a ${target.variant} run calibrated against "${attribution.calibrationTargetSource}" — only a compressed-body fit publishes (ADR-0001 addendum O)`,
+            );
+          }
+          // Codec identity and fit quality are independent axes: the wrong
+          // codec can fit within ~1%, and a codec-matched wire the local
+          // model cannot reproduce (a future dictionary-zstd, a nonstandard
+          // gzip flavor) can miss by far more — so a matched codec with a
+          // bad fit is refused too. Bound: 2% of the recorded target, with
+          // a 64 B floor for tiny documents.
+          if (
+            Math.abs(attribution.calibrationResidualBytes) >
+            Math.max(64, 0.02 * attribution.calibrationTargetBytes)
+          ) {
+            throw new Error(
+              `front lab: ${file} has a ${target.variant} run whose calibration missed its wire by ${attribution.calibrationResidualBytes} B on ${attribution.calibrationTargetBytes} B — ratios computed at a setting the wire disproves cannot publish (ADR-0001 addendum O)`,
+            );
+          }
         }
       }
     }
