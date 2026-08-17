@@ -1,15 +1,15 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-08-17T01:41:59.720Z",
+  "date": "2026-08-17T01:53:57.732Z",
   "commit": {
-    "sha": "019449f01e58b35ba619d36dcafd0dc1a6201065",
+    "sha": "932bf4ff9f2c9ed02fed4a4424c4d73106b785ef",
     "dirty": false
   },
   "originCommit": {
-    "sha": "019449f01e58b35ba619d36dcafd0dc1a6201065",
+    "sha": "932bf4ff9f2c9ed02fed4a4424c4d73106b785ef",
     "dirty": false
   },
-  "origin": "http://127.0.0.1:8787",
+  "origin": "https://pm-front.robresearch87.workers.dev",
   "target": "/vanilla/editorial/",
   "profile": {
     "id": "slow-4g-mid-phone",
@@ -20,12 +20,12 @@
     "bytes": 12072,
     "sha256": "e3395e8cb1fecc668f8588be6147021560d2ef1e9a5c266b654eaf868764bf4a",
     "populated": true,
-    "wireBytesBrotli": 2171,
-    "wireQuality": 5,
+    "wireBytesBrotli": 2321,
+    "wireQuality": 4,
     "wireCalibrated": true,
-    "encodedBodySize": 4096,
-    "calibrationResidualBytes": 0,
-    "documentBytesUncompressed": 18066,
+    "encodedBodySize": 4717,
+    "calibrationResidualBytes": -1,
+    "documentBytesUncompressed": 18684,
     "renderContext": {
       "variant": "vanilla",
       "surface": "editorial",
@@ -47,51 +47,51 @@
     "with": {
       "runs": [
         {
-          "FCP": 828,
-          "LCP": 972,
+          "FCP": 780,
+          "LCP": 780,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 592,
-          "LCP": 760,
+          "FCP": 668,
+          "LCP": 668,
           "CLS": 0,
-          "longTaskMs": 55
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 684,
+          "LCP": 684,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 680,
+          "LCP": 680,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 688,
+          "LCP": 688,
+          "CLS": 0,
+          "longTaskMs": 0
         },
         {
           "FCP": 676,
-          "LCP": 832,
+          "LCP": 676,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 668,
-          "LCP": 832,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 576,
-          "LCP": 744,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 668,
-          "LCP": 832,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 664,
-          "LCP": 824,
+          "FCP": 684,
+          "LCP": 684,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 668,
-        "LCP": 832,
+        "FCP": 684,
+        "LCP": 684,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -99,59 +99,59 @@
     "without": {
       "runs": [
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 584,
+          "LCP": 584,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 456,
-          "LCP": 624,
+          "FCP": 600,
+          "LCP": 600,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 592,
+          "LCP": 592,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 456,
-          "LCP": 624,
+          "FCP": 576,
+          "LCP": 576,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 456,
-          "LCP": 616,
+          "FCP": 604,
+          "LCP": 604,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 460,
-          "LCP": 624,
+          "FCP": 596,
+          "LCP": 596,
           "CLS": 0,
           "longTaskMs": 0
         },
         {
-          "FCP": 464,
-          "LCP": 628,
+          "FCP": 612,
+          "LCP": 612,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 460,
-        "LCP": 624,
+        "FCP": 596,
+        "LCP": 596,
         "CLS": 0,
         "longTaskMs": 0
       }
     }
   },
   "deltaMedians": {
-    "FCP": 208,
-    "LCP": 208,
+    "FCP": 88,
+    "LCP": 88,
     "CLS": 0,
     "longTaskMs": 0
   }
