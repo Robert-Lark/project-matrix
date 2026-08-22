@@ -3718,3 +3718,96 @@ one attested SHA, 210 conforming runs. The corrected cells published:
 astro's headline moved 0.37 → 0.76 KB — the dilution, undone in public,
 with the receipt chain to prove it. The floors caveat left the
 methodology page in the same commit as the receipts that made it false.
+
+## Phase 14 — The flip's build-out: three more PDPs (2026-08-21 — )
+
+The pdp-variants unit continues the `pdp-build` ticket: react-next, astro
+and qwik PDPs against the four-master spec layer, one variant per slice on
+one branch (the pdp-build multi-commit precedent), with the shared PDP test
+scaffolding landing in slice 1 parameterised over
+`SURFACE_CONTROLS.pdp.variants` — plus registry-completeness ties in every
+new guard, so a later slice extends the coverage by registering, never by
+remembering to edit test files.
+
+### Slice 1 — react-next (the villain flips first)
+
+The route is the settled URL contract made Next-shaped:
+`/react-next/pdp/{slug}/` is `force-dynamic`, parses the leading id, fetches
+the tray through the variant's own EDGE binding, and 404s a slug mismatch —
+with **no `loading.tsx` and no `Suspense` anywhere on the route**, because
+streaming locks the HTTP status before `notFound()` can set it (Next's own
+docs; DIFF-TO-STARTER point 28). One Next 16 behavior had to be measured
+around: `notFound()` thrown during METADATA resolution bails to the
+`__next_error__` document instead of the segment boundary, so the metadata
+function titles the 404 and the page component owns the throw. With
+multiple root layouts the 404 body is Next's own error shell either way
+(the branded boundary reaches hydration only) — accepted and recorded
+rather than worked around, because the alternatives (middleware, React 19
+precedence-hoisted styles) change the EDITORIAL serving path whose
+published receipts are pinned, and the STATUS is the whole cross-paradigm
+contract.
+
+The stylesheet parameterisation is the astro `css`-prop precedent in this
+framework's idiom: route groups `(editorial)`/`(pdp)`, each root layout
+passing its surface's list to one shared `Document`. The interactions are
+three client islands — gallery (thumb switch + zoom, stage width/height
+pinned to the first image), purchase (an UNCONTROLLED qty input, the DS
+state-on-native-attribute rule, clamped on the NATIVE change event), and
+the live-origin plaque button with vanilla's copy verbatim.
+
+**The headline finding — no gate covers this class, and it was caught by
+measuring:** adding the PDP route grew the EDITORIAL page's served chunks
+by **7,984 raw bytes** of PDP island code, on the variant whose editorial
+initial-JS cell (154.98 KB) is published and pinned. The mechanism is
+Turbopack grouping client components by their importing SERVER module —
+one `render.tsx` importing all six islands put the PDP's code into
+editorial's shared chunks. Three measured splits brought it to byte-parity:
+`PdpArticle` + islands into their own server module (`pdp.tsx`); a fully
+SELF-CONTAINED `pdp-cart.ts`, because merely importing cart.ts's helpers
+kept `announce`/`CART_KEY` from being tree-shaken out of editorial's chunk
+(+494 raw, prettified-diff-verified); and `pdp-format.ts` split out plus an
+INLINED shell skeleton in the PDP error boundary, because a second client
+importer of `Shell` registered it as a named export (+76 raw). Final
+state, tool-verified against production: 7 of 8 editorial chunks
+NAME-identical (content-hash names ⇒ byte-identical), the 8th
+SIZE-identical at 4,703 bytes with exactly one renumbered Turbopack module
+id — the irreducible floor of adding a route. The leak CLASS is now a
+suite leg: no editorial chunk may carry a PDP island marker.
+
+The slice also paid down what pdp-build left owed for BOTH live variants:
+`pdp.test.ts` (serving legs, fail-closed arm derivation, URL-contract 404s,
+per-variant slash/encoded-spelling pins — vanilla 307-normalises what
+react-next's decoded params accept as 200, the same platform class as
+307 vs 308, pinned as measured — transport parity, and the
+stylesheet-list-from-served-bytes leg) and the drift-gate PDP legs (the
+four masters re-rendered from the RESOLVED snapshot via the one
+`pdpMasterIds` derivation; the fenced plaque is CANONICAL content on this
+surface and is COMPARED, never dropped; pixels run rich×3 profiles +
+degenerates×1, a recorded scope choice).
+
+**verify-slice earned its keep twice on one slice** (run `wf_86c59859-909`;
+the first pass died on the session limit after ONE lens and the
+sequential-durability design held — the dead lenses' empty findings arrays
+were read as dead runs, not clean passes, and re-ran after the reset). Six
+distinct findings adopted: the pdp.test.ts "rich" arm resolving to the
+fixture's UNPRICED release (the price assertion guarded into silence in
+CI, and no leg anywhere asserting an ENABLED add-to-cart — the two-arms-
+one-page shape); the qty clamp riding blur where vanilla rides the native
+change event (reproduced as an Enter-commit divergence, 2501 vs 99, fixed
+natively, and the browser suite now presses Enter per variant so the
+rejected draft cannot return green); two record-not-code corrections in
+DIFF-TO-STARTER (the byte-freeze sentence overclaiming "unchanged" against
+the measured 7-of-8 state, and the superseded blur-clamp text the next two
+slices would have implemented from); the PDP error boundary shipping the
+cart badge slot with nothing able to fill it (CART_CONTRACT's populate
+clause — a self-contained badge read now runs, keeping the chunk freeze);
+and the missing PDP transport-parity leg. One finding refuted with
+evidence: the claim that the stylesheet-list wiring "cannot block a merge"
+— CI's origin job runs the full suite pre-merge, and the served-bytes leg
+fails a mis-wired layout there.
+
+Slice-1 tree state, tool-derived: turbo **30/30**; repo-checks 95 passed /
+1 skipped (react-next PDP identity guard: every tray, both snapshots,
+sabotage-proven at 240/240 + 500/500 drift on a one-word change);
+pdp.test.ts + pdp-controls.browser **37/37** on the held fixture plane;
+full fixture origin-suite count recorded at commit time in the handoff log.

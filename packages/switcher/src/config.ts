@@ -105,11 +105,12 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",
   },
   pdp: {
-    // vanilla is LIVE (pdp-build); the other three move planned → variants as
-    // each lands, the editorial-slice discipline. The surface is the designated
-    // host's own, so this is also the target of every release card's link.
-    variants: ["vanilla"],
-    plannedVariants: ["react-next", "astro", "qwik"],
+    // vanilla is LIVE (pdp-build) and react-next joined it (pdp-variants
+    // slice 1); astro and qwik move planned → variants as each lands, the
+    // editorial-slice discipline. The surface is the designated host's own,
+    // so this is also the target of every release card's link.
+    variants: ["vanilla", "react-next"],
+    plannedVariants: ["astro", "qwik"],
     host: "vanilla",
     // "format" was in this sentence until 2026-08-15 and is out with the
     // control (ADR-0008 addendum A). It is SERVED on every measured page, so

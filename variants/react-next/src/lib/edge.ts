@@ -25,3 +25,14 @@ export async function loadFeatured(manifest: SnapshotManifest): Promise<ReleaseD
   if (!res.ok) throw new Error(`GET /api/pdp/${id} -> ${res.status}`);
   return res.json();
 }
+
+/** One detail tray by id, or null when the plane has no such release — the
+ *  PDP route turns that null into its 404 (the slug contract: parse the
+ *  leading id, fetch, verify). Any other non-2xx is a data-plane failure and
+ *  throws to the route's error boundary, exactly like loadFeatured. */
+export async function loadDetail(id: number): Promise<ReleaseDetail | null> {
+  const res = await edgeFetch(`/api/pdp/${id}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GET /api/pdp/${id} -> ${res.status}`);
+  return res.json();
+}

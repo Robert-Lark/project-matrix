@@ -483,6 +483,121 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
    * `@pm/astro#test` declared `cache: false` for the same
    * under-declarable-inputs reason `@pm/repo-checks#test` is.
    */
+  /**
+   * The react-next PDP — the same hole the vanilla PDP guard closes (every
+   * tray, both snapshots; the crate's render-class combinations the fixture
+   * lacks), through this describe's normalized-DOM mechanism (JSX owns
+   * attribute order and entity forms, so vanilla's byte-strict compare is
+   * unavailable by construction). renderToStaticMarkup renders the client
+   * islands' SERVER output, which is exactly the page the drift gate sees
+   * JS-off.
+   */
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: react-next's PdpArticle matches renderPdp by normalized DOM, every tray`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const reference = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+      );
+      const reactNext = await import(
+        pathToFileURL(
+          join(repoRoot, "variants", "react-next", "src", "lib", "render.tsx"),
+        ).href
+      );
+      const reactNextPdp = await import(
+        pathToFileURL(
+          join(repoRoot, "variants", "react-next", "src", "lib", "pdp.tsx"),
+        ).href
+      );
+      const snapshot = lib.loadSnapshot(name);
+      const details = snapshot.details as { id: number }[];
+      expect(details.length).toBeGreaterThan(0);
+
+      const mismatched: number[] = [];
+      for (const detail of details) {
+        const master = normalizeHtml(
+          reference.renderPdp(snapshot, { origin: "", id: detail.id }),
+          NO_NOISE,
+        );
+        const body = renderToStaticMarkup(
+          createElement(
+            reactNext.Shell,
+            { current: "plp" },
+            createElement(reactNextPdp.PdpArticle, { detail }),
+          ),
+        );
+        const variant = normalizeHtml(
+          `<!doctype html><html lang="en"><head></head><body>${body}</body></html>`,
+          REACT_NEXT_NOISE,
+        );
+        if (variant !== master) mismatched.push(detail.id);
+      }
+      expect(mismatched, `${mismatched.length} of ${details.length} PDP pages drifted`).toEqual([]);
+
+      // Non-vacuity (the vanilla guard's own rule): pin that real PDP markup
+      // was compared, the fenced plaque is present ON BOTH SIDES (core PDP
+      // comparisons never drop it — it is canonical master content here,
+      // unlike editorial), and the format CONTROL stays gone while the
+      // format DATA survives (ADR-0008 addendum A).
+      const sample = normalizeHtml(
+        `<!doctype html><html lang="en"><head></head><body>${renderToStaticMarkup(
+          createElement(
+            reactNext.Shell,
+            { current: "plp" },
+            createElement(reactNextPdp.PdpArticle, { detail: details[0] }),
+          ),
+        )}</body></html>`,
+        REACT_NEXT_NOISE,
+      );
+      expect(sample).toContain("pm-pdp");
+      expect(sample).toContain("pm-gallery__zoom");
+      expect(sample).toContain("data-pm-fenced");
+      expect(sample).toContain("Format");
+      expect(sample).not.toContain("pm-format");
+    });
+  }
+
+  /**
+   * The stylesheet LIST, which the normalized-DOM compare above throws away
+   * with the head. The vanilla PDP has the byte-level version of this leg;
+   * react-next's document head is a component (src/lib/document.tsx), so the
+   * leg renders it and compares sheet tails after `/css/` — order included,
+   * because cascade order is a rendering property, not a freedom.
+   */
+  it("react-next's PDP document links exactly the master's stylesheets, in order", async () => {
+    const lib = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+    );
+    const reference = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+    );
+    const documentModule = await import(
+      pathToFileURL(
+        join(repoRoot, "variants", "react-next", "src", "lib", "document.tsx"),
+      ).href
+    );
+    const snapshot = lib.loadSnapshot("fixture");
+    const detail = (snapshot.details as { id: number }[])[0]!;
+
+    const sheets = (html: string): string[] =>
+      [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"\s*\/?>/g)].map((m) => {
+        const at = m[1]!.lastIndexOf("/css/");
+        if (at === -1) throw new Error(`stylesheet href outside the css tree: ${m[1]}`);
+        return m[1]!.slice(at + 1);
+      });
+
+    const master = sheets(reference.renderPdp(snapshot, { origin: "", id: detail.id }));
+    const variant = sheets(
+      renderToStaticMarkup(
+        createElement(documentModule.Document, { css: documentModule.PDP_CSS }, null),
+      ),
+    );
+    expect(master.length, "the master links no stylesheets").toBeGreaterThan(5);
+    expect(variant).toEqual(master);
+    expect(variant).not.toContain("css/components/format-switch.css");
+  });
+
   it("REACT_NEXT_NOISE.dropElementSelectors actually matches the App Router streaming wrapper", () => {
     const withWrapper = normalizeHtml(
       '<!doctype html><html lang="en"><body><div hidden><!--$--><!--/$--></div><p>content</p></body></html>',
