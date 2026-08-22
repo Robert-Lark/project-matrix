@@ -45,7 +45,7 @@ const count = (haystack: string, needle: string) => haystack.split(needle).lengt
  *  serving describe here (the ADR-0008 addendum A §4c discipline: a guard
  *  must fail when the registry outgrows it, never keep reporting green on
  *  the variants it already knows). */
-const DESCRIBED_VARIANTS = ["vanilla", "react-next"] as const;
+const DESCRIBED_VARIANTS = ["vanilla", "react-next", "astro"] as const;
 
 /** content-encoding as the wire carries it (editorial.test.ts's helper —
  *  same warm-until-encoded loop on the deployed plane, same reason: a
@@ -536,6 +536,174 @@ describe("the react-next PDP (canonical shell + composition + URL contract)", ()
           `editorial chunk ${path} carries PDP island code (${marker})`,
         ).toBe(false);
       }
+    }
+  });
+});
+
+describe("the astro PDP (canonical shell + composition + URL contract)", () => {
+  it("serves every arm 200 with the canonical shell and exactly one fenced plaque", async () => {
+    const snap = await loadServedSnapshot();
+    const arms = armSlugs(snap);
+    for (const detail of Object.values(arms)) {
+      const res = await get(`/astro/pdp/${detail.slug}/`);
+      expect(res.status).toBe(200);
+      assertPdpShell(await res.text());
+    }
+  });
+
+  it("renders the RESOLVED snapshot's tray: title, artist, price, stock, composition, live CTA", async () => {
+    // astro escapes through html-escaper, byte-identical to the reference
+    // renderer's esc() (apostrophe included — the editorial suite's recorded
+    // measurement), so the needles are vanilla's byte-strict forms.
+    const lib = await referenceLib();
+    const snap = await loadServedSnapshot();
+    const { rich: d } = armSlugs(snap);
+    const body = await (await get(`/astro/pdp/${d.slug}/`)).text();
+    expect(body).toContain(`<h1 class="pm-pdp__title">${esc(d.title)}</h1>`);
+    expect(body).toContain(`<p class="pm-pdp__artist">${esc(d.artist)}</p>`);
+    const price = lib.formatPrice(d.priceFrom);
+    expect(price).not.toBeNull();
+    expect(body).toContain(`<span class="pm-pdp__amount">${price}</span>`);
+    expect(body).toContain(esc(lib.stockLine(d.numForSale)));
+    expect(body).toContain(`<dt>Format</dt><dd>${esc(lib.formatComposition(d.formats))}</dd>`);
+    expect(body).toContain(">Add to cart</button>");
+    expect(body).not.toContain(">None for sale</button>");
+    expect(body).toContain('class="pm-gallery__zoom" type="button" aria-pressed="false"');
+    expect(count(body, 'class="pm-gallery__thumb"')).toBe(d.images.length);
+    expect(count(body, 'type="button" aria-current="true"')).toBe(1);
+  });
+
+  it("degenerate arms serve their contract: named em-dash + disabled CTA; no thumb list", async () => {
+    const snap = await loadServedSnapshot();
+    const { unpriced, oneImage } = armSlugs(snap);
+
+    const unpricedBody = await (await get(`/astro/pdp/${unpriced.slug}/`)).text();
+    expect(unpricedBody).toContain(
+      '<span aria-hidden="true">—</span><span class="pm-sr-only">No price listed</span>',
+    );
+    expect(unpricedBody).toContain("none for sale");
+    expect(unpricedBody).toContain(">None for sale</button>");
+    expect(unpricedBody).toContain(" disabled>");
+
+    const oneImageBody = await (await get(`/astro/pdp/${oneImage.slug}/`)).text();
+    expect(oneImageBody).not.toContain("pm-gallery__thumbs");
+    expect(oneImageBody).toContain('class="pm-gallery__zoom"');
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/astro/pdp/${snap.pdpDetail.slug}/`)).text();
+    expect(body).toContain('href="/react-next/plp/plain/" aria-current="page"');
+    expect(body).toContain(">Back to all records</a>");
+    expect(body).toContain('href="/vanilla/editorial/"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+  });
+
+  it("chrome injected: stamped for this page, counts from the arrays, swap preserves the slug", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/astro/pdp/${snap.pdpDetail.slug}/`)).text();
+    assertPdpChrome(body, "astro", snap.pdpDetail.slug);
+  });
+
+  it("links exactly the master's stylesheets, in the master's order", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/astro/pdp/${snap.pdpDetail.slug}/`)).text();
+    expect(sheetTails(body)).toEqual(masterSheetTails());
+  });
+
+  it("fonts: the canonical loading markup verbatim modulo base path (ADR-0003 §8)", async () => {
+    // astro matches the canonical lines byte-exactly (bare crossorigin, no
+    // self-closed voids) — the editorial suite's recorded difference from
+    // the JSX renderers.
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/astro/assets/pm"));
+    expect(lines).toHaveLength(3);
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/astro/pdp/${snap.pdpDetail.slug}/`)).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      const at = head.indexOf(line.slice(0, -1));
+      expect(at, `canonical loading line missing or out of order: ${line}`).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("a non-canonical slug is a 404, never a redirect (the URL contract)", async () => {
+    const snap = await loadServedSnapshot();
+    const d = snap.pdpDetail;
+    const wrongWords = await fetch(`${ORIGIN}/astro/pdp/${d.id}-not-this-release/`, {
+      redirect: "manual",
+    });
+    expect(wrongWords.status).toBe(404);
+    const unknownId = await fetch(`${ORIGIN}/astro/pdp/${snap.missingId}-ghost/`, {
+      redirect: "manual",
+    });
+    expect(unknownId.status).toBe(404);
+  });
+
+  it("the no-slash form redirects TO the slash form (slash normalisation, not the banned 301 class)", async () => {
+    // Workers static assets, like vanilla: 307 (see the vanilla twin).
+    const snap = await loadServedSnapshot();
+    const res = await fetch(`${ORIGIN}/astro/pdp/${snap.pdpDetail.slug}`, {
+      redirect: "manual",
+    });
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain(`/astro/pdp/${snap.pdpDetail.slug}/`);
+  });
+
+  it("a percent-encoded spelling of a canonical slug 307-normalises (pinned as measured)", async () => {
+    // The vanilla twin's axis, pinned per variant because react-next
+    // measurably diverges on it (its router decodes params → 200); astro is
+    // Workers assets like vanilla → 307 to the one canonical URL.
+    const snap = await loadServedSnapshot();
+    const encoded = snap.pdpDetail.slug.replace("-", "%2D");
+    expect(encoded).not.toBe(snap.pdpDetail.slug);
+    const res = await fetch(`${ORIGIN}/astro/pdp/${encoded}/`, { redirect: "manual" });
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain(`/astro/pdp/${snap.pdpDetail.slug}/`);
+  });
+
+  it("transport parity: the PDP page matches the placeholder baseline (ADR-0001 §6)", async () => {
+    const snap = await loadServedSnapshot();
+    const encoding = wireEncoding(`/astro/pdp/${armSlugs(snap).rich.slug}/`);
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("editorial's built page is untouched by the PDP bake (the inlined-bundle freeze)", async () => {
+    // astro's editorial cell (0.76 KB) is published and pinned, and its
+    // whole enhancement is INLINED in the page HTML. Two halves, because
+    // verify-slice showed markers alone cannot hold the freeze:
+    //  1. DELIVERY SHAPE — the failure mode DIFF-TO-STARTER point 25 names
+    //     is chunk EXTRACTION (a module shared between page entries flips
+    //     editorial's delivery inline → external fetch), and extracted CART
+    //     code would carry no PDP marker at all. So the shape is pinned:
+    //     exactly one inline module script, and no external script from
+    //     astro's own build output (the /_pm/measure.js the chrome appends
+    //     is instrumentation, strippable by known path).
+    //  2. MARKERS — needles that live in pdp.ts's own emitted code
+    //     (selector strings survive minification; function names do not).
+    // (The byte-level proof ran at build time: dist editorial HTML
+    // byte-identical before/after the bake, recorded in the build log.)
+    const body = await (await get("/astro/editorial/")).text();
+    expect(count(body, '<script type="module">')).toBe(1);
+    const externalScripts = [...body.matchAll(/<script[^>]*src="([^"]+)"/g)]
+      .map((m) => m[1]!)
+      .filter((src) => !src.startsWith("/_pm/"));
+    expect(externalScripts, "editorial gained an external script — the inline freeze broke").toEqual([]);
+    for (const marker of ["pm-gallery__zoom", "pm-qty__step", "live-price"]) {
+      expect(body.includes(marker), `editorial page carries PDP code (${marker})`).toBe(false);
     }
   });
 });

@@ -18,3 +18,13 @@ export interface EditorialData {
   readonly featured: ReleaseDetail;
   readonly summary: ReleaseSummary;
 }
+
+/** The PDP bake (`src/data/pdp.json`, pdp-variants slice 2): EVERY detail
+ *  tray — the build-time paradigm renders the whole catalogue (the vanilla
+ *  build.mjs precedent; rendering only the bench's handful would rig the
+ *  variant to fit the instrument). */
+export interface PdpData {
+  readonly name: string;
+  readonly capturedAt: string;
+  readonly details: readonly ReleaseDetail[];
+}

@@ -77,6 +77,10 @@ const ENHANCEMENTS: Record<string, Enhancement> = {
     ],
     mechanism: "names",
   },
+  astro: {
+    files: ["variants/astro/src/scripts/pdp.ts"],
+    mechanism: "selectors",
+  },
 };
 
 /**

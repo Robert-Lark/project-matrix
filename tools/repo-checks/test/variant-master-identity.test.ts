@@ -211,6 +211,26 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
   }
 
   /**
+   * Slug uniqueness, per snapshot. Three derivations now lean on it without
+   * saying so (verify-slice, pdp-variants slice 2): vanilla's build writes
+   * dist/pdp/{slug}/ per detail (a duplicate silently overwrites a page),
+   * astro's getStaticPaths mints a route per slug (a duplicate is a build
+   * error at best), and the request-time variants resolve slug → id assuming
+   * one answer. An unguarded true statement is this repo's definition of a
+   * defect, so the assumption is asserted where every tray already loads.
+   */
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: detail slugs are unique`, async () => {
+      const lib = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+      );
+      const details = lib.loadSnapshot(name).details as { slug: string }[];
+      expect(details.length).toBeGreaterThan(0);
+      expect(new Set(details.map((d) => d.slug)).size).toBe(details.length);
+    });
+  }
+
+  /**
    * The masters are a SUBSET of what the loop above covers, but they are the
    * only PDP pages the browser drift gate ever opens — so their four render
    * classes are pinned by id here too. A master silently resolving to a

@@ -1080,10 +1080,13 @@ function pdpMaster(slot: string): { slug: string; domUrl: string; pixelUrl: stri
   return entry;
 }
 
-/** The live PDP variants these legs compare, with each one's noise spec. */
+/** The live PDP variants these legs compare, with each one's noise spec.
+ *  astro runs under NO_NOISE — it registers nothing, the same measured
+ *  emptiness its editorial leg asserts. */
 const PDP_DRIFT_VARIANTS = [
   ["vanilla", NO_NOISE],
   ["react-next", REACT_NEXT_NOISE],
+  ["astro", NO_NOISE],
 ] as const;
 
 describe("the PDP drift legs cover every live variant", () => {

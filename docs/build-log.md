@@ -3811,3 +3811,65 @@ Slice-1 tree state, tool-derived: turbo **30/30**; repo-checks 95 passed /
 sabotage-proven at 240/240 + 500/500 drift on a one-word change);
 pdp.test.ts + pdp-controls.browser **37/37** on the held fixture plane;
 full fixture origin-suite count recorded at commit time in the handoff log.
+
+### Slice 2 — astro (the islands variant renders the whole catalogue)
+
+The second baked module is the slice's structural move: `prepare-build.mjs`
+resolves EVERY detail tray into `src/data/pdp.json`, `getStaticPaths` mints
+one static page per release — 240 fixture pages in 331 ms, the build-time
+paradigm's honest cost, measured and published rather than avoided — and
+the module is BOTH turbo-outputs-declared and gitignored. Both halves
+matter, and verify-slice caught the second missing: the snapshot.json
+lesson had been applied by half, and an untracked-but-not-ignored build
+output feeds the build's own turbo input hash (`$TURBO_DEFAULT$` hashes
+untracked files), so every fixture↔crate flavor switch would have
+invalidated the very cache the outputs entry exists to serve — plus a
+558 KB generated payload sat one `git add` from being the stale-committed-
+copy hazard the .gitignore names.
+
+The editorial byte-freeze rule from slice 1 held mechanically here:
+`scripts/pdp.ts` re-implements the whole enhancement self-contained (the
+vanilla pdp.js precedent — a module shared between two page entries is a
+chunk-extraction candidate, and extraction would flip editorial's INLINED
+0.76 KB bundle to an external fetch outright). Proof, both directions: the
+built editorial HTML is byte-identical before/after the bake (cmp), and an
+independent probe found the served vanilla and astro PDP article regions
+byte-identical (5,269 chars) modulo the declared whitespace freedom. The
+suite leg guarding the freeze pins DELIVERY SHAPE — exactly one inline
+module script, zero non-`/_pm/` external scripts — because verify-slice
+showed markers alone cannot catch extraction: extracted CART code carries
+no PDP marker.
+
+Guards, all sabotage-proven or fail-closed: the Container-API identity
+guard covers every tray in both snapshots in ~2.2 s (240/240 + 500/500
+drift on a one-word sabotage), the stylesheet-list leg, a page-level
+pass-through proof (the editorial page-test's twin — getStaticPaths
+enumeration + page-vs-component render equality), and a slug-uniqueness
+guard for the assumption three derivations had been leaning on unguarded.
+The registry-completeness ties did their job in the mechanical direction:
+moving astro `planned → variants` failed the drift and serving suites
+until both gained their astro legs, which is the direction the ADR-0008
+addendum A §4c discipline was built for.
+
+verify-slice `wf_30f57d1a-197` ran in two passes — the session limit
+killed two lenses mid-run for the SECOND time this unit, and the
+sequential-durability design held both times. Seven distinct findings
+adopted (the gitignore half-application, the missing astro encoded-slug
+pin, DIFF point 27 undercounting the `set:html` seams, the freeze guard's
+marker-only weakness, the records obligation, and the anti-rigging lens's
+two LOWs — slug uniqueness and the page-level pass-through). The
+conformance lens's full criterion walk passed; the seams lens returned a
+genuine empty (its probe artifacts on disk distinguish it from the
+dead-run empties the limit produces).
+
+Two environment incidents, recorded because the next session will meet
+them: the held plane WEDGED after ~6 hours (connections hung with no
+refusal — the long-held wrangler tree class, second data point; kill and
+restart is the whole cure), and the provenance gate refused a bench leg
+after the slice-1 commit moved HEAD past the plane's stamped attestation —
+addendum Q demonstrating itself against its own author, cured by
+re-stamping.
+
+Slice-2 tree, tool-derived: turbo **30/30**; full fixture origin suite
+**431/431** (16 files); repo-checks identity + wired guards green with the
+astro entries; astro workspace tests 9/9.

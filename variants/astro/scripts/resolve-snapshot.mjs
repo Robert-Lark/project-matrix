@@ -57,3 +57,22 @@ export function resolveEditorialData(name) {
   const manifest = read("manifest.json");
   return { name, capturedAt: manifest.capturedAt, featured, summary };
 }
+
+/**
+ * The PDP bake: EVERY detail tray plus the freeze date (pdp-variants slice
+ * 2). The build-time paradigm renders the whole catalogue — vanilla's
+ * build.mjs records the same call: generation time and dist size scale with
+ * the crate, and building only the handful the bench measures would be
+ * rigging the variant to fit the instrument.
+ *
+ * @param {"fixture" | "crate"} name
+ */
+export function resolvePdpData(name) {
+  const dir = SNAPSHOTS[name];
+  if (!dir) {
+    throw new Error(`PM_SNAPSHOT=${name} is not a known snapshot (fixture|crate)`);
+  }
+  const read = (file) => JSON.parse(readFileSync(join(dir, file), "utf8"));
+  const manifest = read("manifest.json");
+  return { name, capturedAt: manifest.capturedAt, details: read("details.json") };
+}
