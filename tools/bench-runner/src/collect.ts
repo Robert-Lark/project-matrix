@@ -763,6 +763,78 @@ function armNetworkQuiescence(page: Page): {
 }
 
 /**
+ * Capture the chrome's vitals beacons WITHOUT taking the browser cache away
+ * from the rest of the visit.
+ *
+ * **Why not `page.route`, which is what this replaced.** Lab/field isolation
+ * requires that a measured visit never DELIVERS a beacon (ADR-0001 §6), and
+ * that was done with a `page.route` glob over the beacon path. Playwright's
+ * own typings state the price: "Enabling routing disables http cache"
+ * (playwright-core 1.61.1 `types/types.d.ts:4063`). The routing is not
+ * URL-scoped at the browser — every request is paused so the glob can be
+ * matched in JS — so one beacon route took the HTTP cache away from the whole
+ * visit, on every run this project has ever published.
+ *
+ * **That is a measurement defect, and it was measured, not reasoned.** Qwik's
+ * PDP gallery re-writes `src` on all five thumbs with the value each already
+ * has (9 mutations against react-next's 4; the nodes survive, so it is a
+ * re-render, not a replacement). With the browser cache ON those writes are
+ * served from memory and the click costs **25,194 B** — the stage image
+ * alone, byte-identical to vanilla, react-next and astro. With the cache OFF
+ * the same five no-op writes become five real downloads and the click reads
+ * **52,032 B**. One variable, `page.route` on/off, reproduced on the local
+ * crate plane and on the deployed plane (probe, 2026-08-28). The instrument
+ * was manufacturing a 26,838 B paradigm difference no visitor can experience
+ * — a number that would have published as qwik's cost.
+ *
+ * **The replacement pauses ONLY the beacon URL**, at the browser, through
+ * CDP's own pattern filter, so every other request is served the way a real
+ * first-time visitor's is: from a fresh context whose cache behaves normally.
+ * That is what ADR-0001's "the browser HTTP cache is a held-constant" always
+ * meant — held at what a first-time visitor has, not held at OFF, which is
+ * no visitor at all. Verified to capture all five metrics
+ * (TTFB/FCP/LCP/CLS/INP) and to leave the gallery switch at 25,194 B on all
+ * four variants.
+ *
+ * A `sendBeacon` request never appears in resource timing in ANY of these
+ * modes (measured: 0 `/api/beacon` entries with routing, with CDP
+ * interception, and with no capture at all), so changing the capture
+ * mechanism cannot move `instrumentationBytes` or the instrumentation
+ * request count.
+ *
+ * Stated limit: `chrome-constant.ts` still routes, and must — it SERVES a
+ * prefetched fragment, which needs interception by construction. Its figures
+ * are a within-run A/B delta with the cache-off condition held identical in
+ * both arms, and it never re-touches an already-loaded URL, so the artifact
+ * above cannot reach it. Recorded here so the exception is visible rather
+ * than discovered.
+ */
+async function armBeaconCapture(
+  page: Page,
+  beacons: Array<{ name?: string; value?: number }>,
+): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  cdp.on("Fetch.requestPaused", (event) => {
+    try {
+      const body = event.request.postData;
+      if (typeof body === "string") beacons.push(JSON.parse(body));
+    } catch {
+      /* malformed payload — the assertion surface is the suite, not here */
+    }
+    // ALWAYS fulfil, whatever the parse did: a paused request never emits
+    // `requestfinished`, so leaving one paused would wedge the quiescence
+    // tracker that defines every byte boundary in this file — the failure
+    // would surface as a cap-out on an unrelated measurement.
+    void cdp
+      .send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: 204 })
+      .catch(() => {
+        /* the page went away under us; there is nothing left to answer */
+      });
+  });
+  await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/beacon*" }] });
+}
+
+/**
  * Drive one visit and return the full per-run sample.
  *
  * Every visit gets a FRESH browser context: the browser HTTP cache is a
@@ -800,14 +872,7 @@ export async function measureVisit(
 
     // Lab/field isolation: capture the chrome's beacons, never deliver them.
     const beacons: Array<{ name?: string; value?: number }> = [];
-    await page.route("**/api/beacon", async (route) => {
-      try {
-        beacons.push(JSON.parse(route.request().postData() ?? "{}"));
-      } catch {
-        /* malformed payload — the assertion surface is the suite, not here */
-      }
-      await route.fulfill({ status: 204 });
-    });
+    await armBeaconCapture(page, beacons);
 
     const response = await page.goto(spec.effectiveUrl, { waitUntil: "load" });
     const docCacheState = response?.headers()["x-pm-cache-state"] ?? null;
