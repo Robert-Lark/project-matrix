@@ -213,7 +213,13 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
       expect(sample).toContain("pm-gallery__zoom");
       expect(sample).toContain("data-pm-fenced");
       expect(sample).not.toContain("pm-format");
-    });
+      // Same class and same budget as the react-next and qwik catalogue
+      // sweeps (300_000 — sized to catch a hang, not to race the runner).
+      // Measured 739 ms (fixture) / 1,676 ms (crate) locally; at the ~9×
+      // ubuntu-latest factor that is ~6.7/15.1 s, so vitest's 5 s default
+      // would have failed both — this leg simply never got to run in CI
+      // before turbo aborted on repo-checks (run 33132628047).
+    }, 300_000);
   }
 
   /**

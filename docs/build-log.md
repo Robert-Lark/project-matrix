@@ -3974,3 +3974,79 @@ chunk-freeze leg. The fix is capture-tooling work — regenerate the
 derivative set WITH a receipt into the provenance-managed capture, not
 a quiet 900-file drop into a frozen directory — and is flagged for the
 next unit rather than folded in here.
+
+### The merge that did not deploy (2026-08-28)
+
+PR #30 merged red, and nobody had looked. Both CI runs — the PR's own
+and the merge commit's — failed the `check` job the same way: the two
+react-next PDP identity sweeps (740 trays each rendered twice, React
+SSR against the reference master, normalized through linkedom) timed
+out at vitest's 5,000 ms default, measured 9,648 ms (fixture leg) and
+8,903 ms (crate leg) on the ubuntu-latest runner against ~1 s each
+locally. The `deploy` job was therefore SKIPPED, so the plane kept
+serving the pre-merge `28d01fc` state — probed to confirm:
+`/qwik/pdp/` 404s in production while `/vanilla/editorial/` serves.
+The handoff line "the merge triggered a deploy" was written from the
+merge event, not the CI result; the post-deploy smoke it owed forward
+could never have run.
+
+The cliff is runner speed, not the guard. Two drafts of this fix were
+wrong before the third was right, and both errors are the same error:
+**extrapolating a runner time instead of measuring one.**
+
+Draft one copied the qwik sweeps' existing `60_000` onto the
+react-next and astro legs, sizing it from a "~8× slowdown" derived
+from a test that had TIMED OUT. A test killed at its timeout reports
+the time it was killed at — a lower bound, not a duration — so that
+ratio had no basis. Draft two fixed the method (take the ratio from a
+test that ran GREEN in the same run: `@pm/reference`'s `renderAll`,
+450 ms on the runner against 50 ms here, 9.0×) and then over-trusted
+the result, projecting every sweep at that one scalar and concluding
+that qwik's crate leg sat at 58.3 s against its own 60 s budget — a
+1.0× margin, and therefore a second cliff nobody had hit.
+
+**The PR's own CI run falsified that.** This is the first run in which
+these legs have ever executed, and it measured them directly:
+
+| sweep | local | PROJECTED at 9.0× | ACTUAL CI | real ratio |
+|---|---|---|---|---|
+| vanilla fixture | 35 ms | 0.3 s | 0.52 s | 14.9× |
+| vanilla crate | 66 ms | 0.6 s | 0.68 s | 10.3× |
+| react-next fixture | 878 ms | 7.9 s | **13.61 s** | 15.5× |
+| react-next crate | 1,771 ms | 15.9 s | **15.44 s** | 8.7× |
+| astro fixture | 739 ms | 6.7 s | 2.78 s | 3.8× |
+| astro crate | 1,676 ms | 15.1 s | 3.96 s | 2.4× |
+| qwik fixture | 2,748 ms | 24.7 s | **26.07 s** | 9.5× |
+| qwik crate | 6,480 ms | **58.3 s** | **13.51 s** | 2.1× |
+
+Three claims this log made are retracted against that table. The qwik
+crate leg is 13.51 s, not 58.3 s, and had **4.4× margin** under the
+old 60 s budget — it was never near a cliff. "Fixing repo-checks alone
+would have moved the red one package down" is therefore **false**:
+`@pm/qwik:test`'s worst leg is 26.07 s, well inside 60 s. And astro's
+legs, which draft two said the 5 s default would fail, actually come in
+at 2.78 s and 3.96 s — *under* the default, though the crate leg's
+1.26× margin is a flake waiting to happen rather than a pass.
+
+What survives is the original diagnosis and a better reason for the
+number. react-next's legs genuinely exceed the 5 s default at 13.61 s
+and 15.44 s: that IS the failure that skipped PR #30's deploy. And the
+real ratios span **2.1× to 15.5× on one runner in one run**, which is
+the durable finding — a single scalar cannot model this, so no
+per-test budget fitted to a local timing can be trusted. The ordering
+even inverts: qwik's crate leg is slower than its fixture leg here and
+FASTER on CI, because first-test compile cost dominates on the slower
+machine.
+
+So the budget is set to catch a HANG rather than fitted to an
+extrapolation the data shows cannot be done reliably. All four heavy
+catalogue sweeps take the bench runner's existing `300_000`: **11.5×
+margin on the measured worst leg** (qwik fixture, 26.07 s) while still
+failing a genuinely stuck render in five minutes. Vanilla stays on the
+default at 0.52/0.68 s measured, 7.4× margin, and a budget it cannot
+need would be noise. No assertion changes anywhere; turbo `check`
+30/30 locally and green in CI.
+
+One commit on branch `ci-sweep-timeouts`, unpushed. It blocks
+everything: the PDP variants reach production only after this lands
+green, and the units below stack on it.
