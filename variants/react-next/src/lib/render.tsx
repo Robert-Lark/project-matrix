@@ -236,14 +236,15 @@ export function EditorialArticle({
 
 /** The shared shell (packages/reference/render/shell.mjs `shell()`, ported):
  *  skip link, chrome slot, masthead · main · status · footer. `current`
- *  marks which masthead link is the surface being viewed — always
- *  "editorial" in this slice, kept as a parameter so PDP/PLP can reuse this
- *  component without touching it. */
+ *  marks which masthead link (if any) is the surface being viewed —
+ *  "editorial" there, "plp" on the PDP (the master pins that deliberately:
+ *  there is no PDP entry in the store nav), omitted on pages off the nav
+ *  (the PDP group's not-found). */
 export function Shell({
   current,
   children,
 }: {
-  current: "plp" | "editorial";
+  current?: "plp" | "editorial";
   children: React.ReactNode;
 }) {
   return (

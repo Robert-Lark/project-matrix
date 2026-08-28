@@ -332,6 +332,66 @@ is deprecated, repo archived 2025-09-29).
     installed `react-dom-client.development.js`, not assumed from the
     prop's name.
 
+## The PDP route (pdp-variants slice 1)
+
+24. **Multiple root layouts via route groups — `(editorial)` and `(pdp)` —
+    each passing its surface's stylesheet list to one shared
+    `src/lib/document.tsx`.** The root layout hardcoded editorial's CSS list
+    for every route (the defect the pdp-variants handoff named); astro's
+    Shell solved it with a `css` prop, and route groups are this framework's
+    idiom for the same parameterisation. Editorial's served CHUNK SET is
+    preserved by the split, and the claim is measured, not asserted: 7 of 8
+    chunks are NAME-identical to production (content-hash names ⇒
+    byte-identical), and the 8th is SIZE-identical (4,703 = 4,703 bytes)
+    differing only in one renumbered turbopack module id (25455→50643, two
+    occurrences, same digit count) — the irreducible floor of adding a route
+    to the app, leaving the published KB cell's value unchanged. Load-
+    bearing, because editorial's published receipts are pinned at their
+    measurement SHAs; an origin-suite leg now guards the leak class (no
+    editorial chunk may carry PDP island markers).
+25. **A thrown `notFound()` SSRs Next's own `__next_error__` document, not
+    the branded not-found boundary — accepted and recorded, not worked
+    around.** With multiple root layouts, Next 16.2 composes the not-found
+    boundary only into the RSC payload (hydration renders it client-side);
+    the served 404 HTML is the bare error shell. The cross-paradigm URL
+    contract is the STATUS (404, never a canonical 301), which holds.
+    Vanilla's 404 is an equally unbranded asset-layer 404, and the plane
+    already serves slot-less HTML 404s (qwik-city's own). Both escapes were
+    rejected because they change the EDITORIAL serving path mid-benchmark:
+    middleware (`proxy.ts` setting a surface header a single root layout
+    could branch on) adds per-request work to every editorial visit, and
+    React 19 `precedence`-hoisted stylesheets replace editorial's explicit
+    head delivery. A sibling divergence of the same platform class, pinned
+    as measured rather than unified: Next hands the route the
+    percent-DECODED slug, so an encoded spelling of a canonical slug
+    (`9000001%2Ddummy…`) serves 200 here while the static variants
+    307-normalise it — recovering the raw request bytes would need the same
+    rejected middleware. One URL still maps to one page's content; only the
+    number of accepted spellings differs, and the suite pins each variant's
+    actual (pdp.test.ts).
+26. **The qty input is UNCONTROLLED (`defaultValue`, refs) rather than
+    controlled state.** The DS rule vanilla's enhancement records — state
+    lives on the native attribute, never a JS variable — plus a mechanism
+    reason: the browser suite primes number inputs by writing `.value`, and
+    a controlled input diverges from vanilla's semantics under exactly that
+    kind of programmatic write. The clamp rides the NATIVE `change` event —
+    the commit event (Enter, the spinner, leaving the field) — attached via
+    a ref callback exactly as vanilla's `addEventListener("change", …)` is.
+    A blur-only draft was REJECTED after verify-slice reproduced it
+    diverging from vanilla on Enter-commit (vanilla clamped a typed 2501 to
+    99 on Enter; the draft stayed at 2501 until blur), and React's own
+    `onChange` is the per-keystroke input event, not the commit event — so
+    neither is a substitute. The browser suite pins the Enter-commit clamp
+    per variant so the rejected draft cannot return green.
+27. **No `#pm-cart-item` JSON script on the PDP.** The release id/title
+    reach the purchase island as PROPS — React's own data channel, the same
+    call point 10 made for editorial. Vanilla's JSON script element is that
+    paradigm's channel, and both are delivery, not contract.
+28. **No `loading.tsx` and no `Suspense` anywhere on the PDP route,
+    deliberately.** Streaming locks the HTTP status before `notFound()` can
+    set it (Next's loading.md: 200 for streamed responses) — adding either
+    would silently convert the slug contract's 404s into soft-404 200s.
+
 ## Verified against primary sources (not training recall)
 
 Next.js 16 ships with an explicit warning that its APIs/conventions may

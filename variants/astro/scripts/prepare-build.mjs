@@ -39,7 +39,7 @@ import { cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveEditorialData } from "./resolve-snapshot.mjs";
+import { resolveEditorialData, resolvePdpData } from "./resolve-snapshot.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -61,7 +61,15 @@ mkdirSync(dataDir, { recursive: true });
 // output, but a stable serialization keeps `git status`/diff noise out of a
 // developer's way if they ever un-ignore it to look.
 writeFileSync(join(dataDir, "snapshot.json"), `${JSON.stringify(data, null, 2)}\n`);
+// The second generated module (pdp-variants slice 2): every detail tray, for
+// getStaticPaths over the whole catalogue. Same cache-hit trap as
+// snapshot.json — it MUST be in @pm/astro#build's turbo outputs or a cache
+// hit restores dist/ without it and `astro check` fails ts(2307).
+writeFileSync(
+  join(dataDir, "pdp.json"),
+  `${JSON.stringify(resolvePdpData(name), null, 2)}\n`,
+);
 
 console.log(
-  `astro: @pm/tokens copied into public/assets/pm; editorial baked from the ${name} snapshot`,
+  `astro: @pm/tokens copied into public/assets/pm; editorial + pdp baked from the ${name} snapshot`,
 );

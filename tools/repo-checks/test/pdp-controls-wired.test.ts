@@ -23,6 +23,19 @@
  * mentions a class and does nothing with it; that one only ever runs the
  * fixture. Together they cover "the script never heard of this control" and
  * "the control does not respond".
+ *
+ * Per-variant mechanisms (pdp-variants slice 1 generalised what was
+ * vanilla-hardcoded — the exact green-on-vanilla-alone gap this file's own
+ * completeness assertion was written to block):
+ *  - "selectors" — a plain-DOM enhancement (vanilla's pdp.js, astro's
+ *    bundled script): its OWN string-literal selectors are extracted and run
+ *    against the master DOM, so a control none of its selectors can reach is
+ *    reported by markup.
+ *  - "names" — a JSX enhancement (react-next, qwik) authors elements rather
+ *    than selecting them, so there are no selectors to run; instead every
+ *    unexcused control's class must be NAMED as a whole token somewhere in
+ *    the registered component sources. Weaker on purpose and stated so: the
+ *    behavior half lives in the browser leg, which is variant-generic.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -35,19 +48,47 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 
 const MASTERS = ["pdp", "pdp/single-format", "pdp/unpriced", "pdp/one-image"] as const;
 
+interface Enhancement {
+  /** Repo-relative source files that together ARE the variant's PDP
+   *  enhancement — what must reach the master's controls. */
+  readonly files: readonly string[];
+  readonly mechanism: "selectors" | "names";
+}
+
 /**
- * Where each LIVE PDP variant keeps the enhancement that must reach the
- * master's controls. Deliberately a map plus a completeness assertion rather
- * than a single hardcoded path: `SURFACE_CONTROLS.pdp.variants` is the
- * registry of record, and the test below FAILS if it ever names a variant
- * with no entry here. So the day react-next, astro or qwik moves
- * `plannedVariants → variants`, this guard stops the merge until someone
- * points it at that variant's enhancement — rather than quietly continuing to
- * check vanilla and reporting green, which is exactly the shape of gap that
- * let the dead controls ship in the first place.
+ * Where each LIVE PDP variant keeps its enhancement. Deliberately a map plus
+ * a completeness assertion rather than a single hardcoded path:
+ * `SURFACE_CONTROLS.pdp.variants` is the registry of record, and the test
+ * below FAILS if it ever names a variant with no entry here. So the day a
+ * variant moves `plannedVariants → variants`, this guard stops the merge
+ * until someone points it at that variant's enhancement — rather than
+ * quietly continuing to check the others and reporting green.
  */
-const ENHANCEMENTS: Record<string, string> = {
-  vanilla: join(repoRoot, "variants", "vanilla", "src", "pdp.js"),
+const ENHANCEMENTS: Record<string, Enhancement> = {
+  vanilla: {
+    files: ["variants/vanilla/src/pdp.js"],
+    mechanism: "selectors",
+  },
+  "react-next": {
+    files: [
+      "variants/react-next/src/components/PdpGallery.tsx",
+      "variants/react-next/src/components/PdpPurchase.tsx",
+      "variants/react-next/src/components/LiveOriginButton.tsx",
+    ],
+    mechanism: "names",
+  },
+  astro: {
+    files: ["variants/astro/src/scripts/pdp.ts"],
+    mechanism: "selectors",
+  },
+  qwik: {
+    files: [
+      "variants/qwik/src/components/PdpGallery.tsx",
+      "variants/qwik/src/components/PdpPurchase.tsx",
+      "variants/qwik/src/components/LiveOriginDemo.tsx",
+    ],
+    mechanism: "names",
+  },
 };
 
 /**
@@ -92,6 +133,12 @@ function master(surface: string): string {
   );
 }
 
+function enhancementSource(enhancement: Enhancement): string {
+  return enhancement.files
+    .map((file) => readFileSync(join(repoRoot, file), "utf8"))
+    .join("\n");
+}
+
 describe("the PDP master advertises no control the variant leaves dead", () => {
   it("every LIVE PDP variant has a registered enhancement to check", () => {
     const live = SURFACE_CONTROLS["pdp"]!.variants;
@@ -100,81 +147,104 @@ describe("the PDP master advertises no control the variant leaves dead", () => {
     expect(
       unregistered,
       "a PDP variant is live but this guard does not know where its enhancement lives — " +
-        "point ENHANCEMENTS at it; do not let the guard keep reporting green on vanilla alone",
+        "point ENHANCEMENTS at it; do not let the guard keep reporting green on the others alone",
     ).toEqual([]);
   });
 
-  const script = readFileSync(ENHANCEMENTS["vanilla"]!, "utf8");
+  for (const [variant, enhancement] of Object.entries(ENHANCEMENTS)) {
+    const script = enhancementSource(enhancement);
 
-  for (const surface of MASTERS) {
-    it(`${surface}: every script-only state attribute it renders is written by pdp.js`, () => {
-      const { document } = parseHTML(master(surface));
-      const rendered = SCRIPT_ONLY_STATE.filter(
-        (attr) => document.querySelectorAll(`[${attr}]`).length > 0,
-      );
-      for (const attr of rendered) {
-        expect(
-          script.includes(attr),
-          `${surface} renders [${attr}] but pdp.js never writes it — the control ` +
-            `announces a state it can never enter`,
-        ).toBe(true);
-      }
-    });
-
-    it(`${surface}: every button and focusable region it renders is SELECTED by pdp.js`, () => {
-      const { document } = parseHTML(master(surface));
-      const controls = [
-        ...document.querySelectorAll("button, input, select, textarea, [tabindex]"),
-      ];
-      expect(controls.length).toBeGreaterThan(0);
-
-      // Run the enhancement's OWN selectors against the master DOM rather than
-      // substring-matching class names. Substring matching cannot tell two
-      // controls apart when they share a class: the PDP renders `pm-button`
-      // twice (add-to-cart and the fenced live-origin button), so a dead
-      // live-origin handler passed the earlier draft of this check purely
-      // because `pm-button` appeared in the file for the OTHER button.
-      const selectors = [...script.matchAll(/["'`]([^"'`\n]*[.#[][^"'`\n]*)["'`]/g)]
-        .map((m) => m[1]!.trim())
-        .filter((sel) => sel.length > 1);
-      const selected = new Set<unknown>();
-      for (const sel of selectors) {
-        try {
-          for (const el of document.querySelectorAll(sel)) selected.add(el);
-        } catch {
-          /* not a selector — a regex, a URL, a message string */
+    for (const surface of MASTERS) {
+      it(`${variant} · ${surface}: every script-only state attribute the master renders is written by the enhancement`, () => {
+        const { document } = parseHTML(master(surface));
+        const rendered = SCRIPT_ONLY_STATE.filter(
+          (attr) => document.querySelectorAll(`[${attr}]`).length > 0,
+        );
+        expect(rendered.length).toBeGreaterThan(0);
+        for (const attr of rendered) {
+          expect(
+            script.includes(attr),
+            `${surface} renders [${attr}] but ${variant}'s enhancement never writes it — ` +
+              `the control announces a state it can never enter`,
+          ).toBe(true);
         }
-      }
-      // Non-vacuity: a file whose selectors matched nothing would "pass" every
-      // control below only if the registry excused them all.
-      expect(selected.size, "pdp.js's selectors matched nothing in the master").toBeGreaterThan(2);
+      });
 
-      const unwired: string[] = [];
-      for (const raw of controls) {
-        const el = raw as unknown as {
-          getAttribute: (n: string) => string | null;
-          outerHTML: string;
-        };
-        const classes = (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
-        if (classes.some((c) => c in NATIVE_BEHAVIOUR)) continue;
-        // A focusable scroll REGION is behaviour the stylesheet owns
-        // (pdp.css `.pm-pdp__scroll { overflow-x: auto }`); script owes it
-        // nothing, but something must — it shipped styled by NOTHING, a
-        // focus stop on a container that could not scroll.
-        if (el.getAttribute("role") === "region") {
-          const css = readFileSync(
-            join(repoRoot, "packages", "tokens", "css", "surfaces", "pdp.css"),
-            "utf8",
-          );
-          for (const c of classes) {
-            expect(css.includes(`.${c}`), `${c} is focusable but styled by nothing`).toBe(true);
+      it(`${variant} · ${surface}: every button and focusable region the master renders is reached by the enhancement`, () => {
+        const { document } = parseHTML(master(surface));
+        const controls = [
+          ...document.querySelectorAll("button, input, select, textarea, [tabindex]"),
+        ];
+        expect(controls.length).toBeGreaterThan(0);
+
+        // The "selectors" mechanism runs the enhancement's OWN selectors
+        // against the master DOM rather than substring-matching class names.
+        // Substring matching cannot tell two controls apart when they share a
+        // class: the PDP renders `pm-button` twice (add-to-cart and the
+        // fenced live-origin button), so a dead live-origin handler passed an
+        // earlier draft purely because `pm-button` appeared in the file for
+        // the OTHER button. The "names" mechanism accepts that limit
+        // knowingly (JSX has no selectors to run) — its behavior half is the
+        // browser leg, which presses every button per variant.
+        const selected = new Set<unknown>();
+        const namedClasses = new Set<string>();
+        if (enhancement.mechanism === "selectors") {
+          const selectors = [...script.matchAll(/["'`]([^"'`\n]*[.#[][^"'`\n]*)["'`]/g)]
+            .map((m) => m[1]!.trim())
+            .filter((sel) => sel.length > 1);
+          for (const sel of selectors) {
+            try {
+              for (const el of document.querySelectorAll(sel)) selected.add(el);
+            } catch {
+              /* not a selector — a regex, a URL, a message string */
+            }
           }
-          continue;
+          // Non-vacuity: a file whose selectors matched nothing would "pass"
+          // every control below only if the registry excused them all.
+          expect(
+            selected.size,
+            `${variant}'s enhancement selectors matched nothing in the master`,
+          ).toBeGreaterThan(2);
+        } else {
+          for (const token of script.matchAll(/[\w-]+/g)) namedClasses.add(token[0]!);
+          expect(
+            [...namedClasses].filter((c) => c.startsWith("pm-")).length,
+            `${variant}'s enhancement names no pm- classes at all`,
+          ).toBeGreaterThan(2);
         }
-        if (!selected.has(raw)) unwired.push(el.outerHTML.slice(0, 120));
-      }
-      expect(unwired, `${surface}: controls no pdp.js selector reaches`).toEqual([]);
-    });
+
+        const reaches = (raw: unknown, classes: string[]): boolean =>
+          enhancement.mechanism === "selectors"
+            ? selected.has(raw)
+            : classes.some((c) => namedClasses.has(c));
+
+        const unwired: string[] = [];
+        for (const raw of controls) {
+          const el = raw as unknown as {
+            getAttribute: (n: string) => string | null;
+            outerHTML: string;
+          };
+          const classes = (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
+          if (classes.some((c) => c in NATIVE_BEHAVIOUR)) continue;
+          // A focusable scroll REGION is behaviour the stylesheet owns
+          // (pdp.css `.pm-pdp__scroll { overflow-x: auto }`); script owes it
+          // nothing, but something must — it shipped styled by NOTHING, a
+          // focus stop on a container that could not scroll.
+          if (el.getAttribute("role") === "region") {
+            const css = readFileSync(
+              join(repoRoot, "packages", "tokens", "css", "surfaces", "pdp.css"),
+              "utf8",
+            );
+            for (const c of classes) {
+              expect(css.includes(`.${c}`), `${c} is focusable but styled by nothing`).toBe(true);
+            }
+            continue;
+          }
+          if (!reaches(raw, classes)) unwired.push(el.outerHTML.slice(0, 120));
+        }
+        expect(unwired, `${surface}: controls ${variant}'s enhancement never reaches`).toEqual([]);
+      });
+    }
   }
 
   it("fires on the two controls that actually shipped dead", () => {
@@ -185,10 +255,13 @@ describe("the PDP master advertises no control the variant leaves dead", () => {
     expect(document.querySelectorAll("[aria-pressed]").length).toBeGreaterThan(0);
     expect(deadScript.includes("aria-pressed")).toBe(false);
     expect(deadScript.includes("pm-gallery__zoom")).toBe(false);
-    // …and the live script passes both, which is what makes the assertion above
-    // a proof rather than a restatement.
-    expect(script.includes("aria-pressed")).toBe(true);
-    expect(script.includes("pm-gallery__zoom")).toBe(true);
+    // …and every live enhancement passes both, which is what makes the
+    // assertion above a proof rather than a restatement.
+    for (const enhancement of Object.values(ENHANCEMENTS)) {
+      const script = enhancementSource(enhancement);
+      expect(script.includes("aria-pressed")).toBe(true);
+      expect(script.includes("pm-gallery__zoom")).toBe(true);
+    }
   });
 
   it("the format control is gone from the master, not merely unwired", () => {

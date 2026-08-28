@@ -3718,3 +3718,259 @@ one attested SHA, 210 conforming runs. The corrected cells published:
 astro's headline moved 0.37 → 0.76 KB — the dilution, undone in public,
 with the receipt chain to prove it. The floors caveat left the
 methodology page in the same commit as the receipts that made it false.
+
+## Phase 14 — The flip's build-out: three more PDPs (2026-08-21 — )
+
+The pdp-variants unit continues the `pdp-build` ticket: react-next, astro
+and qwik PDPs against the four-master spec layer, one variant per slice on
+one branch (the pdp-build multi-commit precedent), with the shared PDP test
+scaffolding landing in slice 1 parameterised over
+`SURFACE_CONTROLS.pdp.variants` — plus registry-completeness ties in every
+new guard, so a later slice extends the coverage by registering, never by
+remembering to edit test files.
+
+### Slice 1 — react-next (the villain flips first)
+
+The route is the settled URL contract made Next-shaped:
+`/react-next/pdp/{slug}/` is `force-dynamic`, parses the leading id, fetches
+the tray through the variant's own EDGE binding, and 404s a slug mismatch —
+with **no `loading.tsx` and no `Suspense` anywhere on the route**, because
+streaming locks the HTTP status before `notFound()` can set it (Next's own
+docs; DIFF-TO-STARTER point 28). One Next 16 behavior had to be measured
+around: `notFound()` thrown during METADATA resolution bails to the
+`__next_error__` document instead of the segment boundary, so the metadata
+function titles the 404 and the page component owns the throw. With
+multiple root layouts the 404 body is Next's own error shell either way
+(the branded boundary reaches hydration only) — accepted and recorded
+rather than worked around, because the alternatives (middleware, React 19
+precedence-hoisted styles) change the EDITORIAL serving path whose
+published receipts are pinned, and the STATUS is the whole cross-paradigm
+contract.
+
+The stylesheet parameterisation is the astro `css`-prop precedent in this
+framework's idiom: route groups `(editorial)`/`(pdp)`, each root layout
+passing its surface's list to one shared `Document`. The interactions are
+three client islands — gallery (thumb switch + zoom, stage width/height
+pinned to the first image), purchase (an UNCONTROLLED qty input, the DS
+state-on-native-attribute rule, clamped on the NATIVE change event), and
+the live-origin plaque button with vanilla's copy verbatim.
+
+**The headline finding — no gate covers this class, and it was caught by
+measuring:** adding the PDP route grew the EDITORIAL page's served chunks
+by **7,984 raw bytes** of PDP island code, on the variant whose editorial
+initial-JS cell (154.98 KB) is published and pinned. The mechanism is
+Turbopack grouping client components by their importing SERVER module —
+one `render.tsx` importing all six islands put the PDP's code into
+editorial's shared chunks. Three measured splits brought it to byte-parity:
+`PdpArticle` + islands into their own server module (`pdp.tsx`); a fully
+SELF-CONTAINED `pdp-cart.ts`, because merely importing cart.ts's helpers
+kept `announce`/`CART_KEY` from being tree-shaken out of editorial's chunk
+(+494 raw, prettified-diff-verified); and `pdp-format.ts` split out plus an
+INLINED shell skeleton in the PDP error boundary, because a second client
+importer of `Shell` registered it as a named export (+76 raw). Final
+state, tool-verified against production: 7 of 8 editorial chunks
+NAME-identical (content-hash names ⇒ byte-identical), the 8th
+SIZE-identical at 4,703 bytes with exactly one renumbered Turbopack module
+id — the irreducible floor of adding a route. The leak CLASS is now a
+suite leg: no editorial chunk may carry a PDP island marker.
+
+The slice also paid down what pdp-build left owed for BOTH live variants:
+`pdp.test.ts` (serving legs, fail-closed arm derivation, URL-contract 404s,
+per-variant slash/encoded-spelling pins — vanilla 307-normalises what
+react-next's decoded params accept as 200, the same platform class as
+307 vs 308, pinned as measured — transport parity, and the
+stylesheet-list-from-served-bytes leg) and the drift-gate PDP legs (the
+four masters re-rendered from the RESOLVED snapshot via the one
+`pdpMasterIds` derivation; the fenced plaque is CANONICAL content on this
+surface and is COMPARED, never dropped; pixels run rich×3 profiles +
+degenerates×1, a recorded scope choice).
+
+**verify-slice earned its keep twice on one slice** (run `wf_86c59859-909`;
+the first pass died on the session limit after ONE lens and the
+sequential-durability design held — the dead lenses' empty findings arrays
+were read as dead runs, not clean passes, and re-ran after the reset). Six
+distinct findings adopted: the pdp.test.ts "rich" arm resolving to the
+fixture's UNPRICED release (the price assertion guarded into silence in
+CI, and no leg anywhere asserting an ENABLED add-to-cart — the two-arms-
+one-page shape); the qty clamp riding blur where vanilla rides the native
+change event (reproduced as an Enter-commit divergence, 2501 vs 99, fixed
+natively, and the browser suite now presses Enter per variant so the
+rejected draft cannot return green); two record-not-code corrections in
+DIFF-TO-STARTER (the byte-freeze sentence overclaiming "unchanged" against
+the measured 7-of-8 state, and the superseded blur-clamp text the next two
+slices would have implemented from); the PDP error boundary shipping the
+cart badge slot with nothing able to fill it (CART_CONTRACT's populate
+clause — a self-contained badge read now runs, keeping the chunk freeze);
+and the missing PDP transport-parity leg. One finding refuted with
+evidence: the claim that the stylesheet-list wiring "cannot block a merge"
+— CI's origin job runs the full suite pre-merge, and the served-bytes leg
+fails a mis-wired layout there.
+
+Slice-1 tree state, tool-derived: turbo **30/30**; repo-checks 95 passed /
+1 skipped (react-next PDP identity guard: every tray, both snapshots,
+sabotage-proven at 240/240 + 500/500 drift on a one-word change);
+pdp.test.ts + pdp-controls.browser **37/37** on the held fixture plane;
+full fixture origin-suite count recorded at commit time in the handoff log.
+
+### Slice 2 — astro (the islands variant renders the whole catalogue)
+
+The second baked module is the slice's structural move: `prepare-build.mjs`
+resolves EVERY detail tray into `src/data/pdp.json`, `getStaticPaths` mints
+one static page per release — 240 fixture pages in 331 ms, the build-time
+paradigm's honest cost, measured and published rather than avoided — and
+the module is BOTH turbo-outputs-declared and gitignored. Both halves
+matter, and verify-slice caught the second missing: the snapshot.json
+lesson had been applied by half, and an untracked-but-not-ignored build
+output feeds the build's own turbo input hash (`$TURBO_DEFAULT$` hashes
+untracked files), so every fixture↔crate flavor switch would have
+invalidated the very cache the outputs entry exists to serve — plus a
+558 KB generated payload sat one `git add` from being the stale-committed-
+copy hazard the .gitignore names.
+
+The editorial byte-freeze rule from slice 1 held mechanically here:
+`scripts/pdp.ts` re-implements the whole enhancement self-contained (the
+vanilla pdp.js precedent — a module shared between two page entries is a
+chunk-extraction candidate, and extraction would flip editorial's INLINED
+0.76 KB bundle to an external fetch outright). Proof, both directions: the
+built editorial HTML is byte-identical before/after the bake (cmp), and an
+independent probe found the served vanilla and astro PDP article regions
+byte-identical (5,269 chars) modulo the declared whitespace freedom. The
+suite leg guarding the freeze pins DELIVERY SHAPE — exactly one inline
+module script, zero non-`/_pm/` external scripts — because verify-slice
+showed markers alone cannot catch extraction: extracted CART code carries
+no PDP marker.
+
+Guards, all sabotage-proven or fail-closed: the Container-API identity
+guard covers every tray in both snapshots in ~2.2 s (240/240 + 500/500
+drift on a one-word sabotage), the stylesheet-list leg, a page-level
+pass-through proof (the editorial page-test's twin — getStaticPaths
+enumeration + page-vs-component render equality), and a slug-uniqueness
+guard for the assumption three derivations had been leaning on unguarded.
+The registry-completeness ties did their job in the mechanical direction:
+moving astro `planned → variants` failed the drift and serving suites
+until both gained their astro legs, which is the direction the ADR-0008
+addendum A §4c discipline was built for.
+
+verify-slice `wf_30f57d1a-197` ran in two passes — the session limit
+killed two lenses mid-run for the SECOND time this unit, and the
+sequential-durability design held both times. Seven distinct findings
+adopted (the gitignore half-application, the missing astro encoded-slug
+pin, DIFF point 27 undercounting the `set:html` seams, the freeze guard's
+marker-only weakness, the records obligation, and the anti-rigging lens's
+two LOWs — slug uniqueness and the page-level pass-through). The
+conformance lens's full criterion walk passed; the seams lens returned a
+genuine empty (its probe artifacts on disk distinguish it from the
+dead-run empties the limit produces).
+
+Two environment incidents, recorded because the next session will meet
+them: the held plane WEDGED after ~6 hours (connections hung with no
+refusal — the long-held wrangler tree class, second data point; kill and
+restart is the whole cure), and the provenance gate refused a bench leg
+after the slice-1 commit moved HEAD past the plane's stamped attestation —
+addendum Q demonstrating itself against its own author, cured by
+re-stamping.
+
+Slice-2 tree, tool-derived: turbo **30/30**; full fixture origin suite
+**431/431** (16 files); repo-checks identity + wired guards green with the
+astro entries; astro workspace tests 9/9.
+
+### Slice 3 — qwik (the resumable variant closes the set)
+
+The route is the smallest of the three — `routeLoader$` does the
+leading-id parse, the slug-mismatch `fail(404)` (BRANDED, unlike
+react-next's accepted error-shell 404 — statuses shared, bodies recorded
+as a divergence), and the edge-throw `fail(503)` — but the document root
+was the slice's real problem. `root.tsx` renders ABOVE the router, so
+`useLocation` does not exist there; the stylesheet pick reads
+`useServerData("url")` — qwik-city's own mechanism, the same key its
+`useLocation` reads — and derives the surface segment from
+`import.meta.env.BASE_URL` rather than a hardcoded split index (the
+one-prefix-declaration rule; verify-slice killed the `[2]` form).
+Rejected alternatives, argued not assumed: `DocumentHead` links land
+AFTER the design-system sheets and break cascade order, and wrapping the
+head in a `component$` adds a serialization boundary the drift gate would
+meet as noise. Editorial requests take the same `STYLESHEETS` array
+through the same JSX call-site as before — served head bytes verified
+identical, because that cell is published and pinned.
+
+Two measured qwik behaviors are now recorded where the next author will
+look: `aria-current` removal on client re-render needs `null`, not
+`undefined` (the deselected thumb kept its attribute and two thumbs
+announced selected — caught by the browser leg's exactly-one assertion;
+the first "null didn't work" was a STALE BUILD from a broken `&&` chain,
+re-verified from compiled chunk bytes before concluding), and `onChange$`
+IS the native commit event, so the qty clamp rides Enter/spinner/blur
+with no extra listener.
+
+The byte-freeze rule held by measurement, not luck: a JS-on load of
+`/qwik/editorial/` fetches the same 6 chunk files with the same
+content-hash names and the same 62,635 raw bytes before and after the
+PDP route joined the build — rollup did not re-group. The probe JSON
+artifacts behind those numbers were purged by a tmp cleaner during a
+5-day session gap, so the record now carries its own provenance: the
+POST state is re-derivable live (the suite's chunk-freeze leg enumerates
+every referenced chunk and pins the count at 6), the PRE state needs a
+rebuild at `6daa15d`. The freeze leg itself was the completion run's
+biggest finding — see below.
+
+verify-slice ran as two workflows this slice: `wf_e15bd1af-15a` (the
+session limit killed it after two lenses — the THIRD kill this unit; the
+durable-journal design held a third time) and completion run
+`wf_55ab9563-9c0` (a fresh two-lens launch: the tmp purge ate the resume
+args file, and resume requires byte-identical args). Six adopted from
+the first run's lenses: the regex-anchored ` disabled` needle (the
+qwik/json state script carries the bare substring on EVERY page), exact
+gallery needles (the `<ul>` substring and the chrome's own
+`aria-current` made the drafts unfalsifiable), the unrendered `slug`
+dropped from the PDP projection, the chunk leg's second reference
+channel, the `BASE_URL`-derived surface pick, and the records
+obligation. Five distinct adopted from the completion run, none refuted:
+the chunk-freeze leg's THIRD channel (the state script serializes QRLs
+the attribute parse never sees — `on-document:qinit="#0"` is a state-REF
+whose chunk name lives only in `<script type="qwik/json">`) plus a
+closure over rollup's chunk-to-chunk imports and an exact pin at 6 (the
+react-next twin's `toBe(8)` idiom); the astro bake guard upgraded from
+id-list to DEEP equality (a field-level shrink — stripped notes,
+truncated tracklists — kept every id and passed every gate; one line
+closes the class the guard's own comment claimed to close); the qwik
+masthead needle restored to the composite byte-form the other three
+variants pin (each split half was satisfied by a DIFFERENT element — the
+back-link's href, the chrome's aria-current); and the two record gaps
+(freeze provenance, the decision-map paragraph). Sabotage-proving the
+adopted chunk-leg fix caught a bug IN the fix: a `\b` before `q-` never
+matches behind the state script's literal `\u0002` escape, which would
+have silently re-limited the sweep to attribute occurrences — the exact
+co-location luck the fix exists to remove.
+
+Environment, recorded for the next session: the provenance gate refused
+a bench leg for the THIRD time this unit after commits outran the
+plane's stamped attestation (re-stamp `workers/front/stamp-build.mjs` is
+the whole cure), and the 5-day usage-limit gap plus tmp cleaner
+established the durable-notes rule — resume state lives in the home-dir
+session folder now, never the scratchpad.
+
+Slice-3 tree, tool-derived: turbo `check` **30/30** (a first run failed
+while this log was being edited mid-hash — detail lost to a tail pipe,
+rerun on the settled tree clean); full fixture origin suite **16 files,
+468 passed, 0 failed, 24 environment-gated skips** (blog credential,
+published-readings, bench REMOTE gates — the standing fixture-plane
+skips); `pdp.test.ts` 82/82 against the held plane; qwik workspace tests
+7/7; astro 10/10 (the tenth is the bake-completeness guard).
+
+Unit-end crate-mode run (the re-run owed since slice 1): **447 passed,
+21 failed, 24 env-gated skips** — every failure ONE root cause. The
+frozen crate capture predates the `.thumb.avif` derivative class
+pdp-build introduced for the gallery: 0 of its 1,817 committed
+derivatives are thumbs, where the fixture holds 29 of 58 (minted when
+it was regenerated). So the previously recorded ONE-failure baseline
+(the data-plane sample 404 on `9861004-primary.thumb.avif`) now
+surfaces through every crate PDP pixel leg whose page renders a thumb
+list — 20 legs, failing on the broken-image fail-closed guard, five
+404s each. The one-image master's legs PASS, being the only PDP page
+with no thumb list, which confirms the mechanism from inside the
+failure set. Everything else is green on the 500-tray catalogue: the
+serving floor, content legs, URL contract, identity guards, and the
+chunk-freeze leg. The fix is capture-tooling work — regenerate the
+derivative set WITH a receipt into the provenance-managed capture, not
+a quiet 900-file drop into a frozen directory — and is flagged for the
+next unit rather than folded in here.

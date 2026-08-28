@@ -349,6 +349,42 @@ for `create-next-app`).
     suite also polls via `waitForFunction` rather than asserting immediately,
     so even a late run would not produce a false failure.
 
+## The PDP surface (pdp-variants slice 2)
+
+24. **A second baked module, `src/data/pdp.json` — every detail tray — and a
+    matching turbo `outputs` entry.** `getStaticPaths` renders one static
+    page per release (240 fixture / 500 crate), the build-time paradigm's
+    real shape on a catalogue surface, published rather than avoided (the
+    vanilla build.mjs reasoning: building only the bench's handful would rig
+    the variant to fit the instrument). The turbo entry is load-bearing: an
+    undeclared generated module is dropped on a cache hit and `astro check`
+    fails ts(2307) — the snapshot.json lesson, applied before it could
+    repeat.
+25. **`scripts/pdp.ts` is fully SELF-CONTAINED — it does not import
+    `scripts/cart.ts`.** Editorial's whole enhancement is INLINED in its
+    page HTML and its initial-JS cell (0.76 KB) is published and pinned; a
+    module shared between two page entries is a candidate for chunk
+    extraction, which would change editorial's delivery shape outright
+    (inline → external fetch). The unit's react-next slice measured the
+    same class of leak (+7,984 raw bytes) before this rule was made
+    mechanical. Proof at build: the built editorial HTML is byte-identical
+    before/after the PDP bake, and a suite leg asserts the served editorial
+    page carries no PDP enhancement marker.
+26. **PDP-only formatters live in `src/lib/pdp-format.ts`, not format.ts.**
+    Build-time-only code on this variant (zero wire impact), split anyway so
+    the editorial-frozen discipline stays mechanical across the unit — the
+    react-next pdp-format.ts precedent, where the same split WAS
+    wire-load-bearing.
+27. **Three `set:html` seams in PdpArticle.astro, named so an auditor can
+    enumerate them** (verify-slice caught the first draft of this point
+    claiming notes was the only one): the NOTES prose (pre-escaped strings —
+    escape, then `\n` → `<br>`, the master's own construction order; the
+    essays.ts precedent), the AMOUNT span, and the YEAR dd — the latter two
+    carry `namedGlyph` output on the null arms (authored literals only, its
+    doc comment forbids tray data) and `esc()`-pre-escaped data otherwise.
+    Everything else is template expressions, whose escaping is
+    byte-identical to the reference renderer's.
+
 ## Open question raised by this slice, NOT decided in it
 
 > **Tracked as [issue #16](https://github.com/Robert-Lark/project-matrix/issues/16),

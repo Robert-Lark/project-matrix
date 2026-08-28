@@ -1,0 +1,120 @@
+---
+/**
+ * The PDP article — this variant's re-implementation of the canonical PDP
+ * markup (`packages/reference/render/pdp.mjs` is the contract of record; the
+ * four masters under `packages/reference/surfaces/pdp/` are what the drift
+ * gate holds it to). Build-time all the way down: the tray arrives as a prop
+ * from the baked module, nothing runs per request, and the interactions are
+ * wired by the page's one bundled script (src/scripts/pdp.ts) exactly as the
+ * editorial page's cart is — deliberately not an island (DIFF-TO-STARTER).
+ *
+ * The degenerate arms are contract too, including the three no committed
+ * master gates (lib.mjs pdpRenderClass's recorded gap): an absent notes
+ * section, a null track duration (sr-only "No duration listed"), and a null
+ * year (named em-dash) — implemented from pdp.mjs source, not from the
+ * masters, precisely because no fixture master takes those arms.
+ *
+ * Whitespace discipline (Shell.astro's rule): inline-sensitive runs are
+ * authored on one line; the price line's single space between amount and
+ * stock is a real rendered space the zero-tolerance pixel gate compares.
+ */
+import type { ReleaseDetail } from "@pm/data-contract";
+import { esc, formatPrice, stockLine } from "../lib/format";
+import { formatComposition, formatDuration, namedGlyph, thumbSrc } from "../lib/pdp-format";
+
+interface Props {
+  detail: ReleaseDetail;
+}
+
+const { detail: d } = Astro.props;
+const price = formatPrice(d.priceFrom);
+const sold = d.numForSale === 0;
+
+/** The amount/year slots carry either data or a NAMED glyph (never a bare
+ *  em-dash — lib.mjs namedGlyph's reasoning); both arrive pre-escaped. */
+const amountHtml = price !== null ? esc(price) : namedGlyph("—", "No price listed");
+const yearHtml = d.year !== null ? esc(d.year) : namedGlyph("—", "No year listed");
+const labelLine = d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; ");
+
+/** Notes: the master escapes each paragraph then turns single newlines into
+ *  <br> (renderPdp notesBlock) — reproduced here as pre-escaped HTML through
+ *  set:html, the essays.ts precedent for prose whose inner markup is built. */
+const notesHtml = d.notes
+  ? d.notes
+      .split(/\n{2,}/)
+      .map((p) => `<p>${esc(p.trim()).replaceAll("\n", "<br>")}</p>`)
+      .join("\n            ")
+  : null;
+---
+
+<article class="pm-pdp">
+  <p class="pm-pdp__back"><a href="/react-next/plp/plain/">Back to all records</a></p>
+  <div class="pm-pdp__top">
+    <div class="pm-gallery">
+      <figure class="pm-gallery__stage">
+        <img class="pm-gallery__main" src={d.images[0]!.src} width={d.images[0]!.width} height={d.images[0]!.height} alt={d.images[0]!.alt} fetchpriority="high" />
+        <button class="pm-gallery__zoom" type="button" aria-pressed="false">Zoom</button>
+      </figure>
+      {d.images.length > 1 && (
+        <ul class="pm-gallery__thumbs" role="list">
+          {d.images.map((img, i) => (
+            <li><button class="pm-gallery__thumb" type="button" aria-current={i === 0 ? "true" : undefined}>
+              <img src={thumbSrc(img.src)} width="160" height="160" alt="" loading="lazy" fetchpriority="low" decoding="async" />
+              <span class="pm-sr-only">{`View image ${i + 1} of ${d.images.length}: ${img.alt}`}</span>
+            </button></li>
+          ))}
+        </ul>
+      )}
+    </div>
+    <div class="pm-pdp__buy">
+      <h1 class="pm-pdp__title">{d.title}</h1>
+      <p class="pm-pdp__artist">{d.artist}</p>
+      <p class="pm-pdp__price"><span class="pm-pdp__amount" set:html={amountHtml} /> <span class="pm-pdp__stock">{stockLine(d.numForSale)}</span></p>
+      <div class="pm-qty">
+        <label class="pm-qty__label" for="qty">Quantity</label>
+        <div class="pm-qty__group">
+          <button class="pm-qty__step" type="button"><span aria-hidden="true">−</span><span class="pm-sr-only">Decrease quantity</span></button>
+          <input class="pm-qty__input" id="qty" name="qty" type="number" inputmode="numeric" min="1" max="99" value="1" />
+          <button class="pm-qty__step" type="button"><span aria-hidden="true">+</span><span class="pm-sr-only">Increase quantity</span></button>
+        </div>
+      </div>
+      <div><button class="pm-button" type="button" disabled={sold}>{sold ? "None for sale" : "Add to cart"}</button></div>
+      <dl class="pm-pdp__meta">
+        <dt>Label</dt><dd>{labelLine}</dd>
+        <dt>Format</dt><dd>{formatComposition(d.formats)}</dd>
+        <dt>Year</dt><dd set:html={yearHtml} />
+        <dt>Genre</dt><dd>{[...d.genres, ...d.styles].join(", ")}</dd>
+      </dl>
+    </div>
+  </div>
+  {d.tracklist.length > 0 && (
+    <section class="pm-pdp__section">
+      <div class="pm-pdp__scroll" role="region" aria-label="Tracklist" tabindex="0">
+        <table class="pm-tracklist">
+          <caption class="pm-tracklist__caption">Tracklist</caption>
+          <thead><tr><th scope="col"><span aria-hidden="true">#</span><span class="pm-sr-only">Position</span></th><th scope="col">Title</th><th scope="col" class="pm-tracklist__dur">Length</th></tr></thead>
+          <tbody>
+            {d.tracklist.map((t) => (
+              <tr><td>{t.position}</td><td>{t.title}</td>{t.durationSeconds == null ? <td class="pm-tracklist__dur"><span class="pm-sr-only">No duration listed</span></td> : <td class="pm-tracklist__dur">{formatDuration(t.durationSeconds)}</td>}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+  {notesHtml !== null && (
+    <section class="pm-pdp__section">
+      <h2 class="pm-pdp__section-title">Notes</h2>
+      <div class="pm-prose" set:html={notesHtml} />
+    </section>
+  )}
+  <section class="pm-pdp__section">
+    <aside class="pm-plaque pm-plaque--fenced" data-pm-fenced="true">
+      <p class="pm-plaque__kicker">Fenced demonstration</p>
+      <p class="pm-plaque__name"><strong>The live-origin demonstration</strong></p>
+      <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
+      <p class="pm-plaque__claim"><button class="pm-button pm-button--secondary" type="button">Fetch today's price live</button> <output data-pm-live-origin></output></p>
+      <p class="pm-plaque__rule">measured with the same harness · excluded from every benchmark number</p>
+    </aside>
+  </section>
+</article>

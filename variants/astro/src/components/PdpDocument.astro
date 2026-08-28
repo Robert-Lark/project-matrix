@@ -1,0 +1,50 @@
+---
+/**
+ * The whole PDP document, from props — the one render entry point (the
+ * EditorialDocument precedent, for the same reason: the pre-merge identity
+ * guard drives it through Astro's Container API for BOTH committed
+ * snapshots, catching crate-flavored drift before merge, since CI's browser
+ * legs only ever serve the fixture).
+ */
+import type { ReleaseDetail } from "@pm/data-contract";
+import Shell from "../layouts/Shell.astro";
+import PdpArticle from "./PdpArticle.astro";
+
+interface Props {
+  detail: ReleaseDetail;
+}
+
+const { detail } = Astro.props;
+
+/** The PDP's own CSS, appended after the shell's (pdp.mjs's list). */
+const CSS = [
+  "components/gallery.css",
+  "components/qty.css",
+  "components/tracklist.css",
+  "components/prose.css",
+  "components/plaque.css",
+  "surfaces/pdp.css",
+];
+---
+
+<Shell title={`${detail.title} — ${detail.artist} — Long Decay Records`} current="plp" css={CSS}>
+  <PdpArticle detail={detail} />
+  {/*
+    The paradigm's client enhancement and the data it needs — the
+    EditorialDocument pattern exactly: a bundled <script> (deliberately NOT
+    an island — an <astro-island> element has no master equivalent), with
+    the release riding a JSON script element (delivery, not contract;
+    ADR-0008's freedoms name `script`). mountPdp is SELF-CONTAINED rather
+    than importing scripts/cart.ts — see its header: a module shared between
+    two page entries is a candidate for chunk extraction, which could change
+    how EDITORIAL's inlined bundle is delivered, and editorial's published
+    initial-JS cell is pinned at its measurement SHA.
+  */}
+  <Fragment slot="scripts">
+    <script is:inline type="application/json" id="pm-cart-item" set:html={JSON.stringify({ id: detail.id, title: detail.title }).replace(/</g, "\\u003c")} />
+    <script>
+      import { mountPdp } from "../scripts/pdp";
+      mountPdp();
+    </script>
+  </Fragment>
+</Shell>

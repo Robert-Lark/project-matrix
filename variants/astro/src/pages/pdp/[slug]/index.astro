@@ -1,0 +1,35 @@
+---
+/**
+ * /astro/pdp/{slug}/ — the islands paradigm on the surface where
+ * interactivity is genuine (pdp-variants slice 2).
+ *
+ * One static page per release, from the baked catalogue — the build-time
+ * paradigm's real shape, published rather than avoided (the vanilla
+ * build.mjs reasoning verbatim: generation time and dist size scale with
+ * the crate, and building only the handful the bench measures would be
+ * rigging the variant to fit the instrument). A non-canonical slug 404s BY
+ * CONSTRUCTION (no file) — the URL contract's static half; the request-time
+ * variants match it deliberately rather than redirecting.
+ */
+import type { GetStaticPaths } from "astro";
+import type { ReleaseDetail } from "@pm/data-contract";
+import type { PdpData } from "../../../lib/data";
+import baked from "../../../data/pdp.json";
+import PdpDocument from "../../../components/PdpDocument.astro";
+
+export const getStaticPaths = (() => {
+  const data = baked as unknown as PdpData;
+  return data.details.map((detail) => ({
+    params: { slug: detail.slug },
+    props: { detail },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  detail: ReleaseDetail;
+}
+
+const { detail } = Astro.props;
+---
+
+<PdpDocument detail={detail} />

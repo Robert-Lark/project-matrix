@@ -199,6 +199,16 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
     await qty.fill("250");
     await qty.blur();
     await expect.poll(() => qty.inputValue()).toBe("99");
+
+    // The clamp rides the COMMIT event, not blur alone: Enter commits a
+    // typed value without leaving the field, and a blur-only draft shipped
+    // exactly that divergence (verify-slice, pdp-variants slice 1 — vanilla
+    // clamped 2501→99 on Enter while react-next held the raw value until
+    // blur). Every variant is held to the Enter-commit clamp here so the
+    // rejected draft cannot return green.
+    await qty.fill("2501");
+    await qty.press("Enter");
+    await expect.poll(() => qty.inputValue()).toBe("99");
     await context.close();
   });
 

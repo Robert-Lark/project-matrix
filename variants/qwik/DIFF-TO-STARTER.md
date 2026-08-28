@@ -470,6 +470,59 @@ silently reconciled; no ADR is affected.
     re-declared loosely, so a drifting field name is a type error here instead
     of a missing string on the page.
 
+## The PDP route (pdp-variants slice 3)
+
+24. **Per-surface stylesheets via `useServerData("url")` in root.tsx.** The
+    root document was editorial-hardcoded (the defect the other variants'
+    shells solved with a css parameter). root.tsx renders above the router,
+    so `useLocation` is unavailable there; `useServerData("url")` is
+    qwik-city's own mechanism for the request URL (its useLocation reads the
+    same key). Two alternatives were REJECTED for editorial-byte reasons:
+    route `DocumentHead.links` render at RouterHead's position — BEFORE
+    fonts.css, breaking the master's cascade order — and a `component$`
+    SurfaceStyles would add a lazy boundary + serialized props to every
+    editorial page. Editorial requests take the same STYLESHEETS array
+    through the same JSX call-site as before — served head stylesheet lines
+    verified byte-identical pre/post. The lists live in
+    `src/lib/stylesheets.ts` so the pre-merge guard can import them without
+    qwik-city's vite-plugin virtual modules.
+25. **The editorial chunk graph is FROZEN across the route addition, by
+    measurement:** a JS-on load of /qwik/editorial/ fetches the same 6 chunk
+    files with the same content-hash names and the same 62,635 raw bytes
+    before and after the PDP route joined the build — rollup did not
+    re-group (the unit's headline risk after react-next's 7,984-byte leak;
+    here it simply did not materialize, and the content-hash name identity
+    is the proof). Provenance: the raw probe JSON artifacts were purged by a
+    tmp cleaner during a session gap, so the numbers survive in this record
+    and the session log only. To re-derive: the POST state is live — the
+    origin suite's chunk-freeze leg enumerates every chunk /qwik/editorial/
+    references and pins the count at 6; the PRE state needs a rebuild of
+    `variants/qwik` at 6daa15d (the commit before the PDP route), then a
+    JS-on load of /qwik/editorial/ comparing chunk-name set and raw-byte sum
+    against the served plane. `pdp-cart.ts` and `pdp-format.ts` are
+    self-contained (no cart.ts/format.ts imports) per the unit's standing
+    byte-freeze rule.
+26. **`aria-current` removal on client re-render needs `null`, not
+    `undefined` — measured, and type-cast over the JSX types.** At SSR both
+    omit the attribute, but on a re-render qwik's diff treats `undefined` as
+    "leave unchanged": the deselected thumb kept its aria-current and two
+    thumbs announced selected (caught by the JS-on browser leg's
+    exactly-one assertion; probed both ways against the plane). The JSX
+    types don't admit `null`, so the value is cast, with this note as the
+    reason.
+27. **`onChange$` IS the native commit event** (Enter, spinner, blur) — the
+    clamp parity react-next had to wire with a manual listener is this
+    framework's default. The qty input stays uncontrolled (state on the
+    native attribute, the DS rule).
+28. **Dynamic text inside `component$` serializes with resumable text
+    markers** (`<!--t=…-->Add to cart<!---->`) — comments are a declared
+    serialization freedom, but raw-byte suite needles must use presence
+    forms for such text (pdp.test.ts's qwik describe records each).
+29. **Encoded-slug spellings serve 200** (the router decodes params before
+    the slug compare — the react-next class; vanilla/astro 307-normalise).
+    Pinned as measured in pdp.test.ts; the 404s (`fail(404)`) are branded
+    inside the store's own chrome, which this variant CAN do server-side.
+
 ## Measured framework behaviours worth carrying forward
 
 Recorded because the next slices and the bench-accounting work (issue #16) will

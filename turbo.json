@@ -75,7 +75,9 @@
       // public/assets/pm/** is deliberately NOT listed: nothing consumes it
       // after the build (Astro copies it INTO dist/, which is restored), so
       // declaring it would only duplicate ~1 MB of fonts in every cache entry.
-      "outputs": ["dist/**", "src/data/snapshot.json"]
+      // src/data/pdp.json is the SECOND generated module (pdp-variants slice
+      // 2, the PDP bake) — same ts(2307) cache-hit trap as snapshot.json.
+      "outputs": ["dist/**", "src/data/snapshot.json", "src/data/pdp.json"]
     },
     "@pm/astro#typecheck": {
       // `astro check` type-checks src/pages/editorial/index.astro, which

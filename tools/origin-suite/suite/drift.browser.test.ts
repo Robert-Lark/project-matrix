@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { PROFILES, PROFILE_IDS } from "@pm/measurement";
+import { SURFACE_CONTROLS } from "@pm/switcher";
 import { loadServedSnapshot, snapshotNameFor } from "./snapshot";
 import {
   captureStablePixels,
@@ -56,6 +57,16 @@ let FIXTURE_URL: string;
 // of which variant is under test.
 let masterDomUrl: string;
 let masterPixelUrl: string;
+// The four PDP masters re-rendered from the RESOLVED snapshot (pdp-variants):
+// slot "" is the rich path; the slug is the SERVED page each master compares
+// against, derived through the ONE derivation (lib.pdpMasterIds) — never
+// named (the `resolvedPathSegments` lesson).
+let pdpMasters: {
+  slot: string;
+  slug: string;
+  domUrl: string;
+  pixelUrl: string;
+}[] = [];
 
 beforeAll(async () => {
   try {
@@ -124,6 +135,40 @@ beforeAll(async () => {
   const base = `${statics.origin}/packages/reference/.local/origin-suite-rerender`;
   masterDomUrl = `${base}/dom/editorial/`;
   masterPixelUrl = `${base}/pixels/editorial/`;
+
+  // The PDP master set, same mechanism (pdp-variants): four masters per
+  // flavor, ids derived by lib.pdpMasterIds from the RESOLVED snapshot —
+  // fixture in CI, crate on the deployed plane. The rich slot renders at the
+  // editorial re-render's depth; the three degenerate slots nest one deeper,
+  // exactly as the committed masters do (extraDepth + 1, ADR-0008's second
+  // addendum).
+  const pdp = await import(
+    pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+  );
+  const masterIds = lib.pdpMasterIds(snapshot) as Record<string, number>;
+  pdpMasters = Object.entries(masterIds).map(([slot, id]) => {
+    const slug = (lib.detailById(snapshot, id) as { slug: string }).slug;
+    for (const [flavor, origin] of [
+      ["dom", ""],
+      ["pixels", ORIGIN],
+    ] as const) {
+      const html = pdp.renderPdp(snapshot, {
+        origin,
+        id,
+        extraDepth: slot === "" ? 2 : 3,
+      });
+      const dir = join(rerenderRoot, flavor, "pdp", slot);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "index.html"), html);
+    }
+    const tail = slot === "" ? "pdp/" : `pdp/${slot}/`;
+    return {
+      slot: slot === "" ? "rich" : slot,
+      slug,
+      domUrl: `${base}/dom/${tail}`,
+      pixelUrl: `${base}/pixels/${tail}`,
+    };
+  });
 });
 
 /**
@@ -1004,3 +1049,133 @@ describe("the deliberate-drift fixture fails the pixel check", () => {
     await context.close();
   }, 90_000);
 });
+
+/* ── The PDP drift legs (pdp-variants) ─────────────────────────────────────
+   The vanilla PDP shipped (pdp-build) with NO drift leg at all — the four
+   masters had health coverage only, and no served variant page was ever
+   compared against them. These legs close that for every live PDP variant,
+   the editorial describes' exact mechanism: the master re-rendered from the
+   RESOLVED snapshot (fixture in CI, crate on the deployed plane), compared
+   JS-off by normalized DOM and by pixels with the injected chrome excluded.
+
+   Two PDP-specific rules, both deliberate:
+    - the live-origin plaque is CANONICAL MASTER CONTENT on this surface
+      (data-pm-fenced count exactly 1 per page): core comparisons never pass
+      dropFencedSubtrees, so the plaque is COMPARED, and its presence in the
+      normalized extract is asserted as non-vacuity — copying editorial's
+      zero-fenced rule here would fail every page; dropping the subtree would
+      hide plaque drift.
+    - pixels: the RICH master runs under all three profiles (cross-profile
+      reflow risk is structural and shared); the three degenerate masters run
+      under avg-broadband-desktop only — their pixel risk is the state they
+      isolate (named em-dash, disabled CTA, no thumb strip), which one
+      profile exercises, and their structure is DOM-compared above on every
+      pass. Recorded scope choice, not an accident: full 4×3 per variant
+      would add ~24 pixel legs per pair of variants for reflow coverage the
+      rich page already carries. */
+
+function pdpMaster(slot: string): { slug: string; domUrl: string; pixelUrl: string } {
+  const entry = pdpMasters.find((m) => m.slot === slot);
+  if (!entry) throw new Error(`no re-rendered PDP master for slot "${slot}"`);
+  return entry;
+}
+
+/** The live PDP variants these legs compare, with each one's noise spec.
+ *  astro runs under NO_NOISE — it registers nothing, the same measured
+ *  emptiness its editorial leg asserts. */
+const PDP_DRIFT_VARIANTS = [
+  ["vanilla", NO_NOISE],
+  ["react-next", REACT_NEXT_NOISE],
+  ["astro", NO_NOISE],
+  ["qwik", QWIK_NOISE],
+] as const;
+
+describe("the PDP drift legs cover every live variant", () => {
+  it("SURFACE_CONTROLS.pdp.variants equals the set compared above", () => {
+    // The ADR-0008 addendum A §4c discipline: a variant cannot move
+    // planned → variants without this file gaining its drift leg — the
+    // guard fails rather than keeping green on the variants it knows.
+    expect([...SURFACE_CONTROLS["pdp"]!.variants].sort()).toEqual(
+      PDP_DRIFT_VARIANTS.map(([v]) => v).sort(),
+    );
+  });
+});
+
+for (const [variant, noise] of PDP_DRIFT_VARIANTS) {
+  describe(`pdp: ${variant} vs the four masters re-rendered from the RESOLVED snapshot`, () => {
+    it("every master's served page equals it by normalized DOM — plaque compared, not dropped", async () => {
+      // Non-vacuity: an empty pdpMasters (a partial beforeAll failure) would
+      // make this loop pass having compared nothing.
+      expect(pdpMasters.length).toBe(4);
+      const context = await browser.newContext({ javaScriptEnabled: false });
+      for (const master of pdpMasters) {
+        const masterPage = await openTracked(context, master.domUrl);
+        const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+        await masterPage.close();
+        expect(masterDom).not.toBe("");
+        expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+        expect(masterDom).toContain("pm-pdp");
+        // The fence is canonical content here: it must RIDE the comparison.
+        expect(masterDom).toContain("data-pm-fenced");
+
+        const page = await openTracked(context, `${ORIGIN}/${variant}/pdp/${master.slug}/`);
+        expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+        expect(await page.locator("[data-pm-fenced]").count()).toBe(1);
+        const dom = await extractNormalizedDom(page, noise);
+        expect(dom).not.toContain("pm-chrome");
+        expect(dom).toContain("data-pm-fenced");
+        assertDomEqual(`dom-${variant}-pdp-${master.slot}`, masterDom, dom);
+        await page.close();
+      }
+      await context.close();
+    }, 180_000);
+
+    for (const profileId of PROFILE_IDS) {
+      it(`rich master: pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+        const master = pdpMaster("rich");
+        const context = await browser.newContext(
+          profileContextOptions(PROFILES[profileId]),
+        );
+        const masterPage = await openTracked(context, master.pixelUrl);
+        expect(await neutralizeChrome(masterPage)).toBe(0);
+        await settleImages(masterPage);
+        const referenceShot = await captureTracked(masterPage);
+        await masterPage.close();
+
+        const page = await openTracked(context, `${ORIGIN}/${variant}/pdp/${master.slug}/`);
+        expect(await neutralizeChrome(page)).toBe(1);
+        await settleImages(page);
+        const shot = await captureTracked(page);
+        assertPixelsEqual(`pixels-${profileId}-${variant}-pdp-rich`, referenceShot, shot);
+        await page.close();
+        await context.close();
+      }, 120_000);
+    }
+
+    for (const slot of ["single-format", "unpriced", "one-image"]) {
+      it(`${slot} master: pixels match under avg-broadband-desktop once the injected chrome is removed`, async () => {
+        const master = pdpMaster(slot);
+        const context = await browser.newContext(
+          profileContextOptions(PROFILES["avg-broadband-desktop"]!),
+        );
+        const masterPage = await openTracked(context, master.pixelUrl);
+        expect(await neutralizeChrome(masterPage)).toBe(0);
+        await settleImages(masterPage);
+        const referenceShot = await captureTracked(masterPage);
+        await masterPage.close();
+
+        const page = await openTracked(context, `${ORIGIN}/${variant}/pdp/${master.slug}/`);
+        expect(await neutralizeChrome(page)).toBe(1);
+        await settleImages(page);
+        const shot = await captureTracked(page);
+        assertPixelsEqual(
+          `pixels-avg-broadband-desktop-${variant}-pdp-${slot}`,
+          referenceShot,
+          shot,
+        );
+        await page.close();
+        await context.close();
+      }, 120_000);
+    }
+  });
+}

@@ -193,3 +193,94 @@ describe("qwik editorial equals the master by normalized DOM, both snapshots (pr
     expect(unstripped).toMatch(/q:key=|on:click=/);
   });
 });
+
+/**
+ * The PDP's version of the guard (pdp-variants slice 3) — the same
+ * renderToString mechanism, over EVERY detail tray in BOTH snapshots (the
+ * unit's standing shape: 740 pages, covering the render-class combinations
+ * the crate has and the fixture does not, plus the three KNOWINGLY UNGATED
+ * arms — absent notes, null duration, null year — that no committed master
+ * exercises). Same disclosed scope as the editorial guard: shell + article;
+ * the head/html attributes are proven against the SERVED page by the drift
+ * gate and pdp.test.ts.
+ */
+async function renderVariantPdp(detail: unknown): Promise<string> {
+  const { projectPdpDetail } = await import("../src/lib/edge");
+  const { PdpArticle } = await import("../src/components/PdpArticle");
+  const article = jsx(PdpArticle, {
+    detail: projectPdpDetail(detail as never),
+  });
+  const { html } = await renderToString(jsx(Shell, { current: "plp", children: article }), {
+    containerTagName: "div",
+    qwikLoader: { include: "never" },
+    symbolMapper: (symbolName) => [symbolName, `test-chunk.js#${symbolName}`],
+  });
+  return `<!doctype html><html lang="en"><head></head><body>${html}</body></html>`;
+}
+
+describe("qwik's PDP equals the master by normalized DOM, every tray, both snapshots", () => {
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: Shell+PdpArticle matches renderPdp for every detail tray`, async () => {
+      const reference = await import(
+        pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+      );
+      const snapshot = await loadSnapshot(name);
+      expect(snapshot.details.length).toBeGreaterThan(0);
+
+      const mismatched: number[] = [];
+      for (const detail of snapshot.details) {
+        const master = normalizeHtml(
+          reference.renderPdp(snapshot, { origin: "", id: detail.id }),
+          NO_NOISE,
+        );
+        const variant = normalizeHtml(await renderVariantPdp(detail), QWIK_NOISE, CONTAINER);
+        if (variant !== master) {
+          if (mismatched.length === 0) console.error(firstDomDivergence(master, variant));
+          mismatched.push(detail.id);
+        }
+      }
+      expect(mismatched, `${mismatched.length} of ${snapshot.details.length} PDP pages drifted`).toEqual([]);
+
+      // Non-vacuity (the unit's standing rule): real PDP markup was compared,
+      // the fenced plaque rode the comparison on both sides (CANONICAL
+      // content here — never dropped), and the format CONTROL stays gone
+      // while the format DATA survives (ADR-0008 addendum A).
+      const sample = normalizeHtml(
+        await renderVariantPdp(snapshot.details[0]),
+        QWIK_NOISE,
+        CONTAINER,
+      );
+      expect(sample).toContain("pm-pdp");
+      expect(sample).toContain("pm-gallery__zoom");
+      expect(sample).toContain("data-pm-fenced");
+      expect(sample).not.toContain("pm-format");
+    }, 60_000);
+  }
+
+  /**
+   * The stylesheet LIST — the axis root.tsx's surface pick parameterises.
+   * The guard compares the exported PDP_STYLESHEETS map (the single source
+   * root.tsx renders from) against the master's tails; the SERVED head is
+   * proven by pdp.test.ts's stylesheet leg on the plane.
+   */
+  it("root.tsx's PDP stylesheet map is exactly the master's list, in order", async () => {
+    const { PDP_STYLESHEETS } = await import("../src/lib/stylesheets");
+    const reference = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "pdp.mjs")).href
+    );
+    const snapshot = await loadSnapshot("fixture");
+    const master = [
+      ...reference
+        .renderPdp(snapshot, { origin: "", id: snapshot.details[0]!.id })
+        .matchAll(/<link rel="stylesheet" href="([^"]+)"/g),
+    ].map((m: RegExpMatchArray) => {
+      const at = m[1]!.lastIndexOf("/css/");
+      return m[1]!.slice(at + 5);
+    });
+    // The master's first sheet is fonts.css, which root.tsx authors beside
+    // the preloads (the canonical font markup) rather than in the map.
+    expect(master[0]).toBe("fonts.css");
+    expect(PDP_STYLESHEETS).toEqual(master.slice(1));
+    expect(PDP_STYLESHEETS).not.toContain("components/format-switch.css");
+  });
+});

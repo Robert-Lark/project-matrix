@@ -39,3 +39,4 @@ public/assets/pm/
 # committed copy is the fixture-dist-onto-the-crate-plane hazard that
 # @pm/astro#build's turbo env/inputs declaration exists to prevent.
 src/data/snapshot.json
+src/data/pdp.json
