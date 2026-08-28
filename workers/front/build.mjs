@@ -109,7 +109,24 @@ const uriHex = (hex) => hex.replace("#", "%23");
 const KB = 1024;
 const roundTo = (v, places) => Math.round(v * 10 ** places) / 10 ** places;
 
-function bundleFromReceipt(receipt, fitSpec, receiptUrl) {
+function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
+  // The COLUMN AXIS check, tied to the registry rather than to the fit
+  // template. It runs FIRST because the two checks that used to be the only
+  // variant-set validation both sit past early returns: `fitSpec.requires`
+  // is compared only after the band-overlap branch has had its chance to
+  // `return`, so a batch that measured 3 of a surface's 4 variants and whose
+  // bands overlapped would publish a partial column set with nothing
+  // comparing it to anything — every page then rendering a full-width table
+  // with a permanently em-dashed column under the line "Every number above
+  // links its receipt", which is C2 stated over cells that have none.
+  // Exact, not subset, in both directions (verify-slice, anti-rigging).
+  const measured = receipt.targets.map((t) => t.variant).sort();
+  const registered = [...surfaceVariants].sort();
+  if (measured.join(",") !== registered.join(",")) {
+    throw new Error(
+      `front lab: this batch measured [${measured.join(", ")}] but the surface is registered as serving [${registered.join(", ")}] — a publication must cover exactly the surface's live variants, or the table publishes a column no receipt backs (ADR-0008 §3)`,
+    );
+  }
   const receiptMeta = {
     profile: receipt.profile.id,
     date: receipt.date.slice(0, 10),
@@ -259,10 +276,59 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl) {
   return { columns, fit: { sentence, receipt: receiptMeta } };
 }
 
+// The switcher is TypeScript source and this build runs in plain node, so
+// esbuild bundles the exports the build needs in-process (the mechanism the
+// chrome-constant identity gate introduced; hoisted here because the surface
+// registry drives the receipt loop too). The lab-publishing surfaces are the
+// `labBundle`-flagged entries of SURFACE_CONTROLS — one registry for the
+// build, the Worker's served bundles, and the origin suite's per-surface
+// bundle leg, so registering a surface IS the wiring, not a reminder to wire.
+const switcherBundle = buildSync({
+  stdin: {
+    contents:
+      'export { renderChrome, chromeFragmentOf, SURFACE_CONTROLS } from "@pm/switcher"; export { getProfile, PROFILES } from "@pm/measurement";',
+    resolveDir: root,
+    loader: "js",
+  },
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  write: false,
+});
+const switcherMod = await import(
+  "data:text/javascript;base64," +
+    Buffer.from(switcherBundle.outputFiles[0].contents).toString("base64")
+);
+const LAB_SURFACES = Object.entries(switcherMod.SURFACE_CONTROLS)
+  .filter(([, controls]) => controls.labBundle === true)
+  .map(([surface]) => surface);
+// A SINGLETON is off the benchmarked matrix (ADR-0007 §5): its reading
+// section is a plain sentence and no lab snapshot will ever exist for it, so
+// flagging one for publication is a registry contradiction. Refused here
+// rather than serviced: the build would happily emit the bundle, and the
+// surface's own pages could never render it (verify-slice).
+for (const surface of LAB_SURFACES) {
+  if (switcherMod.SURFACE_CONTROLS[surface].singleton === true) {
+    throw new Error(
+      `front lab: surface "${surface}" is both singleton and labBundle — a singleton is off the benchmarked matrix (ADR-0007 §5) and renders a plain sentence, never a lab table, so it can never show the bundle this would publish`,
+    );
+  }
+}
+if (LAB_SURFACES.length === 0) {
+  throw new Error(
+    "front lab: no surface carries labBundle in SURFACE_CONTROLS — the pipeline would publish nothing anywhere, which is a registry accident, not a state",
+  );
+}
+
 const labDir = join(root, "lab");
 const labReceiptsDir = join(labDir, "receipts");
-const labProfiles = {};
-let editorialReceipts = [];
+// Per-surface accumulation: a receipt joins its surface's publication, and
+// each surface's batch discipline is checked against ITS OWN batch below —
+// two surfaces may legitimately publish batches minted on different days at
+// different SHAs (each is one publication; the mixed-batch refusals are
+// per-surface, never cross-surface).
+const profilesBySurface = Object.fromEntries(LAB_SURFACES.map((s) => [s, {}]));
+const receiptsBySurface = Object.fromEntries(LAB_SURFACES.map((s) => [s, []]));
 for (const file of readdirSync(labReceiptsDir).sort()) {
   if (!file.endsWith(".json")) continue;
   const receipt = JSON.parse(readFileSync(join(labReceiptsDir, file), "utf8"));
@@ -415,30 +481,131 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
       }
     }
   }
-  if (!file.startsWith("editorial-")) {
-    throw new Error(`front lab: ${file} names no known surface (editorial-* expected)`);
+  // Surface identity, three ways that must agree (this replaces the old
+  // hardcoded `editorial-` filename gate). The filename names the surface
+  // (registry-validated) AND the profile; the receipt's own targets each
+  // carry a `surface` field — a receipt filed under a surface its targets
+  // disprove is refused rather than published under the wrong table.
+  // LONGEST match, not first: with a first-match scan, registering a surface
+  // whose name extends another (`pdp` and a later `pdp-compare`) would parse
+  // `pdp-compare-avg-broadband-desktop.json` as surface `pdp` and then refuse
+  // it with an instruction to rename a correctly-named file to a WRONG one —
+  // a false-fail whose error message actively misleads (verify-slice).
+  const surface = LAB_SURFACES.filter((s) => file.startsWith(`${s}-`)).sort(
+    (a, b) => b.length - a.length,
+  )[0];
+  if (!surface) {
+    throw new Error(
+      `front lab: ${file} names no lab surface — receipts are {surface}-{profile}.json with surface one of: ${LAB_SURFACES.join(", ")} (a new surface registers by setting labBundle in SURFACE_CONTROLS)`,
+    );
   }
-  if (Object.hasOwn(labProfiles, receipt.profile.id)) {
-    throw new Error(`front lab: duplicate receipt for profile ${receipt.profile.id}`);
+  if (file !== `${surface}-${receipt.profile.id}.json`) {
+    throw new Error(
+      `front lab: ${file} should be named ${surface}-${receipt.profile.id}.json — the filename's profile half must be the receipt's own profile id`,
+    );
   }
-  labProfiles[receipt.profile.id] = {
-    surface: "editorial",
+  for (const target of receipt.targets) {
+    if (target.surface !== surface) {
+      throw new Error(
+        `front lab: ${file} is filed under "${surface}" but its ${target.variant} target measured "${target.surface}" — a receipt cannot publish under a surface its own targets disprove`,
+      );
+    }
+  }
+  // A surface publishes only once its fit template exists (ADR-0001
+  // addendum C: the sentence is written WITH the surface's first batch,
+  // against what that batch actually measured — never ahead of it).
+  if (!Object.hasOwn(FIT, surface)) {
+    throw new Error(
+      `front lab: ${file} publishes surface "${surface}" but lab/fit.mjs has no FIT.${surface} template — write the fit sentence with this surface's first batch, then publish`,
+    );
+  }
+  // The old code carried a duplicate-profile refusal here. It is GONE rather
+  // than kept as a dead branch: the filename check two blocks up forces
+  // `file === ${surface}-${receipt.profile.id}.json`, so two DISTINCT files
+  // from one readdirSync can no longer collide on (surface, profile) — F1 and
+  // F2 would both have to equal the same string. A guard that cannot fire
+  // cannot be sabotage-proven, and keeping it would advertise coverage the
+  // filename check actually provides (verify-slice: it was reachable under
+  // the old prefix-only gate, and stopped being when the gate got stricter).
+  profilesBySurface[surface][receipt.profile.id] = {
+    surface,
     profile: receipt.profile.id,
-    ...bundleFromReceipt(receipt, FIT.editorial, `/_pm/lab/receipts/${file}`),
+    ...bundleFromReceipt(
+      receipt,
+      FIT[surface],
+      `/_pm/lab/receipts/${file}`,
+      switcherMod.SURFACE_CONTROLS[surface].variants,
+    ),
   };
-  editorialReceipts.push(receipt);
+  receiptsBySurface[surface].push(receipt);
   cpSync(join(labReceiptsDir, file), join(dist, "_pm", "lab", "receipts", file));
 }
+// Batch integrity, PER SURFACE: every receipt in one surface's publication
+// shares one SHA, one date, one location, and one batch shape — a mixed-SHA
+// publication is not one publication. Checked for every surface with
+// receipts (the old code only checked when the editorial publication
+// existed), and never across surfaces: editorial's batch and a later PDP
+// batch are separate publications minted on their own days.
+for (const surface of LAB_SURFACES) {
+  const receipts = receiptsBySurface[surface];
+  for (const r of receipts) {
+    if (r.commit.sha !== receipts[0].commit.sha) {
+      throw new Error(`front lab: published ${surface} receipts span more than one commit SHA`);
+    }
+    if (r.runsPerUrl !== receipts[0].runsPerUrl || r.targets.length !== receipts[0].targets.length) {
+      throw new Error(`front lab: published ${surface} receipts disagree on batch shape`);
+    }
+    if (r.date.slice(0, 10) !== receipts[0].date.slice(0, 10)) {
+      throw new Error(`front lab: published ${surface} receipts span more than one date`);
+    }
+    if (r.runLocation.label !== receipts[0].runLocation.label) {
+      throw new Error(`front lab: published ${surface} receipts span more than one run location`);
+    }
+  }
+}
 // No committed receipts is a LEGITIMATE state, not an error: it is the
-// state every unbuilt surface is in, and the state this surface is in
+// state every unbuilt surface is in, and the state a surface is in
 // between a code change and the batch that re-measures it. The bundle still
 // builds (empty), the chrome renders its designed empty states everywhere,
 // and the pages that quote lab numbers say so plainly — the same rule as
 // every other number here: none without its artifact.
+const editorialReceipts = receiptsBySurface.editorial ?? [];
 const published = editorialReceipts.length > 0;
+for (const surface of LAB_SURFACES) {
+  writeFileSync(
+    join(dist, "_pm", "lab", `${surface}.json`),
+    JSON.stringify({ surface, profiles: profilesBySurface[surface] }, null, 2) + "\n",
+  );
+}
+
+// The Worker's embed half, GENERATED from the same roster that emitted the
+// bundles above. A hand-maintained import list in src/index.js was this
+// slice's first draft, and verify-slice killed it unanimously: nothing tied
+// it to the registry, so flagging a surface and forgetting its import line
+// left every guard green while the surface's pages rendered the empty state
+// over a fully published bundle — the exact serve/embed drift the file's own
+// comment promises is impossible. Deleting BOTH import lines passed all 478
+// legs, which made the slice's own Worker change unguarded.
+//
+// It lands OUTSIDE dist/ on purpose: dist is served assets-first, so a module
+// written there would be downloadable bytes on the measured plane. Gitignored
+// and declared in turbo's @pm/front#build outputs (the astro src/data
+// precedent), because an undeclared build output feeds the build's own input
+// hash and a cache replay would restore a dist without it.
+const generatedDir = join(root, "generated");
+mkdirSync(generatedDir, { recursive: true });
 writeFileSync(
-  join(dist, "_pm", "lab", "editorial.json"),
-  JSON.stringify({ surface: "editorial", profiles: labProfiles }, null, 2) + "\n",
+  join(generatedDir, "lab-bundles.js"),
+  "// GENERATED by workers/front/build.mjs — do not edit.\n" +
+    "// One entry per labBundle-flagged surface in SURFACE_CONTROLS. Each bundle\n" +
+    "// is imported from the very file served at /_pm/lab/{surface}.json, so the\n" +
+    "// embedded object and the served artifact cannot drift.\n" +
+    LAB_SURFACES.map(
+      (s, i) => `import s${i} from "../dist/_pm/lab/${s}.json";\n`,
+    ).join("") +
+    "\nexport const LAB_BUNDLES = {\n" +
+    LAB_SURFACES.map((_, i) => `  [s${i}.surface]: s${i}.profiles,\n`).join("") +
+    "};\n",
 );
 
 // The chrome constant (ADR-0001 addendum F) is OPTIONAL-BUT-VALIDATED, and
@@ -520,27 +687,18 @@ if (chromeConstant) {
         "front lab: the chrome constant records no renderContext, so the fragment it measured cannot be verified against the fragment this build ships (ADR-0001 addendum N hole 1) — re-measure with tools/bench-runner chrome-constant",
       );
     }
-    // The REAL renderer — @pm/switcher is TypeScript source, and this build
-    // runs in plain node, so esbuild bundles it in-process. The lab bundle
-    // is read back from the artifact written above: the Worker imports that
-    // very file, so the comparison rides the exact object it will serve.
-    const bundled = buildSync({
-      stdin: {
-        contents:
-          'export { renderChrome, chromeFragmentOf } from "@pm/switcher"; export { getProfile, PROFILES } from "@pm/measurement";',
-        resolveDir: root,
-        loader: "js",
-      },
-      bundle: true,
-      format: "esm",
-      platform: "node",
-      write: false,
-    });
-    const mod = await import(
-      "data:text/javascript;base64," + Buffer.from(bundled.outputFiles[0].contents).toString("base64")
+    // The REAL renderer — the switcher bundle hoisted above (esbuild over
+    // the TypeScript source). The lab bundles are read back from the
+    // artifacts written above: the Worker imports those very files, so the
+    // comparison rides the exact objects it will serve — every registered
+    // surface, because the probe's renderContext may name any of them.
+    const mod = switcherMod;
+    const LAB_BUNDLES = Object.fromEntries(
+      LAB_SURFACES.map((s) => {
+        const servedLab = JSON.parse(readFileSync(join(dist, "_pm", "lab", `${s}.json`), "utf8"));
+        return [servedLab.surface, servedLab.profiles];
+      }),
     );
-    const servedLab = JSON.parse(readFileSync(join(dist, "_pm", "lab", "editorial.json"), "utf8"));
-    const LAB_BUNDLES = { [servedLab.surface]: servedLab.profiles };
     // Profile resolution mirrors the Worker's labFor EXACTLY (getProfile ??
     // default; Object.hasOwn against client-controlled keys).
     const requested = new URLSearchParams(rc.search).get("profile") ?? "";
@@ -578,7 +736,10 @@ if (chromeConstant) {
 // itself defaults to avg-broadband-desktop — packages/switcher chrome.ts).
 let labFacts = null;
 if (published) {
-  const defaultBundle = labProfiles["avg-broadband-desktop"];
+  // Home's spread quotes the EDITORIAL surface by design (ADR-0007 §4/§5:
+  // the front door's measured row is the editorial batch) — this read stays
+  // surface-specific on purpose; it is content, not pipeline.
+  const defaultBundle = profilesBySurface.editorial["avg-broadband-desktop"];
   if (!defaultBundle) {
     throw new Error("front lab: no receipt for the default profile (avg-broadband-desktop)");
   }
@@ -602,28 +763,12 @@ if (published) {
     // never composed from a filename.
     receiptUrl: defaultJsCells[0].receipt.url,
   };
-  // Batch integrity: every published receipt shares one SHA and one batch
-  // discipline — a mixed-SHA publication is not one publication.
-  for (const r of editorialReceipts) {
-    if (r.commit.sha !== editorialReceipts[0].commit.sha) {
-      throw new Error("front lab: published receipts span more than one commit SHA");
-    }
-    if (r.runsPerUrl !== labFacts.runs || r.targets.length !== labFacts.variantCount) {
-      throw new Error("front lab: published receipts disagree on batch shape");
-    }
-    // Date and run location are read from receipt[0] but PUBLISHED as
-    // statements about the whole batch ("ran <date>", "labeled in every
-    // receipt as <location>"). Same class as the mixed-SHA refusal above: a
-    // batch straddling UTC midnight, or one receipt minted on a different
-    // machine once the pinned runner lands, would publish a claim the linked
-    // receipts falsify one click away (verify-slice, seams + conformance).
-    if (r.date.slice(0, 10) !== labFacts.date) {
-      throw new Error("front lab: published receipts span more than one date");
-    }
-    if (r.runLocation.label !== labFacts.location) {
-      throw new Error("front lab: published receipts span more than one run location");
-    }
-  }
+  // Batch integrity (one SHA / one date / one location / one shape per
+  // publication) is enforced in the per-surface loop above — it moved there
+  // when the pipeline generalised off `editorial-`, so it now runs for EVERY
+  // surface with receipts rather than only when the editorial publication
+  // exists. The statements labFacts publishes ("ran <date>", "labeled in
+  // every receipt as <location>") are backed by that loop.
 }
 
 // ── The home surface ────────────────────────────────────────────────────

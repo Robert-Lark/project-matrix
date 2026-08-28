@@ -24,6 +24,7 @@
 import { describe, expect, it } from "vitest";
 import { PROFILE_IDS } from "@pm/measurement";
 import { SURFACE_CONTROLS } from "@pm/switcher";
+import { loadServedSnapshot } from "./snapshot";
 
 const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 const get = (path: string) => fetch(`${ORIGIN}${path}`);
@@ -78,6 +79,134 @@ const esc = (v: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+/**
+ * The publication pipeline is PER SURFACE (the generalisation off the
+ * `editorial-` filename gate). `labBundle` in SURFACE_CONTROLS is the whole
+ * registration: the front build emits /_pm/lab/{surface}.json for every
+ * flagged surface and the Worker embeds it, so these legs are the
+ * registry-completeness tie — flag a surface without wiring the pipeline and
+ * they fail, exactly as PDP_SERVING ties the serving floor.
+ */
+const LAB_SURFACES = Object.entries(SURFACE_CONTROLS)
+  .filter(([, controls]) => controls.labBundle === true)
+  .map(([surface]) => surface);
+const UNFLAGGED_SURFACES = Object.keys(SURFACE_CONTROLS).filter(
+  (surface) => !LAB_SURFACES.includes(surface),
+);
+
+/**
+ * Where each lab surface's own page lives, so an EMPTY publication can be
+ * proven to render the chrome's designed empty state rather than a hole or a
+ * crash. A flagged surface with no entry FAILS the completeness leg below —
+ * a row is a runtime requirement, not an honor-system edit.
+ */
+const SURFACE_PAGE: Record<string, (snap: Awaited<ReturnType<typeof loadServedSnapshot>>) => string> = {
+  editorial: () => "/vanilla/editorial/",
+  pdp: (snap) => `/vanilla/pdp/${snap.pdpDetail.slug}/`,
+};
+
+describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS registry", () => {
+  it("registers at least the editorial surface (this suite is not vacuous)", () => {
+    expect(LAB_SURFACES).toContain("editorial");
+    expect(LAB_SURFACES.length).toBeGreaterThan(0);
+  });
+
+  it.each(LAB_SURFACES)(
+    "%s serves its own bundle at /_pm/lab/{surface}.json, self-identifying",
+    async (surface) => {
+      const res = await get(`/_pm/lab/${surface}.json`);
+      expect(res.status, `/_pm/lab/${surface}.json`).toBe(200);
+      const file = await res.json();
+      // The bundle names the surface it belongs to — the Worker keys
+      // LAB_BUNDLES off this field, so a mislabeled artifact would serve one
+      // surface's numbers under another's table.
+      expect(file.surface).toBe(surface);
+      expect(typeof file.profiles).toBe("object");
+      expect(file.profiles).not.toBeNull();
+      // Every profile key is a real profile, and each bundle self-identifies
+      // with BOTH its surface and its profile (published or empty).
+      for (const [id, bundle] of Object.entries(file.profiles as Record<string, Bundle>)) {
+        expect(PROFILE_IDS).toContain(id);
+        expect(bundle.surface).toBe(surface);
+        expect(bundle.profile).toBe(id);
+      }
+    },
+  );
+
+  it.each(UNFLAGGED_SURFACES)(
+    "%s carries no labBundle flag, so no bundle is served for it",
+    async (surface) => {
+      // The reverse tie: unflagging a surface must remove its artifact, not
+      // leave a stale one served. Without this, the flag could be dropped
+      // while the old bundle kept feeding the chrome.
+      const res = await get(`/_pm/lab/${surface}.json`);
+      expect(res.status, `/_pm/lab/${surface}.json`).toBe(404);
+    },
+  );
+
+  it("every lab surface has a page entry here (completeness — no unproven surface)", () => {
+    for (const surface of LAB_SURFACES) {
+      // Object.hasOwn, not a bare index: surface keys index a plain object,
+      // and the repo's recurring prototype-key class ("constructor" 502'd
+      // instead of 404ing) is why every registry lookup here uses it.
+      expect(
+        Object.hasOwn(SURFACE_PAGE, surface),
+        `no SURFACE_PAGE entry for "${surface}" — add its page path so its empty/published state is proven`,
+      ).toBe(true);
+    }
+  });
+
+  /**
+   * BOTH directions, every surface, every run — replacing an empty-only leg
+   * that verify-slice caught reproducing the DESCRIBED_VARIANTS anti-pattern
+   * this repo already removed once (pdp.test.ts:44-50). That leg skipped any
+   * PUBLISHED surface, so `SURFACE_PAGE.editorial` was never dereferenced on
+   * any run and a typo'd path passed; and it would have fallen to ZERO
+   * assertions the day the PDP batch lands and both surfaces are published,
+   * while still counting among the green legs. Its "non-vacuity" line was
+   * `expect(Array.isArray(empties)).toBe(true)` — true for every possible
+   * value, including the empty array it was meant to catch.
+   *
+   * Here every registered surface is fetched on every run and asserted
+   * against whatever its own served bundle carries, so the leg cannot go
+   * quiet: today editorial exercises the published branch and pdp the empty
+   * one, proving both on the same run.
+   */
+  it.each(LAB_SURFACES)(
+    "%s's page renders exactly the state its own served bundle carries",
+    async (surface) => {
+      const file = await (await get(`/_pm/lab/${surface}.json`)).json();
+      const snap = await loadServedSnapshot();
+      const res = await get(SURFACE_PAGE[surface]!(snap));
+      expect(res.status, `${surface} page`).toBe(200);
+      const body = await res.text();
+      const bundle = (file.profiles as Record<string, Bundle>)[DEFAULT_PROFILE];
+      if (!bundle) {
+        // Registering a surface must not POPULATE it: an empty bundle renders
+        // the same empty state an unregistered surface does, so a surface's
+        // pages are byte-for-byte what they were before it was flagged.
+        expect(body, `${surface} page (empty bundle)`).toContain("No published runs yet");
+        expect(body, `${surface} page (empty bundle)`).not.toContain(
+          'class="pm-chrome__reading"',
+        );
+        return;
+      }
+      // The EMBED half of the registry tie, which serving alone cannot prove:
+      // a surface whose bundle is served but not embedded in the Worker
+      // renders this same empty state over fully published numbers. Asserting
+      // the page carries the bundle's own values is what distinguishes them.
+      expect(body, `${surface} page (published bundle)`).not.toContain("No published runs yet");
+      for (const [variant, cell] of Object.entries(bundle.columns)) {
+        const js = cell["initial JS"];
+        if (!js) continue;
+        expect(body, `${surface} ${variant} initial JS`).toContain(
+          `<a class="pm-chrome__reading" href="${js.receipt.url}">${js.value}&nbsp;${js.unit}</a>`,
+        );
+      }
+    },
+  );
+});
 
 describe("/_pm/lab/editorial.json — the publication is complete and receipt-backed", () => {
   it("is served on the instrumentation path in either state — published or not", async () => {
