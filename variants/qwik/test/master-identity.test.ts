@@ -254,14 +254,20 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
       expect(sample).toContain("pm-gallery__zoom");
       expect(sample).toContain("data-pm-fenced");
       expect(sample).not.toContain("pm-format");
-      // Raised 60_000 → 300_000 with the react-next/astro sweeps, because 60 s
-      // was NOT enough here and nothing had caught it: this is the heaviest
-      // sweep in the class (2,748 ms fixture / 6,480 ms crate locally), and at
-      // the ~9× ubuntu-latest factor the crate leg projects to 58.3 s — a 1.0×
-      // margin. It had never run in CI to prove otherwise: turbo aborted on
-      // repo-checks before reaching @pm/qwik:test in the only run where this
-      // leg existed (33132628047). Fixing repo-checks alone would have moved
-      // the red one package down.
+      // 300_000 across the whole catalogue-sweep class — a budget sized to
+      // catch a HANG, not fitted to a measurement. MEASURED on ubuntu-latest
+      // (PR #31, the first run in which these legs ever executed): fixture
+      // 26.07 s, crate 13.51 s, against 2,748/6,480 ms here.
+      //
+      // The comment this replaces claimed the crate leg projected to 58.3 s
+      // against its old 60 s budget and would have failed. That was a
+      // PROJECTION from a single 9× scalar, and the run above falsified it:
+      // the crate leg had 4.4× margin under 60 s. The durable lesson is why
+      // the scalar was wrong — real local→CI ratios span 2.1× to 15.5× on one
+      // runner in one run, and the ordering even inverts (this crate leg is
+      // slower than its fixture twin locally and FASTER on CI, first-test
+      // compile cost dominating on the slower machine). So no budget here is
+      // extrapolated from a local timing.
     }, 300_000);
   }
 

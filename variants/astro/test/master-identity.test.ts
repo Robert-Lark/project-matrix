@@ -215,10 +215,14 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
       expect(sample).not.toContain("pm-format");
       // Same class and same budget as the react-next and qwik catalogue
       // sweeps (300_000 — sized to catch a hang, not to race the runner).
-      // Measured 739 ms (fixture) / 1,676 ms (crate) locally; at the ~9×
-      // ubuntu-latest factor that is ~6.7/15.1 s, so vitest's 5 s default
-      // would have failed both — this leg simply never got to run in CI
-      // before turbo aborted on repo-checks (run 33132628047).
+      // MEASURED on ubuntu-latest (PR #31): fixture 2.78 s, crate 3.96 s,
+      // against 739/1,676 ms here.
+      //
+      // Correcting the projection this comment used to carry: it said the 5 s
+      // default "would have failed both". It would not have — both legs come
+      // in UNDER 5 s. The crate leg's 1.26× margin is a flake waiting to
+      // happen rather than a failure, which is reason enough for a real
+      // budget, but the stronger claim was wrong and is retracted.
     }, 300_000);
   }
 
