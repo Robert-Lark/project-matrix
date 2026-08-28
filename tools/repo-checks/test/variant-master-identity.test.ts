@@ -575,7 +575,16 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
       expect(sample).toContain("data-pm-fenced");
       expect(sample).toContain("Format");
       expect(sample).not.toContain("pm-format");
-    });
+      // These catalogue sweeps render every tray twice and compare normalized
+      // DOM; the budget exists to catch a HANG, not to race the runner, so it
+      // is the bench-runner's 300_000 rather than a figure fitted to the
+      // measured time. Measured: 878 ms (fixture) / 1,771 ms (crate) locally
+      // against 9,648/8,903 ms on ubuntu-latest, where vitest's 5 s default
+      // failed PR #30's check job and skipped the deploy (run 33132628047).
+      // The runner is ~9× this machine, derived from a test that ran GREEN in
+      // that same run (@pm/reference renderAll: 450 ms CI / 50 ms local) —
+      // the timed-out numbers above are lower bounds and cannot give a ratio.
+    }, 300_000);
   }
 
   /**

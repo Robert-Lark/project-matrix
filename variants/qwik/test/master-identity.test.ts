@@ -254,7 +254,15 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
       expect(sample).toContain("pm-gallery__zoom");
       expect(sample).toContain("data-pm-fenced");
       expect(sample).not.toContain("pm-format");
-    }, 60_000);
+      // Raised 60_000 → 300_000 with the react-next/astro sweeps, because 60 s
+      // was NOT enough here and nothing had caught it: this is the heaviest
+      // sweep in the class (2,748 ms fixture / 6,480 ms crate locally), and at
+      // the ~9× ubuntu-latest factor the crate leg projects to 58.3 s — a 1.0×
+      // margin. It had never run in CI to prove otherwise: turbo aborted on
+      // repo-checks before reaching @pm/qwik:test in the only run where this
+      // leg existed (33132628047). Fixing repo-checks alone would have moved
+      // the red one package down.
+    }, 300_000);
   }
 
   /**
