@@ -834,8 +834,23 @@ async function armBeaconCapture(
   const cdp = await page.context().newCDPSession(page);
   cdp.on("Fetch.requestPaused", (event) => {
     try {
-      const body = event.request.postData;
-      if (typeof body === "string") beacons.push(JSON.parse(body));
+      // `postDataEntries` FIRST, `postData` only as a fallback. CDP's
+      // `Request.postData` is deprecated and Chromium omits it for bodies it
+      // did not inline (setting `hasPostData` instead) — Playwright itself
+      // reads the entries. Reading only the deprecated field would drop the
+      // beacon silently: nothing throws, the request is still fulfilled, and
+      // every vital in the run records as null while the arrival loop burns
+      // its whole cap waiting for metrics that were captured and discarded
+      // (verify-slice, conformance lens).
+      const entries = (event.request as { postDataEntries?: { bytes?: string }[] })
+        .postDataEntries;
+      const body =
+        entries && entries.length > 0
+          ? entries
+              .map((e) => (e.bytes ? Buffer.from(e.bytes, "base64").toString("utf8") : ""))
+              .join("")
+          : event.request.postData;
+      if (typeof body === "string" && body.length > 0) beacons.push(JSON.parse(body));
     } catch {
       /* malformed payload — the assertion surface is the suite, not here */
     }

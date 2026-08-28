@@ -35,6 +35,11 @@ import { Receipt, runBatch, type ReceiptT } from "@pm/bench-runner";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadServedSnapshot } from "./snapshot";
+// The publication's OWN tolerance, imported rather than restated. Two guards
+// on one property with two different thresholds is a trap: the build would
+// publish a spread the suite goes red on, and whoever hit it would have to
+// decide which comment is the policy (verify-slice, conformance lens).
+import { FIT } from "../../../workers/front/lab/fit.mjs";
 
 const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 const REMOTE = process.env.PM_EXPECT_BROTLI === "1";
@@ -44,9 +49,29 @@ const NONCE = `suite-interaction-${Date.now().toString(36)}`;
 const RUNS = 2;
 /** Every LIVE PDP variant, read from the registry rather than named here. */
 const PDP_VARIANTS = SURFACE_CONTROLS["pdp"]!.variants;
+const pdpFetch = FIT["pdp"]!.interactionFetch;
+if (pdpFetch === "none") {
+  throw new Error(
+    "FIT.pdp declares interactionFetch \"none\", but this file asserts a cross-variant CONSTANT — " +
+      "the declaration and the leg have to describe the same claim",
+  );
+}
+const TOLERANCE_BYTES = pdpFetch.toleranceBytes;
 
 let receipt: ReceiptT;
+let cartReceipt: ReceiptT;
 let slug: string;
+/** A PRICED release — a different page from `slug`, deliberately. The suite's
+ *  `pdpDetail` is the first release with >= 2 images and a tracklist, and in the
+ *  FIXTURE that is 9000001, which is unpriced and zero-stock, so its CTA ships
+ *  `disabled` and `pdp-add-to-cart` cannot be driven on it at all. The
+ *  `pdp-controls` suite already carries this exact split for the same reason;
+ *  pointing the cart batch at the gallery page would test the harness's
+ *  assumption rather than the page. (Found by the fail-fast this slice added to
+ *  the interaction itself, which named the constraint in a minute where
+ *  Playwright's actionability retry would have taken 30 s per visit to say
+ *  nothing useful.) */
+let buySlug: string;
 let imageCount: number;
 
 beforeAll(async () => {
@@ -58,6 +83,14 @@ beforeAll(async () => {
   expect(snap.pdpDetail.images.length).toBeGreaterThan(1);
   slug = snap.pdpDetail.slug;
   imageCount = snap.pdpDetail.images.length;
+  const forSale = snap.details.find((d) => d.numForSale > 0 && d.priceFrom != null);
+  if (!forSale) {
+    throw new Error(
+      "[bench-interaction] the served snapshot has no purchasable release — the zero-fetch leg " +
+        "would drive a disabled CTA; the suite fails closed, it never skips",
+    );
+  }
+  buySlug = forSale.slug;
   receipt = Receipt.parse(
     await runBatch({
       origin: ORIGIN,
@@ -72,7 +105,29 @@ beforeAll(async () => {
       repoRoot,
     }),
   );
-}, 300_000);
+  // The MIRROR case, and it is the one this file's own thesis says goes
+  // untested: an interaction that must measure ZERO while the tracker
+  // genuinely goes quiet. Without it, a regression that made
+  // `armNetworkQuiescence` return early would still show non-zero bytes on the
+  // fetching leg and pass — the zero direction is what proves the boundary is
+  // measuring rather than merely producing a number (verify-slice,
+  // conformance lens). `pdp-add-to-cart` is also the declaration the PDP's
+  // sibling surface publishes as "none", so this is the claim under test.
+  cartReceipt = Receipt.parse(
+    await runBatch({
+      origin: ORIGIN,
+      targets: PDP_VARIANTS.map((variant) => ({
+        path: `/${variant}/pdp/${buySlug}/`,
+        interactionId: "pdp-add-to-cart",
+      })),
+      profileId: "avg-broadband-desktop",
+      runsPerUrl: RUNS,
+      n: 24,
+      runNonce: `${NONCE}-cart`,
+      repoRoot,
+    }),
+  );
+}, 600_000);
 
 describe.skipIf(REMOTE)("an interaction that FETCHES is measured as fetching (ADR-0001 addendum R)", () => {
   it("records NON-ZERO interaction bytes in both columns, on every variant", () => {
@@ -128,13 +183,12 @@ describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm —
         byVariant.set(`${target.variant}/${name}`, bytes as number);
       }
     }
-    const values = [...new Set(byVariant.values())];
+    const values = [...byVariant.values()];
     expect(
-      values.length,
-      `the four paradigms swap the stage to the same URL, so these must agree — got ${JSON.stringify(
-        Object.fromEntries(byVariant),
-      )}`,
-    ).toBe(1);
+      Math.max(...values) - Math.min(...values),
+      `the four paradigms swap the stage to the same URL, so these must agree within the publication's ` +
+        `own ${TOLERANCE_BYTES} B tolerance — got ${JSON.stringify(Object.fromEntries(byVariant))}`,
+    ).toBeLessThanOrEqual(TOLERANCE_BYTES);
     // Non-vacuity: the map must actually hold every registered variant in
     // both columns, or "they all agree" would be a statement about one cell.
     expect(byVariant.size).toBe(PDP_VARIANTS.length * 2);
@@ -150,6 +204,28 @@ describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm —
     for (const target of receipt.targets) {
       expect(target.surface).toBe("pdp");
       expect(target.interactionId).toBe("pdp-gallery-switch");
+    }
+  });
+});
+
+describe.skipIf(REMOTE)("the zero-fetch direction, on an interaction that must measure nothing", () => {
+  it("pdp-add-to-cart records ZERO bytes, with the boundary attested, on every variant", () => {
+    // The claim `interactionFetch: "none"` makes, driven rather than assumed.
+    // A boundary that stopped waiting would also read zero here — which is why
+    // the settled flag is asserted beside the bytes, and why the FETCHING leg
+    // above is the other half of the same proof.
+    for (const target of cartReceipt.targets) {
+      for (const name of ["cold", "warm"] as const) {
+        expect(
+          target.columns[name].medians.interactionBytes,
+          `${target.variant}/${name}`,
+        ).toBe(0);
+        for (const run of target.columns[name].runs) {
+          expect(run.kb.interactionBytes, `${target.variant}/${name} run`).toBe(0);
+          expect(run.interactionSettled, `${target.variant}/${name} run`).toBe(true);
+        }
+      }
+      expect(target.interactionId).toBe("pdp-add-to-cart");
     }
   });
 });

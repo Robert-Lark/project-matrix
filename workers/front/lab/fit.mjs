@@ -53,11 +53,16 @@ export const FIT = {
      * same thing in every column.
      *
      * Editorial publishes it, and that is a measurement rather than an
-     * assumption: `editorial-add-to-cart` reads 24 ms for all five variants
-     * across every profile in the committed receipts, seven runs each. The
-     * async-handler asymmetry ADR-0001 addendum T describes exists here too —
-     * qwik's DOM change lands at 22.0 ms against 1.0-3.5 ms for the others —
-     * but it falls INSIDE the measured window, so the cell is like-for-like.
+     * assumption: across the committed receipts every column's INP sits inside
+     * one narrow band — published medians 24 ms throughout except react-next's
+     * 32 ms on average broadband, and every run of every variant between 24 and
+     * 32 ms. (The methodology page states that spread DERIVED from the
+     * receipts rather than typed, so it cannot go stale at the next batch; an
+     * earlier draft of this comment claimed a flat 24 ms everywhere and the
+     * receipts refuted it.) The async-handler asymmetry ADR-0001 addendum T
+     * describes exists here too — qwik's DOM change lands at 22.0 ms against
+     * 1.0-3.5 ms for the others — but it falls INSIDE the measured window, so
+     * the cell is like-for-like.
      */
     interactionTiming: { publish: true },
     /**

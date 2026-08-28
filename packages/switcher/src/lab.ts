@@ -107,4 +107,18 @@ export interface SurfaceLabBundle {
    * three 24s under a caveat — is a number no prose can rescue.
    */
   interactionTiming?: { published: boolean; reason?: string };
+  /**
+   * What the surface's scripted click cost on the wire, receipt-derived, with
+   * the tolerance the publication declared for cross-variant agreement.
+   *
+   * Carried on the bundle rather than only inside the fit SENTENCE, because
+   * the sentence can vanish: `bandsOverlap` deletes it (ADR-0001 addendum C
+   * forbids the comparative verdict when the compared bands overlap), and on a
+   * surface that also withholds its INP row that would leave the click — the
+   * PDP's whole headline — with no published figure anywhere. The overlap rule
+   * is about a RANKING the bands do not support; a cross-variant CONSTANT is
+   * not a ranking, so deleting it with the sentence was a category error
+   * (verify-slice, conformance lens).
+   */
+  interactionFetch?: { bytes: number; toleranceBytes?: number };
 }

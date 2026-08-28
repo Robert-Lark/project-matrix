@@ -364,6 +364,15 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
         ? warm[(warm.length - 1) / 2]
         : (warm[warm.length / 2 - 1] + warm[warm.length / 2]) / 2;
   }
+  // The figure travels on the BUNDLE, not only inside the sentence — the
+  // band-overlap early return below deletes the sentence, and on a surface
+  // that also withholds its INP row that would leave the click with no
+  // published figure at all.
+  const bundleFetch =
+    declared === "none"
+      ? { bytes: 0 }
+      : { bytes: interactionBytes, toleranceBytes: declared.toleranceBytes };
+
   // The fit line (ADR-0001 addendum C): comparative framing only when the
   // compared byte bands do not overlap. The sentence enumerates EVERY
   // variant, so every variant's band must be separable — checking only the
@@ -392,7 +401,13 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     const lower = band(ordered[i - 1]);
     const upper = band(ordered[i]);
     if (lower.max >= upper.min && upper.max >= lower.min) {
-      return { columns, interactionId, interactionTiming: bundleTiming, bandsOverlap: true };
+      return {
+        columns,
+        interactionId,
+        interactionTiming: bundleTiming,
+        interactionFetch: bundleFetch,
+        bandsOverlap: true,
+      };
     }
   }
   const kb = Object.fromEntries(
@@ -421,7 +436,13 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
   if (/undefined|NaN/.test(sentence)) {
     throw new Error(`front lab: the fit sentence contains an unsubstituted value: ${sentence}`);
   }
-  return { columns, interactionId, interactionTiming: bundleTiming, fit: { sentence, receipt: receiptMeta } };
+  return {
+    columns,
+    interactionId,
+    interactionTiming: bundleTiming,
+    interactionFetch: bundleFetch,
+    fit: { sentence, receipt: receiptMeta },
+  };
 }
 
 // The switcher is TypeScript source and this build runs in plain node, so
@@ -947,6 +968,41 @@ const homeSpread = labFacts
     `for the same article, published <span class="num">${esc(labFacts.date)}</span>.`
   : `The five builds are public; their measured readings publish with the next batch.`;
 
+// The INP-comparability claim on /methodology/ is about the site's OWN
+// PUBLISHED cells, so it is DERIVED from the receipts rather than typed. The
+// first draft typed "all five variants read 24 ms across every profile", and
+// the served bundle one click away falsified it: react-next's warm median is
+// 32 ms on average broadband, and runs span 24-32 (verify-slice, conformance
+// lens). A hand-typed number the site's own artifact contradicts is the exact
+// class this pipeline exists to make impossible — and it would have gone stale
+// again at the next editorial batch even if it had been right.
+const inpSpread = (() => {
+  const receipts = receiptsBySurface.editorial ?? [];
+  if (receipts.length === 0) {
+    return `No editorial batch is published, so this page states no spread for it.`;
+  }
+  const cells = receipts.flatMap((r) =>
+    r.targets.flatMap((t) => [t.columns.warm, t.columns.cold]),
+  );
+  const runs = cells
+    .flatMap((c) => c.runs.map((run) => run.webVitals.INP))
+    .filter((v) => typeof v === "number" && Number.isFinite(v));
+  const medians = cells
+    .map((c) => c.medians.webVitals.INP)
+    .filter((v) => typeof v === "number" && Number.isFinite(v));
+  if (runs.length === 0 || medians.length === 0) {
+    throw new Error(
+      "front lab: the editorial receipts carry no usable INP values, so the methodology page cannot state a spread it claims to derive",
+    );
+  }
+  return (
+    `Every one of the <span class="num">${esc(runs.length)}</span> runs that produced a value falls between ` +
+    `<span class="num">${esc(Math.min(...runs))}</span> and <span class="num">${esc(Math.max(...runs))}</span>&nbsp;ms, ` +
+    `and the published medians span <span class="num">${esc(Math.min(...medians))}</span>–` +
+    `<span class="num">${esc(Math.max(...medians))}</span>&nbsp;ms — one narrow band, every column inside it.`
+  );
+})();
+
 // ── /methodology/'s batch statements, PER SURFACE ───────────────────────
 // These were derived from `editorialReceipts` alone, which was true while
 // editorial was the only publishing surface and became a correctness bug the
@@ -1123,6 +1179,7 @@ const methodology = readFileSync(join(root, "methodology", "index.html"), "utf8"
   .replaceAll("%%CC_STATEMENT%%", () => ccStatement)
   .replaceAll("%%LAB_BATCH_STATEMENT%%", () => batchStatement)
   .replaceAll("%%LAB_RUNS%%", () => esc(labRuns))
+  .replaceAll("%%LAB_INP_SPREAD%%", () => inpSpread)
   .replaceAll("%%TOKEN_PAPER%%", () => token("--pm-neutral-0"))
   .replaceAll("%%TOKEN_VINYL_URI%%", () => uriHex(token("--pm-neutral-950")))
   .replaceAll("%%TOKEN_PAPER_SUNK_URI%%", () => uriHex(token("--pm-neutral-50")));

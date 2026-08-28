@@ -305,7 +305,19 @@ function fitSection(lab: SurfaceLabBundle | undefined): string {
   // bandsOverlap must render the indistinguishable state — ADR-0001 addendum
   // C forbids the verdict (verify-slice, conformance lens).
   if (lab?.bandsOverlap) {
-    line = `Indistinguishable at this sample size.`;
+    // The overlap rule forbids the comparative VERDICT, not every fact. A
+    // cross-variant interaction constant is not a ranking — it is the same
+    // number in every column — so it survives here rather than vanishing with
+    // the sentence. Without this, a surface whose bands overlapped AND whose
+    // INP row is withheld would publish nothing at all about its own click,
+    // which on the PDP is the surface's entire headline (verify-slice,
+    // conformance lens).
+    const bytes = lab.interactionFetch?.bytes;
+    const clickLine =
+      typeof bytes === "number" && bytes > 0
+        ? ` The scripted click costs <span class="num">${esc(String(Math.round((bytes / 1024) * 100) / 100))}</span>&nbsp;KB in every column — the same bytes, not a ranking.`
+        : ``;
+    line = `Indistinguishable at this sample size.${clickLine}`;
   } else if (lab?.fit) {
     const r = lab.fit.receipt;
     line = `${esc(lab.fit.sentence)} <a class="pm-chrome__reading" href="${esc(r.url)}">receipt</a>`;
