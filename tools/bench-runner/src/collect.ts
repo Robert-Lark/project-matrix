@@ -658,6 +658,111 @@ export interface VisitSpec {
 export const SETTLE_CAP_MS = 3000;
 
 /**
+ * The quiet window that defines "the network went idle" — 500 ms with nothing
+ * in flight, the same window Playwright's own `networkidle` names, kept so the
+ * boundary's DEFINITION is unchanged. Only the mechanism that measures it
+ * changes (see {@link armNetworkQuiescence}).
+ */
+export const NETWORK_QUIET_MS = 500;
+
+/**
+ * Ceiling for the PRE-interaction quiescence waits (the initial byte
+ * boundary). Deliberately far larger than {@link SETTLE_CAP_MS}: capping the
+ * INITIAL side early would move `initialJsBytes` — the published headline —
+ * whereas capping the interaction side only records `interactionSettled:
+ * false`, which refuses publication instead of corrupting a number. Matches
+ * the effective bound the superseded `waitForLoadState("networkidle")` calls
+ * carried (Playwright's 30 s default navigation timeout), and a cap-out here
+ * throws rather than degrading, exactly as those calls did.
+ */
+const LOAD_QUIET_CAP_MS = 30_000;
+
+/**
+ * A GENUINE network-quiescence measurement, armed once per visit and awaited
+ * wherever a boundary needs the network to be quiet.
+ *
+ * **Why this exists — `page.waitForLoadState("networkidle")` cannot do this
+ * job, and the way it fails is silent.** It is a document-load-lifecycle
+ * LATCH, not a measurement. Playwright's own typings say so:
+ * "If the state has been already reached while loading current document, the
+ * method resolves immediately" (playwright-core 1.61.1
+ * `types/types.d.ts:5020`), and they mark `networkidle` **DISCOURAGED**. Once
+ * the current document has reached networkidle — which the pre-interaction
+ * settle loop below GUARANTEES — every later call on that document returns at
+ * once, forever. No navigation happens across a scripted interaction, so the
+ * post-click call could never observe anything.
+ *
+ * Measured on the deployed plane 2026-08-28, all four PDP variants: the
+ * post-click call returned in **24–49 ms**, where any real 500 ms quiet window
+ * cannot resolve in under 500 ms. So `pdp-gallery-switch`'s own 25,194 B image
+ * fetch was still in flight at the boundary snapshot and landed in NEITHER
+ * `interactionBytes` NOR `totalBytes` — while `interactionSettled` recorded
+ * `true`, asserting that zero as VERIFIED. That is the precise failure
+ * `interactionSettled` was added to make impossible (ADR-0001 addendum M), and
+ * it defeated it: the flag proved only that a latch was already closed.
+ *
+ * The same latch made the pre-interaction loop's trailing wait vacuous too —
+ * its comment claimed the wait "bridges the import + the preload cascade",
+ * which it never did. That one turned out to cost nothing: measured across all
+ * five editorial and all four PDP variants, a genuine quiescence wait after
+ * the loop surfaces **0 new entries and 0 byte change**, because the
+ * requestIdleCallback passes plus the entry-count stability check already give
+ * the cascade its time. Recorded rather than assumed — it is why this fix
+ * moves no published byte cell, and the claim is re-derivable by re-running
+ * that probe.
+ *
+ * The mechanism: track in-flight requests from the page's OWN request/response
+ * events, armed before the navigation so nothing is missed, and resolve only
+ * after `quietMs` has elapsed with nothing in flight — measured from the call,
+ * so each boundary gets a fresh window. Returns whether that window was
+ * actually observed, so a cap-out is recorded rather than disguised.
+ *
+ * Stated limit, unchanged from the 500 ms convention it keeps: a request the
+ * page starts MORE than `quietMs` after the last activity lands outside the
+ * window. The measured margin is wide — the interaction fetch is dispatched
+ * within ~30 ms of the click on every variant — but it is a bound, not a
+ * proof, and it is the same bound `networkidle` always carried.
+ */
+function armNetworkQuiescence(page: Page): {
+  wait(quietMs: number, capMs: number): Promise<boolean>;
+} {
+  let inFlight = 0;
+  let lastActivity = Date.now();
+  // A routed-and-fulfilled request (the beacon) still emits request +
+  // requestfinished, so it is accounted like any other — instrumentation is
+  // stripped from the BYTES by known path, never from the quiescence signal.
+  const onRequest = () => {
+    inFlight += 1;
+    lastActivity = Date.now();
+  };
+  const onDone = () => {
+    // Floor at 0: a request that finishes after its own arming window (or a
+    // duplicate terminal event) must not drive the counter negative, which
+    // would make the "nothing in flight" test pass while something is.
+    inFlight = Math.max(0, inFlight - 1);
+    lastActivity = Date.now();
+  };
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+  return {
+    async wait(quietMs: number, capMs: number): Promise<boolean> {
+      const startedAt = Date.now();
+      // The window is measured FROM THIS CALL, not from the last event
+      // before it: a boundary asks "has the network been quiet since I
+      // started watching", and inheriting an older idle stretch is exactly
+      // the latch behaviour this replaces.
+      lastActivity = Date.now();
+      for (;;) {
+        if (inFlight === 0 && Date.now() - lastActivity >= quietMs) return true;
+        if (Date.now() - startedAt >= capMs) return false;
+        await page.waitForTimeout(25);
+      }
+    },
+  };
+}
+
+/**
  * Drive one visit and return the full per-run sample.
  *
  * Every visit gets a FRESH browser context: the browser HTTP cache is a
@@ -684,6 +789,14 @@ export async function measureVisit(
   const page = await context.newPage();
   try {
     const applied = await applyProfile(page, profile);
+
+    // Armed BEFORE the navigation, so every request of the visit is accounted
+    // and no boundary can be judged against a counter that started mid-flight
+    // (arming after `goto` would read "nothing in flight" while the page's own
+    // subresources were still loading). One tracker serves every boundary
+    // below; it is deliberately never detached — it must outlive the first
+    // wait to serve the interaction boundary, and it dies with the page.
+    const network = armNetworkQuiescence(page);
 
     // Lab/field isolation: capture the chrome's beacons, never deliver them.
     const beacons: Array<{ name?: string; value?: number }> = [];
@@ -720,20 +833,43 @@ export async function measureVisit(
       () => document.getElementById("pm-chrome") !== null,
     );
 
-    await page.waitForLoadState("networkidle");
+    // A cap-out on the INITIAL side throws rather than degrading: the byte
+    // boundary would otherwise fall at an arbitrary moment and the receipt
+    // would not say so. Same fail-loud behaviour the superseded
+    // `waitForLoadState("networkidle")` had here through its default timeout.
+    const quietAfterLoad = async () => {
+      if (!(await network.wait(NETWORK_QUIET_MS, LOAD_QUIET_CAP_MS))) {
+        throw new Error(
+          `the network never went quiet for ${NETWORK_QUIET_MS} ms within ${LOAD_QUIET_CAP_MS} ms of load ` +
+            `(${spec.effectiveUrl}) — the initial byte boundary would be arbitrary, so the visit refuses ` +
+            `rather than mint a sample whose initial/interaction split is undefined`,
+        );
+      }
+    };
+    await quietAfterLoad();
     // Defect 4 (issue #16): Qwik's preloader is the only post-load fetching
     // among the live variants, and it runs inside requestIdleCallback(…,
     // {timeout: 2000}) — under a throttled profile or on a loaded runner it can
-    // be starved PAST the networkidle above, so the byte boundary would fall in
+    // be starved PAST the quiescence above, so the byte boundary would fall in
     // the MIDDLE of it and the same build would yield two different receipts.
     // Settle post-load idle work onto the INITIAL byte side before the snapshot.
     // The rIC only guarantees Qwik's load handler has DEQUEUED and kicked off
-    // its async import(); the real settling is the trailing networkidle that
+    // its async import(); the real settling is the trailing quiescence wait that
     // bridges the import + the preload cascade (each modulepreload's onload
     // triggers the next wave), so THAT wait is load-bearing, not redundant. Loop
-    // rIC→networkidle until a pass surfaces no new resource-timing entries, so a
-    // cascade gap wider than networkidle's 500 ms window cannot end the snapshot
+    // rIC→quiesce until a pass surfaces no new resource-timing entries, so a
+    // cascade gap wider than one quiet window cannot end the snapshot
     // mid-cascade — bounded so a page that never settles cannot hang here.
+    //
+    // Until 2026-08-28 the trailing wait here was
+    // `waitForLoadState("networkidle")`, which is a document-lifecycle LATCH
+    // and returned immediately every time (see armNetworkQuiescence) — so the
+    // "bridges the cascade" claim above described a mechanism that did not
+    // exist. It cost nothing, and that is measured, not assumed: a genuine
+    // quiescence wait after this loop surfaces 0 new entries and 0 byte change
+    // on all five editorial and all four PDP variants, because the rIC passes
+    // plus the count-stability check already give the cascade its time. The
+    // claim is true now for the reason it always stated.
     let priorCount = -1;
     for (let pass = 0; pass < 5; pass++) {
       await page.evaluate(
@@ -744,7 +880,7 @@ export async function measureVisit(
             else setTimeout(resolve, 50);
           }),
       );
-      await page.waitForLoadState("networkidle");
+      await quietAfterLoad();
       const count = (await resourceEntries(page)).length;
       if (count === priorCount) break;
       priorCount = count;
@@ -766,12 +902,15 @@ export async function measureVisit(
     // stopped waiting" in the artifact. It is a real distinction: requests
     // still in flight never appear in resource timing at all (verify-slice,
     // anti-rigging lens).
-    let interactionSettled = true;
-    await page
-      .waitForLoadState("networkidle", { timeout: settleCapMs })
-      .catch(() => {
-        interactionSettled = false;
-      });
+    //
+    // This is the wait that was BROKEN, and the flag above is what made the
+    // break invisible: `waitForLoadState("networkidle")` returned in 24–49 ms
+    // (measured, all four PDP variants) because the latch had already closed
+    // during load, so a 25,194 B interaction fetch was recorded as 0 B with
+    // interactionSettled: true. A guard that can pass vacuously is not a guard
+    // (ADR-0001 §9), and this one was passing vacuously on every run the
+    // project has ever published.
+    const interactionSettled = await network.wait(NETWORK_QUIET_MS, settleCapMs);
     const afterEntries = await resourceEntries(page);
 
     // Wait for the interaction's own event-timing entry to EXIST before
