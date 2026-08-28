@@ -80,20 +80,23 @@
       can never silently reframe an old number.
     </p>
 
-    <h2 id="batches">One batch, %%LAB_RUNS%% runs per cell, two cache columns</h2>
+    <h2 id="batches">One batch per surface, %%LAB_RUNS%% runs per cell, two cache columns</h2>
     <p>
-      All architectures are measured in one batch — runs interleaved
-      round-robin, so a noisy moment lands on every variant, not on whichever
-      URL happened to be measuring. The published value is the median of
-      %%LAB_RUNS%% runs, never a best-of, and every cell carries that
-      median's min–max band across those runs so you can see when a gap sits
-      inside the noise. One honest detail: a metric a run could not produce is
-      recorded as absent rather than as a zero, so a cell's median is over the
-      runs that produced a value — the receipt lists all %%LAB_RUNS%% either
-      way, so the count behind any cell is checkable. Cold and warm are
+      Within a surface, all architectures are measured in one batch — runs
+      interleaved round-robin, so a noisy moment lands on every variant, not on
+      whichever URL happened to be measuring. Surfaces are separate
+      publications: each is one batch, minted on its own day, and every cell
+      links the receipt of the batch that produced it. The published value is
+      the median of %%LAB_RUNS%% runs, never a best-of, and every cell carries
+      that median's min–max band across those runs so you can see when a gap
+      sits inside the noise. One honest detail: a metric a run could not
+      produce is recorded as absent rather than as a zero, so a cell's median
+      is over the runs that produced a value — the receipt lists every run
+      either way, so the count behind any cell is checkable. Cold and warm are
       separate columns measuring the edge data tier; the browser cache is held
       constant instead — every run is a fresh browser context, a first-time
-      visitor. <strong>The reading table
+      visitor whose cache then behaves normally for the rest of the visit.
+      <strong>The reading table
       publishes the WARM column</strong> — steady state, per ADR-0001's
       "warm as headline, cold as a labeled callout" — no matter what cache
       knob the page you are reading it on carries; the linked receipt holds
@@ -226,9 +229,30 @@
         path. Re-running the batch against the updated site is one command,
         and it is on the list.</li>
       <li>INP is always <em>INP (scripted)</em>: real event-timing entries
-        under a named, scripted interaction — on the editorial surface, the
-        page's one designed interaction, Add&nbsp;to&nbsp;cart, clicked with no
-        warm-up click before it.</li>
+        under a named, scripted interaction, clicked with no warm-up click
+        before it. Each reading table names the interaction its INP row was
+        driven by, in the row itself — editorial's is the page's one designed
+        interaction, Add&nbsp;to&nbsp;cart; the product page's is switching the
+        gallery image.</li>
+      <li><strong>The INP row is not like-for-like across paradigms when a
+        handler is asynchronous, and the error flatters the paradigm doing
+        more work.</strong> Chromium closes an interaction's event-timing
+        entry at the first paint after the handler's <em>synchronous</em>
+        processing returns. A resumed handler returns immediately having only
+        scheduled the render, so that paint can carry nothing, and the entry
+        closes before the visitor sees anything. Measured on the product
+        page's gallery switch, medians of five fresh visits: the three
+        synchronous paradigms mutate the DOM inside the handler (1.1–2.8&nbsp;ms)
+        and record 24&nbsp;ms; Qwik's handler returns in 0.7&nbsp;ms, its DOM
+        change lands at 9.9&nbsp;ms — after the paint that closed the entry —
+        and it records <em>8&nbsp;ms</em>, while its visible update arrives at
+        34.6&nbsp;ms, the latest of the four (the others: 18.2–19.5&nbsp;ms).
+        The same asymmetry exists on the editorial surface, where the late DOM
+        change happens to fall inside the measured window and the cell reads
+        24&nbsp;ms like the rest — so which way the discrepancy goes is a race
+        with the frame boundary, not a stable property. Read the INP row as
+        what it is, a standard metric measured the standard way; do not read it
+        as "this paradigm responds faster".</li>
       <li>Post-load idle work is deliberately settled onto the <em>load</em>
         side before both the byte snapshot and the click. That is what keeps
         the initial/interaction split from varying run to run, but it has a

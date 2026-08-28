@@ -245,7 +245,15 @@ function readingSection(
     const cells = columns
       .map((c) => labCell(lab?.columns[c.key]?.[metric]))
       .join("");
-    return `<tr><th scope="row" class="pm-chrome__th">${esc(metric)}</th>${cells}</tr>`;
+    // The INP row IS this table's interaction cell — there is no
+    // interaction-bytes row — so it names the interaction it was driven by.
+    // Without that, two surfaces' INP rows look identical while measuring
+    // different clicks, and the reader's only recourse is the raw receipt.
+    const label =
+      metric === "INP (scripted)" && lab?.interactionId
+        ? `${metric}<span class="pm-chrome__note"> ${esc(lab.interactionId)}</span>`
+        : esc(metric);
+    return `<tr><th scope="row" class="pm-chrome__th">${label}</th>${cells}</tr>`;
   }).join("");
 
   // Serving a fenced exhibit: the table still reads the BENCHMARKED

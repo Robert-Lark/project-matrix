@@ -382,11 +382,28 @@ describe("/methodology/ — the ADR-0001 §9 page, chrome-free, numbers from art
     expect(body).not.toContain('id="pm-chrome-slot"');
   });
 
-  it.skipIf(!hasPublication)("states the chrome constant EQUAL to the served probe artifact", async () => {
-    const artifact = await (await get("/_pm/lab/chrome-constant.json")).json();
+  it("states the chrome constant, or states plainly that none is published — both directions", async () => {
+    // BOTH directions, on every run. An absent constant is a LEGAL state (the
+    // front build's own existsSync guard makes it one) and it is the state the
+    // tree is in for exactly one commit whenever the chrome fragment changes:
+    // the addendum-N-hole-1 identity gate refuses a constant that describes a
+    // fragment the build no longer ships, so re-measuring means publishing
+    // nothing in between. A leg that only checked the populated direction went
+    // red on that legal state and said nothing at all about the empty one —
+    // the same shape as the DESCRIBED_VARIANTS anti-pattern this suite already
+    // retired once (publication-pipeline unit).
+    const res = await get("/_pm/lab/chrome-constant.json");
+    const body = await (await get("/methodology/")).text();
+    if (res.status === 404) {
+      expect(body).toContain("has not been published for the current chrome yet");
+      // Non-vacuity: the page must not ALSO be carrying a stale figure.
+      expect(body).not.toContain("&nbsp;ms first paint");
+      return;
+    }
+    expect(res.status).toBe(200);
+    const artifact = await res.json();
     expect(artifact.kind).toBe("pm-chrome-constant");
     expect(artifact.commit.dirty).toBe(false);
-    const body = await (await get("/methodology/")).text();
     const signed = (v: number) =>
       v === 0 ? "0" : v > 0 ? `+${Math.round(v * 10) / 10}` : `−${Math.round(-v * 10) / 10}`;
     expect(body).toContain(

@@ -67,4 +67,23 @@ export interface SurfaceLabBundle {
    */
   fit?: { sentence: string; receipt: LabReceipt };
   bandsOverlap?: boolean;
+  /**
+   * The scripted interaction the INP row was driven by, named in the row
+   * itself.
+   *
+   * `READING_METRICS` has no interaction-bytes row, so the published
+   * "interaction cell" IS the INP row — and until 2026-08-28 the table never
+   * said WHICH interaction produced it. That was harmless while editorial was
+   * the only publishing surface and had exactly one interaction. It stops
+   * being harmless the moment a second surface publishes: the PDP's
+   * `pdp-gallery-switch` and editorial's `editorial-add-to-cart` would render
+   * in identically-labeled rows, and the only way to tell them apart would be
+   * to download the receipt — the "it's in the receipt" answer ADR-0001
+   * addendum C pre-rejected.
+   *
+   * Optional so a bundle minted before this field existed still renders (the
+   * bare "INP (scripted)" label, exactly as it did); the build sets it for
+   * every receipt it publishes.
+   */
+  interactionId?: string;
 }

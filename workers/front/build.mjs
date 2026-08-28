@@ -197,6 +197,109 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     columns[target.variant] = cell;
   }
 
+  // ── The interaction-fetch clause, DECLARED by the surface ──────────────
+  // This was a hardcoded "every median must be 0" until 2026-08-28, which
+  // made a surface that legitimately fetches unpublishable by construction
+  // rather than publishable WITH THE FETCH STATED. It is now driven by the
+  // fit template, and REQUIRED there: a surface that omits the declaration is
+  // refused, because an optional clause is not a generalisation of a check,
+  // it is a way to opt out of one (ADR-0001 addendum R).
+  // Every target's surface has already been checked to equal the filename's
+  // (the receipt loop below), so target 0's is THE surface, and the column
+  // check above proves the target list is non-empty.
+  const surfaceName = receipt.targets[0].surface;
+  const declared = fitSpec.interactionFetch;
+  if (declared !== "none" && declared?.kind !== "constant") {
+    throw new Error(
+      `front lab: FIT.${surfaceName} declares no interactionFetch — a surface publishes an ` +
+        `interaction cell only by stating what the click costs on the wire ("none", or ` +
+        `{kind:"constant",toleranceBytes}); omitting it would publish the cell with no clause at all`,
+    );
+  }
+
+  // One batch, ONE interaction. The CLI applies a single `--interaction` per
+  // batch and the receipt has one slot per (surface, profile), so a receipt
+  // carrying two interaction families would render two different measurements
+  // into one identically-labeled INP row, distinguishable only by downloading
+  // the receipt — the "it's in the receipt" answer ADR-0001 addendum C
+  // pre-rejected. Refused by name instead.
+  const interactionIds = [...new Set(receipt.targets.map((t) => t.interactionId))];
+  if (interactionIds.length !== 1) {
+    throw new Error(
+      `front lab: this batch drove more than one interaction [${interactionIds.join(", ")}] — one receipt ` +
+        `publishes one interaction, or the reading table's INP row means a different thing in each column`,
+    );
+  }
+  const interactionId = interactionIds[0];
+
+  // The ATTESTATION binds every interaction claim, whatever the declaration
+  // says: a byte figure only means "this is what the click cost" if the
+  // runner actually reached network quiescence after it. A capped-out wait
+  // and a genuinely quiet one are indistinguishable in the byte column, so
+  // an unrecorded boundary counts as unverified.
+  for (const t of receipt.targets) {
+    for (const column of [t.columns.warm, t.columns.cold]) {
+      for (const run of column.runs) {
+        if (run.interactionSettled !== true) {
+          throw new Error(
+            `front lab: a ${t.variant} run did not record reaching network quiescence after the click ` +
+              `(interactionSettled=${String(run.interactionSettled)}) — its interaction bytes are unverified, ` +
+              `so no interaction claim can publish from this batch`,
+          );
+        }
+      }
+    }
+  }
+
+  const interactionMedians = receipt.targets.flatMap((t) => [
+    { variant: t.variant, column: "warm", bytes: t.columns.warm.medians.interactionBytes },
+    { variant: t.variant, column: "cold", bytes: t.columns.cold.medians.interactionBytes },
+  ]);
+  const spread = () =>
+    interactionMedians.map((m) => `${m.variant}/${m.column}=${m.bytes}`).join(", ");
+  let interactionBytes;
+  if (declared === "none") {
+    const fetching = interactionMedians.filter((m) => m.bytes !== 0);
+    if (fetching.length > 0) {
+      throw new Error(
+        `front lab: FIT.${surfaceName} declares interactionFetch "none", but ` +
+          `${fetching.map((m) => `${m.variant}/${m.column} measured ${m.bytes} B`).join("; ")} — ` +
+          `refusing to publish an unsupported claim (ADR-0001 addendum C / C2)`,
+      );
+    }
+    interactionBytes = 0;
+  } else {
+    const values = interactionMedians.map((m) => m.bytes);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (max - min > declared.toleranceBytes) {
+      throw new Error(
+        `front lab: FIT.${surfaceName} declares the interaction a cross-variant constant within ` +
+          `${declared.toleranceBytes} B, but the batch spans ${max - min} B (${spread()}) — either the paradigms ` +
+          `genuinely differ here, in which case the sentence must name them separately, or the instrument is ` +
+          `manufacturing the difference; publish neither until it is known which`,
+      );
+    }
+    // A constant of zero IS the "none" claim, and declaring it the loose way
+    // would quietly retire the site's strongest guard. Refuse the loosening.
+    if (max === 0) {
+      throw new Error(
+        `front lab: FIT.${surfaceName} declares a constant interaction fetch but the batch measured ` +
+          `0 B everywhere — declare "none" and get the stronger check, rather than a constant clause that ` +
+          `cannot distinguish itself from it`,
+      );
+    }
+    // The published figure is the WARM column's own median across variants —
+    // the headline column (ADR-0001 §5), the same one the reading table's
+    // cells come from, so the sentence and the table cannot disagree.
+    const warm = receipt.targets
+      .map((t) => t.columns.warm.medians.interactionBytes)
+      .sort((a, b) => a - b);
+    interactionBytes =
+      warm.length % 2
+        ? warm[(warm.length - 1) / 2]
+        : (warm[warm.length / 2 - 1] + warm[warm.length / 2]) / 2;
+  }
   // The fit line (ADR-0001 addendum C): comparative framing only when the
   // compared byte bands do not overlap. The sentence enumerates EVERY
   // variant, so every variant's band must be separable — checking only the
@@ -225,33 +328,7 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     const lower = band(ordered[i - 1]);
     const upper = band(ordered[i]);
     if (lower.max >= upper.min && upper.max >= lower.min) {
-      return { columns, bandsOverlap: true };
-    }
-  }
-  // Refuse claims the receipts don't back: the sentence says no variant
-  // fetches a byte for the click — verify it in BOTH columns' medians.
-  for (const t of receipt.targets) {
-    for (const column of [t.columns.warm, t.columns.cold]) {
-      if (column.medians.interactionBytes !== 0) {
-        throw new Error(
-          `front lab: the fit sentence claims no interaction fetch, but ${t.variant} measured ` +
-            `${column.medians.interactionBytes} B — refusing to publish an unsupported claim ` +
-            `(ADR-0001 addendum C / C2)`,
-        );
-      }
-      // Zero bytes only means "fetched nothing" if the runner actually
-      // reached network idle; a swallowed settle timeout produces the same
-      // zero. Unrecorded counts as unverified — the claim is the site's
-      // strongest, so it publishes only from runs that prove it.
-      for (const run of column.runs) {
-        if (run.interactionSettled !== true) {
-          throw new Error(
-            `front lab: the fit sentence claims no interaction fetch, but a ${t.variant} run did not ` +
-              `record reaching network idle after the click (interactionSettled=${String(run.interactionSettled)}) — ` +
-              `zero bytes is unverified there, so the claim cannot publish`,
-          );
-        }
-      }
+      return { columns, interactionId, bandsOverlap: true };
     }
   }
   const kb = Object.fromEntries(
@@ -267,13 +344,20 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
       `front lab: the fit sentence names [${want}] but this batch measured [${have}] — rewrite the template rather than publish a sentence about variants it did not measure`,
     );
   }
-  const sentence = fitSpec.sentence(kb);
+  // The template gets the receipt-derived interaction facts too, so a surface
+  // whose headline IS the interaction can put the measured figure IN the
+  // sentence rather than leaving the reader to open the receipt for it.
+  const sentence = fitSpec.sentence(kb, {
+    interactionId,
+    interactionBytes,
+    interactionKb: roundTo(interactionBytes / KB, 2),
+  });
   // Belt over mechanism: any unsubstituted value reaching the one line the
   // site publishes as a verdict refuses the build.
   if (/undefined|NaN/.test(sentence)) {
     throw new Error(`front lab: the fit sentence contains an unsubstituted value: ${sentence}`);
   }
-  return { columns, fit: { sentence, receipt: receiptMeta } };
+  return { columns, interactionId, fit: { sentence, receipt: receiptMeta } };
 }
 
 // The switcher is TypeScript source and this build runs in plain node, so
@@ -777,20 +861,70 @@ const homeCss = readFileSync(join(root, "home", "home.css"), "utf8");
 // Composed statements rather than bare number markers, so a page never has a
 // number-shaped hole to fill when nothing is published. Same rule as the
 // chrome's own empty states: say what is true, or say that nothing is.
-const labRuns = labFacts ? String(labFacts.runs) : "seven";
 const homeSpread = labFacts
   ? `Measured on average broadband: <a class="quiet-link" href="${esc(labFacts.receiptUrl)}">` +
     `<span class="num">${esc(labFacts.jsMin)}–${esc(labFacts.jsMax)}&nbsp;KB</span></a> of JavaScript ` +
     `for the same article, published <span class="num">${esc(labFacts.date)}</span>.`
   : `The five builds are public; their measured readings publish with the next batch.`;
-const batchStatement = labFacts
-  ? `The current published batch ran <span class="num">${esc(labFacts.date)}</span> at commit ` +
-    `<span class="num">${esc(labFacts.sha7)}</span>: ${esc(labFacts.variantCount)} variants × ` +
-    `${esc(labFacts.profileCount)} profiles × two cache columns × ${esc(labFacts.runs)} runs, against ` +
-    `the live plane, from a quiet, single-purpose local machine — labeled honestly in every receipt ` +
-    `as <span class="num">${esc(labFacts.location)}</span>, an unpinned developer machine.`
-  : `No batch is published for this surface right now, so no reading table on this site carries a ` +
-    `number — the cells show an em-dash until one does.`;
+
+// ── /methodology/'s batch statements, PER SURFACE ───────────────────────
+// These were derived from `editorialReceipts` alone, which was true while
+// editorial was the only publishing surface and became a correctness bug the
+// moment a second one published: a reader on a PDP page follows the
+// methodology link and reads a description of a batch that is not the one
+// behind the numbers they just read — falsified by the receipt links on those
+// very cells. Per-surface batches are legal by design (the integrity loop
+// above runs per surface, never across them: editorial's batch and the PDP's
+// are separate publications minted on their own days), so the statement has
+// to be too.
+const surfaceBatchFacts = LAB_SURFACES.map((surface) => {
+  const receipts = receiptsBySurface[surface] ?? [];
+  if (receipts.length === 0) return null;
+  return {
+    surface,
+    date: receipts[0].date.slice(0, 10),
+    sha7: receipts[0].commit.sha.slice(0, 7),
+    runs: receipts[0].runsPerUrl,
+    location: receipts[0].runLocation.label,
+    profileCount: receipts.length,
+    variantCount: receipts[0].targets.length,
+    interactionId: receipts[0].targets[0].interactionId,
+  };
+}).filter(Boolean);
+
+// `%%LAB_RUNS%%` sits inside running prose ("the median of N runs"), so it
+// can only be a bare number while every published surface agrees on one. When
+// they diverge it names them, because "the median of seven runs" printed over
+// a five-run batch is exactly the kind of quietly-wrong sentence the receipts
+// exist to make impossible.
+const runCounts = [...new Set(surfaceBatchFacts.map((f) => f.runs))];
+const labRuns =
+  surfaceBatchFacts.length === 0
+    ? "seven"
+    : runCounts.length === 1
+      ? String(runCounts[0])
+      : surfaceBatchFacts.map((f) => `${f.runs} (${f.surface})`).join(" and ");
+
+const batchStatement =
+  surfaceBatchFacts.length === 0
+    ? `No batch is published for any surface right now, so no reading table on this site carries a ` +
+      `number — the cells show an em-dash until one does.`
+    : surfaceBatchFacts
+        .map(
+          (f) =>
+            `The published <span class="num">${esc(f.surface)}</span> batch ran ` +
+            `<span class="num">${esc(f.date)}</span> at commit <span class="num">${esc(f.sha7)}</span>: ` +
+            `${esc(f.variantCount)} variants × ${esc(f.profileCount)} profiles × two cache columns × ` +
+            `${esc(f.runs)} runs, driving <span class="num">${esc(f.interactionId)}</span> as its scripted ` +
+            `interaction, against the live plane from a quiet, single-purpose local machine — labeled ` +
+            `honestly in every receipt as <span class="num">${esc(f.location)}</span>, an unpinned ` +
+            `developer machine.`,
+        )
+        .join(" ") +
+      (surfaceBatchFacts.length > 1
+        ? ` Each surface is its own publication: they may differ in date, commit and shape, and each ` +
+          `cell links the receipt of the batch that produced it.`
+        : ``);
 
 // Function replacements: with a string replacement, `$'`/`$&`/`$$` in the
 // CSS would be replacement patterns — a future `[href$='…']` selector would
