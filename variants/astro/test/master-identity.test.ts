@@ -306,3 +306,41 @@ describe("the PDP page passes the baked catalogue through faithfully", () => {
     expect(pageDom).toBe(normalizeHtml(fromComponent));
   });
 });
+
+/**
+ * The bake IS the catalogue (pdp-variants slice 3, adopted from the slice-2
+ * anti-rigging lens): the pass-through test above compares getStaticPaths
+ * against pdp.json — the bake's OWN output — so a truncated bake (a
+ * debugging .slice(), a "skip zero-image trays" filter, or a deliberate
+ * shrink to flatter the build-time paradigm's build/dist cost) would pass
+ * every gate while dozens of releases 404 in production. The slice's
+ * honesty claim ("building only the bench's handful would be rigging the
+ * variant to fit the instrument") is asserted against the committed trays,
+ * not restated.
+ */
+describe("the PDP bake is the whole committed catalogue", () => {
+  it("pdp.json IS the committed snapshot — trays verbatim, freeze date included", async () => {
+    const bakedPath = join(import.meta.dirname, "..", "src", "data", "pdp.json");
+    const baked = JSON.parse(readFileSync(bakedPath, "utf8")) as {
+      name: "fixture" | "crate";
+      capturedAt: string;
+      details: { id: number }[];
+    };
+    const lib = await import(
+      pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
+    );
+    const committed = lib.loadSnapshot(baked.name) as {
+      manifest: { capturedAt: string };
+      details: { id: number }[];
+    };
+    expect(committed.details.length).toBeGreaterThan(0);
+    expect(baked.details.length).toBe(committed.details.length);
+    // DEEP equality, not an id list (slice-3 anti-rigging lens): the bake
+    // writes details.json verbatim, so a field-level shrink — stripped
+    // notes, truncated tracklists, dropped images — keeps every id, shrinks
+    // dist for the whole catalogue, and would pass an id compare while
+    // shipping mutated pages no other gate renders from the bake.
+    expect(baked.details).toStrictEqual(committed.details);
+    expect(baked.capturedAt).toBe(committed.manifest.capturedAt);
+  });
+});

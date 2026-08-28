@@ -1,7 +1,8 @@
-import { component$ } from "@builder.io/qwik";
+import { component$, useServerData } from "@builder.io/qwik";
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import { RouterHead } from "./components/router-head/router-head";
 import { ASSET_BASE } from "./lib/assets";
+import { PDP_STYLESHEETS, STYLESHEETS } from "./lib/stylesheets";
 
 /** Qwik passes attribute NAMES through to the serialized HTML verbatim
  *  (measured: `dateTime` emits `dateTime`, `datetime` emits `datetime` — no
@@ -34,6 +35,25 @@ const CROSSORIGIN: Record<string, boolean> = { crossorigin: true };
  *    and an extra vite-bundled sheet would inject styles no other variant has.
  */
 export default component$(() => {
+  // Which surface's stylesheet list this document carries (pdp-variants
+  // slice 3 — the root layout was editorial-hardcoded, the same defect the
+  // other variants' shells solved with a css parameter). root.tsx renders
+  // ABOVE the router, so useLocation is unavailable here; the request URL
+  // arrives through `useServerData("url")` — qwik-city's own mechanism for
+  // exactly this (its useLocation reads the same key, index.qwik.mjs:698).
+  // The surface is the first path segment AFTER the base — derived from
+  // import.meta.env.BASE_URL rather than a hardcoded split index, because
+  // `[2]` silently re-encodes the /qwik/ prefix DEPTH and the repo rule is
+  // one prefix declaration (vite.config `base`) with everything else derived
+  // (verify-slice caught the index form). Editorial requests take the same
+  // STYLESHEETS array through the same JSX call-site as before, so
+  // editorial's served head bytes are unchanged (its published cell is
+  // pinned); only PDP requests take the new list.
+  const url = useServerData<string>("url");
+  const surface = url
+    ? new URL(url).pathname.slice(import.meta.env.BASE_URL.length).split("/")[0]
+    : undefined;
+  const sheets = surface === "pdp" ? PDP_STYLESHEETS : STYLESHEETS;
   return (
     <QwikCityProvider>
       <head>
@@ -72,7 +92,7 @@ export default component$(() => {
             — those are dynamic lists, and `<head>` is a declared serialization
             freedom the normalizer drops whole.) */}
         <link rel="stylesheet" href={`${ASSET_BASE}css/fonts.css`} />
-        {STYLESHEETS.map((file) => (
+        {sheets.map((file) => (
           <link rel="stylesheet" href={`${ASSET_BASE}css/${file}`} />
         ))}
       </head>
@@ -82,21 +102,3 @@ export default component$(() => {
     </QwikCityProvider>
   );
 });
-
-/** The REMAINING sheets the editorial master's own `<head>` loads, in its
- *  order — fonts.css is authored above, with the preloads it belongs to.
- *  ADR-0003 §8 pins the fonts only; these eight arrive as unbundled files by
- *  CHOICE, matching slices A–C so the four editorial columns stay comparable
- *  (variants/astro/DIFF-TO-STARTER.md point 4 records the cross-variant
- *  bundling question that raises, which belongs to the benchmark-publication
- *  arc rather than to any one slice). */
-const STYLESHEETS = [
-  "tokens.css",
-  "surfaces/shell.css",
-  "components/masthead.css",
-  "components/footer.css",
-  "components/button.css",
-  "components/release-card.css",
-  "components/prose.css",
-  "surfaces/editorial.css",
-];

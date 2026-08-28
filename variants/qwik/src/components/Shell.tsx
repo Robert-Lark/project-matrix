@@ -23,7 +23,7 @@ import { CartStatus } from "./CartStatus";
  * subscriber; a browser test asserts the injected children survive a click
  * rather than trusting that argument.
  */
-export const Shell = component$<{ current: "plp" | "editorial" }>(({ current }) => {
+export const Shell = component$<{ current?: "plp" | "editorial" }>(({ current }) => {
   useContextProvider(CartContext, useStore<CartStore>({ count: 0, message: "" }));
 
   return (

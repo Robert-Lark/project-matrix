@@ -39,13 +39,31 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const get = (path: string) => fetch(`${ORIGIN}${path}`);
 const count = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-/** The variants this file writes serving describes for. The completeness
- *  test below ties it to SURFACE_CONTROLS.pdp.variants — the registry of
- *  record — so a variant cannot move planned → variants without gaining a
- *  serving describe here (the ADR-0008 addendum A §4c discipline: a guard
- *  must fail when the registry outgrows it, never keep reporting green on
- *  the variants it already knows). */
-const DESCRIBED_VARIANTS = ["vanilla", "react-next", "astro"] as const;
+/**
+ * Per-variant serving behaviors, pinned as MEASURED (platform defaults are
+ * observable serving behavior — a change in one must fail a test, never
+ * deploy silently). The generic describe.each below CONSUMES this table for
+ * every variant in SURFACE_CONTROLS.pdp.variants, so registering a variant
+ * without a row here is a runtime failure, not an honor-system edit —
+ * verify-slice killed the previous DESCRIBED_VARIANTS list for exactly that
+ * gap (the completeness test could be satisfied without any real coverage).
+ */
+const PDP_SERVING: Record<
+  string,
+  {
+    /** The no-slash → slash redirect status (platform default). */
+    slashStatus: number;
+    /** A percent-encoded spelling of a canonical slug: static asset layers
+     *  307-normalise to the one canonical URL; routers that decode params
+     *  before the slug compare accept the spelling as 200. */
+    encodedStatus: number;
+  }
+> = {
+  vanilla: { slashStatus: 307, encodedStatus: 307 },
+  "react-next": { slashStatus: 308, encodedStatus: 200 },
+  astro: { slashStatus: 307, encodedStatus: 307 },
+  qwik: { slashStatus: 301, encodedStatus: 200 },
+};
 
 /** content-encoding as the wire carries it (editorial.test.ts's helper —
  *  same warm-until-encoded loop on the deployed plane, same reason: a
@@ -67,13 +85,99 @@ function wireEncoding(path: string): string {
   return encoding;
 }
 
-describe("the PDP serving describes cover every live variant", () => {
-  it("SURFACE_CONTROLS.pdp.variants equals the set this file describes", () => {
-    expect([...SURFACE_CONTROLS["pdp"]!.variants].sort()).toEqual(
-      [...DESCRIBED_VARIANTS].sort(),
-    );
-  });
-});
+/**
+ * The auto-extending serving FLOOR: every live PDP variant — read from the
+ * registry, never listed here — gets the variant-generic legs the moment it
+ * registers (the pdp-controls.browser.test.ts idiom). The hand-written
+ * per-variant describes below add the per-serializer DEPTH (escaper-exact
+ * content needles, fonts tolerances, branded-404 bodies, byte-freeze
+ * guards); a few floor assertions therefore repeat inside them, which is the
+ * accepted cost of a floor that cannot be forgotten.
+ */
+describe.each([...SURFACE_CONTROLS["pdp"]!.variants])(
+  "%s PDP: the serving floor (registry-driven)",
+  (variant) => {
+    it("has its measured serving row (registration is not an honor-system edit)", () => {
+      expect(
+        PDP_SERVING[variant],
+        `no PDP_SERVING row for "${variant}" — measure its slash/encoded statuses and pin them`,
+      ).toBeDefined();
+    });
+
+    it("serves every arm 200 with the canonical shell and exactly one fenced plaque", async () => {
+      const snap = await loadServedSnapshot();
+      for (const detail of Object.values(armSlugs(snap))) {
+        const res = await get(`/${variant}/pdp/${detail.slug}/`);
+        expect(res.status).toBe(200);
+        assertPdpShell(await res.text());
+      }
+    });
+
+    it("one-image arm omits the thumb list and keeps the zoom toggle", async () => {
+      const snap = await loadServedSnapshot();
+      const body = await (await get(`/${variant}/pdp/${armSlugs(snap).oneImage.slug}/`)).text();
+      expect(body).not.toContain("pm-gallery__thumbs");
+      expect(body).toContain("pm-gallery__zoom");
+    });
+
+    it("chrome injected: stamped for this page, counts from the arrays, swap preserves the slug", async () => {
+      const snap = await loadServedSnapshot();
+      const body = await (await get(`/${variant}/pdp/${snap.pdpDetail.slug}/`)).text();
+      assertPdpChrome(body, variant, snap.pdpDetail.slug);
+    });
+
+    it("links exactly the master's stylesheets, in the master's order", async () => {
+      const snap = await loadServedSnapshot();
+      const body = await (await get(`/${variant}/pdp/${snap.pdpDetail.slug}/`)).text();
+      expect(sheetTails(body)).toEqual(masterSheetTails());
+    });
+
+    it("a non-canonical slug is a 404, never a redirect (the URL contract)", async () => {
+      const snap = await loadServedSnapshot();
+      const wrongWords = await fetch(
+        `${ORIGIN}/${variant}/pdp/${snap.pdpDetail.id}-not-this-release/`,
+        { redirect: "manual" },
+      );
+      expect(wrongWords.status).toBe(404);
+      const unknownId = await fetch(`${ORIGIN}/${variant}/pdp/${snap.missingId}-ghost/`, {
+        redirect: "manual",
+      });
+      expect(unknownId.status).toBe(404);
+    });
+
+    it("the no-slash form redirects TO the slash form at the pinned status", async () => {
+      const snap = await loadServedSnapshot();
+      const res = await fetch(`${ORIGIN}/${variant}/pdp/${snap.pdpDetail.slug}`, {
+        redirect: "manual",
+      });
+      expect(res.status).toBe(PDP_SERVING[variant]!.slashStatus);
+      expect(res.headers.get("location")).toContain(
+        `/${variant}/pdp/${snap.pdpDetail.slug}/`,
+      );
+    });
+
+    it("a percent-encoded spelling behaves at the pinned status", async () => {
+      const snap = await loadServedSnapshot();
+      const encoded = snap.pdpDetail.slug.replace("-", "%2D");
+      expect(encoded).not.toBe(snap.pdpDetail.slug);
+      const res = await fetch(`${ORIGIN}/${variant}/pdp/${encoded}/`, { redirect: "manual" });
+      expect(res.status).toBe(PDP_SERVING[variant]!.encodedStatus);
+      if (PDP_SERVING[variant]!.encodedStatus !== 200) {
+        expect(res.headers.get("location")).toContain(
+          `/${variant}/pdp/${snap.pdpDetail.slug}/`,
+        );
+      }
+    });
+
+    it("transport parity: the PDP page matches the placeholder baseline (ADR-0001 §6)", async () => {
+      const snap = await loadServedSnapshot();
+      const encoding = wireEncoding(`/${variant}/pdp/${armSlugs(snap).rich.slug}/`);
+      const baseline = wireEncoding("/placeholder-static/sample/");
+      expect(encoding).toBe(baseline);
+      if (EXPECT_BROTLI) expect(encoding).toBe("br");
+    });
+  },
+);
 
 /** The reference renderer's escaping (vanilla and astro emit this form). */
 const esc = (value: string) =>
@@ -148,8 +252,14 @@ function masterSheetTails(): string[] {
 
 function sheetTails(body: string): string[] {
   const head = body.slice(0, body.indexOf("</head>"));
-  return [...head.matchAll(/<link rel="stylesheet" href="([^"]+)"\s*\/?>/g)]
-    .map((m) => m[1]!)
+  // Attribute ORDER inside the tag is a serialization freedom (qwik reorders
+  // href before rel on array-rendered links), so the parse is order-agnostic:
+  // any <link> whose attributes include rel="stylesheet".
+  return [...head.matchAll(/<link\b[^>]*>/g)]
+    .map((m) => m[0]!)
+    .filter((tag) => tag.includes('rel="stylesheet"'))
+    .map((tag) => /href="([^"]+)"/.exec(tag)?.[1] ?? "")
+    .filter((href) => href !== "")
     // The front Worker head-appends /_pm/chrome.css — instrumentation, kept
     // strippable by known path (ADR-0001 §6), never part of the variant's
     // own sheet list.
@@ -171,7 +281,9 @@ function assertPdpShell(body: string) {
   expect(slot).toBeGreaterThan(skip);
   expect(page).toBeGreaterThan(slot);
   expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
-  expect(body).toContain('<article class="pm-pdp">');
+  // No closing `>`: qwik stamps a q:key on the article (registered noise —
+  // an optimizer bookkeeping attribute, dropped by the drift normalizer).
+  expect(body).toContain('<article class="pm-pdp"');
   expect(body).toContain('role="status"');
   expect(body).toContain("data-pm-status");
   // Exactly ONE fenced subtree: the live-origin plaque is canonical master
@@ -704,6 +816,254 @@ describe("the astro PDP (canonical shell + composition + URL contract)", () => {
     expect(externalScripts, "editorial gained an external script — the inline freeze broke").toEqual([]);
     for (const marker of ["pm-gallery__zoom", "pm-qty__step", "live-price"]) {
       expect(body.includes(marker), `editorial page carries PDP code (${marker})`).toBe(false);
+    }
+  });
+});
+
+describe("the qwik PDP (canonical shell + composition + URL contract)", () => {
+  it("serves every arm 200 with the canonical shell and exactly one fenced plaque", async () => {
+    const snap = await loadServedSnapshot();
+    const arms = armSlugs(snap);
+    for (const detail of Object.values(arms)) {
+      const res = await get(`/qwik/pdp/${detail.slug}/`);
+      expect(res.status).toBe(200);
+      assertPdpShell(await res.text());
+    }
+  });
+
+  it("renders the RESOLVED snapshot's tray: title, artist, price, stock, composition, live CTA", async () => {
+    // qwik's JSX escaping measured byte-identical to the reference esc()
+    // (slice D's record — apostrophe as &#39;), so vanilla's needles hold.
+    const lib = await referenceLib();
+    const snap = await loadServedSnapshot();
+    const { rich: d } = armSlugs(snap);
+    const body = await (await get(`/qwik/pdp/${d.slug}/`)).text();
+    expect(body).toContain(`>${esc(d.title)}</h1>`);
+    expect(body).toContain(`>${esc(d.artist)}</p>`);
+    const price = lib.formatPrice(d.priceFrom);
+    expect(price).not.toBeNull();
+    expect(body).toContain(`>${price}</span>`);
+    expect(body).toContain(esc(lib.stockLine(d.numForSale)));
+    expect(body).toContain(`${esc(lib.formatComposition(d.formats))}</dd>`);
+    // Dynamic text inside a component$ rides qwik's resumable text markers
+    // (`<!--t=…-->Add to cart<!---->`), so the CTA needles are presence
+    // forms — the exact-state pair (enabled here, disabled on the unpriced
+    // arm) still cannot both pass on a wrong page.
+    expect(body).toContain("Add to cart");
+    expect(body).not.toContain("None for sale");
+    // Attribute ORDER is qwik's own (a serialization freedom), but the
+    // counts are EXACT byte-forms (verify-slice killed the >= drafts: the
+    // <ul class="pm-gallery__thumbs"> substring-matches a bare needle so N
+    // images always counted N+1, and the injected chrome's own current cell
+    // carries aria-current="true" on every page — both made the assertions
+    // unfalsifiable for the property they name).
+    expect(body).toContain('aria-pressed="false"');
+    expect(count(body, 'class="pm-gallery__thumb"')).toBe(d.images.length);
+    expect(body.match(/<button[^>]*aria-current="true"/g)?.length ?? 0).toBe(1);
+  });
+
+  it("degenerate arms serve their contract: named em-dash + disabled CTA; no thumb list", async () => {
+    const snap = await loadServedSnapshot();
+    const { unpriced, oneImage } = armSlugs(snap);
+
+    const unpricedBody = await (await get(`/qwik/pdp/${unpriced.slug}/`)).text();
+    expect(unpricedBody).toContain('<span aria-hidden="true">—</span>');
+    expect(unpricedBody).toContain('class="pm-sr-only">No price listed</span>');
+    expect(unpricedBody).toContain("none for sale");
+    expect(unpricedBody).toContain("None for sale");
+    expect(unpricedBody).not.toContain("Add to cart");
+    // Anchored INSIDE a button tag: the qwik/json state script carries a
+    // " disabled" substring on EVERY pdp page (a serialized subscription for
+    // LiveOriginDemo's busy state), so a bare substring needle could never
+    // fail — verify-slice measured it (the unfalsifiable-needle class).
+    expect(unpricedBody).toMatch(/<button[^>]*\sdisabled[\s>]/);
+
+    const oneImageBody = await (await get(`/qwik/pdp/${oneImage.slug}/`)).text();
+    expect(oneImageBody).not.toContain("pm-gallery__thumbs");
+    expect(oneImageBody).toContain("pm-gallery__zoom");
+  });
+
+  it("cross-surface links are the master's absolute designated-host targets", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/qwik/pdp/${snap.pdpDetail.slug}/`)).text();
+    // The COMPOSITE byte-form the other three variants pin — measured to hold
+    // on qwik's wire too (no serialization freedom forced a split, and each
+    // half alone is satisfied by a DIFFERENT element: the href by the
+    // back-link below, aria-current by the injected chrome's own cell).
+    expect(body).toContain('href="/react-next/plp/plain/" aria-current="page"');
+    expect(body).toContain(">Back to all records</a>");
+    expect(body).toContain('href="/vanilla/editorial/"');
+    expect(body).toContain('href="/vanilla/checkout/"');
+    expect(body).toContain('href="/vanilla/a11y/"');
+    expect(body).toContain('href="/how-it-was-built/"');
+  });
+
+  it("chrome injected: stamped for this page, counts from the arrays, swap preserves the slug", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/qwik/pdp/${snap.pdpDetail.slug}/`)).text();
+    assertPdpChrome(body, "qwik", snap.pdpDetail.slug);
+    // All four planned cells are live — the sparse disclosure is GONE.
+    expect(SURFACE_CONTROLS["pdp"]!.plannedVariants).toBeUndefined();
+    expect(body).toContain("Served by 4 of 4 planned variants today.");
+  });
+
+  it("links exactly the master's stylesheets, in the master's order", async () => {
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/qwik/pdp/${snap.pdpDetail.slug}/`)).text();
+    expect(sheetTails(body)).toEqual(masterSheetTails());
+  });
+
+  it("fonts: the canonical loading markup verbatim modulo base path (ADR-0003 §8)", async () => {
+    const canonical = readFileSync(
+      join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
+      "utf8",
+    );
+    const lines = canonical
+      .split("\n")
+      .filter((l) => l.startsWith("<link"))
+      .map((l) => l.replaceAll("./node_modules/@pm/tokens", "/qwik/assets/pm"));
+    expect(lines).toHaveLength(3);
+    const snap = await loadServedSnapshot();
+    const body = await (await get(`/qwik/pdp/${snap.pdpDetail.slug}/`)).text();
+    const head = body.slice(0, body.indexOf("</head>"));
+    let last = -1;
+    for (const line of lines) {
+      // The editorial suite's one qwik tolerance: `q:head` is appended to
+      // every head element qwik manages, so the closing `>` is dropped.
+      const marked = line.slice(0, -1);
+      const at = head.indexOf(marked);
+      expect(at, `canonical loading line missing or out of order: ${marked}`).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(head).not.toMatch(/preload[^>]*PMWarnGlyph/);
+  });
+
+  it("a non-canonical slug is a 404, never a redirect (the URL contract) — and the 404 is branded", async () => {
+    const snap = await loadServedSnapshot();
+    const d = snap.pdpDetail;
+    const wrongWords = await fetch(`${ORIGIN}/qwik/pdp/${d.id}-not-this-release/`, {
+      redirect: "manual",
+    });
+    expect(wrongWords.status).toBe(404);
+    // fail(404) renders inside the store's own chrome — this variant CAN
+    // brand its 404 server-side (recorded asymmetry with react-next's
+    // __next_error__ shell; the STATUS is the shared contract).
+    const body = await wrongWords.text();
+    expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
+    expect(body).toContain("in the crate");
+
+    const unknownId = await fetch(`${ORIGIN}/qwik/pdp/${snap.missingId}-ghost/`, {
+      redirect: "manual",
+    });
+    expect(unknownId.status).toBe(404);
+    const malformed = await fetch(`${ORIGIN}/qwik/pdp/not-a-release/`, {
+      redirect: "manual",
+    });
+    expect(malformed.status).toBe(404);
+  });
+
+  it("the no-slash form redirects TO the slash form (slash normalisation, not the banned 301 class)", async () => {
+    // qwik-city's trailingSlash default issues a 301 — the editorial suite
+    // pins the same on /qwik/editorial (per-variant platform defaults,
+    // pinned as measured).
+    const snap = await loadServedSnapshot();
+    const res = await fetch(`${ORIGIN}/qwik/pdp/${snap.pdpDetail.slug}`, {
+      redirect: "manual",
+    });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toContain(`/qwik/pdp/${snap.pdpDetail.slug}/`);
+  });
+
+  it("a percent-encoded spelling of a canonical slug serves 200 here (pinned as measured)", async () => {
+    // The router decodes params before the slug compare — the react-next
+    // class, pinned per variant rather than unified.
+    const snap = await loadServedSnapshot();
+    const encoded = snap.pdpDetail.slug.replace("-", "%2D");
+    expect(encoded).not.toBe(snap.pdpDetail.slug);
+    const res = await fetch(`${ORIGIN}/qwik/pdp/${encoded}/`, { redirect: "manual" });
+    expect(res.status).toBe(200);
+  });
+
+  it("transport parity: the PDP page matches the placeholder baseline (ADR-0001 §6)", async () => {
+    const snap = await loadServedSnapshot();
+    const encoding = wireEncoding(`/qwik/pdp/${armSlugs(snap).rich.slug}/`);
+    const baseline = wireEncoding("/placeholder-static/sample/");
+    expect(encoding).toBe(baseline);
+    if (EXPECT_BROTLI) expect(encoding).toBe("br");
+  });
+
+  it("editorial's served page carries no PDP code (the chunk-graph freeze's marker half)", async () => {
+    // The load-bearing freeze proof was MEASURED at build time and recorded:
+    // a JS-on load of /qwik/editorial/ fetches the same 6 chunk files with
+    // the same content-hash NAMES and the same 62,635 raw bytes before and
+    // after the PDP route joined the build — rollup did not re-group
+    // (content-hash name identity ⇒ byte identity). This leg holds the
+    // cheap half at suite time: no PDP marker in the served editorial HTML
+    // or in any chunk reachable from it (every reference channel parsed,
+    // then the set closed over chunk-to-chunk imports — see below), so a
+    // re-grouping that pulled PDP code into editorial's graph surfaces here
+    // as a marker in a swept chunk or as a count change.
+    const body = await (await get("/qwik/editorial/")).text();
+    for (const marker of ["pm-gallery__zoom", "pm-qty__step", "live-price"]) {
+      expect(body.includes(marker), `editorial page carries PDP code (${marker})`).toBe(false);
+    }
+    // THREE reference channels, all parsed (verify-slice killed two drafts:
+    // one read only src/href and saw 3 of the 6 measured chunks; the next
+    // added on:* attribute values and still missed the state channel — the
+    // served page carries on-document:qinit="#0", a state-REF whose chunk
+    // name lives only inside <script type="qwik/json">, and a multi-QRL
+    // attribute only yields its first member to the on:* parse): plain
+    // src/href attributes; handler chunk names inside on:*/on-document:*
+    // attribute VALUES ("<chunk>.js#<symbol>"); and every "q-*.js#" token
+    // ANYWHERE in the document, which sweeps the qwik/json state script and
+    // 2nd+ multi-QRL members without depending on attribute structure. All
+    // resolve against the served q:base. The fetched set is then CLOSED over
+    // rollup's chunk-to-chunk static imports (`from"./q-*.js"`), so a chunk
+    // referenced only by another chunk is still swept for markers.
+    const qBase = /q:base="([^"]+)"/.exec(body)?.[1];
+    expect(qBase, "no q:base on the editorial page — the handler-chunk parse would be vacuous").toBeTruthy();
+    const attributeChannels = new Set([
+      ...[...body.matchAll(/(?:src|href)="(\/qwik\/build\/[^"]+\.js)"/g)].map((m) => m[1]!),
+      ...[...body.matchAll(/on[a-z:-]*="([^"#]+\.js)#/g)].map((m) => `${qBase}${m[1]!}`),
+    ]);
+    expect(attributeChannels.size).toBeGreaterThanOrEqual(4);
+    // No \b before q-: in the state script a QRL rides behind a literal
+    // \u0002 JSON escape ("...\u0002q-E-X4ebEc.js#..."), so a word boundary never
+    // exists there and would silently re-limit the sweep to attribute
+    // occurrences (sabotage-proven: with \b, stripping a chunk's attribute
+    // references made the sweep lose it despite its state-script mention).
+    const chunkPaths = new Set([
+      ...attributeChannels,
+      ...[...body.matchAll(/(q-[\w-]+\.js)(?=#)/g)].map((m) => `${qBase}${m[1]!}`),
+    ]);
+    const queue = [...chunkPaths];
+    const chunkSources = new Map<string, string>();
+    while (queue.length > 0) {
+      const path = queue.pop()!;
+      const res = await get(path);
+      expect(res.status, `editorial-referenced chunk ${path} does not serve`).toBe(200);
+      const js = await res.text();
+      expect(js.length).toBeGreaterThan(0);
+      chunkSources.set(path, js);
+      for (const m of js.matchAll(/(?:from|import\()\s*"\.\/(q-[\w-]+\.js)"/g)) {
+        const dep = `${qBase}${m[1]!}`;
+        if (!chunkPaths.has(dep)) {
+          chunkPaths.add(dep);
+          queue.push(dep);
+        }
+      }
+    }
+    // The closure IS editorial's frozen client graph: exactly the 6 chunks
+    // the freeze measured (the react-next twin pins its 8 the same way). A
+    // 7th chunk appearing here — or one vanishing — is a re-grouping.
+    expect(chunkPaths.size).toBe(6);
+    for (const [path, js] of chunkSources) {
+      for (const marker of ["pm-gallery__zoom", "pm-qty__step", "live-price"]) {
+        expect(
+          js.includes(marker),
+          `editorial-referenced chunk ${path} carries PDP code (${marker})`,
+        ).toBe(false);
+      }
     }
   });
 });

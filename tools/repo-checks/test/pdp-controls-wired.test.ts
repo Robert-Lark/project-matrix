@@ -81,6 +81,14 @@ const ENHANCEMENTS: Record<string, Enhancement> = {
     files: ["variants/astro/src/scripts/pdp.ts"],
     mechanism: "selectors",
   },
+  qwik: {
+    files: [
+      "variants/qwik/src/components/PdpGallery.tsx",
+      "variants/qwik/src/components/PdpPurchase.tsx",
+      "variants/qwik/src/components/LiveOriginDemo.tsx",
+    ],
+    mechanism: "names",
+  },
 };
 
 /**

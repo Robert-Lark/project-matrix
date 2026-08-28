@@ -88,3 +88,63 @@ export async function loadEditorialData(env: EdgeEnv): Promise<EditorialData> {
 
   return { crate: manifest.crate, capturedAt: manifest.capturedAt, featured };
 }
+
+/** Exactly the tray fields the PDP renders — the loader projection's shape
+ *  (the FeaturedRelease reasoning one surface over: the whole loader result
+ *  rides /qwik/pdp/{slug}/q-data.json to client-nav visitors, so unrendered
+ *  fields are unshipped fields). The drops: `cover`, the summary `format`
+ *  string, and `slug` — the route's mismatch check runs on the RAW detail
+ *  BEFORE projection, and nothing rendered reads it (verify-slice caught the
+ *  first draft shipping it, ~40 unrendered bytes per q-data.json on a
+ *  byte-measured plane, with this comment claiming otherwise). */
+export type PdpRelease = Pick<
+  ReleaseDetail,
+  | "id"
+  | "title"
+  | "artist"
+  | "year"
+  | "numForSale"
+  | "priceFrom"
+  | "labels"
+  | "formats"
+  | "genres"
+  | "styles"
+  | "notes"
+  | "tracklist"
+  | "images"
+>;
+
+/** The projection as a named function so the pre-merge master-identity guard
+ *  drives the SAME projection the served route does (the projectFeatured
+ *  precedent). */
+export function projectPdpDetail(detail: ReleaseDetail): PdpRelease {
+  return {
+    id: detail.id,
+    title: detail.title,
+    artist: detail.artist,
+    year: detail.year,
+    numForSale: detail.numForSale,
+    priceFrom: detail.priceFrom,
+    labels: detail.labels,
+    formats: detail.formats,
+    genres: detail.genres,
+    styles: detail.styles,
+    notes: detail.notes,
+    tracklist: detail.tracklist,
+    images: detail.images,
+  };
+}
+
+/** One detail tray by id, or null when the plane has no such release — the
+ *  PDP route turns that null into its 404 (the slug contract: parse the
+ *  leading id, fetch, verify). Any other non-2xx throws to the route's 503
+ *  branch, the loadEditorialData shape. */
+export async function loadPdpDetail(
+  env: EdgeEnv,
+  id: number,
+): Promise<ReleaseDetail | null> {
+  const res = await edgeFetch(env, `/api/pdp/${id}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GET /api/pdp/${id} -> ${res.status}`);
+  return (await res.json()) as ReleaseDetail;
+}

@@ -3873,3 +3873,104 @@ re-stamping.
 Slice-2 tree, tool-derived: turbo **30/30**; full fixture origin suite
 **431/431** (16 files); repo-checks identity + wired guards green with the
 astro entries; astro workspace tests 9/9.
+
+### Slice 3 — qwik (the resumable variant closes the set)
+
+The route is the smallest of the three — `routeLoader$` does the
+leading-id parse, the slug-mismatch `fail(404)` (BRANDED, unlike
+react-next's accepted error-shell 404 — statuses shared, bodies recorded
+as a divergence), and the edge-throw `fail(503)` — but the document root
+was the slice's real problem. `root.tsx` renders ABOVE the router, so
+`useLocation` does not exist there; the stylesheet pick reads
+`useServerData("url")` — qwik-city's own mechanism, the same key its
+`useLocation` reads — and derives the surface segment from
+`import.meta.env.BASE_URL` rather than a hardcoded split index (the
+one-prefix-declaration rule; verify-slice killed the `[2]` form).
+Rejected alternatives, argued not assumed: `DocumentHead` links land
+AFTER the design-system sheets and break cascade order, and wrapping the
+head in a `component$` adds a serialization boundary the drift gate would
+meet as noise. Editorial requests take the same `STYLESHEETS` array
+through the same JSX call-site as before — served head bytes verified
+identical, because that cell is published and pinned.
+
+Two measured qwik behaviors are now recorded where the next author will
+look: `aria-current` removal on client re-render needs `null`, not
+`undefined` (the deselected thumb kept its attribute and two thumbs
+announced selected — caught by the browser leg's exactly-one assertion;
+the first "null didn't work" was a STALE BUILD from a broken `&&` chain,
+re-verified from compiled chunk bytes before concluding), and `onChange$`
+IS the native commit event, so the qty clamp rides Enter/spinner/blur
+with no extra listener.
+
+The byte-freeze rule held by measurement, not luck: a JS-on load of
+`/qwik/editorial/` fetches the same 6 chunk files with the same
+content-hash names and the same 62,635 raw bytes before and after the
+PDP route joined the build — rollup did not re-group. The probe JSON
+artifacts behind those numbers were purged by a tmp cleaner during a
+5-day session gap, so the record now carries its own provenance: the
+POST state is re-derivable live (the suite's chunk-freeze leg enumerates
+every referenced chunk and pins the count at 6), the PRE state needs a
+rebuild at `6daa15d`. The freeze leg itself was the completion run's
+biggest finding — see below.
+
+verify-slice ran as two workflows this slice: `wf_e15bd1af-15a` (the
+session limit killed it after two lenses — the THIRD kill this unit; the
+durable-journal design held a third time) and completion run
+`wf_55ab9563-9c0` (a fresh two-lens launch: the tmp purge ate the resume
+args file, and resume requires byte-identical args). Six adopted from
+the first run's lenses: the regex-anchored ` disabled` needle (the
+qwik/json state script carries the bare substring on EVERY page), exact
+gallery needles (the `<ul>` substring and the chrome's own
+`aria-current` made the drafts unfalsifiable), the unrendered `slug`
+dropped from the PDP projection, the chunk leg's second reference
+channel, the `BASE_URL`-derived surface pick, and the records
+obligation. Five distinct adopted from the completion run, none refuted:
+the chunk-freeze leg's THIRD channel (the state script serializes QRLs
+the attribute parse never sees — `on-document:qinit="#0"` is a state-REF
+whose chunk name lives only in `<script type="qwik/json">`) plus a
+closure over rollup's chunk-to-chunk imports and an exact pin at 6 (the
+react-next twin's `toBe(8)` idiom); the astro bake guard upgraded from
+id-list to DEEP equality (a field-level shrink — stripped notes,
+truncated tracklists — kept every id and passed every gate; one line
+closes the class the guard's own comment claimed to close); the qwik
+masthead needle restored to the composite byte-form the other three
+variants pin (each split half was satisfied by a DIFFERENT element — the
+back-link's href, the chrome's aria-current); and the two record gaps
+(freeze provenance, the decision-map paragraph). Sabotage-proving the
+adopted chunk-leg fix caught a bug IN the fix: a `\b` before `q-` never
+matches behind the state script's literal `\u0002` escape, which would
+have silently re-limited the sweep to attribute occurrences — the exact
+co-location luck the fix exists to remove.
+
+Environment, recorded for the next session: the provenance gate refused
+a bench leg for the THIRD time this unit after commits outran the
+plane's stamped attestation (re-stamp `workers/front/stamp-build.mjs` is
+the whole cure), and the 5-day usage-limit gap plus tmp cleaner
+established the durable-notes rule — resume state lives in the home-dir
+session folder now, never the scratchpad.
+
+Slice-3 tree, tool-derived: turbo `check` **30/30** (a first run failed
+while this log was being edited mid-hash — detail lost to a tail pipe,
+rerun on the settled tree clean); full fixture origin suite **16 files,
+468 passed, 0 failed, 24 environment-gated skips** (blog credential,
+published-readings, bench REMOTE gates — the standing fixture-plane
+skips); `pdp.test.ts` 82/82 against the held plane; qwik workspace tests
+7/7; astro 10/10 (the tenth is the bake-completeness guard).
+
+Unit-end crate-mode run (the re-run owed since slice 1): **447 passed,
+21 failed, 24 env-gated skips** — every failure ONE root cause. The
+frozen crate capture predates the `.thumb.avif` derivative class
+pdp-build introduced for the gallery: 0 of its 1,817 committed
+derivatives are thumbs, where the fixture holds 29 of 58 (minted when
+it was regenerated). So the previously recorded ONE-failure baseline
+(the data-plane sample 404 on `9861004-primary.thumb.avif`) now
+surfaces through every crate PDP pixel leg whose page renders a thumb
+list — 20 legs, failing on the broken-image fail-closed guard, five
+404s each. The one-image master's legs PASS, being the only PDP page
+with no thumb list, which confirms the mechanism from inside the
+failure set. Everything else is green on the 500-tray catalogue: the
+serving floor, content legs, URL contract, identity guards, and the
+chunk-freeze leg. The fix is capture-tooling work — regenerate the
+derivative set WITH a receipt into the provenance-managed capture, not
+a quiet 900-file drop into a frozen directory — and is flagged for the
+next unit rather than folded in here.

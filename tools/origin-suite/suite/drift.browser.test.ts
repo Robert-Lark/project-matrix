@@ -1087,6 +1087,7 @@ const PDP_DRIFT_VARIANTS = [
   ["vanilla", NO_NOISE],
   ["react-next", REACT_NEXT_NOISE],
   ["astro", NO_NOISE],
+  ["qwik", QWIK_NOISE],
 ] as const;
 
 describe("the PDP drift legs cover every live variant", () => {
