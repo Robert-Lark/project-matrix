@@ -4614,3 +4614,137 @@ receipts that satisfy it, which is what turns "we recommend a re-run"
 into a mechanism. If the re-run is declined, the cutoff cannot land and
 the weaker attestation stands, recorded in the ADR and on
 `/methodology/`.
+
+### The last surface, specified rather than built (2026-08-28)
+
+This unit wrote `docs/prds/how-it-was-built-build.md` and no code. The
+constraint was not caution: `/how-it-was-built/` is a front-Worker
+singleton, `workers/front/**` was held by a concurrent measurement pass,
+and `commitPin` treats any porcelain output — untracked files included —
+as a dirty tree. One stray file there makes a batch of receipts
+unpublishable. So the deliverable is a decision-complete spec, and the
+honest caveat rides at the top of it: **nothing here was verified against
+a running origin.** Three agents held ports 8787–8797 for the session, so
+`run-local.mjs`, `pnpm run dev` and `wrangler dev` were all out. Every
+serving claim in the PRD is read from source, and the executing session
+owes the before-and-after probe — the before-shot is what makes the
+"it serves 200" leg non-vacuous.
+
+**Most of this surface was already decided, and saying so was part of the
+work.** ADR-0008 §8 (`:223-227`) fixes the URL, the owner, the layout, and
+assets-first serving via the home precedent. A spec that re-litigated
+those would have spent its weight on the settled half. Four rows of a
+table say what is shut; the rest of the document spends itself on the
+drift tie, `/methodology/`, and the duties.
+
+**The drift tie was the real question, and the sabotage answered it in
+two directions.** The only thing tying this surface to the documents it
+renders is a phase INDEX pin (`packages/reference/test/reference.test.ts:196-207`);
+`:157-164` records that the prose is deliberately unpinned. Both arms were
+tested against this worktree, and they disagree:
+
+- Appending `## Phase 16 — sabotage probe (delete me)` to
+  `docs/build-log.md` and running `pnpm --dir packages/reference run test`
+  failed **1 of 37**, with the message the guard was written to give:
+  `committed how-built is missing Phase 16 — re-run: node render/build.mjs`.
+- Creating `docs/adr/0010-sabotage-probe.md` with valid frontmatter and a
+  `# Title` and running the same command gave **37 passed**. A tenth ADR
+  the committed master has never listed, and nothing went red.
+
+Both restored from a backup copy taken first, never `git checkout --`;
+`git status --porcelain` empty and 37/37 green afterwards. The ADR arm is
+the identical shape to the defect `:188-195` records paying for once
+already — "adding a phase silently left the committed master a phase
+behind" — reproduced on the arm the fix never covered. It is worth being
+precise about why that is bad: the surface's whole claim is that the
+record is the evidence, and the index of the record could fall behind the
+record with every check green.
+
+**A larger gap sits behind it: nothing ties the SERVED page to the
+master at all.** The masters-health block (`drift.browser.test.ts:497-526`)
+lists `how-it-was-built` among eleven masters but proves only normalizer
+self-consistency and pixel stability — its own comment says "No variant
+comparisons yet — no variant serves these surfaces". Every other surface
+closes that loop with a variant-vs-master drift leg. A hostless singleton
+never gets one, so the loop was never going to close by that route. The
+spec's answer is to remove the class rather than guard it: `@pm/front`
+renders the surface with the same function that renders the master
+(`@pm/reference` as a declared dependency, the way ADR-0007 §6 made
+`@pm/tokens` one), with `renderHowBuilt` gaining `ref` and `head` options
+that change nothing when omitted. The alternative — re-implementing the
+body in `workers/front/build.mjs` behind `%%` markers, the way home and
+methodology are built — was rejected for being two renderers over one
+source, which is the shape this log keeps recording.
+
+**`/methodology/` stays where it is, and one line of the chrome decided
+it.** The page's own header comment (`:17-18`) has promised since it
+shipped that its long-term home is this surface. Against that:
+`packages/switcher/src/chrome.ts:288` renders `href="/methodology/"` into
+the populated chrome fragment injected on every measured page, and
+`workers/front/build.mjs:947-957` hashes that fragment and refuses the
+build when it stops matching the committed chrome constant. A redirect is
+therefore a `chrome.ts` edit, a fragment-hash refusal, a chrome-constant
+re-measure under addendum P's two-pass cycle, and a rebuild — paid to move
+a link that a canonical index entry leaves working. That gate fired for
+real one unit ago, on the interaction-registry slice, when naming the
+interaction in the INP row grew the fragment 12,072 → 12,131 B. It is not
+a hypothetical cost.
+
+The prompt this unit was handed framed the marker question as "more than
+four", and re-deriving it was the point: `grep -o '%%[A-Z_]*%%' … | sort
+-u | wc -l` gives **11 unique markers in 13 occurrences**, and five of
+them are not content at all — `%%TOKEN_PAPER%%`, `%%TOKEN_VINYL_URI%%`
+(twice, both inside the favicon data-URI), `%%TOKEN_PAPER_SUNK_URI%%`,
+`%%PM_TOKENS_CSS%%` and `%%PM_METHODOLOGY_CSS%%` are theme-color, favicon
+and stylesheet-inlining markers whose destination page has a different
+head and a different CSS set. A spec that had moved "the four numbers"
+would have shipped a page with no favicon and no stylesheet.
+
+**Three citations in the handoff prompt were wrong, and re-deriving them
+rather than repeating them is the only reason the spec is right about
+them.** The 13 KiB populated-fragment budget is `toBeLessThan(13312)` at
+`published-readings.test.ts:405` — one occurrence in that file
+(`grep -n '13312'`), inside the "chrome renders the published readings"
+describe at `:365-408`, not at `:337,348`, which are two `toContain` calls
+about receipt-linked editorial cells. `SURFACE_PAGES` is at
+`packages/reference/render/build.mjs:69-83`, not `:96-110`. And the
+methodology page's header comment spans `:11-18`, not `:12-18`. The
+budget mis-citation mattered most, because it also carried a wrong
+implication: that leg iterates `LAB_SURFACES`, so it can never cover a
+surface `workers/front/build.mjs:521-527` forbids from ever carrying
+`labBundle`. A chrome-free page receives no injected fragment and pays no
+fragment budget. The right answer to "which legs move" is **none** — and
+the honest addition is that one of them was never in scope.
+
+**Scale of the thing being fixed, since it is easy to read this surface as
+cosmetic.** `/how-it-was-built/` returns 404 today: nothing writes that
+dist path (`workers/front/build.mjs:53-56,1133,1237`) and an unmatched
+prefix falls to `src/index.js:95-98`. The canonical footer links it
+(`shell.mjs:163`) and all six variants re-type the link. Over a
+500-release crate (`jq '.releaseCount' …/crate/manifest.json`) that is
+6 editorial pages + 4×500 PDP pages = **2,006 served store pages, each
+carrying a footer link to a 404**.
+
+**Two stale claims found and deliberately not fixed**, both outside this
+unit's file boundary and both recorded in the PRD as duties of the
+executing session: the methodology page's `:17-18` promise of a move this
+spec declines, and `packages/tokens/css/surfaces/how-built.css:5`, which
+says content is generated from "ADR excerpts, decision-map rows,
+build-log phases" — no decision-map row has ever been rendered, and this
+spec does not add them.
+
+**What could not be settled, recorded rather than smoothed over.** The
+404-then-200 pair is unobserved. The wall-clock cost of a chrome-constant
+re-measure is reasoned from the refusal in the source, not timed — the
+methodology decision does not depend on its magnitude, only on its being
+non-zero against a benefit an index entry already delivers. And whether
+the frame prose should change at all is left open on purpose: this
+master's prose is the one thing `reference.test.ts:157-164` deliberately
+leaves unpinned, which cuts both ways, and is why the spec states the
+limits as required content instead of leaving them to taste.
+
+Verification on the final tree: `pnpm run check` 30/30, exit 0; `node
+packages/reference/render/build.mjs` followed by `git status --porcelain
+packages/reference/surfaces/` shows nothing — the changes are docs only,
+and no `## Phase` heading was added, so the phase-index pin has nothing to
+repair.
