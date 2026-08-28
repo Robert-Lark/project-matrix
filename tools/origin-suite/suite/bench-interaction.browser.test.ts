@@ -29,9 +29,18 @@
  * heavy variant pages exercising the harness, not plane correctness, and the
  * post-deploy smoke already carries a flagged bench-timing flake (issue #16).
  */
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SURFACE_CONTROLS } from "@pm/switcher";
-import { Receipt, runBatch, type ReceiptT } from "@pm/bench-runner";
+import {
+  Receipt,
+  applyProfile,
+  armBeaconCapture,
+  profileContextOptions,
+  runBatch,
+  type ReceiptT,
+} from "@pm/bench-runner";
+import { PROFILES } from "@pm/measurement";
+import { chromium, type Browser } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadServedSnapshot } from "./snapshot";
@@ -121,7 +130,12 @@ beforeAll(async () => {
         interactionId: "pdp-add-to-cart",
       })),
       profileId: "avg-broadband-desktop",
-      runsPerUrl: RUNS,
+      // ONE run per column. The claim under test is "zero, with the boundary
+      // attested", which a single run states as completely as seven — and this
+      // file already roughly doubles the origin suite's browser work, which
+      // cost the pre-existing reproduce leg its 300 s budget on the first full
+      // run after these legs landed.
+      runsPerUrl: 1,
       n: 24,
       runNonce: `${NONCE}-cart`,
       repoRoot,
@@ -228,4 +242,81 @@ describe.skipIf(REMOTE)("the zero-fetch direction, on an interaction that must m
       expect(target.interactionId).toBe("pdp-add-to-cart");
     }
   });
+});
+
+describe.skipIf(REMOTE)("the instrument leaves the browser cache alone (ADR-0001 addendum S)", () => {
+  // The MECHANISM, not a variant's side effect. The cross-variant agreement
+  // leg above catches today's cache-off symptom only because qwik happens to
+  // re-write identical `src` values; the day that stops — a keyed thumb list,
+  // a Qwik release that skips no-op attribute writes — all four variants agree
+  // with the cache ON or OFF and the agreement leg passes either way. Then
+  // `page.route` could come back and nothing would notice (verify-slice,
+  // anti-rigging lens).
+  //
+  // So this drives the runner's OWN setup functions — `applyProfile` and
+  // `armBeaconCapture`, imported, not reimplemented — and asks the only
+  // question that matters: after a page has loaded a cacheable subresource,
+  // does requesting it again cost bytes?
+  let browser: Browser;
+  beforeAll(async () => {
+    if (REMOTE) return;
+    try {
+      browser = await chromium.launch();
+    } catch {
+      browser = await chromium.launch({ channel: "chrome" });
+    }
+  }, 120_000);
+  afterAll(async () => {
+    await browser?.close();
+  });
+
+  it("a second visit in the same context re-serves immutable images from cache, costing zero bytes", async () => {
+    const profile = PROFILES["avg-broadband-desktop"];
+    const context = await browser.newContext(profileContextOptions(profile));
+    const page = await context.newPage();
+    try {
+      await applyProfile(page, profile);
+      const beacons: Array<{ name?: string; value?: number }> = [];
+      await armBeaconCapture(page, beacons);
+      const url = `${ORIGIN}/vanilla/pdp/${slug}/`;
+
+      // FIRST visit: the images are fetched for real.
+      await page.goto(url, { waitUntil: "load" });
+      const first = await page.evaluate(() =>
+        (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
+          .filter((e) => new URL(e.name).pathname.startsWith("/assets/img/"))
+          .map((e) => ({ name: e.name, bytes: e.transferSize })),
+      );
+      // Non-vacuity in the only direction that matters: if the page fetched no
+      // images, "the second visit fetched none either" proves nothing.
+      expect(first.length, "the PDP page loaded no images at all").toBeGreaterThan(0);
+      expect(
+        first.some((e) => e.bytes > 0),
+        "no image cost bytes on a cold visit — this leg cannot tell a cache hit from an empty page",
+      ).toBe(true);
+
+      // SECOND visit, same context, so the browser cache is warm exactly as a
+      // real visitor's is within a session. `/assets/img/*` is served
+      // `public, max-age=31536000, immutable`, so every one of these must now
+      // cost zero. Under Playwright's request routing — which the runner used
+      // until 2026-08-28, and which its own typings say "disables http cache"
+      // — they are all full downloads again.
+      await page.goto(url, { waitUntil: "load" });
+      const second = await page.evaluate(() =>
+        (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
+          .filter((e) => new URL(e.name).pathname.startsWith("/assets/img/"))
+          .map((e) => ({ name: e.name, bytes: e.transferSize })),
+      );
+      expect(second.length, "the second visit loaded no images").toBeGreaterThan(0);
+      const paid = second.filter((e) => e.bytes > 0);
+      expect(
+        paid,
+        `${paid.length} of ${second.length} immutable images were re-downloaded on a second visit in the ` +
+          `same context — the instrument is disabling the browser HTTP cache, which turns every no-op ` +
+          `re-request a paradigm makes into a measured download (ADR-0001 addendum S)`,
+      ).toEqual([]);
+    } finally {
+      await context.close();
+    }
+  }, 120_000);
 });

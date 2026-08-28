@@ -235,34 +235,29 @@
         interaction, Add&nbsp;to&nbsp;cart; the product page's is switching the
         gallery image.</li>
       <li><strong>The INP row is not like-for-like across paradigms when a
-        handler is asynchronous, and the error flatters the paradigm doing
-        more work.</strong> Chromium closes an interaction's event-timing
-        entry at the first paint after the handler's <em>synchronous</em>
-        processing returns. A resumed handler returns immediately having only
-        scheduled the render, so that paint can carry nothing, and the entry
-        closes before the visitor sees anything. Measured on the product
-        page's gallery switch, medians of five fresh visits: the three
-        synchronous paradigms mutate the DOM inside the handler (1.1–2.8&nbsp;ms)
-        and record 24&nbsp;ms; Qwik's handler returns in 0.7&nbsp;ms, its DOM
-        change lands at 9.9&nbsp;ms — after the paint that closed the entry —
-        and it records <em>8&nbsp;ms</em>, while its visible update arrives at
-        34.6&nbsp;ms, the latest of the four (the others: 18.2–19.5&nbsp;ms).
-        The same asymmetry exists on the editorial surface, where the late DOM
-        change happens to fall inside the measured window and the cell reads
-        24&nbsp;ms like the rest — so which way the discrepancy goes is a race
-        with the frame boundary, not a stable property.
+        handler is asynchronous.</strong> Chromium closes an interaction's
+        event-timing entry at the first paint after the handler's
+        <em>synchronous</em> processing returns. A resumed handler returns
+        immediately having only scheduled the render, so that paint can carry
+        nothing and the entry closes before the visitor sees anything — which
+        makes the cell read low exactly where the work finishes last.
         <strong>So the product page does not publish an INP row at all.</strong>
-        Measured against the deployed plane, Qwik reads 8&nbsp;ms on the
-        gallery switch under average broadband, <em>0&nbsp;ms</em> under slow
-        4G, and 24&nbsp;ms on add-to-cart under slow 4G, while the other three
-        sit at 24&nbsp;ms throughout. One column swinging from 0 to 24 across
-        conditions while the others hold still is not measuring responsiveness,
-        and switching to the other interaction does not escape it. Publishing
+        On that surface one column swings between 0 and 24&nbsp;ms across
+        profiles and interactions while the other three hold still, and
+        switching to the other interaction does not escape it. Every figure
+        behind that decision is in the receipts those cells would have linked —
+        they carry the per-run INP the table withholds, which is the point:
+        the raw measurement publishes, the derived cell does not. Publishing
         0&nbsp;ms beside three 24s under a caveat was the alternative, and it
         was rejected: that is a number no wording rescues. The editorial
         surface keeps its INP row, because there the metric IS like-for-like.
         %%LAB_INP_SPREAD%% Where a row is withheld the table says so in the row
-        itself.</li>
+        itself. The paint-timing measurements behind the mechanism — when each
+        paradigm's handler returns, when its DOM changes, and when the result
+        is actually on screen — are an unpublished probe, so they are recorded
+        in <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0001-benchmark-measurement-methodology.md" rel="noopener">the methodology ADR</a>
+        and deliberately not stated here as site numbers: this page carries no
+        figure without its artifact, and that probe has none yet.</li>
       <li>Post-load idle work is deliberately settled onto the <em>load</em>
         side before both the byte snapshot and the click. That is what keeps
         the initial/interaction split from varying run to run, but it has a

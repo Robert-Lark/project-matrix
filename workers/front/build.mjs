@@ -268,6 +268,26 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     );
   }
   const interactionId = interactionIds[0];
+  // And it must be the one the SURFACE declares. Otherwise a batch driven with
+  // the wrong `--interaction` passes every gate above — the id is registered,
+  // there is one per receipt and one per surface, and a "none" declaration
+  // holds for any click that fetches nothing — and the site publishes an INP
+  // row for a heading click under prose describing the page's designed
+  // interaction (verify-slice, anti-rigging lens).
+  if (typeof fitSpec.interactionId !== "string") {
+    throw new Error(
+      `front lab: FIT.${surfaceName} names no interactionId — a surface publishes an interaction cell ` +
+        `only by declaring WHICH interaction its batch drives, or any registered click can be published ` +
+        `under its name`,
+    );
+  }
+  if (interactionId !== fitSpec.interactionId) {
+    throw new Error(
+      `front lab: FIT.${surfaceName} declares the interaction "${fitSpec.interactionId}" but this batch ` +
+        `drove "${interactionId}" — re-run the batch with the declared interaction, or change the ` +
+        `declaration deliberately and rewrite the sentence with it`,
+    );
+  }
 
   // The ATTESTATION binds every interaction claim, whatever the declaration
   // says: a byte figure only means "this is what the click cost" if the
@@ -351,6 +371,28 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
         `front lab: FIT.${surfaceName} declares a constant interaction fetch but the batch measured ` +
           `0 B everywhere — declare "none" and get the stronger check, rather than a constant clause that ` +
           `cannot distinguish itself from it`,
+      );
+    }
+    // Per RUN as well as per median, for the same reason the "none" branch is
+    // per run: a median hides up to floor(n/2) runs, and the run this hides is
+    // the dangerous one — a run that captured NOTHING (0 B, because the fetch
+    // dispatched after the quiet window closed, the tracker's own stated
+    // residual limit) publishes as "the same bytes in every column" while
+    // having measured no bytes at all (verify-slice, anti-rigging lens).
+    const strays = receipt.targets.flatMap((t) =>
+      ["warm", "cold"].flatMap((column) =>
+        t.columns[column].runs
+          .map((run, i) => ({ variant: t.variant, column, run: i, bytes: run.kb.interactionBytes }))
+          .filter((r) => !Number.isFinite(r.bytes) || Math.abs(r.bytes - max) > declared.toleranceBytes),
+      ),
+    );
+    if (strays.length > 0) {
+      throw new Error(
+        `front lab: FIT.${surfaceName} declares the interaction a cross-variant constant, and the medians ` +
+          `agree — but individual runs do not: ` +
+          `${strays.map((r) => `${r.variant}/${r.column} run ${r.run} measured ${r.bytes} B`).join("; ")} ` +
+          `against ${max} B. A run that captured nothing is hidden by its own median, and it is the run ` +
+          `that means the boundary missed the fetch`,
       );
     }
     // The published figure is the WARM column's own median across variants —
@@ -987,8 +1029,13 @@ const inpSpread = (() => {
   const runs = cells
     .flatMap((c) => c.runs.map((run) => run.webVitals.INP))
     .filter((v) => typeof v === "number" && Number.isFinite(v));
-  const medians = cells
-    .map((c) => c.medians.webVitals.INP)
+  // WARM only. The reading table publishes the warm column (ADR-0001 §5), so
+  // "the published medians" has to mean those: a cold median outside the warm
+  // range would otherwise widen a sentence about cells that do not exist
+  // anywhere on the site — the same class of error this sentence replaced,
+  // one abstraction up (verify-slice, anti-rigging lens).
+  const medians = receipts
+    .flatMap((r) => r.targets.map((t) => t.columns.warm.medians.webVitals.INP))
     .filter((v) => typeof v === "number" && Number.isFinite(v));
   if (runs.length === 0 || medians.length === 0) {
     throw new Error(
@@ -996,9 +1043,10 @@ const inpSpread = (() => {
     );
   }
   return (
-    `Every one of the <span class="num">${esc(runs.length)}</span> runs that produced a value falls between ` +
+    `Every one of the <span class="num">${esc(runs.length)}</span> runs that produced a value, in both cache ` +
+    `columns, falls between ` +
     `<span class="num">${esc(Math.min(...runs))}</span> and <span class="num">${esc(Math.max(...runs))}</span>&nbsp;ms, ` +
-    `and the published medians span <span class="num">${esc(Math.min(...medians))}</span>–` +
+    `and the published (warm) medians span <span class="num">${esc(Math.min(...medians))}</span>–` +
     `<span class="num">${esc(Math.max(...medians))}</span>&nbsp;ms — one narrow band, every column inside it.`
   );
 })();

@@ -844,7 +844,7 @@ export function armNetworkQuiescence(page: Page): {
  * above cannot reach it. Recorded here so the exception is visible rather
  * than discovered.
  */
-async function armBeaconCapture(
+export async function armBeaconCapture(
   page: Page,
   beacons: Array<{ name?: string; value?: number }>,
 ): Promise<void> {

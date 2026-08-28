@@ -47,6 +47,17 @@ export const FIT = {
      */
     interactionFetch: "none",
     /**
+     * The interaction this surface's batch may be driven by. Without it,
+     * `--interaction body-click` on an editorial batch passes every gate the
+     * pipeline has — the id exists, one id per receipt, one id per surface,
+     * and "none" holds because a heading click genuinely fetches nothing — and
+     * the site publishes an INP row for a click on `main h1` under prose that
+     * calls it the page's one designed interaction (verify-slice, anti-rigging
+     * lens). The methodology page's own surface→interaction mapping is derived
+     * from this, never typed.
+     */
+    interactionId: "editorial-add-to-cart",
+    /**
      * Whether this surface's INP row publishes. Required, for the same reason
      * `interactionFetch` is: a surface that can omit the declaration can
      * publish a timing cell without ever having judged whether it means the
@@ -112,6 +123,11 @@ export const FIT = {
      * both columns.
      */
     interactionFetch: { kind: "constant", toleranceBytes: 64 },
+    /** The interaction this surface's batch may be driven by — see the
+     *  editorial entry. `pdp-add-to-cart` is measured and recorded, but it is
+     *  not what publishes: one receipt slot per (surface, profile) means one
+     *  family publishes, and this is the one the surface genuinely owns. */
+    interactionId: "pdp-gallery-switch",
     /**
      * **The PDP's INP row does NOT publish, and the reason is measured.**
      *
