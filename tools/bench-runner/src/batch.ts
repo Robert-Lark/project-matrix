@@ -335,6 +335,12 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
         // The CEILING on the signal-based settle waits, not a fixed wait — see
         // the methodNote below and collect.ts SETTLE_CAP_MS.
         settleMs: SETTLE_CAP_MS,
+        // The MECHANISM, not just the ceiling: what "settled" was measured by.
+        // A receipt minted before 2026-08-28 carries no such field, and its
+        // `interactionSettled: true` was produced by a latch that had already
+        // closed — so the publication gate can require this rather than read a
+        // date (verify-slice, skeptic lens).
+        quiescence: "in-flight-tracked",
       },
       methodNotes: [
         "settle is signal-based, never a fixed window: the interaction byte boundary waits for the network to go idle and the vitals-beacon flush waits for delivery to quiesce, each bounded by harness.settleMs so an absent signal surfaces as absent bytes / a null vital rather than hanging (ADR-0001 §9; tools/drift-gate/README.md 'wait for the real signal, never a proxy'). Any post-load idle work (e.g. Qwik's preloader) is awaited onto the INITIAL byte side before the boundary snapshot, so the initial/interaction split is deterministic across runs. MECHANISM, stated because it changed on 2026-08-28 and receipts minted before that date carry a weaker guarantee under this same sentence: quiescence is measured by tracking in-flight requests from the browser's own request/response events and requiring a fresh 500 ms window with nothing in flight, measured FROM each boundary. It was previously Playwright's waitForLoadState('networkidle'), which is a document-load-lifecycle LATCH — 'if the state has been already reached while loading current document, the method resolves immediately' (playwright-core types.d.ts), and no navigation occurs across a scripted interaction — so the post-click call returned in 24-49 ms (measured, four variants) and an interaction fetch still in flight was recorded as zero bytes with interactionSettled true. Receipts dated before 2026-08-28 therefore prove 'nothing was fetched for the click' only where the interaction is independently known not to fetch; from this date the flag measures it.",

@@ -88,7 +88,24 @@ export const INTERACTIONS: Readonly<
    *  IMAGE MASS, invariant by construction, and are never a paradigm
    *  difference. The INP half is the paradigm difference. */
   "pdp-gallery-switch": async (page) => {
-    await page.locator(".pm-gallery__thumb").nth(1).click();
+    const thumbs = page.locator(".pm-gallery__thumb");
+    const count = await thumbs.count();
+    if (count < 2) {
+      // `.nth(1)` OPTS OUT of Playwright's strict mode — strictness fires on
+      // more than one match, never on zero — so a release with no thumb strip
+      // does not fail loudly here; it waits out the 30 s action timeout and
+      // reports a locator problem instead of the real constraint. 90 of the
+      // crate's 500 releases render exactly one image and therefore no strip
+      // at all (packages/reference/render/pdp.mjs galleryBlock). The twin
+      // interaction got this check first; this one needs it for the same
+      // reason (verify-slice, this slice's own second pass).
+      throw new Error(
+        `pdp-gallery-switch needs a release with at least two images and found ${count} thumb(s): a ` +
+          `single-image release renders no thumb strip at all. Bench a multi-image release, or drive ` +
+          `pdp-add-to-cart`,
+      );
+    }
+    await thumbs.nth(1).click();
   },
   /** The PDP's add-to-cart — the controlled cross-surface twin of
    *  `editorial-add-to-cart` (same paradigm, same interaction, different
@@ -935,10 +952,19 @@ export async function measureVisit(
     // boundary would otherwise fall at an arbitrary moment and the receipt
     // would not say so. Same fail-loud behaviour the superseded
     // `waitForLoadState("networkidle")` had here through its default timeout.
+    // The cap is a budget for the WHOLE pre-interaction phase, not for each
+    // call in it. Six calls can run before the click (the post-goto quiesce
+    // plus up to five in the rIC loop), and a per-call cap made the worst case
+    // 6 x 30 s = three minutes for one visit — reachable now that these waits
+    // actually wait, where the superseded latch returned instantly and hid it
+    // (verify-slice, this slice's own second pass).
+    const loadQuietDeadline = Date.now() + LOAD_QUIET_CAP_MS;
     const quietAfterLoad = async () => {
-      if (!(await network.wait(NETWORK_QUIET_MS, LOAD_QUIET_CAP_MS))) {
+      const remainingMs = loadQuietDeadline - Date.now();
+      if (remainingMs <= 0 || !(await network.wait(NETWORK_QUIET_MS, remainingMs))) {
         throw new Error(
-          `the network never went quiet for ${NETWORK_QUIET_MS} ms within ${LOAD_QUIET_CAP_MS} ms of load ` +
+          `the network never went quiet for ${NETWORK_QUIET_MS} ms within this visit's ${LOAD_QUIET_CAP_MS} ms ` +
+            `pre-interaction budget ` +
             `(${spec.effectiveUrl}) — the initial byte boundary would be arbitrary, so the visit refuses ` +
             `rather than mint a sample whose initial/interaction split is undefined`,
         );

@@ -2,6 +2,20 @@
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["tsconfig.base.json", ".npmrc", "pnpm-workspace.yaml"],
   "tasks": {
+    // The origin suite's interaction leg imports the publication's OWN
+    // declared tolerance from workers/front/lab/fit.mjs, so the two guards on
+    // that property cannot drift apart. That import crosses a workspace
+    // boundary, and turbo's default input set is the package's own files plus
+    // its declared deps — so renaming the field would leave a STALE GREEN
+    // typecheck replayable from cache. Declared here for the same reason
+    // @pm/front#build declares the crate manifest (verify-slice, skeptic lens).
+    "@pm/origin-suite#typecheck": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/workers/front/lab/fit.mjs",
+        "$TURBO_ROOT$/workers/front/lab/fit.d.mts"
+      ]
+    },
     "//#lint": {
       "inputs": [
         "eslint.config.mjs",

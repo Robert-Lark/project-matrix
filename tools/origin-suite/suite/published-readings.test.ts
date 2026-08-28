@@ -383,7 +383,15 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
         path: SURFACE_PAGE[surface]!(snap).replace(/^\/vanilla\//, `/${variant}/`),
       })),
     );
-    expect(pages.length).toBeGreaterThanOrEqual(LAB_SURFACES.length);
+    // NOT `pages.length >= LAB_SURFACES.length`, which every branch of the
+    // ternary satisfies for every input including an EMPTY registry (0 >= 0) —
+    // a tautology placed to defend coverage, which is the anti-pattern this
+    // file's own comments condemn (verify-slice, skeptic lens). Assert the
+    // surfaces actually covered.
+    expect(LAB_SURFACES.length).toBeGreaterThan(0);
+    expect([...new Set(pages.map((p) => p.surface))].sort()).toEqual(
+      [...LAB_SURFACES].sort(),
+    );
     for (const id of PROFILE_IDS) {
       for (const { surface, variant, path } of pages) {
         const body = await (await get(`${path}?profile=${id}`)).text();

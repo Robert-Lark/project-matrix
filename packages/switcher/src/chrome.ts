@@ -262,7 +262,13 @@ function readingSection(
           : lab?.interactionId;
       if (note) label = `${metric}<span class="pm-chrome__note"> ${esc(note)}</span>`;
     }
-    return `<tr><th scope="row" class="pm-chrome__th">${label}</th>${cells}</tr>`;
+    // `--noted` carries the same reset `--planned` already gets on the COLUMN
+    // header. `.pm-chrome__th` is `text-transform: uppercase` with 0.14em
+    // tracking, which is right for a metric name and wrong for a sentence: the
+    // withheld-INP reason would have shipped SHOUTED across four columns
+    // (verify-slice, skeptic lens).
+    const rowClass = label === esc(metric) ? "pm-chrome__th" : "pm-chrome__th pm-chrome__th--noted";
+    return `<tr><th scope="row" class="${rowClass}">${label}</th>${cells}</tr>`;
   }).join("");
 
   // Serving a fenced exhibit: the table still reads the BENCHMARKED

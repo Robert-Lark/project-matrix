@@ -214,6 +214,24 @@ export const Receipt = z.object({
     browser: z.string(),
     browserVersion: z.string(),
     settleMs: z.number(),
+    /**
+     * HOW the settle waits measure quiescence — the mechanism, in the
+     * artifact, so a publication gate can require it instead of inferring it
+     * from a date.
+     *
+     * Until 2026-08-28 the interaction byte boundary was Playwright's
+     * `waitForLoadState("networkidle")`, a document-lifecycle LATCH that had
+     * already closed during load and could observe nothing (ADR-0001 addendum
+     * R). Every receipt minted under it carries `interactionSettled: true` on
+     * every run, earned by nothing. Those receipts are indistinguishable from
+     * honest ones by their VALUES — the only thing that separates them is
+     * which mechanism produced them, so the mechanism has to be recorded.
+     *
+     * Optional, because receipts minted before this field existed cannot grow
+     * it retroactively; a publication gate treats its ABSENCE as the weaker
+     * pre-fix guarantee rather than reading a date and guessing.
+     */
+    quiescence: z.literal("in-flight-tracked").optional(),
   }),
   /** Measured limits-of-data, stated in the receipt itself (ADR-0001 §9's
    *  limits-of-data ethos): what these numbers can and cannot claim. */
