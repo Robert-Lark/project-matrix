@@ -127,6 +127,49 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
       `front lab: this batch measured [${measured.join(", ")}] but the surface is registered as serving [${registered.join(", ")}] — a publication must cover exactly the surface's live variants, or the table publishes a column no receipt backs (ADR-0008 §3)`,
     );
   }
+  const surfaceName = receipt.targets[0].surface;
+  const declared = fitSpec.interactionFetch;
+  // The PAYLOAD is validated, not just the tag. `{kind:"constant"}` with a
+  // missing or misspelled `toleranceBytes` would pass a tag-only guard, and
+  // then `max - min > undefined` is a NaN comparison — FALSE for every spread
+  // — so the constancy check silently never fires and the surface publishes
+  // the exact false claim the declaration exists to prevent (verify-slice,
+  // correctness lens). Defaulting the missing value to 0 was rejected: that
+  // invents a policy the surface never declared, which is the same class of
+  // error one layer down.
+  const declaredOk =
+    declared === "none" ||
+    (declared?.kind === "constant" &&
+      Number.isFinite(declared.toleranceBytes) &&
+      declared.toleranceBytes >= 0);
+  const timing = fitSpec.interactionTiming;
+  if (typeof timing?.publish !== "boolean") {
+    throw new Error(
+      `front lab: FIT.${surfaceName} declares no interactionTiming — a surface publishes an INP row only ` +
+        `by stating that the metric measures the same thing in every one of its columns ` +
+        `({publish:true}), or by withholding it with a reason ({publish:false, reason}). Required for the ` +
+        `same reason interactionFetch is: a declaration that can be omitted is a way to publish a timing ` +
+        `cell without ever having judged it (ADR-0001 addendum T)`,
+    );
+  }
+  if (timing.publish === false && !timing.reason) {
+    throw new Error(
+      `front lab: FIT.${surfaceName} withholds its INP row but states no reason — withheld LOUDLY or not ` +
+        `at all; the reason rides the row the reader is looking at`,
+    );
+  }
+  const bundleTiming = timing.publish
+    ? { published: true }
+    : { published: false, reason: timing.reason };
+  if (!declaredOk) {
+    throw new Error(
+      `front lab: FIT.${surfaceName} declares no usable interactionFetch (got ${JSON.stringify(declared)}) — ` +
+        `a surface publishes an interaction cell only by stating what the click costs on the wire: "none", or ` +
+        `{kind:"constant", toleranceBytes:<finite, >= 0>}. A constant with no tolerance is not a looser check, ` +
+        `it is no check: the spread comparison becomes NaN and passes for every batch`,
+    );
+  }
+
   const receiptMeta = {
     profile: receipt.profile.id,
     date: receipt.date.slice(0, 10),
@@ -174,7 +217,11 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
       ["TTFB", "TTFB"],
       ["FCP", "FCP"],
       ["LCP", "LCP"],
-      ["INP (scripted)", "INP"],
+      // The INP row publishes only where the surface declares the metric
+      // like-for-like across its columns (ADR-0001 addendum T). Dropped at
+      // BUNDLE time rather than hidden at render time: a value that must not
+      // be read must not be in the artifact the reader can open either.
+      ...(fitSpec.interactionTiming.publish ? [["INP (scripted)", "INP"]] : []),
     ]) {
       const v = med.webVitals[key];
       put(
@@ -207,16 +254,6 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
   // Every target's surface has already been checked to equal the filename's
   // (the receipt loop below), so target 0's is THE surface, and the column
   // check above proves the target list is non-empty.
-  const surfaceName = receipt.targets[0].surface;
-  const declared = fitSpec.interactionFetch;
-  if (declared !== "none" && declared?.kind !== "constant") {
-    throw new Error(
-      `front lab: FIT.${surfaceName} declares no interactionFetch — a surface publishes an ` +
-        `interaction cell only by stating what the click costs on the wire ("none", or ` +
-        `{kind:"constant",toleranceBytes}); omitting it would publish the cell with no clause at all`,
-    );
-  }
-
   // One batch, ONE interaction. The CLI applies a single `--interaction` per
   // batch and the receipt has one slot per (surface, profile), so a receipt
   // carrying two interaction families would render two different measurements
@@ -255,15 +292,42 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     { variant: t.variant, column: "warm", bytes: t.columns.warm.medians.interactionBytes },
     { variant: t.variant, column: "cold", bytes: t.columns.cold.medians.interactionBytes },
   ]);
+  // A null median is "the batch produced no value here", which is a DIFFERENT
+  // failure from a disagreement and must not reach the comparisons below:
+  // `Math.min(null, 25194)` coerces null to 0, so a missing measurement would
+  // be reported as a 25,194 B paradigm spread and the operator would go
+  // looking for the wrong thing.
+  const missing = interactionMedians.filter((m) => !Number.isFinite(m.bytes));
+  if (missing.length > 0) {
+    throw new Error(
+      `front lab: ${surfaceName} has no interaction-byte median for ` +
+        `${missing.map((m) => `${m.variant}/${m.column}`).join(", ")} — an absent measurement cannot ` +
+        `satisfy any interactionFetch declaration, and it is not a disagreement`,
+    );
+  }
   const spread = () =>
     interactionMedians.map((m) => `${m.variant}/${m.column}=${m.bytes}`).join(", ");
   let interactionBytes;
   if (declared === "none") {
-    const fetching = interactionMedians.filter((m) => m.bytes !== 0);
+    // Per RUN, not per median. "None of them fetches another byte for the
+    // click" is the site's strongest claim, and a median hides up to
+    // floor(n/2) fetching runs behind it: at runsPerUrl 7, three runs that
+    // fetched still publish a median of 0 (verify-slice, correctness lens).
+    // Intermittency is exactly what the genuine quiescence wait makes
+    // observable for the first time, so this is the moment to check it. The
+    // `constant` branch keeps medians, where run-to-run spread is legitimate
+    // noise rather than a contradiction of the claim.
+    const fetching = receipt.targets.flatMap((t) =>
+      ["warm", "cold"].flatMap((column) =>
+        t.columns[column].runs
+          .map((run, i) => ({ variant: t.variant, column, run: i, bytes: run.kb.interactionBytes }))
+          .filter((r) => r.bytes !== 0),
+      ),
+    );
     if (fetching.length > 0) {
       throw new Error(
         `front lab: FIT.${surfaceName} declares interactionFetch "none", but ` +
-          `${fetching.map((m) => `${m.variant}/${m.column} measured ${m.bytes} B`).join("; ")} — ` +
+          `${fetching.map((r) => `${r.variant}/${r.column} run ${r.run} measured ${r.bytes} B`).join("; ")} — ` +
           `refusing to publish an unsupported claim (ADR-0001 addendum C / C2)`,
       );
     }
@@ -328,7 +392,7 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
     const lower = band(ordered[i - 1]);
     const upper = band(ordered[i]);
     if (lower.max >= upper.min && upper.max >= lower.min) {
-      return { columns, interactionId, bandsOverlap: true };
+      return { columns, interactionId, interactionTiming: bundleTiming, bandsOverlap: true };
     }
   }
   const kb = Object.fromEntries(
@@ -357,7 +421,7 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
   if (/undefined|NaN/.test(sentence)) {
     throw new Error(`front lab: the fit sentence contains an unsubstituted value: ${sentence}`);
   }
-  return { columns, interactionId, fit: { sentence, receipt: receiptMeta } };
+  return { columns, interactionId, interactionTiming: bundleTiming, fit: { sentence, receipt: receiptMeta } };
 }
 
 // The switcher is TypeScript source and this build runs in plain node, so
@@ -644,6 +708,22 @@ for (const surface of LAB_SURFACES) {
     }
     if (r.runLocation.label !== receipts[0].runLocation.label) {
       throw new Error(`front lab: published ${surface} receipts span more than one run location`);
+    }
+    // One surface, ONE interaction, across every profile. `bundleFromReceipt`
+    // already forces one interaction per RECEIPT, but each profile is its own
+    // `bench` invocation with its own `--interaction`, so a surface could hold
+    // three receipts driving three different clicks and still agree on sha,
+    // date, shape and location. The methodology page then publishes ONE
+    // interaction id for the whole surface, read arbitrarily from the first
+    // file, and two of the three reading tables name a click they were not
+    // driven by (verify-slice, correctness lens).
+    if (r.targets[0].interactionId !== receipts[0].targets[0].interactionId) {
+      throw new Error(
+        `front lab: published ${surface} receipts drove different interactions ` +
+          `(${receipts[0].profile.id} → ${receipts[0].targets[0].interactionId}, ` +
+          `${r.profile.id} → ${r.targets[0].interactionId}) — one surface's publication is one batch, ` +
+          `and its reading tables name one interaction`,
+      );
     }
   }
 }

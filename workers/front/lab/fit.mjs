@@ -47,6 +47,20 @@ export const FIT = {
      */
     interactionFetch: "none",
     /**
+     * Whether this surface's INP row publishes. Required, for the same reason
+     * `interactionFetch` is: a surface that can omit the declaration can
+     * publish a timing cell without ever having judged whether it means the
+     * same thing in every column.
+     *
+     * Editorial publishes it, and that is a measurement rather than an
+     * assumption: `editorial-add-to-cart` reads 24 ms for all five variants
+     * across every profile in the committed receipts, seven runs each. The
+     * async-handler asymmetry ADR-0001 addendum T describes exists here too —
+     * qwik's DOM change lands at 22.0 ms against 1.0-3.5 ms for the others —
+     * but it falls INSIDE the measured window, so the cell is like-for-like.
+     */
+    interactionTiming: { publish: true },
+    /**
      * The EXACT variant set this sentence names. The build refuses any
      * batch whose columns differ (not a subset check — a sixth variant must
      * also force the sentence to be rewritten): without it, renaming or
@@ -93,6 +107,43 @@ export const FIT = {
      * both columns.
      */
     interactionFetch: { kind: "constant", toleranceBytes: 64 },
+    /**
+     * **The PDP's INP row does NOT publish, and the reason is measured.**
+     *
+     * Chromium closes an interaction's event-timing entry at the first paint
+     * after the handler's SYNCHRONOUS processing returns. Qwik's resumed
+     * handler returns having only SCHEDULED the render, so on this surface its
+     * entry closes on a paint that carries nothing — and what the cell then
+     * reads is a race with the frame boundary rather than a property of the
+     * paradigm. Measured 2026-08-28 against the deployed plane, qwik against
+     * the other three (which read 24 ms throughout):
+     *
+     *   pdp-gallery-switch, avg-broadband   qwik  8 ms
+     *   pdp-gallery-switch, slow-4g          qwik  0 ms  (runs 0, 8, 0)
+     *   pdp-add-to-cart,    avg-broadband   qwik  8 ms
+     *   pdp-add-to-cart,    slow-4g          qwik 24 ms
+     *
+     * One column swinging 0 → 24 across conditions while the others hold at 24
+     * is not a measurement of responsiveness, and the direction flatters the
+     * paradigm doing the most work: on the same click qwik's visible update
+     * lands at 34.6 ms, the LATEST of the four (18.2-19.5). Switching
+     * interactions does not escape it — add-to-cart reads 8 ms on the default
+     * profile too — so this is a property of the surface's handlers, not of the
+     * chosen click.
+     *
+     * Withheld LOUDLY: the row says so, the fit sentence refuses the timing
+     * comparison in its own words, and `/methodology/` carries the mechanism
+     * and these figures. Publishing 0 ms beside three 24s under a caveat was
+     * rejected — that is a number no prose can rescue, and "a plausible-looking
+     * meaningless cell is worse than a missing one" is this project's own rule.
+     * The bytes half of the interaction publishes normally: it is verified,
+     * cross-paradigm constant, and it is what this surface CAN honestly say
+     * about its click.
+     */
+    interactionTiming: {
+      publish: false,
+      reason: "not comparable on this surface — see the methodology page",
+    },
     /**
      * kb: variant → initial-JS KB (warm median, receipt-derived).
      * facts.interactionKb: the agreed interaction cost, same derivation.

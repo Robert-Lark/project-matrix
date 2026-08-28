@@ -250,9 +250,19 @@
         The same asymmetry exists on the editorial surface, where the late DOM
         change happens to fall inside the measured window and the cell reads
         24&nbsp;ms like the rest — so which way the discrepancy goes is a race
-        with the frame boundary, not a stable property. Read the INP row as
-        what it is, a standard metric measured the standard way; do not read it
-        as "this paradigm responds faster".</li>
+        with the frame boundary, not a stable property.
+        <strong>So the product page does not publish an INP row at all.</strong>
+        Measured against the deployed plane, Qwik reads 8&nbsp;ms on the
+        gallery switch under average broadband, <em>0&nbsp;ms</em> under slow
+        4G, and 24&nbsp;ms on add-to-cart under slow 4G, while the other three
+        sit at 24&nbsp;ms throughout. One column swinging from 0 to 24 across
+        conditions while the others hold still is not measuring responsiveness,
+        and switching to the other interaction does not escape it. Publishing
+        0&nbsp;ms beside three 24s under a caveat was the alternative, and it
+        was rejected: that is a number no wording rescues. The editorial
+        surface keeps its INP row, because there the metric IS like-for-like —
+        all five variants read 24&nbsp;ms across every profile, seven runs
+        each. Where a row is withheld the table says so in the row itself.</li>
       <li>Post-load idle work is deliberately settled onto the <em>load</em>
         side before both the byte snapshot and the click. That is what keeps
         the initial/interaction split from varying run to run, but it has a

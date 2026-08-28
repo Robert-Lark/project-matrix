@@ -103,13 +103,31 @@ export const INTERACTIONS: Readonly<
    *  on every master — the fenced live-origin plaque's button is a
    *  `pm-button--secondary` OUTSIDE `.pm-pdp__buy`.
    *
+   *  **The class locator resolves on every master; it is only CLICKABLE on a
+   *  priced one.** `pdp.mjs:117` renders that same button `disabled` when the
+   *  release is sold out, and Playwright's actionability check then retries
+   *  the enabled state until the 30 s default action timeout and throws — a
+   *  batch pointed at the unpriced master would burn half an hour before
+   *  saying anything useful, and the message it finally gave would name a
+   *  locator timeout rather than the real constraint. So the constraint is
+   *  checked here, immediately, and named (verify-slice, correctness lens).
+   *
    *  The addendum-I caveat on `editorial-add-to-cart` applies here verbatim:
    *  the runner settles post-load idle work onto the INITIAL byte side
    *  before clicking, so a paradigm that defers handler FETCHING to idle has
    *  finished fetching by click time and this number measures resolving and
    *  running the handler, not downloading it. */
   "pdp-add-to-cart": async (page) => {
-    await page.locator(".pm-pdp__buy button.pm-button").click();
+    const button = page.locator(".pm-pdp__buy button.pm-button");
+    if (await button.isDisabled()) {
+      throw new Error(
+        `pdp-add-to-cart cannot be driven on this release: its buy button is disabled, which is what ` +
+          `packages/reference/render/pdp.mjs renders when numForSale is 0 ("None for sale"). Bench a ` +
+          `PRICED release, or drive pdp-gallery-switch — do not wait for the actionability timeout to ` +
+          `report this as a locator problem`,
+      );
+    }
+    await button.click();
   },
 };
 
@@ -675,7 +693,7 @@ export const NETWORK_QUIET_MS = 500;
  * carried (Playwright's 30 s default navigation timeout), and a cap-out here
  * throws rather than degrading, exactly as those calls did.
  */
-const LOAD_QUIET_CAP_MS = 30_000;
+export const LOAD_QUIET_CAP_MS = 30_000;
 
 /**
  * A GENUINE network-quiescence measurement, armed once per visit and awaited
@@ -723,7 +741,7 @@ const LOAD_QUIET_CAP_MS = 30_000;
  * within ~30 ms of the click on every variant — but it is a bound, not a
  * proof, and it is the same bound `networkidle` always carried.
  */
-function armNetworkQuiescence(page: Page): {
+export function armNetworkQuiescence(page: Page): {
   wait(quietMs: number, capMs: number): Promise<boolean>;
 } {
   let inFlight = 0;

@@ -43,6 +43,8 @@ type Bundle = {
   columns: Record<string, Record<string, Reading>>;
   fit?: { sentence: string; receipt: Reading["receipt"] };
   bandsOverlap?: boolean;
+  interactionId?: string;
+  interactionTiming?: { published: boolean; reason?: string };
 };
 
 async function servedLabFile(): Promise<{ surface: string; profiles: Record<string, Bundle> }> {
@@ -204,6 +206,32 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
           `<a class="pm-chrome__reading" href="${js.receipt.url}">${js.value}&nbsp;${js.unit}</a>`,
         );
       }
+
+      // The INP row, BOTH directions (ADR-0001 addendum T). A surface either
+      // publishes the metric — and then every column carries a reading and the
+      // row names the interaction it was driven by — or WITHHOLDS it, and then
+      // no column carries one AND the row says why. Withheld quietly is the
+      // failure this asserts against: four unexplained em-dashes under the
+      // line "Every number above links its receipt" reads as a broken cell,
+      // not as a judgement, and a reader has no way to tell which.
+      const timing = bundle.interactionTiming;
+      expect(timing, `${surface} bundle states no interactionTiming`).toBeDefined();
+      const inpCells = Object.values(bundle.columns).map((c) => c["INP (scripted)"]);
+      if (timing!.published) {
+        expect(inpCells.every(Boolean), `${surface} publishes INP but a column has no reading`).toBe(true);
+        expect(body, `${surface} names its interaction in the INP row`).toContain(
+          esc(bundle.interactionId!),
+        );
+      } else {
+        expect(
+          inpCells.some(Boolean),
+          `${surface} withholds its INP row but its bundle still carries a reading — the value a reader must not read must not be in the artifact either`,
+        ).toBe(false);
+        expect(timing!.reason, `${surface} withholds INP with no reason`).toBeTruthy();
+        expect(body, `${surface} withholds INP without saying so on the page`).toContain(
+          esc(timing!.reason!),
+        );
+      }
     },
   );
 });
@@ -338,14 +366,35 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     // The switcher package asserts the budget on fixtures; this is the REAL
     // bundle through the REAL injection path. remix3's page renders the
     // largest fragment (the fenced note + tagged cell ride along).
+    //
+    // Driven from the REGISTRY, not from a literal. This loop read
+    // `/{variant}/editorial/` until 2026-08-28, so the day a second surface
+    // published a bundle its fragment — different column count, different
+    // `proves` string, its own fit sentence, and now an interaction-labeled
+    // INP row — would have been served to every measured page of that surface
+    // and checked by nothing. That is the same shape as the anti-pattern this
+    // file already retired once: a check whose coverage silently fails to grow
+    // with the registry (verify-slice, this slice's own review).
+    const snap = await loadServedSnapshot();
+    const pages = LAB_SURFACES.flatMap((surface) =>
+      (surface === "editorial" ? ["vanilla", "remix3"] : ["vanilla"]).map((variant) => ({
+        surface,
+        variant,
+        path: SURFACE_PAGE[surface]!(snap).replace(/^\/vanilla\//, `/${variant}/`),
+      })),
+    );
+    expect(pages.length).toBeGreaterThanOrEqual(LAB_SURFACES.length);
     for (const id of PROFILE_IDS) {
-      for (const variant of ["vanilla", "remix3"]) {
-        const body = await (await get(`/${variant}/editorial/?profile=${id}`)).text();
+      for (const { surface, variant, path } of pages) {
+        const body = await (await get(`${path}?profile=${id}`)).text();
         const fragment = body.match(
           /<aside id="pm-chrome"[\s\S]*?<\/aside><script src="\/_pm\/measure\.js" defer><\/script>/,
         )?.[0];
-        expect(fragment, `${variant} ?profile=${id}`).toBeDefined();
-        expect(new TextEncoder().encode(fragment!).length).toBeLessThan(13312);
+        expect(fragment, `${surface} via ${variant} ?profile=${id}`).toBeDefined();
+        expect(
+          new TextEncoder().encode(fragment!).length,
+          `${surface} via ${variant} ?profile=${id}`,
+        ).toBeLessThan(13312);
       }
     }
   });

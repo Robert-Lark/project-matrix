@@ -86,4 +86,25 @@ export interface SurfaceLabBundle {
    * every receipt it publishes.
    */
   interactionId?: string;
+  /**
+   * Whether this surface's INP row publishes at all, and why not when it
+   * doesn't.
+   *
+   * A surface withholds it when the metric is demonstrably not measuring the
+   * same thing in every column. Chromium closes an interaction's event-timing
+   * entry at the first paint after the handler's SYNCHRONOUS processing
+   * returns, so a resumed handler that returns having only SCHEDULED the
+   * render closes its entry on a paint carrying nothing. On the PDP that is
+   * measured and unstable: qwik reads 8 ms on the default profile, 0 ms under
+   * slow-4G on the gallery switch, and 24 ms under slow-4G on add-to-cart,
+   * while the other three sit at 24 throughout — so the cell swings across
+   * conditions for one column and not the others, which is what a metric
+   * measuring a paradigm property does not do.
+   *
+   * Withheld LOUDLY, never quietly: the reason rides the row, the fit sentence
+   * refuses the timing comparison in its own words, and `/methodology/` carries
+   * the mechanism with its figures. The alternative — publishing 0 ms beside
+   * three 24s under a caveat — is a number no prose can rescue.
+   */
+  interactionTiming?: { published: boolean; reason?: string };
 }

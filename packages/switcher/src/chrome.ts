@@ -249,10 +249,19 @@ function readingSection(
     // interaction-bytes row — so it names the interaction it was driven by.
     // Without that, two surfaces' INP rows look identical while measuring
     // different clicks, and the reader's only recourse is the raw receipt.
-    const label =
-      metric === "INP (scripted)" && lab?.interactionId
-        ? `${metric}<span class="pm-chrome__note"> ${esc(lab.interactionId)}</span>`
-        : esc(metric);
+    //
+    // And where the surface WITHHOLDS the metric (ADR-0001 addendum T: the
+    // entry closes before a resumed handler paints, so the cell is not
+    // measuring the same thing in every column), the row says why rather than
+    // showing four unexplained em-dashes. Withheld loudly, never quietly.
+    let label = esc(metric);
+    if (metric === "INP (scripted)") {
+      const note =
+        lab?.interactionTiming?.published === false
+          ? lab.interactionTiming.reason
+          : lab?.interactionId;
+      if (note) label = `${metric}<span class="pm-chrome__note"> ${esc(note)}</span>`;
+    }
     return `<tr><th scope="row" class="pm-chrome__th">${label}</th>${cells}</tr>`;
   }).join("");
 
@@ -280,7 +289,7 @@ function readingSection(
     `<p class="pm-chrome__row"><span class="pm-chrome__key">lab profile</span>${profileCells}<span class="pm-chrome__note">selects the displayed snapshot — never re-throttles this page</span></p>`,
     `<div class="pm-chrome__scroll" role="region" aria-label="Published lab readings" tabindex="0">`,
     `<table class="pm-chrome__table">`,
-    `<caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run. Lab compares; the live readout below is your reality check.</caption>`,
+    `<caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run — or, where a row says so, a metric this surface withholds because it does not measure the same thing in every column. Lab compares; the live readout below is your reality check.</caption>`,
     `<thead><tr><td></td>${head}</tr></thead>`,
     `<tbody>${rows}</tbody>`,
     `</table>`,
