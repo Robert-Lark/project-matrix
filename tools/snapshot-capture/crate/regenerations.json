@@ -1,0 +1,26 @@
+{
+  "kind": "pm-derivative-regeneration-log",
+  "note": "Receipts for derivative regenerations into this frozen, provenance-managed capture (ADR-0001 §9). This log RECORDS every hand that touches img/ — it is a record, not a guard: nothing consumes it mechanically, and the enforcement that actually fails on a missing or wrong derivative is the crate-mode origin suite (the data-plane sample leg and the PDP pixel legs' broken-image fail-closed guard, which is how the absence this log's first entry repairs was found). The capture itself is receipted by curation.json; entries here cover only re-derivation events, which by the derive contract start at the retained originals, never at Discogs. Every entry must prove add-only (no pre-existing file mutated) and pin the minted bytes to images-index.json.",
+  "events": [
+    {
+      "date": "2026-08-28T02:29:37Z",
+      "mintWindow": "2026-08-28T02:29:37Z to 2026-08-28T02:30:39Z (file mtimes of the 1,817 minted thumbs, UTC)",
+      "what": "Minted the 1,817 missing *.thumb.avif files (the 160px thumb tier) into img/. The tier's committed provenance already existed: images-index.json has carried all 1,817 thumb entries (sha256, bytes, dimensions) since a886de1 (2026-07-17, the ADR-0008 spec-layer commit), and the deployed R2 bucket serves them — only this machine's untracked img/ directory lacked the files, which is what failed 21 crate-mode origin-suite legs (20 PDP pixel legs on the broken-image fail-closed guard + the data-plane sample 404).",
+      "tool": "pnpm capture run --until derive (tools/snapshot-capture derivePhase — the same sharp pipeline that minted the tier originally: .rotate() → resize 160×160 fit=inside withoutEnlargement → avif quality 50 effort 4, from the retained originals in .capture/img-original)",
+      "toolchain": {
+        "node": "v24.13.0",
+        "sharp": "0.34.5",
+        "libvips": "8.17.3",
+        "libaom": "3.13.1",
+        "libheif": "1.20.2"
+      },
+      "codeCommit": "607b66cc8e6f30e44843010ca39acaf02d43941a",
+      "workingTree": "clean of tracked changes at mint time (`git status --short` showed only standing untracked docs/prototypes/* files; the capture tooling that ran is exactly the pinned commit's)",
+      "verification": {
+        "addOnly": "sha256 manifests of img/ before (1,817 files) and after (3,634): zero lines left the before set, 1,817 lines appeared, every one a *.thumb.avif. Manifest recipe (state it, don't make an auditor guess): from inside img/, `ls | LC_ALL=C sort | xargs shasum -a 256` — lines are `<sha256>  <bare filename>` in LC_ALL=C filename order; the comm comparison re-sorted LINES lexically as comm requires, but the pinned hashes below are of the manifests in their filename-ordered form. Manifest sha256s: before e83b08f5a5fe5ccd1b2d84a3f062b0fa6b4274171cf87f0904fae26195aadfd5, after f4b2aec43a68e5ae7273b99f78da0081957af7b7bfaf033eb1e07fee60a09959. Re-derivable without the retained manifests: the recipe over the current non-thumb subset (`ls | grep -v '.thumb.avif$'`) reproduces the before manifest bit-for-bit as long as this event is the latest, and the after state is equivalently pinned by the indexPins check below — every file on disk matches committed images-index.json.",
+        "indexPins": "All 3,634 files on disk match images-index.json exactly — 0 sha256 mismatches, 0 byte-size mismatches, 0 missing, 0 extra; the 1,817 minted thumbs reproduce their committed pins bit-for-bit, so the recipe and toolchain reproduce the frozen provenance rather than re-deriving beside it.",
+        "servedSample": "One deployed-plane sample fetched 2026-08-28 UTC: GET https://pm-front.robresearch87.workers.dev/assets/img/9861004-primary.thumb.avif answered 200 with body sha256 6e29cf93fef5a5ed35fa9d1bec900a26d7637d9f30349029df447abbf9ad6fa6 == the index pin == the local mint. One sample, not a bucket-wide audit — it proves the remote bucket HAS the tier (so no remote seed is owed), not that all 1,817 remote objects match."
+      }
+    }
+  ]
+}

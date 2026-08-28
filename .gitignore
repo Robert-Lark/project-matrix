@@ -8,5 +8,8 @@ coverage/
 tools/bench-runner/receipts/
 tools/cost-calculator/reports/
 tools/snapshot-capture/.capture/
-tools/snapshot-capture/crate/img/
+# No trailing slash: worktrees hold this path as an untracked SYMLINK to the
+# main checkout's real directory, and a dir-only pattern leaves the symlink
+# stageable (git check-ignore proven both ways, 2026-08-28).
+tools/snapshot-capture/crate/img
 packages/reference/.local/

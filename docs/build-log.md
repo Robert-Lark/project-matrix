@@ -4050,3 +4050,102 @@ need would be noise. No assertion changes anywhere; turbo `check`
 One commit on branch `ci-sweep-timeouts`, unpushed. It blocks
 everything: the PDP variants reach production only after this lands
 green, and the units below stack on it.
+
+### The crate's missing thumbs, and what "missing" turned out to mean (2026-08-28)
+
+The unit was scoped as "regenerate the derivative class the frozen
+capture predates" — and the first discovery corrected the diagnosis
+in the record. The capture does NOT predate the thumb tier: the
+committed `images-index.json` has carried all 1,817 thumb entries
+(sha256, bytes, true dimensions) since `a886de1`, the 2026-07-17
+ADR-0008 spec-layer commit that introduced the tier, and the deployed
+R2 bucket serves the thumbs today (probed: the very sample the
+crate-mode suite 404s on locally answers 200 in production, bytes
+matching the index pin). Only this machine's untracked `img/`
+directory lacked the files. How it came to lack them is not
+established — the likely story is that the spec-layer session's
+worktree held the real `img/` directory and was cleaned away, so the
+main checkout never received the minted files, but no deletion event
+is on record and this is conjecture, labeled as such.
+
+That reframing made the unit smaller and the proof stronger. The
+committed index is a bit-level SPEC for the missing files, so
+regeneration is not "mint something plausible with the same recipe" —
+it is "reproduce the pinned bytes or explain why not". A one-file
+probe first: minting `9861004-primary.thumb.avif` from its retained
+original with the derive recipe (sharp `.rotate()` → 160×160
+fit=inside, no enlargement → AVIF q50 effort 4) reproduced the index
+pin exactly. Then the real tool — `pnpm capture run --until derive`,
+stopping BEFORE normalize on purpose: normalize rewrites committed
+artifacts (trays, index, curation) and unlinks orphans, and this unit's
+contract is add-only into a frozen directory. The landed capture's
+earlier phases no-op from checkpoints, and `derivePhase` mints exactly
+what `exists()` says is absent: `[derive] complete (1817 new)`, 62
+seconds of mtime window. (An earlier draft of this sentence said "zero
+API requests", quoting the CLI's own doc comment — verify-slice caught
+that the `[run] done (N API requests this run)` counter line only
+prints after normalize, so under `--until derive` the claim was
+asserted, not measured. What IS provable: the run's log carries no
+fetch lines, the 62 s wall clock fits 1,817 local AVIF encodes and
+not one rate-limit-paced request, and every minted byte re-derives
+from already-retained originals, so no fetch was needed.)
+
+The proof, all tool-derived. Add-only: sha256 manifests of `img/`
+before (1,817 files) and after (3,634), compared with `comm` over
+LC_ALL=C-sorted lines — 0 lines left the before set, 1,817 appeared,
+every one a `*.thumb.avif`. (The first comm ran on filename-ordered
+manifests and returned garbage counts — comm wants line-lexical order;
+re-sorted and re-derived.) Index identity: all 3,634 files on disk now
+match `images-index.json` — 0 sha256 mismatches, 0 byte-size
+mismatches, 0 missing, 0 extra — so today's toolchain (node v24.13.0,
+sharp 0.34.5, libvips 8.17.3, libaom 3.13.1) reproduces the
+2026-07-17 provenance bit-for-bit rather than re-deriving beside it.
+One receipt hazard caught mid-write: the first draft of the receipt
+carried a hand-typed full SHA for the code commit and an approximated
+mint timestamp — both replaced with tool-derived values (`git
+rev-parse`; the minted files' own mtimes). The receipt lands as
+`crate/regenerations.json`, an event log beside `curation.json`,
+because the capture's own receipt covers the capture — this is a
+different event class and a frozen directory should name every hand
+that touched it.
+
+Definition of done, measured: crate-mode origin suite (PM_SEED_DIR →
+crate, held plane) **16 files, 468 passed, 0 failed, 24 env-gated
+skips** — exact fixture parity, up from 447/21; the fixture suite
+re-run untouched at 468/24/0; turbo `check` 30/30. The 21-failure
+baseline recorded at the pdp-variants unit end is superseded, and the
+2026-07-11 one-failure baseline (the `9861004` data-plane sample) is
+retired with it — that failure was this same absence all along, it
+just only had one leg to surface through before the PDP pages
+rendered thumb lists.
+
+verify-slice ran clean for once — `wf_f365845a-a57`, four lenses, all
+completed, no session-limit deaths (a first for this workflow across
+four units). Eleven raw findings consolidating to five distinct, ALL
+adopted, none refuted outright — and every one was a receipt/record
+defect, not a code defect, which on a slice whose whole product is a
+receipt is exactly where the risk was: (1) the receipt's add-only
+clause pinned a manifest hash an auditor could not reproduce from the
+clause's own words (the hash is of the filename-ordered manifest; the
+text implied line-sorted — the recipe is now stated and both before
+AND after hashes pinned, the after having been missing entirely behind
+a plural label); (2) the DoD's records clause was half-met at review
+time — the handoff log still carried the 21-failure baseline as
+standing (appended now, with the corrected diagnosis); (3) the
+receipt's framing note claimed the log "exists to prevent" quiet
+drops, which nothing mechanical makes true — reworded to what is
+true (the log records; the crate-mode suite legs are the enforcement,
+and a full disk-to-index parity guard was considered and REJECTED:
+CI never holds the crate img bytes, so it could only ever pass
+vacuously there, the exact guard smell ADR-0001 §9 names);
+(4) "zero API requests" above; (5) `servedSample` lacked the host,
+status, and date that make one-sample re-derivation possible.
+One adjacent guard gap adopted from the seams lens: `.gitignore`'s
+dir-only `img/` pattern did not match the worktree SYMLINK, leaving
+the never-stage-this rule honor-system — the trailing slash is
+dropped, proven by `git check-ignore` in both directions (symlink
+ignored in a worktree, real contents still ignored in main, the
+receipt file still trackable). The lenses also re-derived the
+receipt's numbers independently (the before hash from the CURRENT
+disk's non-thumb subset — an add-only re-proof that needs no retained
+manifest) and confirmed the deployed-plane smoke path.
