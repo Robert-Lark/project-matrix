@@ -43,6 +43,8 @@ type Bundle = {
   columns: Record<string, Record<string, Reading>>;
   fit?: { sentence: string; receipt: Reading["receipt"] };
   bandsOverlap?: boolean;
+  interactionId?: string;
+  interactionTiming?: { published: boolean; reason?: string };
 };
 
 async function servedLabFile(): Promise<{ surface: string; profiles: Record<string, Bundle> }> {
@@ -204,6 +206,32 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
           `<a class="pm-chrome__reading" href="${js.receipt.url}">${js.value}&nbsp;${js.unit}</a>`,
         );
       }
+
+      // The INP row, BOTH directions (ADR-0001 addendum T). A surface either
+      // publishes the metric — and then every column carries a reading and the
+      // row names the interaction it was driven by — or WITHHOLDS it, and then
+      // no column carries one AND the row says why. Withheld quietly is the
+      // failure this asserts against: four unexplained em-dashes under the
+      // line "Every number above links its receipt" reads as a broken cell,
+      // not as a judgement, and a reader has no way to tell which.
+      const timing = bundle.interactionTiming;
+      expect(timing, `${surface} bundle states no interactionTiming`).toBeDefined();
+      const inpCells = Object.values(bundle.columns).map((c) => c["INP (scripted)"]);
+      if (timing!.published) {
+        expect(inpCells.every(Boolean), `${surface} publishes INP but a column has no reading`).toBe(true);
+        expect(body, `${surface} names its interaction in the INP row`).toContain(
+          esc(bundle.interactionId!),
+        );
+      } else {
+        expect(
+          inpCells.some(Boolean),
+          `${surface} withholds its INP row but its bundle still carries a reading — the value a reader must not read must not be in the artifact either`,
+        ).toBe(false);
+        expect(timing!.reason, `${surface} withholds INP with no reason`).toBeTruthy();
+        expect(body, `${surface} withholds INP without saying so on the page`).toContain(
+          esc(timing!.reason!),
+        );
+      }
     },
   );
 });
@@ -338,14 +366,43 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     // The switcher package asserts the budget on fixtures; this is the REAL
     // bundle through the REAL injection path. remix3's page renders the
     // largest fragment (the fenced note + tagged cell ride along).
+    //
+    // Driven from the REGISTRY, not from a literal. This loop read
+    // `/{variant}/editorial/` until 2026-08-28, so the day a second surface
+    // published a bundle its fragment — different column count, different
+    // `proves` string, its own fit sentence, and now an interaction-labeled
+    // INP row — would have been served to every measured page of that surface
+    // and checked by nothing. That is the same shape as the anti-pattern this
+    // file already retired once: a check whose coverage silently fails to grow
+    // with the registry (verify-slice, this slice's own review).
+    const snap = await loadServedSnapshot();
+    const pages = LAB_SURFACES.flatMap((surface) =>
+      (surface === "editorial" ? ["vanilla", "remix3"] : ["vanilla"]).map((variant) => ({
+        surface,
+        variant,
+        path: SURFACE_PAGE[surface]!(snap).replace(/^\/vanilla\//, `/${variant}/`),
+      })),
+    );
+    // NOT `pages.length >= LAB_SURFACES.length`, which every branch of the
+    // ternary satisfies for every input including an EMPTY registry (0 >= 0) —
+    // a tautology placed to defend coverage, which is the anti-pattern this
+    // file's own comments condemn (verify-slice, skeptic lens). Assert the
+    // surfaces actually covered.
+    expect(LAB_SURFACES.length).toBeGreaterThan(0);
+    expect([...new Set(pages.map((p) => p.surface))].sort()).toEqual(
+      [...LAB_SURFACES].sort(),
+    );
     for (const id of PROFILE_IDS) {
-      for (const variant of ["vanilla", "remix3"]) {
-        const body = await (await get(`/${variant}/editorial/?profile=${id}`)).text();
+      for (const { surface, variant, path } of pages) {
+        const body = await (await get(`${path}?profile=${id}`)).text();
         const fragment = body.match(
           /<aside id="pm-chrome"[\s\S]*?<\/aside><script src="\/_pm\/measure\.js" defer><\/script>/,
         )?.[0];
-        expect(fragment, `${variant} ?profile=${id}`).toBeDefined();
-        expect(new TextEncoder().encode(fragment!).length).toBeLessThan(13312);
+        expect(fragment, `${surface} via ${variant} ?profile=${id}`).toBeDefined();
+        expect(
+          new TextEncoder().encode(fragment!).length,
+          `${surface} via ${variant} ?profile=${id}`,
+        ).toBeLessThan(13312);
       }
     }
   });
@@ -382,11 +439,28 @@ describe("/methodology/ — the ADR-0001 §9 page, chrome-free, numbers from art
     expect(body).not.toContain('id="pm-chrome-slot"');
   });
 
-  it.skipIf(!hasPublication)("states the chrome constant EQUAL to the served probe artifact", async () => {
-    const artifact = await (await get("/_pm/lab/chrome-constant.json")).json();
+  it("states the chrome constant, or states plainly that none is published — both directions", async () => {
+    // BOTH directions, on every run. An absent constant is a LEGAL state (the
+    // front build's own existsSync guard makes it one) and it is the state the
+    // tree is in for exactly one commit whenever the chrome fragment changes:
+    // the addendum-N-hole-1 identity gate refuses a constant that describes a
+    // fragment the build no longer ships, so re-measuring means publishing
+    // nothing in between. A leg that only checked the populated direction went
+    // red on that legal state and said nothing at all about the empty one —
+    // the same shape as the DESCRIBED_VARIANTS anti-pattern this suite already
+    // retired once (publication-pipeline unit).
+    const res = await get("/_pm/lab/chrome-constant.json");
+    const body = await (await get("/methodology/")).text();
+    if (res.status === 404) {
+      expect(body).toContain("has not been published for the current chrome yet");
+      // Non-vacuity: the page must not ALSO be carrying a stale figure.
+      expect(body).not.toContain("&nbsp;ms first paint");
+      return;
+    }
+    expect(res.status).toBe(200);
+    const artifact = await res.json();
     expect(artifact.kind).toBe("pm-chrome-constant");
     expect(artifact.commit.dirty).toBe(false);
-    const body = await (await get("/methodology/")).text();
     const signed = (v: number) =>
       v === 0 ? "0" : v > 0 ? `+${Math.round(v * 10) / 10}` : `−${Math.round(-v * 10) / 10}`;
     expect(body).toContain(

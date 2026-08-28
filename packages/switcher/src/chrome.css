@@ -306,7 +306,13 @@ a.pm-chrome__cell:hover {
   font-size: 0.9em;
 }
 
-.pm-chrome__th--planned .pm-chrome__note { display: block; letter-spacing: 0.04em; text-transform: none; }
+/* A note inside a header cell is prose, not a label: it opts out of the
+   uppercase + 0.14em tracking `.pm-chrome__th` sets for metric and column
+   names. `--planned` is the column-header case ("not built yet"); `--noted` is
+   the row-header case (the interaction an INP row was driven by, or the reason
+   a surface withholds it). */
+.pm-chrome__th--planned .pm-chrome__note,
+.pm-chrome__th--noted .pm-chrome__note { display: block; letter-spacing: 0.04em; text-transform: none; }
 
 .pm-chrome__td {
   font-variant-numeric: tabular-nums;

@@ -129,6 +129,17 @@ describe("the receipt is a complete, SHA-pinned record (ADR-0001 §9)", () => {
     }
   });
 
+  it("records the MECHANISM that settled it, not just the ceiling", () => {
+    // `harness.quiescence` is what lets a publication gate tell an honestly
+    // settled receipt from one minted under the latch (ADR-0001 addendum R).
+    // zod strips unknown keys and the field is optional, so a typo in
+    // `batch.ts` would drop it silently and every receipt from that point on
+    // would be byte-indistinguishable from a pre-fix one — with nothing red
+    // until the gate lands and starts rejecting honest receipts (verify-slice,
+    // anti-rigging lens). Asserted where a receipt is actually minted.
+    expect(receipt.harness.quiescence).toBe("in-flight-tracked");
+  });
+
   it("pins the profile spec version and publishes the applied throttle arithmetic", () => {
     expect(receipt.profile.id).toBe(PROFILE.id);
     expect(receipt.profile.specVersion).toBe(PROFILE_SPEC_VERSION);
@@ -349,7 +360,14 @@ describe("one-command reproduce (ADR-0001 §9)", () => {
     expect(again.environment.n).toBe(receipt.environment.n);
     // A fresh batch, not a replay: new nonce, new date.
     expect(again.environment.runNonce).not.toBe(receipt.environment.runNonce);
-  }, 300_000);
+    // 600 s, raised from 300 s on 2026-08-28. The settle waits in this batch
+    // are now GENUINE quiescence waits rather than a latch that returned
+    // instantly (ADR-0001 addendum R), and this file gained a sibling that
+    // drives its own batches, so the whole suite contends harder. This leg
+    // drives a full batch TWICE over — it timed out at exactly 300003 ms on
+    // the first full run after those landed. Sized to catch a HANG, not fitted
+    // to an extrapolation: the last unit's own lesson (PR #34).
+  }, 600_000);
 });
 
 describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, slice F)", () => {

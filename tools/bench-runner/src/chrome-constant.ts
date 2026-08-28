@@ -50,7 +50,13 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { getProfile, PROFILE_SPEC_VERSION, type TestProfile } from "@pm/measurement";
 import { chromeFragmentOf } from "@pm/switcher";
-import { applyProfile, profileContextOptions } from "./collect";
+import {
+  applyProfile,
+  armNetworkQuiescence,
+  profileContextOptions,
+  LOAD_QUIET_CAP_MS,
+  NETWORK_QUIET_MS,
+} from "./collect";
 import { commitPin } from "./git";
 import { fetchOriginCommit, verifyOriginCommit, type OriginCommit } from "./origin-commit";
 import { median } from "./receipt";
@@ -349,10 +355,31 @@ async function probeVisit(
       await route.fulfill({ status: upstream.status(), headers, body: served });
     });
 
+    // Armed BEFORE the navigation so nothing of the visit is missed. Until
+    // 2026-08-28 both settles here were `waitForLoadState("networkidle")`,
+    // and the second one was the SAME document-lifecycle latch this unit
+    // removed from collect.ts: no navigation happens between them, so the
+    // second call hit the already-fired fast path and returned in a
+    // microtask. The comment below promised "one more quiet check" and there
+    // was none — the probe read `window.__pmProbe` immediately after the idle
+    // callback, with no quiet window at all (verify-slice, correctness lens).
+    // It matters more here than almost anywhere: this probe mints the
+    // published chrome constant, and late paint/shift entries are exactly
+    // what the with-chrome arm has more of.
+    const network = armNetworkQuiescence(page);
+    const quiet = async (where: string) => {
+      if (!(await network.wait(NETWORK_QUIET_MS, LOAD_QUIET_CAP_MS))) {
+        throw new Error(
+          `chrome-constant: the network never went quiet for ${NETWORK_QUIET_MS} ms within ` +
+            `${LOAD_QUIET_CAP_MS} ms ${where} (${url}, condition "${condition}") — the probe has no honest ` +
+            `degraded mode: both arms must get the identical settle or the delta is not a delta`,
+        );
+      }
+    };
     await page.goto(url, { waitUntil: "load" });
-    await page.waitForLoadState("networkidle");
+    await quiet("of load");
     // Settle late paint/shift entries the same way in both conditions —
-    // bounded idle, then one more quiet check.
+    // bounded idle, then a REAL quiet window.
     await page.evaluate(
       () =>
         new Promise<void>((resolveIdle) => {
@@ -361,7 +388,7 @@ async function probeVisit(
           else setTimeout(resolveIdle, 50);
         }),
     );
-    await page.waitForLoadState("networkidle");
+    await quiet("after the post-load idle pass");
 
     const raw = await page.evaluate(() => window.__pmProbe ?? null);
     if (!raw) throw new Error("probe init script did not run");

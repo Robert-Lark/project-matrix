@@ -58,6 +58,94 @@ export const INTERACTIONS: Readonly<
   "editorial-add-to-cart": async (page) => {
     await page.getByRole("button", { name: "Add to cart" }).click();
   },
+  /** The PDP's headline interaction (ADR-0008 §8; the pdp-build ticket names
+   *  it "the interaction this surface genuinely owns, where the paradigms
+   *  differ most — DOM swap vs state re-render vs resumed handler"): switch
+   *  the gallery stage to another image.
+   *
+   *  `.nth(1)`, and the index is load-bearing. Thumb 0 is ALREADY the
+   *  selected one (the master renders `aria-current="true"` on it and the
+   *  stage carries `images[0]`), so clicking it re-assigns the same `src`,
+   *  changes no state, and fetches nothing — while still recording a real
+   *  INP entry, because the event registers regardless of what the handler
+   *  does. That is a plausible-looking, meaningless cell, which is worse
+   *  than a missing one.
+   *
+   *  Selected by CLASS, not by accessible name: the thumb's name is
+   *  `View image N of M: {alt}` and the alt embeds the release title, so a
+   *  name-based locator would break the day the bench slug changes. The
+   *  class is the canonical markup contract all four variants must serve
+   *  identically (packages/reference/render/pdp.mjs galleryBlock), and
+   *  Playwright's strict mode makes a duplicate or missing node a loud
+   *  failure rather than a silent mis-measurement.
+   *
+   *  **This interaction FETCHES, by design, and the receipt must say so.**
+   *  Every variant's stage swaps to the FULL-size AVIF (`current.src`),
+   *  a URL the load never requested because the thumb carries the 160 px
+   *  `.thumb.avif` derivative (ADR-0008 §11). Measured on the deployed
+   *  plane 2026-08-28: image 2 of release 896191 is 24,894 B, and the URL
+   *  is byte-identical across all four paradigms — so this cell's bytes are
+   *  IMAGE MASS, invariant by construction, and are never a paradigm
+   *  difference. The INP half is the paradigm difference. */
+  "pdp-gallery-switch": async (page) => {
+    const thumbs = page.locator(".pm-gallery__thumb");
+    const count = await thumbs.count();
+    if (count < 2) {
+      // `.nth(1)` OPTS OUT of Playwright's strict mode — strictness fires on
+      // more than one match, never on zero — so a release with no thumb strip
+      // does not fail loudly here; it waits out the 30 s action timeout and
+      // reports a locator problem instead of the real constraint. 90 of the
+      // crate's 500 releases render exactly one image and therefore no strip
+      // at all (packages/reference/render/pdp.mjs galleryBlock). The twin
+      // interaction got this check first; this one needs it for the same
+      // reason (verify-slice, this slice's own second pass).
+      throw new Error(
+        `pdp-gallery-switch needs a release with at least two images and found ${count} thumb(s): a ` +
+          `single-image release renders no thumb strip at all. Bench a multi-image release, or drive ` +
+          `pdp-add-to-cart`,
+      );
+    }
+    await thumbs.nth(1).click();
+  },
+  /** The PDP's add-to-cart — the controlled cross-surface twin of
+   *  `editorial-add-to-cart` (same paradigm, same interaction, different
+   *  surface), and the PDP's zero-fetch interaction: the handler writes
+   *  `localStorage` and updates two slots, so nothing crosses the wire.
+   *
+   *  Selected by CLASS rather than editorial's `getByRole("button", {name:
+   *  "Add to cart"})` idiom, which is NOT portable to this surface: the
+   *  unpriced master (707725) renders the same button reading "None for
+   *  sale" and disabled (pdp.mjs:117), so a name-based locator resolves ZERO
+   *  nodes there. `.pm-pdp__buy button.pm-button` matches exactly one node
+   *  on every master — the fenced live-origin plaque's button is a
+   *  `pm-button--secondary` OUTSIDE `.pm-pdp__buy`.
+   *
+   *  **The class locator resolves on every master; it is only CLICKABLE on a
+   *  priced one.** `pdp.mjs:117` renders that same button `disabled` when the
+   *  release is sold out, and Playwright's actionability check then retries
+   *  the enabled state until the 30 s default action timeout and throws — a
+   *  batch pointed at the unpriced master would burn half an hour before
+   *  saying anything useful, and the message it finally gave would name a
+   *  locator timeout rather than the real constraint. So the constraint is
+   *  checked here, immediately, and named (verify-slice, correctness lens).
+   *
+   *  The addendum-I caveat on `editorial-add-to-cart` applies here verbatim:
+   *  the runner settles post-load idle work onto the INITIAL byte side
+   *  before clicking, so a paradigm that defers handler FETCHING to idle has
+   *  finished fetching by click time and this number measures resolving and
+   *  running the handler, not downloading it. */
+  "pdp-add-to-cart": async (page) => {
+    const button = page.locator(".pm-pdp__buy button.pm-button");
+    if (await button.isDisabled()) {
+      throw new Error(
+        `pdp-add-to-cart cannot be driven on this release: its buy button is disabled, which is what ` +
+          `packages/reference/render/pdp.mjs renders when numForSale is 0 ("None for sale"). Bench a ` +
+          `PRICED release, or drive pdp-gallery-switch — do not wait for the actionability timeout to ` +
+          `report this as a locator problem`,
+      );
+    }
+    await button.click();
+  },
 };
 
 export interface ApplyResult {
@@ -605,6 +693,198 @@ export interface VisitSpec {
 export const SETTLE_CAP_MS = 3000;
 
 /**
+ * The quiet window that defines "the network went idle" — 500 ms with nothing
+ * in flight, the same window Playwright's own `networkidle` names, kept so the
+ * boundary's DEFINITION is unchanged. Only the mechanism that measures it
+ * changes (see {@link armNetworkQuiescence}).
+ */
+export const NETWORK_QUIET_MS = 500;
+
+/**
+ * Ceiling for the PRE-interaction quiescence waits (the initial byte
+ * boundary). Deliberately far larger than {@link SETTLE_CAP_MS}: capping the
+ * INITIAL side early would move `initialJsBytes` — the published headline —
+ * whereas capping the interaction side only records `interactionSettled:
+ * false`, which refuses publication instead of corrupting a number. Matches
+ * the effective bound the superseded `waitForLoadState("networkidle")` calls
+ * carried (Playwright's 30 s default navigation timeout), and a cap-out here
+ * throws rather than degrading, exactly as those calls did.
+ */
+export const LOAD_QUIET_CAP_MS = 30_000;
+
+/**
+ * A GENUINE network-quiescence measurement, armed once per visit and awaited
+ * wherever a boundary needs the network to be quiet.
+ *
+ * **Why this exists — `page.waitForLoadState("networkidle")` cannot do this
+ * job, and the way it fails is silent.** It is a document-load-lifecycle
+ * LATCH, not a measurement. Playwright's own typings say so:
+ * "If the state has been already reached while loading current document, the
+ * method resolves immediately" (playwright-core 1.61.1
+ * `types/types.d.ts:5020`), and they mark `networkidle` **DISCOURAGED**. Once
+ * the current document has reached networkidle — which the pre-interaction
+ * settle loop below GUARANTEES — every later call on that document returns at
+ * once, forever. No navigation happens across a scripted interaction, so the
+ * post-click call could never observe anything.
+ *
+ * Measured on the deployed plane 2026-08-28, all four PDP variants: the
+ * post-click call returned in **24–49 ms**, where any real 500 ms quiet window
+ * cannot resolve in under 500 ms. So `pdp-gallery-switch`'s own 25,194 B image
+ * fetch was still in flight at the boundary snapshot and landed in NEITHER
+ * `interactionBytes` NOR `totalBytes` — while `interactionSettled` recorded
+ * `true`, asserting that zero as VERIFIED. That is the precise failure
+ * `interactionSettled` was added to make impossible (ADR-0001 addendum M), and
+ * it defeated it: the flag proved only that a latch was already closed.
+ *
+ * The same latch made the pre-interaction loop's trailing wait vacuous too —
+ * its comment claimed the wait "bridges the import + the preload cascade",
+ * which it never did. That one turned out to cost nothing: measured across all
+ * five editorial and all four PDP variants, a genuine quiescence wait after
+ * the loop surfaces **0 new entries and 0 byte change**, because the
+ * requestIdleCallback passes plus the entry-count stability check already give
+ * the cascade its time. Recorded rather than assumed — it is why this fix
+ * moves no published byte cell, and the claim is re-derivable by re-running
+ * that probe.
+ *
+ * The mechanism: track in-flight requests from the page's OWN request/response
+ * events, armed before the navigation so nothing is missed, and resolve only
+ * after `quietMs` has elapsed with nothing in flight — measured from the call,
+ * so each boundary gets a fresh window. Returns whether that window was
+ * actually observed, so a cap-out is recorded rather than disguised.
+ *
+ * Stated limit, unchanged from the 500 ms convention it keeps: a request the
+ * page starts MORE than `quietMs` after the last activity lands outside the
+ * window. The measured margin is wide — the interaction fetch is dispatched
+ * within ~30 ms of the click on every variant — but it is a bound, not a
+ * proof, and it is the same bound `networkidle` always carried.
+ */
+export function armNetworkQuiescence(page: Page): {
+  wait(quietMs: number, capMs: number): Promise<boolean>;
+} {
+  let inFlight = 0;
+  let lastActivity = Date.now();
+  // A routed-and-fulfilled request (the beacon) still emits request +
+  // requestfinished, so it is accounted like any other — instrumentation is
+  // stripped from the BYTES by known path, never from the quiescence signal.
+  const onRequest = () => {
+    inFlight += 1;
+    lastActivity = Date.now();
+  };
+  const onDone = () => {
+    // Floor at 0: a request that finishes after its own arming window (or a
+    // duplicate terminal event) must not drive the counter negative, which
+    // would make the "nothing in flight" test pass while something is.
+    inFlight = Math.max(0, inFlight - 1);
+    lastActivity = Date.now();
+  };
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+  return {
+    async wait(quietMs: number, capMs: number): Promise<boolean> {
+      const startedAt = Date.now();
+      // The window is measured FROM THIS CALL, not from the last event
+      // before it: a boundary asks "has the network been quiet since I
+      // started watching", and inheriting an older idle stretch is exactly
+      // the latch behaviour this replaces.
+      lastActivity = Date.now();
+      for (;;) {
+        if (inFlight === 0 && Date.now() - lastActivity >= quietMs) return true;
+        if (Date.now() - startedAt >= capMs) return false;
+        await page.waitForTimeout(25);
+      }
+    },
+  };
+}
+
+/**
+ * Capture the chrome's vitals beacons WITHOUT taking the browser cache away
+ * from the rest of the visit.
+ *
+ * **Why not `page.route`, which is what this replaced.** Lab/field isolation
+ * requires that a measured visit never DELIVERS a beacon (ADR-0001 §6), and
+ * that was done with a `page.route` glob over the beacon path. Playwright's
+ * own typings state the price: "Enabling routing disables http cache"
+ * (playwright-core 1.61.1 `types/types.d.ts:4063`). The routing is not
+ * URL-scoped at the browser — every request is paused so the glob can be
+ * matched in JS — so one beacon route took the HTTP cache away from the whole
+ * visit, on every run this project has ever published.
+ *
+ * **That is a measurement defect, and it was measured, not reasoned.** Qwik's
+ * PDP gallery re-writes `src` on all five thumbs with the value each already
+ * has (9 mutations against react-next's 4; the nodes survive, so it is a
+ * re-render, not a replacement). With the browser cache ON those writes are
+ * served from memory and the click costs **25,194 B** — the stage image
+ * alone, byte-identical to vanilla, react-next and astro. With the cache OFF
+ * the same five no-op writes become five real downloads and the click reads
+ * **52,032 B**. One variable, `page.route` on/off, reproduced on the local
+ * crate plane and on the deployed plane (probe, 2026-08-28). The instrument
+ * was manufacturing a 26,838 B paradigm difference no visitor can experience
+ * — a number that would have published as qwik's cost.
+ *
+ * **The replacement pauses ONLY the beacon URL**, at the browser, through
+ * CDP's own pattern filter, so every other request is served the way a real
+ * first-time visitor's is: from a fresh context whose cache behaves normally.
+ * That is what ADR-0001's "the browser HTTP cache is a held-constant" always
+ * meant — held at what a first-time visitor has, not held at OFF, which is
+ * no visitor at all. Verified to capture all five metrics
+ * (TTFB/FCP/LCP/CLS/INP) and to leave the gallery switch at 25,194 B on all
+ * four variants.
+ *
+ * A `sendBeacon` request never appears in resource timing in ANY of these
+ * modes (measured: 0 `/api/beacon` entries with routing, with CDP
+ * interception, and with no capture at all), so changing the capture
+ * mechanism cannot move `instrumentationBytes` or the instrumentation
+ * request count.
+ *
+ * Stated limit: `chrome-constant.ts` still routes, and must — it SERVES a
+ * prefetched fragment, which needs interception by construction. Its figures
+ * are a within-run A/B delta with the cache-off condition held identical in
+ * both arms, and it never re-touches an already-loaded URL, so the artifact
+ * above cannot reach it. Recorded here so the exception is visible rather
+ * than discovered.
+ */
+export async function armBeaconCapture(
+  page: Page,
+  beacons: Array<{ name?: string; value?: number }>,
+): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  cdp.on("Fetch.requestPaused", (event) => {
+    try {
+      // `postDataEntries` FIRST, `postData` only as a fallback. CDP's
+      // `Request.postData` is deprecated and Chromium omits it for bodies it
+      // did not inline (setting `hasPostData` instead) — Playwright itself
+      // reads the entries. Reading only the deprecated field would drop the
+      // beacon silently: nothing throws, the request is still fulfilled, and
+      // every vital in the run records as null while the arrival loop burns
+      // its whole cap waiting for metrics that were captured and discarded
+      // (verify-slice, conformance lens).
+      const entries = (event.request as { postDataEntries?: { bytes?: string }[] })
+        .postDataEntries;
+      const body =
+        entries && entries.length > 0
+          ? entries
+              .map((e) => (e.bytes ? Buffer.from(e.bytes, "base64").toString("utf8") : ""))
+              .join("")
+          : event.request.postData;
+      if (typeof body === "string" && body.length > 0) beacons.push(JSON.parse(body));
+    } catch {
+      /* malformed payload — the assertion surface is the suite, not here */
+    }
+    // ALWAYS fulfil, whatever the parse did: a paused request never emits
+    // `requestfinished`, so leaving one paused would wedge the quiescence
+    // tracker that defines every byte boundary in this file — the failure
+    // would surface as a cap-out on an unrelated measurement.
+    void cdp
+      .send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: 204 })
+      .catch(() => {
+        /* the page went away under us; there is nothing left to answer */
+      });
+  });
+  await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/beacon*" }] });
+}
+
+/**
  * Drive one visit and return the full per-run sample.
  *
  * Every visit gets a FRESH browser context: the browser HTTP cache is a
@@ -632,16 +912,17 @@ export async function measureVisit(
   try {
     const applied = await applyProfile(page, profile);
 
+    // Armed BEFORE the navigation, so every request of the visit is accounted
+    // and no boundary can be judged against a counter that started mid-flight
+    // (arming after `goto` would read "nothing in flight" while the page's own
+    // subresources were still loading). One tracker serves every boundary
+    // below; it is deliberately never detached — it must outlive the first
+    // wait to serve the interaction boundary, and it dies with the page.
+    const network = armNetworkQuiescence(page);
+
     // Lab/field isolation: capture the chrome's beacons, never deliver them.
     const beacons: Array<{ name?: string; value?: number }> = [];
-    await page.route("**/api/beacon", async (route) => {
-      try {
-        beacons.push(JSON.parse(route.request().postData() ?? "{}"));
-      } catch {
-        /* malformed payload — the assertion surface is the suite, not here */
-      }
-      await route.fulfill({ status: 204 });
-    });
+    await armBeaconCapture(page, beacons);
 
     const response = await page.goto(spec.effectiveUrl, { waitUntil: "load" });
     const docCacheState = response?.headers()["x-pm-cache-state"] ?? null;
@@ -667,20 +948,52 @@ export async function measureVisit(
       () => document.getElementById("pm-chrome") !== null,
     );
 
-    await page.waitForLoadState("networkidle");
+    // A cap-out on the INITIAL side throws rather than degrading: the byte
+    // boundary would otherwise fall at an arbitrary moment and the receipt
+    // would not say so. Same fail-loud behaviour the superseded
+    // `waitForLoadState("networkidle")` had here through its default timeout.
+    // The cap is a budget for the WHOLE pre-interaction phase, not for each
+    // call in it. Six calls can run before the click (the post-goto quiesce
+    // plus up to five in the rIC loop), and a per-call cap made the worst case
+    // 6 x 30 s = three minutes for one visit — reachable now that these waits
+    // actually wait, where the superseded latch returned instantly and hid it
+    // (verify-slice, this slice's own second pass).
+    const loadQuietDeadline = Date.now() + LOAD_QUIET_CAP_MS;
+    const quietAfterLoad = async () => {
+      const remainingMs = loadQuietDeadline - Date.now();
+      if (remainingMs <= 0 || !(await network.wait(NETWORK_QUIET_MS, remainingMs))) {
+        throw new Error(
+          `the network never went quiet for ${NETWORK_QUIET_MS} ms within this visit's ${LOAD_QUIET_CAP_MS} ms ` +
+            `pre-interaction budget ` +
+            `(${spec.effectiveUrl}) — the initial byte boundary would be arbitrary, so the visit refuses ` +
+            `rather than mint a sample whose initial/interaction split is undefined`,
+        );
+      }
+    };
+    await quietAfterLoad();
     // Defect 4 (issue #16): Qwik's preloader is the only post-load fetching
     // among the live variants, and it runs inside requestIdleCallback(…,
     // {timeout: 2000}) — under a throttled profile or on a loaded runner it can
-    // be starved PAST the networkidle above, so the byte boundary would fall in
+    // be starved PAST the quiescence above, so the byte boundary would fall in
     // the MIDDLE of it and the same build would yield two different receipts.
     // Settle post-load idle work onto the INITIAL byte side before the snapshot.
     // The rIC only guarantees Qwik's load handler has DEQUEUED and kicked off
-    // its async import(); the real settling is the trailing networkidle that
+    // its async import(); the real settling is the trailing quiescence wait that
     // bridges the import + the preload cascade (each modulepreload's onload
     // triggers the next wave), so THAT wait is load-bearing, not redundant. Loop
-    // rIC→networkidle until a pass surfaces no new resource-timing entries, so a
-    // cascade gap wider than networkidle's 500 ms window cannot end the snapshot
+    // rIC→quiesce until a pass surfaces no new resource-timing entries, so a
+    // cascade gap wider than one quiet window cannot end the snapshot
     // mid-cascade — bounded so a page that never settles cannot hang here.
+    //
+    // Until 2026-08-28 the trailing wait here was
+    // `waitForLoadState("networkidle")`, which is a document-lifecycle LATCH
+    // and returned immediately every time (see armNetworkQuiescence) — so the
+    // "bridges the cascade" claim above described a mechanism that did not
+    // exist. It cost nothing, and that is measured, not assumed: a genuine
+    // quiescence wait after this loop surfaces 0 new entries and 0 byte change
+    // on all five editorial and all four PDP variants, because the rIC passes
+    // plus the count-stability check already give the cascade its time. The
+    // claim is true now for the reason it always stated.
     let priorCount = -1;
     for (let pass = 0; pass < 5; pass++) {
       await page.evaluate(
@@ -691,7 +1004,7 @@ export async function measureVisit(
             else setTimeout(resolve, 50);
           }),
       );
-      await page.waitForLoadState("networkidle");
+      await quietAfterLoad();
       const count = (await resourceEntries(page)).length;
       if (count === priorCount) break;
       priorCount = count;
@@ -713,12 +1026,15 @@ export async function measureVisit(
     // stopped waiting" in the artifact. It is a real distinction: requests
     // still in flight never appear in resource timing at all (verify-slice,
     // anti-rigging lens).
-    let interactionSettled = true;
-    await page
-      .waitForLoadState("networkidle", { timeout: settleCapMs })
-      .catch(() => {
-        interactionSettled = false;
-      });
+    //
+    // This is the wait that was BROKEN, and the flag above is what made the
+    // break invisible: `waitForLoadState("networkidle")` returned in 24–49 ms
+    // (measured, all four PDP variants) because the latch had already closed
+    // during load, so a 25,194 B interaction fetch was recorded as 0 B with
+    // interactionSettled: true. A guard that can pass vacuously is not a guard
+    // (ADR-0001 §9), and this one was passing vacuously on every run the
+    // project has ever published.
+    const interactionSettled = await network.wait(NETWORK_QUIET_MS, settleCapMs);
     const afterEntries = await resourceEntries(page);
 
     // Wait for the interaction's own event-timing entry to EXIST before

@@ -67,4 +67,58 @@ export interface SurfaceLabBundle {
    */
   fit?: { sentence: string; receipt: LabReceipt };
   bandsOverlap?: boolean;
+  /**
+   * The scripted interaction the INP row was driven by, named in the row
+   * itself.
+   *
+   * `READING_METRICS` has no interaction-bytes row, so the published
+   * "interaction cell" IS the INP row — and until 2026-08-28 the table never
+   * said WHICH interaction produced it. That was harmless while editorial was
+   * the only publishing surface and had exactly one interaction. It stops
+   * being harmless the moment a second surface publishes: the PDP's
+   * `pdp-gallery-switch` and editorial's `editorial-add-to-cart` would render
+   * in identically-labeled rows, and the only way to tell them apart would be
+   * to download the receipt — the "it's in the receipt" answer ADR-0001
+   * addendum C pre-rejected.
+   *
+   * Optional so a bundle minted before this field existed still renders (the
+   * bare "INP (scripted)" label, exactly as it did); the build sets it for
+   * every receipt it publishes.
+   */
+  interactionId?: string;
+  /**
+   * Whether this surface's INP row publishes at all, and why not when it
+   * doesn't.
+   *
+   * A surface withholds it when the metric is demonstrably not measuring the
+   * same thing in every column. Chromium closes an interaction's event-timing
+   * entry at the first paint after the handler's SYNCHRONOUS processing
+   * returns, so a resumed handler that returns having only SCHEDULED the
+   * render closes its entry on a paint carrying nothing. On the PDP that is
+   * measured and unstable: qwik reads 8 ms on the default profile, 0 ms under
+   * slow-4G on the gallery switch, and 24 ms under slow-4G on add-to-cart,
+   * while the other three sit at 24 throughout — so the cell swings across
+   * conditions for one column and not the others, which is what a metric
+   * measuring a paradigm property does not do.
+   *
+   * Withheld LOUDLY, never quietly: the reason rides the row, the fit sentence
+   * refuses the timing comparison in its own words, and `/methodology/` carries
+   * the mechanism with its figures. The alternative — publishing 0 ms beside
+   * three 24s under a caveat — is a number no prose can rescue.
+   */
+  interactionTiming?: { published: boolean; reason?: string };
+  /**
+   * What the surface's scripted click cost on the wire, receipt-derived, with
+   * the tolerance the publication declared for cross-variant agreement.
+   *
+   * Carried on the bundle rather than only inside the fit SENTENCE, because
+   * the sentence can vanish: `bandsOverlap` deletes it (ADR-0001 addendum C
+   * forbids the comparative verdict when the compared bands overlap), and on a
+   * surface that also withholds its INP row that would leave the click — the
+   * PDP's whole headline — with no published figure anywhere. The overlap rule
+   * is about a RANKING the bands do not support; a cross-variant CONSTANT is
+   * not a ranking, so deleting it with the sentence was a category error
+   * (verify-slice, conformance lens).
+   */
+  interactionFetch?: { bytes: number; toleranceBytes?: number };
 }

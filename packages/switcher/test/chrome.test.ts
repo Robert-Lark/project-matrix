@@ -412,3 +412,108 @@ describe("injection safety", () => {
     expect(html).not.toContain("<img src=x>");
   });
 });
+
+describe("the interaction cell's three new render branches (ADR-0001 addendum T)", () => {
+  // These branches carry the PDP's ENTIRE published headline — its INP row is
+  // withheld and its byte figure can be deleted by the band-overlap rule — and
+  // none of them was reachable from the origin suite until a post-merge batch
+  // exists. A typo in any of the three would have shipped uncaught
+  // (verify-slice, skeptic lens). Unit-tested here, where it blocks a merge.
+  const receipt = {
+    profile: "avg-broadband-desktop" as const,
+    date: "2026-08-28",
+    commitSha: "0000000000000000000000000000000000000000",
+    location: "local-dev",
+    url: "/_pm/lab/receipts/pdp-avg-broadband-desktop.json",
+  };
+  const pdpCtx = {
+    variant: "vanilla",
+    surface: "pdp",
+    pathname: "/vanilla/pdp/some-release/",
+    search: "",
+    location: "local",
+  };
+  const columns = {
+    vanilla: { "initial JS": { value: 4.32, unit: "KB" as const, receipt } },
+    "react-next": { "initial JS": { value: 151.82, unit: "KB" as const, receipt } },
+    astro: { "initial JS": { value: 1.6, unit: "KB" as const, receipt } },
+    qwik: { "initial JS": { value: 32.86, unit: "KB" as const, receipt } },
+  };
+
+  it("a PUBLISHED INP row names the interaction it was driven by, in prose case", () => {
+    const html = renderChrome({
+      ...pdpCtx,
+      lab: {
+        surface: "pdp",
+        profile: "avg-broadband-desktop" as const,
+        columns: {
+          ...columns,
+          vanilla: { ...columns.vanilla, "INP (scripted)": { value: 24, unit: "ms" as const, receipt } },
+        },
+        interactionId: "pdp-gallery-switch",
+        interactionTiming: { published: true },
+        fit: { sentence: "A sentence.", receipt },
+      },
+    });
+    expect(html).toContain("pdp-gallery-switch");
+    // The row header must opt out of `.pm-chrome__th`'s uppercase + 0.14em
+    // tracking, or the note ships SHOUTED.
+    expect(html).toContain("pm-chrome__th--noted");
+  });
+
+  it("a WITHHELD INP row renders the reason and no reading, and says so in the caption", () => {
+    const html = renderChrome({
+      ...pdpCtx,
+      lab: {
+        surface: "pdp",
+        profile: "avg-broadband-desktop" as const,
+        columns,
+        interactionId: "pdp-gallery-switch",
+        interactionTiming: { published: false, reason: "not comparable on this surface" },
+        fit: { sentence: "A sentence.", receipt },
+      },
+    });
+    expect(html).toContain("not comparable on this surface");
+    expect(html).toContain("pm-chrome__th--noted");
+    // The withheld row must NOT fall back to naming the interaction — that is
+    // the quiet failure: the row looks fine and says the wrong thing.
+    expect(html).not.toContain("pdp-gallery-switch");
+    // And four em-dashed cells, not a reading.
+    expect(html).toContain("pm-chrome__none");
+  });
+
+  it("bandsOverlap deletes the VERDICT but not the cross-variant interaction constant", () => {
+    const overlapping = renderChrome({
+      ...pdpCtx,
+      lab: {
+        surface: "pdp",
+        profile: "avg-broadband-desktop" as const,
+        columns,
+        interactionId: "pdp-gallery-switch",
+        interactionTiming: { published: false, reason: "not comparable on this surface" },
+        interactionFetch: { bytes: 25194, toleranceBytes: 64 },
+        bandsOverlap: true,
+      },
+    });
+    expect(overlapping).toContain("Indistinguishable at this sample size.");
+    // 25194 / 1024 = 24.6 KB — the same number in every column, which is not a
+    // ranking, so the overlap rule does not reach it.
+    expect(overlapping).toContain("24.6");
+    expect(overlapping).toContain("the same bytes, not a ranking");
+    // A zero-byte constant states nothing extra: "the click costs 0 KB" is the
+    // fit sentence's own claim, and the overlap state must not invent a verdict.
+    const zero = renderChrome({
+      ...pdpCtx,
+      lab: {
+        surface: "editorial",
+        profile: "avg-broadband-desktop" as const,
+        columns,
+        interactionTiming: { published: true },
+        interactionFetch: { bytes: 0 },
+        bandsOverlap: true,
+      },
+    });
+    expect(zero).toContain("Indistinguishable at this sample size.");
+    expect(zero).not.toContain("the same bytes, not a ranking");
+  });
+});

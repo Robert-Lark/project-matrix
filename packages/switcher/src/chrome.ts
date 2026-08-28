@@ -245,7 +245,30 @@ function readingSection(
     const cells = columns
       .map((c) => labCell(lab?.columns[c.key]?.[metric]))
       .join("");
-    return `<tr><th scope="row" class="pm-chrome__th">${esc(metric)}</th>${cells}</tr>`;
+    // The INP row IS this table's interaction cell — there is no
+    // interaction-bytes row — so it names the interaction it was driven by.
+    // Without that, two surfaces' INP rows look identical while measuring
+    // different clicks, and the reader's only recourse is the raw receipt.
+    //
+    // And where the surface WITHHOLDS the metric (ADR-0001 addendum T: the
+    // entry closes before a resumed handler paints, so the cell is not
+    // measuring the same thing in every column), the row says why rather than
+    // showing four unexplained em-dashes. Withheld loudly, never quietly.
+    let label = esc(metric);
+    if (metric === "INP (scripted)") {
+      const note =
+        lab?.interactionTiming?.published === false
+          ? lab.interactionTiming.reason
+          : lab?.interactionId;
+      if (note) label = `${metric}<span class="pm-chrome__note"> ${esc(note)}</span>`;
+    }
+    // `--noted` carries the same reset `--planned` already gets on the COLUMN
+    // header. `.pm-chrome__th` is `text-transform: uppercase` with 0.14em
+    // tracking, which is right for a metric name and wrong for a sentence: the
+    // withheld-INP reason would have shipped SHOUTED across four columns
+    // (verify-slice, skeptic lens).
+    const rowClass = label === esc(metric) ? "pm-chrome__th" : "pm-chrome__th pm-chrome__th--noted";
+    return `<tr><th scope="row" class="${rowClass}">${label}</th>${cells}</tr>`;
   }).join("");
 
   // Serving a fenced exhibit: the table still reads the BENCHMARKED
@@ -272,7 +295,7 @@ function readingSection(
     `<p class="pm-chrome__row"><span class="pm-chrome__key">lab profile</span>${profileCells}<span class="pm-chrome__note">selects the displayed snapshot — never re-throttles this page</span></p>`,
     `<div class="pm-chrome__scroll" role="region" aria-label="Published lab readings" tabindex="0">`,
     `<table class="pm-chrome__table">`,
-    `<caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run. Lab compares; the live readout below is your reality check.</caption>`,
+    `<caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run — or, where a row says so, a metric this surface withholds because it does not measure the same thing in every column. Lab compares; the live readout below is your reality check.</caption>`,
     `<thead><tr><td></td>${head}</tr></thead>`,
     `<tbody>${rows}</tbody>`,
     `</table>`,
@@ -288,7 +311,19 @@ function fitSection(lab: SurfaceLabBundle | undefined): string {
   // bandsOverlap must render the indistinguishable state — ADR-0001 addendum
   // C forbids the verdict (verify-slice, conformance lens).
   if (lab?.bandsOverlap) {
-    line = `Indistinguishable at this sample size.`;
+    // The overlap rule forbids the comparative VERDICT, not every fact. A
+    // cross-variant interaction constant is not a ranking — it is the same
+    // number in every column — so it survives here rather than vanishing with
+    // the sentence. Without this, a surface whose bands overlapped AND whose
+    // INP row is withheld would publish nothing at all about its own click,
+    // which on the PDP is the surface's entire headline (verify-slice,
+    // conformance lens).
+    const bytes = lab.interactionFetch?.bytes;
+    const clickLine =
+      typeof bytes === "number" && bytes > 0
+        ? ` The scripted click costs <span class="num">${esc(String(Math.round((bytes / 1024) * 100) / 100))}</span>&nbsp;KB in every column — the same bytes, not a ranking.`
+        : ``;
+    line = `Indistinguishable at this sample size.${clickLine}`;
   } else if (lab?.fit) {
     const r = lab.fit.receipt;
     line = `${esc(lab.fit.sentence)} <a class="pm-chrome__reading" href="${esc(r.url)}">receipt</a>`;

@@ -255,7 +255,14 @@ same way and reported under `instrumentationBytes`. The document byte bucket
 must not carry the instrument's own markup.
 
 **I. Settle waits are signal-based, never a fixed proxy (§9; defects 4 + audit
-collect.ts:171/:254).** Three fixed timeouts were replaced by waits on the real
+collect.ts:171/:254).**
+
+> **PARTLY SUPERSEDED — the interaction byte boundary only; see addendum R.**
+> The claim below was true of the vitals-beacon flush and of the post-load idle
+> settle. It was FALSE of the per-interaction byte boundary, which used a
+> document-lifecycle LATCH that had already closed during load and could
+> observe nothing. Corrected 2026-08-28.
+ Three fixed timeouts were replaced by waits on the real
 signal, each BOUNDED so an absent signal surfaces honestly rather than hanging:
 the per-interaction byte boundary waits for the network to go idle (a fetch of
 any duration is counted, not cropped at 400 ms); the vitals-beacon flush waits
@@ -681,3 +688,299 @@ as the dilution itself. The timing figures supersede N's +104/+104
 (measured against the same plane; the deltas moved with the plane's own
 run-to-run spread, which is why the constant publishes as an order of
 magnitude, never a per-profile equality — addendum F's scope note stands).
+
+## Addendum — the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, `interaction-registry`)
+
+The unit that registered the PDP's two scripted interactions found that the
+guard behind the site's strongest published claim had never fired, and then
+that the runner had been taking the browser cache away from every measured
+visit. Both defects lived in `tools/bench-runner/src/collect.ts`; both were
+invisible to every test in the repository, for the same reason; neither moved
+a published number, and that is measured below rather than assumed. No §1–§9
+decision changes.
+
+**R. The interaction byte boundary is a MEASUREMENT, not a document-lifecycle
+latch (supersedes the interaction-boundary clause of addendum I).** Addendum I
+said three fixed timeouts had been replaced by waits on the real signal. That
+was true of the vitals-beacon flush and of the post-load idle settle. It was
+FALSE of the per-interaction byte boundary, which used
+`page.waitForLoadState("networkidle", { timeout: settleCapMs })`.
+
+That call is a document-load-lifecycle LATCH. Playwright's own typings say so —
+"If the state has been already reached while loading current document, the
+method resolves immediately" (`playwright-core@1.61.1`
+`types/types.d.ts:5020`), and they mark `networkidle` **DISCOURAGED**. No
+navigation happens across a scripted interaction, and the runner's own
+pre-click settle loop guarantees the latch is already closed, so the post-click
+call could never observe anything. Timed on the deployed plane, all four PDP
+variants: it returned in **0–1 ms** this session, against the **24–49 ms** the
+discovering session measured from inside the runner. A genuine 500 ms quiet window cannot resolve in under 500 ms, so
+either timing alone is the proof; the mechanism argument is not needed.
+
+The consequence is the precise failure `interactionSettled` (addendum M) was
+added to make impossible. `pdp-gallery-switch` fetches a 25,194 B image, and
+the runner recorded **`interactionBytes: 0` with `interactionSettled: true`** —
+the flag asserting that zero as VERIFIED. **When a guard can pass vacuously it
+is not a guard** (§9), and this one had passed vacuously on every run the
+project has ever published.
+
+*Why it survived every check, which is the durable half.* Every `interactionId`
+any test had ever driven was `body-click` or `none`, and both fetch nothing;
+the assertions on them are `interactionBytes === 0`, which a working boundary
+and a latched one produce identically. **No test had ever driven an interaction
+that fetches.** A guard proven only against inputs that cannot distinguish pass
+from fail is not proven. `tools/origin-suite/suite/bench-interaction.browser.test.ts`
+is the leg that was owed: it drives a fetching interaction and asserts non-zero
+bytes, and it fails against the latched wait.
+
+The replacement, `armNetworkQuiescence`, tracks in-flight requests from the
+page's own `request`/`requestfinished`/`requestfailed` events, is armed before
+the navigation so nothing is missed, and resolves only after a fresh quiet
+window measured FROM the call — so each boundary gets its own window. The
+window stays **500 ms**, the same one `networkidle` names, so the boundary's
+DEFINITION is unchanged and only the mechanism moves. Two caps, deliberately
+different: the pre-interaction side gets 30 s and **throws** on cap-out
+(matching the effective bound the superseded calls carried, and refusing rather
+than letting `initialJsBytes` — the published headline — fall at an arbitrary
+moment); the interaction side keeps 3 s and records `interactionSettled:
+false`, which refuses publication instead of corrupting a number.
+
+**No published value changes, and the same latch made a second wait vacuous at
+zero cost.** The pre-click settle loop's trailing wait was the same latched
+call, so its comment's claim that the wait "bridges the import + the preload
+cascade" described a mechanism that did not exist. Measured: a genuine
+quiescence wait in its place surfaces **0 new resource entries and 0 bytes on
+all four PDP and all five editorial variants** (re-derived this session against
+the deployed plane, entry counts 23–34 on the PDP and 16–23 on editorial, every
+delta exactly zero) — the `requestIdleCallback` passes plus the entry-count
+stability check already gave the cascade its time. Editorial receipts' VALUES stand; only their
+`interactionSettled` attestation was unearned, which is a record problem, not a
+number problem. Receipts dated before 2026-08-28 therefore prove "nothing was
+fetched for the click" only where the interaction is independently known not to
+fetch; the receipt's own `methodNotes` now says so, in the artifact.
+
+**S. The browser HTTP cache is held at what a first-time visitor has — not at
+OFF, which is no visitor at all.** §4 has always said the browser cache is a
+held-constant rather than a measured axis, and every run is a fresh browser
+context. What was never stated, because it was never intended, is that the
+runner was holding it at DISABLED for the whole visit.
+
+Lab/field isolation (§1, §6) requires that a measured visit never DELIVERS a
+vitals beacon, and that was done with a `page.route` glob over `/api/beacon`.
+Playwright's typings state the price: **"Enabling routing disables http cache"**
+(`types/types.d.ts:4063`). The routing is not URL-scoped at the browser — every
+request is paused so the glob can be matched in JS — so one beacon route took
+the cache away from every request of every measured visit.
+
+*The defect, measured.* Qwik's PDP gallery re-writes `src` on all five thumbs
+with the value each already holds — **9 mutations, of which 5 are
+identical-value `src` writes, against 4 mutations and none identical for each
+of the other three; all five thumb `<img>` nodes survive on every variant
+(marker-property test, 5/5), so it is a re-render and not a replacement**
+(MutationObserver over `.pm-gallery`, deployed plane, all four variants, and
+deliberately WITHOUT the cache-disabling route, so the DOM behaviour is
+established independently of its byte consequence). With the cache
+ON the browser serves them from memory and the click costs **25,194 B** — the
+stage image alone, byte-identical to vanilla, react-next and astro. With the
+cache OFF the same five no-op writes become five real downloads and the click
+reads **52,032 B**. One variable, `page.route` on or off, reproduced on the
+local crate plane and on the deployed plane. **The instrument was manufacturing
+a 26,838 B paradigm difference that no visitor can experience**, and it would
+have published as qwik's cost. Rigging AGAINST a paradigm is the same failure
+as flattering one (§9), and this one was the instrument's, not a judgement
+call.
+
+To be precise about what survives the fix rather than only what disappears:
+the five re-writes still HAPPEN, and they are still visible in the receipt —
+qwik's PDP visit counts 33 requests against vanilla's 23, astro's 22 and
+react-next's 29. What the cache changes is that those five cost **zero bytes**,
+which is what a real visitor experiences. The paradigm difference is a request
+count, honestly recorded; it was never 26,838 B.
+
+The replacement, `armBeaconCapture`, pauses ONLY the beacon URL, at the
+browser, through CDP's own pattern filter (`Fetch.enable` with
+`patterns:[{urlPattern:"*/api/beacon*"}]`), and always fulfils with 204 — a
+paused request never emits `requestfinished`, so leaving one paused would wedge
+the very quiescence tracker R installs. Lab traffic still never reaches the RUM
+collector.
+
+Rejected on measurement, not preference: `Network.setCacheDisabled({
+cacheDisabled: false })` does NOT restore the cache while routing is on, before
+or after the route is registered (52,032 B either way). An `addInitScript` stub
+over `navigator.sendBeacon` works (25,194 B, all five metrics captured) but
+monkey-patches the measured page's own JS environment, and would stop capturing
+silently the day the chrome changes transport.
+
+**Cost to published numbers: none, measured across the change.** Editorial,
+five variants, five runs, `avg-broadband-desktop`, same plane, before and
+after: every initial-JS median within 1 B (1808/1808, 154084/154084, 737/736,
+29119/29119, 18846/18846), every interaction median 0 in both columns both
+ways. The ±1 B moves are the leave-one-out attribution's own rounding
+(addendum O), not a shift. A `sendBeacon` request never appears in resource
+timing in ANY capture mode — measured with routing, with CDP interception, and
+with no capture at all: zero `/api/beacon` entries in all three — so the
+mechanism swap cannot move `instrumentationBytes` or the instrumentation
+request count either.
+
+*Stated exception.* `tools/bench-runner/src/chrome-constant.ts` still routes,
+and must: it SERVES a prefetched fragment, which needs interception by
+construction. Its figures are a within-run A/B with the cache-off condition
+held identical in both arms, and it never re-touches an already-loaded URL, so
+the artifact above cannot reach it. Recorded here so the exception is visible
+rather than discovered.
+
+*The generalisation this forces on the fit templates.* With the boundary
+measuring and the cache on, a surface whose interaction legitimately fetches
+now measures a real, non-zero, cross-variant-CONSTANT figure — and the
+publication build's refusal was hardcoded to "every median must be zero", which
+made such a surface unpublishable by construction rather than publishable with
+the fetch STATED. Surfaces now DECLARE `interactionFetch` in their fit template
+(`"none"`, or `{kind:"constant", toleranceBytes}`), and the declaration is
+**required**: a generalisation that can be omitted is a way to opt out of a
+check. A constant that measures zero everywhere is refused by name — that is
+the `"none"` claim wearing a looser word.
+
+**T. The INP row is not like-for-like across paradigms when a handler is
+asynchronous, and the error flatters the paradigm doing more work.** Same class
+as addendum M's serialization asymmetry, and it rides every INP cell this site
+publishes, editorial's included.
+
+Chromium closes an interaction's event-timing entry at the first paint after
+the handler's **synchronous** processing returns. A resumed handler returns
+immediately having only SCHEDULED the render, so that paint can carry nothing
+and the entry closes before the visitor sees anything.
+
+Measured on `pdp-gallery-switch`, medians of five fresh visits per variant
+under the runner's own profile, all times in ms from the event's own
+`startTime`:
+
+| variant | INP (event duration) | handler returned | DOM changed | painted after the DOM change |
+|---|---|---|---|---|
+| vanilla | 24 | 0.7 | 1.3 | 18.4 |
+| react-next | 24 | 1.3 | 2.8 | 19.5 |
+| astro | 24 | 0.6 | 1.1 | 18.2 |
+| qwik | **8** | 0.7 | **9.9** | **34.6** |
+
+The three synchronous paradigms mutate the DOM inside the handler, so the next
+paint carries the result and the entry reads 24 ms. Qwik's DOM change lands at
+9.9 ms — after the ~8 ms paint that closed its entry — and it records **8 ms**
+while its visible update arrives at **34.6 ms**, the LATEST of the four. The
+cell reads lowest where the work finishes last.
+
+The same asymmetry exists on the editorial surface (`editorial-add-to-cart`:
+qwik's DOM change at 22.0 ms against 1.0–3.5 ms for the others), but there the
+late change happens to fall INSIDE the measured window and the cell reads 24 ms
+like the rest. **So the direction and size of the discrepancy are a race with
+the frame boundary, not a stable property** — which is why this publishes as a
+stated limit on the metric rather than as a correction to one variant's cell.
+The number is a standard metric measured the standard way; what it cannot
+support is the reading "this paradigm responds faster". `/methodology/` carries
+the mechanism and these figures, and the PDP's fit sentence refuses the timing
+comparison in the sentence itself.
+
+*What this means for publication, decided on more measurement.* The first draft
+of this addendum said the PDP's INP cell would publish with the limit stated,
+on addendum M's precedent. Two further measurements refuted that:
+
+|  | vanilla / react-next / astro | qwik |
+|---|---|---|
+| `pdp-gallery-switch`, avg-broadband | 24 | **8** |
+| `pdp-gallery-switch`, slow-4g | 24 | **0** (runs 0, 8, 0) |
+| `pdp-add-to-cart`, avg-broadband | 24 | **8** |
+| `pdp-add-to-cart`, slow-4g | 24 | 24 |
+
+**A cell that swings 0 → 24 across conditions for one column while the others
+hold still is not measuring a property of the paradigm**, and switching to the
+other interaction does not escape it — add-to-cart reads 8 ms on the default
+profile too, so this belongs to the surface's handlers rather than to the
+chosen click. And 0 ms is not a number a caveat rescues: a reader sees
+"instant" for the paradigm whose visible update lands last.
+
+**So the PDP publishes no INP row at all**, declared in its fit template as
+`interactionTiming: {publish: false, reason}` and dropped at BUNDLE time — the
+value a reader must not read is not in the artifact either. Withheld LOUDLY,
+which is the whole difference from dropping the cell quietly: the row itself
+carries the reason, the fit sentence refuses the timing comparison in its own
+words, this page carries the mechanism and these figures, and a suite leg
+proves both directions (a surface that publishes the metric must carry a
+reading in every column and name its interaction; a surface that withholds it
+must carry none and must say why on the page).
+
+**Editorial KEEPS its INP row**, and that is a measurement rather than a
+courtesy: all five variants read 24 ms across every profile in the committed
+receipts, seven runs each. The asymmetry exists there too — qwik's DOM change
+lands at 22.0 ms against 1.0–3.5 ms — but it falls inside the measured window,
+so the cell is like-for-like. Withholding a stable row would be
+over-correction; the criterion is stated, per-surface, and checkable.
+
+Owed forward, not taken here: a click-to-visible-paint reading would be
+like-for-like where INP is not, and it is what would let the PDP publish an
+interaction-timing cell at all. It is a new receipt field, a new reading row
+and a new publication path — a unit, not a clause. Recorded so the gap is a
+decision rather than an omission.
+
+**Two consequences for the reading table, both structural.** `READING_METRICS`
+has no interaction-bytes row, so the published "interaction cell" IS the INP
+row — and the table never said which interaction produced it. Harmless while
+editorial was the only publishing surface with exactly one interaction; an
+honesty gap the moment a second surface publishes a different click into an
+identically-labeled row, whose only remedy would be downloading the receipt,
+which addendum C pre-rejected. The bundle now carries `interactionId` and the
+row names it. And a receipt carrying more than one interaction is refused
+outright: one receipt publishes one interaction, or the row means a different
+thing in each column.
+
+Second: `/methodology/`'s batch statement and run count were both derived from
+the editorial receipts alone. That was true while editorial was the only
+publication and becomes a correctness bug the moment a second surface
+publishes — a reader on a PDP page follows the methodology link and reads a
+description of a batch that is not the one behind the numbers they just read,
+falsified by the receipt links on those very cells. Both are per-surface now,
+each naming its surface's own interaction, and the run count stays a bare
+number only while every published surface agrees on one.
+
+**What the verification pass changed, because three of its findings were about
+this addendum's own claims.** Four lenses, 26 findings, all 26 confirmed
+against source before adoption; two answered by measurement instead of code;
+one adopted but sequenced (below). Six were defects in this unit's own new
+work, which is the pattern every verify-slice run since `pdp-controls` has
+repeated, and three were claims in the drafts of this very text:
+
+- A `/methodology/` sentence typed "all five variants read 24 ms across every
+  profile", which the site's own served bundle falsifies one click away —
+  react-next's warm median is 32 ms on average broadband, and runs span 24–32.
+  It is derived from the receipts now rather than typed, so it also cannot go
+  stale at the next batch.
+- The justification for withholding the PDP's INP row rested on six hand-typed
+  paint-timing numbers with no artifact, on the one page whose premise is that
+  it carries no figure without one. Those figures live in this ADR now; the
+  page states the mechanism and the instability, and the instability is
+  checkable in the receipts those withheld cells would have linked. **That
+  distinction is the honest shape of a withheld metric: the raw measurement
+  publishes, the derived cell does not.**
+- And the claim that the genuine waits cost nothing measurable was wrong. It
+  was read off a 142.64 → 143.28 s suite comparison taken under lighter
+  parallel load; the first full run after the new legs landed timed the
+  pre-existing `reproduce` leg out at exactly 300003 ms. The new file roughly
+  doubles the origin suite's browser work. Its second batch dropped to one run
+  per column and the reproduce budget went to 600 s, both recorded — and the
+  final measurement is 143.02 s (fixture) and 143.13 s (crate), 510 tests each.
+
+**The bound obligation this addendum creates, and it is structural rather than
+advisory.** `harness.quiescence: "in-flight-tracked"` is now stamped on every
+receipt by the code that does the tracking, so a publication gate can require
+the MECHANISM instead of reading a date and inferring one. Receipts minted
+before the fix carry no such field and cannot grow one retroactively — absence
+IS the weaker guarantee, stated rather than deduced.
+
+The gate that REQUIRES it is not in this unit, and the reason is a deadlock
+rather than a preference: it would refuse editorial's three committed receipts,
+which the front build needs, and editorial cannot be re-measured until this
+code merges — its receipts were minted against the DEPLOYED plane at a clean
+SHA (verified in the artifact), and the addendum-Q provenance gate refuses a
+local checkout measuring a plane on a different tree. So the gate lands in the
+same commit as the re-run receipts that satisfy it. **Publishing anything from
+a pre-2026-08-28 receipt's `interactionSettled` remains unearned until then** —
+an exposure this unit did not create and does not widen; it is what main
+publishes today. If the re-run is declined, the gate cannot land and this
+paragraph is the record of why.

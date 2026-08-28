@@ -9,6 +9,8 @@ export {
   INTERACTIONS,
   SETTLE_CAP_MS,
   applyProfile,
+  armBeaconCapture,
+  armNetworkQuiescence,
   decomposeDocument,
   measureVisit,
   profileContextOptions,
