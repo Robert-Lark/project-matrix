@@ -28,7 +28,13 @@
       // OLD receipts, and the deploy leg would ship it before the post-deploy
       // smoke caught the drift.
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json"],
-      "outputs": ["dist/**"]
+      // generated/** is the Worker's LAB_BUNDLES module, written by build.mjs
+      // from the labBundle-flagged surfaces. Declared as an output for the
+      // same reason astro's src/data modules are: an undeclared build output
+      // is hashed as a build INPUT, so every flavor switch would invalidate
+      // the cache this entry exists to serve — and a cache replay would
+      // otherwise restore a tree whose Worker import does not resolve.
+      "outputs": ["dist/**", "generated/**"]
     },
     "@pm/vanilla#build": {
       "dependsOn": ["topo", "^build"],

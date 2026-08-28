@@ -4149,3 +4149,182 @@ receipt file still trackable). The lenses also re-derived the
 receipt's numbers independently (the before hash from the CURRENT
 disk's non-thumb subset — an add-only re-proof that needs no retained
 manifest) and confirmed the deployed-plane smoke path.
+
+### The publication pipeline stops being editorial's (2026-08-28)
+
+One line was the whole gate: `build.mjs` refused any receipt whose
+filename did not start with `editorial-`, and hardcoded `"editorial"`
+as the surface, `FIT.editorial` as the template, and
+`_pm/lab/editorial.json` as the one artifact it wrote. That is what
+held PDP byte cells behind the ruler unit's bar even after the ruler
+landed — the numbers could be minted, but nothing could publish them.
+
+The generalisation is registry-driven, not filename-driven. A new
+`labBundle` flag on `SURFACE_CONTROLS` is the whole registration:
+the build derives its surface roster from the flagged entries, emits
+`/_pm/lab/{surface}.json` for each, and the Worker embeds each one.
+Choosing the switcher registry over a new list was the ADR-0008
+addendum A §4c discipline applied again — the same array that already
+drives the reading-table columns, the serving floor and "Served by N
+of M" now drives publication, so a surface cannot be live in the
+chrome and invisible to the pipeline. The alternative considered and
+rejected: infer surfaces from the receipt filenames present. It reads
+simpler and needs no registry edit, but it makes a TYPO a new surface
+— `edtiorial-fast-wifi-laptop.json` would silently publish a table
+nothing renders, which is the vacuous-guard shape this repo keeps
+paying to remove.
+
+Surface identity is now checked three ways that must agree, replacing
+the one filename check: the filename's surface half must be a
+registered lab surface, its profile half must equal the receipt's own
+`profile.id`, and every target's own `surface` field must equal the
+surface it is filed under. The third is the one that matters — a
+receipt's targets record what was actually measured, so a PDP batch
+misfiled as editorial is refused by its own contents rather than
+published under the wrong table. A fourth refusal was added for the
+same reason the fit templates exist: a surface with no `FIT.{surface}`
+entry cannot publish, because ADR-0001 addendum C wants the sentence
+written WITH the batch that backs it, never ahead of it.
+
+Batch integrity MOVED and widened. It used to run inside the
+`published` branch, so it only checked when an editorial publication
+existed; it now runs per surface, over every surface holding receipts.
+Deliberately per-surface and never across: editorial's batch and a
+later PDP batch are separate publications minted on their own days at
+their own SHAs, and a cross-surface SHA check would refuse that
+legitimate state.
+
+**The pinned-cells rule, proven rather than asserted.** The whole
+front `dist` was hashed before and after: of 18 artifacts, 17 are
+byte-identical — `editorial.json`, all three receipts, home,
+methodology, the chrome constant, fonts, the measurement bundle — and
+the eighteenth is the new, empty `pdp.json`. The published editorial
+cells are not "unchanged as far as the tests can tell"; they are the
+same bytes. (The one volatile file, `_pm/build.json`, is the build
+stamp and is excluded by name.)
+
+Ten sabotages, each watched failing and restored. Build-side: an
+unregistered surface prefix, a filename whose profile half disagrees
+with the receipt, a receipt whose targets name a different surface, a
+surface with no fit template, and a mixed-SHA batch (which now names
+its surface in the refusal — "published editorial receipts span more
+than one commit SHA"). Suite-side: unflagging editorial (the
+non-vacuity leg AND the stale-artifact reverse tie both fire),
+flagging `plp` without wiring it (the completeness leg fails — the
+PDP_SERVING idiom doing its job), a build that emits only editorial
+(the pdp bundle leg 404s), a stray bundle for an unflagged surface,
+and the empty-state leg pointed at a published page to prove it is not
+vacuous. An eleventh fired by accident and was worth keeping:
+mislabeling a bundle's `surface` field breaks the chrome-constant
+fragment-identity gate, so that pre-existing guard already covers the
+class from a second direction.
+
+A process failure worth recording, because it cost real work: the
+first mislabel sabotage was restored with `git checkout --
+workers/front/build.mjs`, which reverted the file to the last COMMIT —
+wiping every uncommitted edit of the unit's central file. All of it
+had to be re-applied. Sabotage restore now goes through a backup copy
+taken before the first sabotage; `git checkout` is only safe for files
+whose work is already committed, which is exactly not the case
+mid-slice.
+
+**What did NOT happen, deliberately.** No PDP receipts were minted and
+no PDP cell publishes. The decision map assigns the batches to the
+interaction-registry unit, and this unit generalises the pipeline
+only — the PDP bundle ships empty, which is the designed state every
+surface sits in between registration and its first batch, and the
+suite now proves an empty bundle renders the same chrome empty state
+an unregistered surface does. Home's spread still reads editorial
+explicitly: the front door's measured row is the editorial batch
+(ADR-0007 §4/§5), so that read is content, not pipeline, and it is
+commented as such.
+
+**verify-slice earned this slice outright** (`wf_5e2e486a-eec`, four
+lenses, all completed — the second clean no-death run). Sixteen raw
+findings, seven distinct, ALL adopted, none refuted. Two were defects
+in the slice's own new work, and one of those was unanimous across all
+four lenses:
+
+**The registry tie stopped at SERVING and never reached the EMBED.**
+The first draft kept a hand-written import list in `src/index.js`, and
+nothing tied it to the registry. The proof is brutal: delete both
+import lines and all 478 legs still pass, because the bundle is served
+assets-first (so the served-bundle leg is satisfied) and an unembedded
+surface renders the identical empty state an empty one does. So the
+slice's own Worker change was unguarded, and the failure it invites is
+the worst kind — a future surface publishing a receipt-backed table
+that its own pages render as "No published runs yet", with a green
+suite and the site's linked artifact contradicting the page. The fix
+removes the class rather than guarding it: `build.mjs` now GENERATES
+`workers/front/generated/lab-bundles.js` from the same `LAB_SURFACES`
+roster that emits the bundles, so `labBundle` really is the whole
+registration. It lands outside `dist/` (dist is served, and a module
+there would be downloadable bytes on a measured plane), gitignored,
+and declared in turbo's `@pm/front#build` outputs — the astro
+`src/data` precedent, whose comment already documents the
+undeclared-output cache trap.
+
+**The new empty-state leg reproduced the DESCRIBED_VARIANTS
+anti-pattern this repo removed once already** — while citing
+PDP_SERVING as its authority. It skipped any PUBLISHED surface, so
+`SURFACE_PAGE.editorial` was never dereferenced on any run: a typo'd
+path passed. Worse, it was scheduled to self-disable — the day the PDP
+batch lands, both surfaces are published, the loop `continue`s on
+every one, and the leg passes having asserted nothing, still counting
+among the green. Its own non-vacuity line was
+`expect(Array.isArray(empties)).toBe(true)`, true for every possible
+value including the empty array it was meant to catch. Replaced with a
+both-directions per-surface leg that fetches every registered
+surface's page on every run and asserts it against whatever its own
+bundle carries — today editorial exercises the published branch and
+pdp the empty one, so the leg proves itself on the same run.
+
+Five more adopted. A dead guard REMOVED rather than kept: the
+per-surface duplicate-receipt refusal became unreachable the moment
+the filename check forced `file === {surface}-{profile}.json` (two
+distinct files would both have to equal one string), and a guard that
+cannot fire cannot be sabotage-proven while still advertising
+coverage. Surface parsing became LONGEST-match, because first-match
+would parse a future `pdp-compare-…` receipt as `pdp` and refuse it
+with an instruction to rename a correct file to a wrong one. A
+COLUMN-AXIS check now runs before the band-overlap early return and
+compares the batch's variants to the surface's registered `variants`:
+without it, a batch measuring 3 of 4 PDP variants whose bands
+overlapped would publish a partial column set, every page rendering a
+permanently em-dashed column under the line "Every number above links
+its receipt". `labBundle` on a `singleton` surface is now refused
+(ADR-0007 §5 — a singleton renders a sentence, never a table, so the
+bundle could never be shown). And the completeness leg moved to
+`Object.hasOwn`, the repo's idiom for client-shaped keys.
+
+**One finding adopted as a RECORD, not a code change**, because it
+belongs to the next unit: `/methodology/` states editorial's batch as
+though it were the whole site's ("The current published batch ran … 5
+variants × 3 profiles"). This slice is what makes a divergent second
+batch legal, so the moment the PDP batch publishes, a reader on a PDP
+page follows that link and reads a description of a batch that is not
+the one behind the numbers they just read — falsified by the receipt
+links on those very cells. **Bound obligation on the
+interaction-registry unit: publishing the PDP batch requires the
+methodology page's batch statement to become per-surface first.** The
+copy is not changed here on Rob's 2026-07-24 precedent — a methodology
+decision belongs to the unit that creates the condition, not to the
+build that makes it possible.
+
+Four more sabotages, on the adopted fixes: breaking the embed half
+(the new render leg fails generically, so PDP's embed is covered the
+day it publishes), a typo'd `SURFACE_PAGE` row (now fails where it
+passed), `labBundle` on the a11y singleton, and a receipt missing a
+variant. The longest-match fix was proven directly rather than through
+a build, since today's registry has no name that prefixes another.
+
+Tree, tool-derived: turbo `check` **30/30**; fixture origin suite
+**16 files, 479 passed, 0 failed, 24 env-gated skips**; crate-mode
+suite **identical at 479/0/24**. Up from 468 by 11 registry legs (2
+flagged surfaces served + 5 unflagged 404s + 2 per-surface render legs
++ 2 structural; the registry holds 7 surfaces, not the 5 a first grep
+suggested — `a11y` and `how-it-was-built` do not match `^  [a-z]+:`).
+A correction to the standing record while counting them: all 24
+env-gated skips are `blog.test.ts` credential gates, not the
+"blog-credential, published-readings, and bench REMOTE" mix the
+handoff prompt describes.

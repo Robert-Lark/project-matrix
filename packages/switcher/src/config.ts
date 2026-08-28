@@ -78,6 +78,14 @@ export interface SurfaceControls {
   readonly nKnob?: readonly number[];
   /** Designated host variant for cross-surface entry links (spec, not chrome). */
   readonly host?: string;
+  /** This surface's readings publish through the front build's lab pipeline:
+   *  the build emits /_pm/lab/{surface}.json (empty until the surface's first
+   *  batch) and the Worker serves AND embeds it. Setting the flag is the
+   *  whole registration — the origin suite's per-surface bundle leg fails a
+   *  flagged surface whose bundle is not served, so the wiring cannot be
+   *  forgotten (the PDP_SERVING registry-tie idiom). Receipts for a surface
+   *  WITHOUT the flag refuse the front build by name. */
+  readonly labBundle?: boolean;
 }
 
 export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
@@ -101,6 +109,7 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     // variant's installed pin by the origin suite, so it cannot drift.
     fencedExhibits: [{ variant: "remix3", tag: "pre-release 3.0.0-beta.5" }],
     host: "vanilla",
+    labBundle: true,
     proves:
       "One article: prose plus a single interaction. The render baseline — how much machinery does prose need? Swap the variant and watch what changes.",
   },
@@ -113,6 +122,11 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     // host's own, so this is also the target of every release card's link.
     variants: ["vanilla", "react-next", "astro", "qwik"],
     host: "vanilla",
+    // The bundle serves EMPTY until the PDP batches run (the
+    // interaction-registry unit owns those, per the decision map) — an
+    // empty bundle is the designed state every surface is in between
+    // registration and its first batch.
+    labBundle: true,
     // "format" was in this sentence until 2026-08-15 and is out with the
     // control (ADR-0008 addendum A). It is SERVED on every measured page, so
     // leaving it would have had the instrument advertise an interaction the

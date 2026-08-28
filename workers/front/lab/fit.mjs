@@ -8,6 +8,13 @@
  * locked axis order (decision-map "Locked axes"), states no ranking, makes
  * no react-next-vs-qwik apples-to-apples claim (ADR-0001 addendum M — the
  * serialization caveat lives on the methodology page the chrome links).
+ *
+ * Keyed by SURFACE. A labBundle-flagged surface with no entry here serves an
+ * empty bundle happily — but the build REFUSES a receipt for it, by name:
+ * the fit sentence is written WITH the surface's first batch, against what
+ * that batch actually measured, never ahead of it. (The PDP's entry lands
+ * with the interaction-registry unit's batches; its headline is expected to
+ * be the interaction cell, not initial JS — decided there, not here.)
  */
 export const FIT = {
   editorial: {

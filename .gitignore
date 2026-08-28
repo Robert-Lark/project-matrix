@@ -12,4 +12,5 @@ tools/snapshot-capture/.capture/
 # main checkout's real directory, and a dir-only pattern leaves the symlink
 # stageable (git check-ignore proven both ways, 2026-08-28).
 tools/snapshot-capture/crate/img
+workers/front/generated/
 packages/reference/.local/
