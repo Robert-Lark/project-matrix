@@ -58,6 +58,59 @@ export const INTERACTIONS: Readonly<
   "editorial-add-to-cart": async (page) => {
     await page.getByRole("button", { name: "Add to cart" }).click();
   },
+  /** The PDP's headline interaction (ADR-0008 §8; the pdp-build ticket names
+   *  it "the interaction this surface genuinely owns, where the paradigms
+   *  differ most — DOM swap vs state re-render vs resumed handler"): switch
+   *  the gallery stage to another image.
+   *
+   *  `.nth(1)`, and the index is load-bearing. Thumb 0 is ALREADY the
+   *  selected one (the master renders `aria-current="true"` on it and the
+   *  stage carries `images[0]`), so clicking it re-assigns the same `src`,
+   *  changes no state, and fetches nothing — while still recording a real
+   *  INP entry, because the event registers regardless of what the handler
+   *  does. That is a plausible-looking, meaningless cell, which is worse
+   *  than a missing one.
+   *
+   *  Selected by CLASS, not by accessible name: the thumb's name is
+   *  `View image N of M: {alt}` and the alt embeds the release title, so a
+   *  name-based locator would break the day the bench slug changes. The
+   *  class is the canonical markup contract all four variants must serve
+   *  identically (packages/reference/render/pdp.mjs galleryBlock), and
+   *  Playwright's strict mode makes a duplicate or missing node a loud
+   *  failure rather than a silent mis-measurement.
+   *
+   *  **This interaction FETCHES, by design, and the receipt must say so.**
+   *  Every variant's stage swaps to the FULL-size AVIF (`current.src`),
+   *  a URL the load never requested because the thumb carries the 160 px
+   *  `.thumb.avif` derivative (ADR-0008 §11). Measured on the deployed
+   *  plane 2026-08-28: image 2 of release 896191 is 24,894 B, and the URL
+   *  is byte-identical across all four paradigms — so this cell's bytes are
+   *  IMAGE MASS, invariant by construction, and are never a paradigm
+   *  difference. The INP half is the paradigm difference. */
+  "pdp-gallery-switch": async (page) => {
+    await page.locator(".pm-gallery__thumb").nth(1).click();
+  },
+  /** The PDP's add-to-cart — the controlled cross-surface twin of
+   *  `editorial-add-to-cart` (same paradigm, same interaction, different
+   *  surface), and the PDP's zero-fetch interaction: the handler writes
+   *  `localStorage` and updates two slots, so nothing crosses the wire.
+   *
+   *  Selected by CLASS rather than editorial's `getByRole("button", {name:
+   *  "Add to cart"})` idiom, which is NOT portable to this surface: the
+   *  unpriced master (707725) renders the same button reading "None for
+   *  sale" and disabled (pdp.mjs:117), so a name-based locator resolves ZERO
+   *  nodes there. `.pm-pdp__buy button.pm-button` matches exactly one node
+   *  on every master — the fenced live-origin plaque's button is a
+   *  `pm-button--secondary` OUTSIDE `.pm-pdp__buy`.
+   *
+   *  The addendum-I caveat on `editorial-add-to-cart` applies here verbatim:
+   *  the runner settles post-load idle work onto the INITIAL byte side
+   *  before clicking, so a paradigm that defers handler FETCHING to idle has
+   *  finished fetching by click time and this number measures resolving and
+   *  running the handler, not downloading it. */
+  "pdp-add-to-cart": async (page) => {
+    await page.locator(".pm-pdp__buy button.pm-button").click();
+  },
 };
 
 export interface ApplyResult {
