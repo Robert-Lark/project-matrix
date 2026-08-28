@@ -578,7 +578,7 @@ zoom, the quantity stepper and add-to-cart — four genuine interactions, and
 both of the surface's PLANNED interactions (`pdp-gallery-switch`,
 `pdp-add-to-cart`) are untouched. "Planned", not "registered", and the
 distinction is the kind this record exists to keep: `INTERACTIONS`
-(`collect.ts:26`) holds `none`, `body-click` and `editorial-add-to-cart` and
+(`collect.ts:33`) holds `none`, `body-click` and `editorial-add-to-cart` and
 nothing else — NEITHER PDP id appears anywhere in the codebase yet, so the cut
 removed nothing the instrument was going to measure.
 

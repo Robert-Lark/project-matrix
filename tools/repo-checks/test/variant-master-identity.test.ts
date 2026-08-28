@@ -576,14 +576,18 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
       expect(sample).toContain("Format");
       expect(sample).not.toContain("pm-format");
       // These catalogue sweeps render every tray twice and compare normalized
-      // DOM; the budget exists to catch a HANG, not to race the runner, so it
-      // is the bench-runner's 300_000 rather than a figure fitted to the
-      // measured time. Measured: 878 ms (fixture) / 1,771 ms (crate) locally
-      // against 9,648/8,903 ms on ubuntu-latest, where vitest's 5 s default
-      // failed PR #30's check job and skipped the deploy (run 33132628047).
-      // The runner is ~9× this machine, derived from a test that ran GREEN in
-      // that same run (@pm/reference renderAll: 450 ms CI / 50 ms local) —
-      // the timed-out numbers above are lower bounds and cannot give a ratio.
+      // DOM; the budget catches a HANG rather than racing the runner, so it is
+      // the bench-runner's 300_000, not a figure fitted to a measurement.
+      // MEASURED on ubuntu-latest (PR #31, once the budget let them finish):
+      // fixture 13.61 s, crate 15.44 s, against 878/1,771 ms here. THESE are
+      // the legs that exceeded vitest's 5 s default, failed PR #30's check job
+      // and skipped its deploy (run 33132628047).
+      //
+      // Why the budget is not extrapolated: the 9,648/8,903 ms this comment
+      // once quoted were TIMED-OUT durations — lower bounds, not measurements
+      // — and the 9× scalar derived to replace them proved too crude in the
+      // other direction. Real local→CI ratios span 2.1×–15.5× on one runner in
+      // one run.
     }, 300_000);
   }
 
