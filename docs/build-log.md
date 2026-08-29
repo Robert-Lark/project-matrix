@@ -4748,3 +4748,288 @@ packages/reference/render/build.mjs` followed by `git status --porcelain
 packages/reference/surfaces/` shows nothing — the changes are docs only,
 and no `## Phase` heading was added, so the phase-index pin has nothing to
 repair.
+
+### The checkout, and a guard a comment could satisfy (2026-08-28)
+
+The vanilla checkout is built and serves `/vanilla/checkout/`, its
+normalized DOM equal to the committed master. The interesting part is
+not the page. It is that `pdp-controls-wired.test.ts` — the guard this
+repo added *because* two PDP controls shipped dead — passed a sabotage
+it was written to fail.
+
+**The guard read comments.** Its state checks were
+`script.includes("aria-invalid")` over the RAW enhancement file.
+Rewiring every `aria-invalid` write in `checkout.js` to `data-invalid`
+took five occurrences down to two, both of them prose, and the suite
+stayed green. This is PRE-EXISTING, not something this unit introduced:
+`pdp.js:90` and `:97` name `aria-pressed` in the comment block directly
+above the zoom toggle, so deleting that toggle and keeping its
+explanation would have passed the very guard written to catch the dead
+zoom. It is the same defect `master-styles-resolve.test.ts:66-73`
+already fixed one file over — "a class NAMED in a contract comment is
+not a rule" — arriving by the other door. `codeOnly()` now strips
+comments, string-aware so a `"https://…"` literal does not lose its
+tail. All four PDP variants still pass unchanged; the sabotage now fails
+with the message it was written to give.
+
+**The surface renders no script-only state, and that nearly made the
+whole rule vacuous.** The PDP legs assert `rendered.length > 0` to prove
+they are biting. A served checkout form correctly renders zero — no
+`aria-pressed`, no `aria-expanded`, no `aria-current` — so the same
+assertion would fail on a correct page, and exempting checkout from it
+would have been the vacuous pass this file exists to refuse. Two changes
+instead. `SERVES_NO_SCRIPT_STATE` turns the exemption into a CHECKED
+CLAIM: a checkout master that ever renders one fails until someone wires
+it or removes the entry. And the bite comes from the STYLESHEETS instead
+— `field.css:45` styles `.pm-field__control[aria-invalid="true"]`, a
+rule nothing but script can ever match, over twelve controls. That is
+`pm-pdp__scroll` in mirror image: markup promising behaviour no sheet
+implements, versus a sheet promising a state no script produces. Neither
+guard sees the other's case. Scoped to `<main>`, because the masthead's
+`[aria-current="page"]` is the SERVER's (`shell.mjs` decides `current`
+at render time) and demanding a script write it would be demanding a
+lie. The PDP passes the new leg unchanged — its own sheets promise
+exactly the two states its markup already renders.
+
+**A submit button is excused structurally, never by class.** The browser
+routes the press to the form's `submit` event, and that event is where
+the whole invalid-submit contract lives. A `NATIVE_BEHAVIOUR` row would
+have had to name `pm-button`, which is also the PDP's add-to-cart —
+blanket-excusing the control the guard was written for. The structural
+rule applies only when the enhancement reaches the FORM, and
+sabotage-proving it by unbinding the form reports the button by name.
+
+**The cheap half was not enough on this surface, so the expensive half
+was built without a browser.** `pdp-controls-wired` proves an
+enhancement can REACH a control; its own header admits it "would pass a
+script that mentions a class and does nothing with it". For the PDP the
+other half is the origin suite, which cannot gate a merge. Checkout has
+no browser leg at all, so `checkout-controls-behave.test.ts` drives the
+REAL `checkout.js` against the REAL served master in linkedom,
+pre-merge, no ports: card grouping, MM/YY, blur validation writing and
+clearing `aria-invalid`, the error summary's heading and per-field links
+and FOCUS MOVE, the summary not stacking on a second submit, the cart
+populating, and the shipping radio moving the total by exactly the
+$12.00 its own label states. Three limits are stated in the file rather
+than implied: no layout, so it says nothing about CLS; no timing, so it
+is not evidence about INP; and it is a DOM emulation, not a browser.
+
+**linkedom matches `:checked` on the ATTRIBUTE, not on checkedness** —
+verified directly, and it does not reflect a property assignment either.
+The first draft of `shippingCost()` selected
+`.pm-format__input:checked`, which is correct in a browser and
+unprovable anywhere else. It now walks the group and reads `.checked`.
+Both are right; only one can be proven before merge, which is the
+standard every other claim here is held to.
+
+**The catalogue is fetched, not baked, and the reason is the ruler.**
+Cart is `localStorage`, so no paradigm can SERVE cart contents (ADR-0008
+§7) and every checkout variant must resolve ids client-side;
+`cart-summary.css:15-18` pins what a line needs — thumb, title × qty,
+price. Inlining that index was measured and rejected: **50,892 B raw /
+8,571 B brotli-q11** for the crate's 500 releases (fixture 25,970 /
+2,490), landing on the flagship INP page to serve a state the
+measurement never enters, since the canonical served state IS the empty
+cart. That is a manufactured paradigm cost — the shape PR #35 had just
+finished removing from the ruler. It is a separate asset, fetched only
+when the cart is non-empty, and a test asserts the empty-cart page
+fetches nothing at all. Cost of the build-time alternative is published
+above rather than hidden; the request-time checkout variants will face
+the same choice and can be compared on it.
+
+**Served bytes, measured on the fixture build:** `checkout/index.html`
+9,149 B raw / 1,748 B brotli-q11; `assets/checkout.js` **18,965 B raw /
+5,754 B brotli-q11**, which is 1.7× `pdp.js` and ships RAW, comments
+included, on the surface whose numbers are about interaction. Comment
+share is 48%, against `pdp.js` 49% and `cart.js` 42% — house-normal, not
+a regression, and stated because a contract comment on this variant is
+wire bytes.
+
+**Turbo is 31, not 30, and that is the honest number.** `@pm/vanilla`
+gained a `test` script — the precise gap `pdp-controls` recorded — so
+`@pm/vanilla#test` is a real command where there were none. Verified by
+`--dry=json`: 31 real commands, 75 nodes, the delta exactly one taskId.
+The 30 was a snapshot of a tree in which this variant was unguarded;
+reporting 30 after closing that gap would have been the lie. The test is
+dependency-free — `node --test`, no vitest, no linkedom — so the
+lockfile is untouched and the no-toolchain control stays one.
+
+**A disclosed weakness in that new task.** It inherits turbo's default
+`cache: true` with inputs limited to `variants/vanilla/**`, so a change
+to `packages/reference/render/checkout.mjs` plus a master re-render can
+replay a stale PASS. Every sibling variant guard buys out with `"cache":
+false` (`turbo.json:129`, `:181`, `:198`). That one-line entry is OWED
+and not applied — `turbo.json` is a shared root file with four agents in
+the tree — so the same comparison also lives in `@pm/repo-checks#test`,
+which is already uncached and always runs. That copy is what makes the
+claim true today.
+
+**Three stale or thin claims found in files this unit may not edit**,
+each written into the handoff with an exact diff. `checkout.css:14`
+shows `<form class="pm-checkout__form" novalidate>` in its contract
+comment, which `checkout.mjs:9-12` explicitly contradicts and the master
+does not render. `pm-cart__what` is named in `cart-summary.css:17` and
+has no rule anywhere. And no field in the master carries `required`, so
+the page's own JS-off statement — "labels, hints, native validation" —
+is thinner than it sounds: native validation is `type="email"` and
+nothing else. The enhancement's rules are deliberately a superset, which
+is the designed consequence of the `novalidate` handover, but the served
+markup could support more than it does.
+
+**The `OWED` retirement is blocked, and blocked in one direction only.**
+`pm-checkout__form` still has no rule; the rule must live under
+`packages/tokens/`, which is in nobody's boundary this round. The two
+changes are coupled — the completeness leg fails if the rule lands and
+the entry stays, and the per-surface leg fails if the entry goes without
+the rule — so they land together at integration or not at all. The exact
+CSS diff is in the handoff, unapplied.
+
+**Eight sabotages, each watched failing with its own message and
+restored from a backup COPY, never `git checkout --`** (the process
+failure recorded at :4222). Removing the `aria-invalid` write; removing
+`.pm-field__control` (reports all twelve fields by name); unbinding the
+form (reports the submit button); giving the master an `aria-expanded`
+it never enters; drifting one word in the variant renderer; flattening
+the card formatter; deleting the error summary's focus move; and zeroing
+`EXPRESS_SHIPPING`, which fails in two files at once. The identity
+test's failure output was two 6 KB blobs until the fifth sabotage showed
+it — a guard whose failure cannot be read is a guard that gets muted —
+so it now prints a first-divergence excerpt.
+
+**Owed, and NOT done here:** checkout has no origin-suite leg of any
+kind. The cart suite parameterises over the EDITORIAL surface only
+(`cart.browser.test.ts:103`, and `shell.mjs:66-67` says so in the
+contract), the PDP's controls have their own browser file, and checkout
+has neither — so a checkout cart that diverges from editorial's is
+exactly as invisible today as the dead PDP controls were. The three
+interaction-registry ids ADR-0008 names — `checkout-type-card`,
+`checkout-submit-invalid`, `checkout-fix-and-submit` — are still absent
+from `collect.ts:33`, whose `INTERACTIONS` holds five keys, none of them
+checkout's; that file belongs to the measurement pass. Nothing is
+published from this surface, so no receipt is invalidated.
+
+Tree, tool-derived: `pnpm run check` **31/31, exit 0**;
+`@pm/repo-checks` **150 passed / 1 skipped across 13 files**;
+`@pm/vanilla` **4 passed**; `node packages/reference/render/build.mjs`
+leaves `git status --porcelain packages/reference/surfaces/` EMPTY — all
+eleven masters byte-identical, Unit 4's `how-it-was-built/index.html`
+included; `pnpm install --frozen-lockfile` clean.
+
+### The checkout's two served falsehoods, and what a browser said about them (2026-08-29)
+
+A five-lens merge review held this PR back. The page was correct in every
+way a test on this branch could see, and wrong in two ways a visitor could:
+it told them their card never left the browser while shipping a form that
+would POST it, and it told them native validation worked with JavaScript
+off while carrying no constraint that could gate a submit. Both claims sit
+in the reference master, so both variants that copy it would have inherited
+them. Neither was a subtle bug — they were confident sentences printed
+beside markup that contradicted them, which is the one failure mode this
+whole project cannot survive.
+
+**The card fields were live wires.** `field()` stamped `name="${id}"`
+unconditionally, the form is `method="post" action=""`, and the only
+`preventDefault()` in the tree is at `checkout.js:382` inside a `defer`red
+script. So JavaScript off — or blocked, or one failed request — and "Place
+order" natively POSTs card number, CVC, expiry, name and the full postal
+address to the origin. The `cc-number`/`cc-exp`/`cc-csc` tokens are what
+make a browser offer a **real saved card**, so the values at risk were
+never demo junk.
+
+The fix is one rule, applied structurally so a later variant cannot opt
+out of it: **`field()` emits no `name` at all.** A submittable control
+without a name is not a successful control — it is not serialized, at all,
+ever. That leaves `method="post"` and the form's realism untouched, which
+matters because the JS-off story is what this surface is partly for. It was
+not reasoned about; it was measured. Real Chromium, every field filled with
+a real-looking card and address, JavaScript off, submit clicked:
+
+    POST body: shipping=standard
+
+Card, CVC, expiry, email, address: none of it in the request. `name`
+survives on exactly one control group, the shipping radios, because radios
+group *by* name and without it both options can be checked at once — and a
+shipping tier is not something anyone types. The four payment fields also
+dropped their `cc-*` tokens for `autocomplete="off"`: nothing is sent
+either way now, but a demonstration page has no business asking a browser
+to put a real PAN in its DOM in the first place. ADR-0008 §8's "every field
+with label/autocomplete/inputmode" still holds — `off` is the correct token
+for a field that must not be autofilled.
+
+**The native-validation claim was thin, not absent, which is worse.** The
+page said "With JavaScript off, every field here still works — labels,
+hints, native validation." The count, not the impression:
+
+    grep -c 'required\|pattern=' packages/reference/surfaces/checkout/index.html
+    # → 0
+
+`type="email"` was the only constraint in the document, and it only fires
+on a non-empty value, so a completely blank form submitted clean. The
+branch knew: `checkout.js:256-261` disclosed the asymmetry in a comment and
+the build log recorded it. Disclosing a falsehood in a file the visitor
+never opens is not the same as not telling them one.
+
+Taking the claim out was the cheaper option and it was the wrong one,
+because the master's own docblock already says what this page is supposed
+to be — *"No `novalidate` in the served markup: JS-off, native constraint
+validation is the real behavior the page claims"*. The code had simply
+never implemented its own spec. So `required` now lands on exactly the ten
+fields `checkout.js`'s `RULES` requires, and `pattern` on the three with a
+shape test, mirroring the JS regexes: `\d{13,19}`, `(0[1-9]|1[0-2])/\d{2}`,
+`\d{3,4}`. JS-off validation is now the same set of rules as the
+enhancement's, not a weaker cousin.
+
+The obvious hazard — `required` firing before the submit handler and
+killing the error summary the surface exists to measure — does not happen,
+and the reason is a line that was already there: `checkout.js:220` sets
+`novalidate` at hydration, *before* the card formatter binds at `:253`. So
+with JS on the browser validates nothing and the enhancement owns it all;
+with JS off the browser owns it all. Both halves measured in Chromium
+against the real master with the real script:
+
+| condition | form valid | outcome |
+|---|---|---|
+| JS off, empty, submit | `false` | no request at all |
+| JS on, empty, submit | `false` | `novalidate` set, error summary renders 10 errors, focus moves to it, 10 `aria-invalid` |
+| JS off, all fields filled, submit | `true` | POST body `shipping=standard` |
+
+Two attributes were considered and rejected. `title` on the three patterned
+fields is IN, because the browser's unhelped message is "Please match the
+requested format"; `disabled` on the card group was rejected outright —
+it stops the POST but it also stops the typing this surface measures.
+
+**A guard that could replay a stale pass, and the 73 lines that existed
+because of it.** `@pm/vanilla#test` inherited turbo's default `cache: true`
+with inputs limited to `variants/vanilla/**`, so a change to
+`packages/reference/render/checkout.mjs` plus a master re-render — exactly
+what this session did — moves both sides of the comparison and none of the
+declared inputs. The guard would have replayed green through its own blind
+spot. The branch had spotted this and written the one-line fix into its
+handoff rather than applying it, fearing a `turbo.json` conflict with the
+two PLP PRs; `git merge-tree` says that fear was unfounded (distinct keys,
+hunks 108 lines apart, zero markers). `"@pm/vanilla#test": { "cache": false }`
+is applied, matching every sibling variant guard. With it, the 73-line
+duplicate of the checkout identity comparison in
+`tools/repo-checks/test/variant-master-identity.test.ts` — which the file's
+own comment says exists *only* because the vanilla task could go stale —
+is deleted. Its one unique assertion (twelve `pm-field__control`) moved into
+`variants/vanilla/test/`, along with three new ones that hold the fixes
+above to the wall: two `name=` attributes in the whole form, zero on the
+select, ten `required`. **Net −73 lines.**
+
+**The dead control.** `SURFACE_CONTROLS.checkout.variants` was still `[]`
+while this PR makes `/vanilla/checkout/` real, so `chrome.ts:184-190`
+rendered "Served by 0 of 3" on a page that was being served. Now
+`["vanilla"]` with `plannedVariants: ["react-next","htmx"]`, landing in the
+same commit as the routes it makes true — and each of the three surface
+registrations this batch owes is correct at the moment it lands, never
+before. Measured after: "Served by 1 of 3". It also retires a vacuous
+guard: `pdp-controls-wired.test.ts`'s "every LIVE checkout variant has a
+registered enhancement" was ranging over an empty array and could not have
+failed; it now ranges over `vanilla`.
+
+Not taken, and recorded in the decision map rather than quietly skipped: the
+JS-off 405 dead end, the phone-profile CLS from the late-populating cart
+summary, the third byte-identical copy of `read`/`count`/`renderCount`, and
+the duplicated PDP block in `pdp-controls-wired`. None blocks a merge; all
+four are cheaper before the first checkout batch than after.

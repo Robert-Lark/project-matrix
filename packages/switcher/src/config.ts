@@ -151,8 +151,16 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     nKnob: [24, 240],
   },
   checkout: {
-    variants: [],
-    plannedVariants: ["vanilla", "react-next", "htmx"],
+    // vanilla is LIVE as of the checkout-vanilla build — `/vanilla/checkout/`
+    // serves, so it moves out of `plannedVariants` and into `variants`. Both
+    // arrays feed rendered counts ("Served by 1 of 3 planned variants today",
+    // chrome.ts:184-190) and the reading table's live-vs-planned columns
+    // (`:226-242`), so leaving it planned would have had the instrument
+    // report a served page as unbuilt — the dead-control falsehood in
+    // mirror image, and the reason this line ships with the routes it makes
+    // true rather than in a later tidy-up.
+    variants: ["vanilla"],
+    plannedVariants: ["react-next", "htmx"],
     host: "vanilla",
     proves:
       "A realistic checkout form. The measured question is interaction latency under main-thread load — INP, scripted and labeled. The lab profile's CPU multiplier is the device axis.",

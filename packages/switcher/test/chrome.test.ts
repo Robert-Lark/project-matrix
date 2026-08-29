@@ -47,8 +47,14 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
   it("a planned matrix cell is a disclosure, never an offer (no anchor)", () => {
     // checkout, not editorial: slice E completed the editorial surface, so
     // it no longer HAS planned cells to disclose — this guard follows the
-    // sparse frontier (checkout's cells stay planned until its own build;
-    // when that lands, retarget again or synthesize a config).
+    // sparse frontier. Checkout is now PARTLY built (the checkout-vanilla
+    // unit moved `vanilla` into `variants` and left `react-next`/`htmx`
+    // planned), which is why it still works here and is in fact the better
+    // fixture it was before: the row now carries a live cell AND planned
+    // ones, so the assertion below proves the disclosure is scoped to the
+    // planned columns rather than to a surface with nothing live at all.
+    // When the last checkout variant lands, retarget again or synthesize a
+    // config.
     const html = renderChrome({
       ...ctx,
       variant: "vanilla",
