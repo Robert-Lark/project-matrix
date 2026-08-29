@@ -217,10 +217,43 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     expect(html).toMatch(/href="\/react-next\/plp\/plain\/\?cache=cold&amp;n=240"/);
   });
 
-  it("readout and replay slots ship their designed empty states", () => {
+  it("readout and replay slots state the absence, not a milestone that passed", () => {
+    // Both rows used to say these "land with the store's PLP build". This IS
+    // that build and it ships neither, so the copy would have been a promise
+    // the page itself falsified — the same defect class as a dead control,
+    // one layer up. They now use the reading table's own `not built yet`.
     const html = renderChrome(plpCtx);
     expect(html).toContain("data-pm-hud-interaction");
-    expect(html).toContain("lands with the store's PLP build");
+    expect(html).toContain("data-pm-hud-replay");
+    expect(html).toContain("per-interaction byte readout — not built yet");
+    expect(html).toContain("the published sequence, runnable in-page — not built yet");
+    expect(html).not.toContain("lands with the store's PLP build");
+  });
+
+  it("a fenced preset still marks itself current, with or without its cache arm", () => {
+    // Registering react-next made `cells` non-empty, which retired the
+    // fallback branch that had been marking the fenced Apollo preset current
+    // by accident. Without the fenced arm, `/react-next/plp/apollo/` renders
+    // three anchors and NO aria-current — the switcher losing track of where
+    // the visitor is. Matched on path alone: the Apollo preset has only a
+    // `?cache=cold` arm, so the query-less URL must work too.
+    for (const search of ["?cache=cold", ""]) {
+      const html = renderChrome({
+        ...plpCtx,
+        pathname: "/react-next/plp/apollo/",
+        search,
+      });
+      const row = html.match(/<nav class="pm-chrome__switch"[\s\S]*?<\/nav>/)?.[0] ?? "";
+      expect(row, `apollo "${search}" has no switcher row`).not.toBe("");
+      expect(
+        (row.match(/aria-current/g) ?? []).length,
+        `apollo "${search}" does not carry exactly one aria-current`,
+      ).toBe(1);
+      expect(row).toContain("pm-chrome__cell--fenced");
+      expect(row).toContain("Misapplication exhibit");
+    }
+    // And it is still not counted: the count reads `variants`, never cells.
+    expect(renderChrome(plpCtx)).toContain("Served by 1 of 2");
   });
 });
 

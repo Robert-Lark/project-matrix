@@ -143,6 +143,22 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    *  anywhere; the one residue is structural, App Router's own streaming
    *  wrapper (see NoiseSpec.dropElementSelectors' doc comment). */
   "react-next": {
+    // The PLP surface (plp-react-next, 2026-08-28) adds NOTHING here, and that
+    // is a measured result rather than an omission: the catalogue, the facet
+    // rail and both client-cache islands normalize equal to the master under
+    // NO_NOISE, so no scoping hash and no hydration-marker attribute reaches
+    // compared markup (variants/react-next/test/master-identity.test.ts, "adds
+    // NO permitted noise of its own"). Two species it DOES add are already
+    // covered without a registration: React 19 hoists a
+    // `<link rel="preload" as="image">` per eager card image, and the fenced
+    // Apollo exhibit carries a `[data-pm-fenced]` plaque — the first is a
+    // DELIVERY element the normalizer drops unconditionally, the second is
+    // dropped only by the exhibit's own comparison legs via the call-site
+    // `dropFencedSubtrees` flag, which no registration can smuggle in.
+    // Scope, stated rather than implied: that measurement is in-process
+    // (`react-dom/server`), which never emits the streaming wrapper below, so
+    // it does not re-prove the SERVED page — the origin suite's browser leg
+    // owes that, exactly as it does for editorial.
     attrPatterns: [],
     classPatterns: [],
     behaviorAttrPatterns: [],

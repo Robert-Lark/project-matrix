@@ -51,6 +51,21 @@ packageExtensions:
   "@remix-run/render-middleware":
     peerDependencies:
       "@remix-run/route-pattern": "*"
+  # apollo-link-rest@0.10.0-rc.2 imports `rxjs` in restLink.js:7 and declares
+  # it in NEITHER dependencies nor peerDependencies — it relies entirely on the
+  # library being hoisted, which the isolation below deliberately prevents.
+  # Turbopack then fails the build with "Module not found: Can't resolve
+  # 'rxjs'". Fourth instance of this class (OpenNext/esbuild, qwik-city, remix
+  # render-middleware); found by the PLP build's fenced Apollo exhibit, and
+  # exactly the pre-1.0-RC packaging risk ADR-0005 §7 pins the version for.
+  #
+  # A PEER, not a dependency, for the qwik-city reason: rxjs is where
+  # @apollo/client's own Observables come from (it is a peer of @apollo/client
+  # too), and any literal version here would install a SECOND copy the day the
+  # exhibit bumps Apollo — two rxjs instances, one of which nothing recognises.
+  "apollo-link-rest":
+    peerDependencies:
+      rxjs: "*"
 
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
 # pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a

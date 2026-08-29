@@ -48,6 +48,23 @@ export const PDP_CSS: readonly string[] = [
   "surfaces/pdp.css",
 ];
 
+/** The PLP surface's full list (plp.mjs `css`, after the shell's). */
+export const PLP_CSS: readonly string[] = [
+  ...SHELL_CSS,
+  "components/release-card.css",
+  "components/toolbar.css",
+  "components/pagination.css",
+  "surfaces/plp.css",
+];
+
+/** The fenced Apollo exhibit's list: the PLP's, plus the plaque the exhibit
+ *  labels itself with. It is a SEPARATE list, and therefore a separate route
+ *  group with its own root layout, because the PLP master links no plaque
+ *  sheet — adding it to `PLP_CSS` would put an unused sheet on the two
+ *  benchmarked strategies and break the stylesheet-list identity leg that
+ *  exists to catch exactly that (the `format-switch.css` failure mode). */
+export const PLP_APOLLO_CSS: readonly string[] = [...PLP_CSS, "components/plaque.css"];
+
 /** The document skeleton every route group's root layout wraps itself in.
  *  Framework-neutral (type-only React import) so the pre-merge guard can
  *  render it with react-dom/server, exactly like Shell and the articles. */

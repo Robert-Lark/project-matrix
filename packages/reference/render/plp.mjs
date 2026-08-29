@@ -1,65 +1,50 @@
 /**
- * PLP — the catalogue under the data axis. The master renders the default
- * condition (n=24, page 1, unfiltered); facets/sort/search are NAVIGATION
- * (ADR-0005 §5: every strategy delegates to the data plane; the canonical
- * params are ?genre= ?style= ?format= ?sort= ?q=, implemented by the PLP
- * build's edge-Worker contract — the markup pins the URL shape now).
+ * PLP — the catalogue under the data axis. The master renders the grid, the
+ * count and the pagination for any (n, page).
+ *
+ * NO FACET RAIL, NO SEARCH FORM, NO SORT SELECT, and that is a scope cut
+ * taken explicitly rather than a gap. They were here — rendered by every
+ * variant that mirrors this file — as a pin on the URL shape ADR-0005 §5
+ * specifies (`?genre= ?style= ?format= ?sort= ?q=`), written ahead of the
+ * edge Worker that would honour them. `workers/edge` handlePlp reads `n`,
+ * `page`, `run` and `cache` and nothing else, so every one of those controls
+ * navigated to a filtered URL and got the UNFILTERED grid back, under a
+ * toolbar still reading "Showing 1–24 of 500 releases", with no error state.
+ * A silently wrong answer is the worst outcome this project has.
+ *
+ * The rule is this map's own, set by `pdp-controls` for the dead Zoom button
+ * and the inert format group (`decision-map.md:323`): "either the controls
+ * become real in all variants, or the scope cut is taken explicitly and the
+ * dead controls are REMOVED from the master and the CSS so no variant copies
+ * them. Shipping them inert is the falsely-interactive state." Implementing
+ * §5 instead is a UNIT, not a merge fix — it needs a facet-value validation
+ * path, a KV-key cardinality policy for five new params, and an ADR-0005
+ * answer on whether a filtered response recounts its facets and whether
+ * `PlpPage` grows a field naming the applied filters.
+ *
+ * Cutting now is also the honest moment: NO PLP number is published yet, so
+ * nothing is invalidated — and measuring a page whose largest DOM subtree is
+ * an inert rail would have priced a page the finished product never serves.
+ * The rail, `components/facets.css` and the toolbar's search/sort rules come
+ * back with the params, in one commit, working.
  *
  * Image loading contract (pinned): first 4 card images eager, card 1
  * fetchpriority="high", the rest loading="lazy" decoding="async".
- *
- * Facet display rule (stated, not silent): all genres, top 12 styles, top 8
- * formats — each group titled with its cut. Counts render from the tray's
- * facet buckets.
  */
-import { esc } from "./lib.mjs";
 import { page, releaseCard } from "./shell.mjs";
 
 const PER_PAGE = 24;
-const STYLE_CUT = 12;
-const FORMAT_CUT = 8;
 
-/** The same facet computation the edge Worker ships (workers/edge
- *  computeFacets): count desc, CODE-UNIT tie-break — the comparator must
- *  match the Worker byte-for-byte or the crate-plane drift leg diverges
- *  (verify-slice F7: localeCompare disagreed at 4 positions on the real
- *  crate and is ICU-version-dependent — nondeterminism in a byte-pinned
- *  regeneration test). */
-function computeFacets(summaries) {
-  const count = (pick) => {
-    const m = new Map();
-    for (const s of summaries) for (const v of pick(s)) m.set(v, (m.get(v) ?? 0) + 1);
-    return [...m.entries()]
-      .map(([value, n]) => ({ value, count: n }))
-      .sort((a, b) => b.count - a.count || (a.value < b.value ? -1 : 1));
-  };
-  return {
-    genres: count((s) => s.genres),
-    styles: count((s) => s.styles),
-    formats: count((s) => s.format.split(", ").slice(1)),
-  };
-}
-
-function facetGroup(title, param, buckets, cut) {
-  const shown = cut ? buckets.slice(0, cut) : buckets;
-  const cutNote = cut && buckets.length > cut ? ` · top ${cut} of ${buckets.length}` : "";
-  return `<section class="pm-facets__group">
-          <h3 class="pm-facets__title">${esc(title)}${cutNote}</h3>
-          <ul class="pm-facets__list" role="list">
-            ${shown
-              .map(
-                (b) => `<li><a class="pm-facets__facet" href="?${param}=${encodeURIComponent(b.value)}">
-              <span class="pm-facets__value">${esc(b.value)}</span>
-              <span class="pm-facets__count">${b.count}</span></a></li>`,
-              )
-              .join("\n            ")}
-          </ul>
-        </section>`;
-}
-
-/** Pagination hrefs preserve the WHOLE condition (URL-as-receipt, ADR-0004
- *  §5): n rides along whenever it differs from the default — hardcoded
- *  ?page=N silently reset the visitor's condition (verify-slice). */
+/** Pagination hrefs carry `page` and `n` — the two knobs this nav moves.
+ *  `n` rides along whenever it differs from the default; a hardcoded
+ *  ?page=N silently reset the visitor's density (verify-slice).
+ *
+ *  What they do NOT carry, stated because the comment here used to claim
+ *  otherwise: a query-only relative reference REPLACES the whole query
+ *  string, so `cache`, `run` and `profile` are dropped on every page-flip.
+ *  That is a real gap against URL-as-receipt (ADR-0004 §5) and it is the
+ *  same gap in all three renderers, which is why it is recorded here rather
+ *  than fixed in one of them. */
 function pageHref(page, n) {
   const params = new URLSearchParams();
   params.set("page", String(page));
@@ -67,11 +52,14 @@ function pageHref(page, n) {
   return `?${params.toString()}`;
 }
 
-export function renderPlp(snapshot, { origin = "", n = PER_PAGE, extraDepth = 0 } = {}) {
-  const items = snapshot.summaries.slice(0, n);
+export function renderPlp(
+  snapshot,
+  { origin = "", n = PER_PAGE, page: current = 1, extraDepth = 0 } = {},
+) {
   const total = snapshot.summaries.length;
   const totalPages = Math.ceil(total / n);
-  const facets = computeFacets(snapshot.summaries);
+  const start = (current - 1) * n;
+  const items = snapshot.summaries.slice(start, start + n);
 
   const cards = items
     .map((s, i) => {
@@ -85,53 +73,57 @@ export function renderPlp(snapshot, { origin = "", n = PER_PAGE, extraDepth = 0 
     })
     .join("\n");
 
-  const pages = Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1);
+  // An out-of-range page answers with an empty `items` array (the edge
+  // Worker floors `page` at 1 and applies no ceiling), and the arithmetic
+  // range then reads BACKWARDS — "Showing 241–240 of 240". An empty page
+  // shows "0", which is true.
+  const range = items.length ? `${start + 1}–${start + items.length}` : "0";
+
+  // A five-wide window that CONTAINS the current page, clamped to the ends.
+  // The naive `1..min(totalPages, 5)` is correct only on page 1: from page 6
+  // on, nothing in the window matched the current page, so the nav carried NO
+  // `aria-current="page"` at all and offered no route past 5. At page 1 this
+  // window is `1..5` (and `1..1` at n=240), which is why it is byte-identical
+  // to what the committed master already holds.
+  const first = Math.min(Math.max(current - 2, 1), Math.max(totalPages - 4, 1));
+  const pages = Array.from(
+    { length: Math.min(5, Math.max(totalPages - first + 1, 1)) },
+    (_, i) => first + i,
+  );
+  const pageLink = (p) =>
+    p === current
+      ? `<span class="pm-pagination__link pm-pagination__link--current" aria-current="page">${p}</span>`
+      : `<a class="pm-pagination__link" href="${pageHref(p, n)}">${p}</a>`;
+
+  // "Next" is emitted only when a next page exists. It used to be
+  // unconditional, which at n=240 pointed at an empty page and let a visitor
+  // walk forever past the end of the crate — and because the master could
+  // only ever render page 1, the two variants that mirror it had to guess
+  // what to do above it, and guessed DIFFERENTLY: react-next emitted the
+  // link unconditionally and rendered "0–0"; htmx gated it and rendered "0".
+  // Two arms serving structurally different DOM for the same URL is exactly
+  // what the canonical markup contract exists to prevent, so the fix belongs
+  // here, in the one file both mirror, and not in either of them.
+  const hasNext = current < totalPages;
 
   const content = `      <div class="pm-plp">
         <header class="pm-plp__head">
           <h1 class="pm-page__title">Records</h1>
           <div class="pm-toolbar">
-            <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">1–${items.length}</span> of <span class="pm-toolbar__n">${total}</span> releases</p>
-            <form class="pm-toolbar__search" method="get" action="">
-              <div>
-                <label class="pm-toolbar__label" for="plp-q">Search the crate</label>
-                <input class="pm-toolbar__input" id="plp-q" name="q" type="search" autocomplete="off">
-              </div>
-              <button class="pm-button pm-button--secondary" type="submit">Search</button>
-            </form>
-            <form class="pm-toolbar__sort" method="get" action="">
-              <div>
-                <label class="pm-toolbar__label" for="plp-sort">Sort</label>
-                <select class="pm-toolbar__select" id="plp-sort" name="sort">
-                  <option value="" selected>Popularity</option>
-                  <option value="year-desc">Year — newest first</option>
-                  <option value="year-asc">Year — oldest first</option>
-                  <option value="price-asc">Price — low to high</option>
-                  <option value="price-desc">Price — high to low</option>
-                  <option value="title">Title — A to Z</option>
-                </select>
-              </div>
-              <button class="pm-button pm-button--secondary" type="submit">Apply</button>
-            </form>
+            <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">${range}</span> of <span class="pm-toolbar__n">${total}</span> releases</p>
           </div>
         </header>
         <div class="pm-plp__body">
-          <nav class="pm-facets" aria-label="Filters">
-            ${facetGroup("Genre", "genre", facets.genres)}
-            ${facetGroup("Style", "style", facets.styles, STYLE_CUT)}
-            ${facetGroup("Format", "format", facets.formats, FORMAT_CUT)}
-          </nav>
           <div class="pm-plp__results">
             <ul class="pm-grid" role="list">
 ${cards}
             </ul>
             <nav class="pm-pagination" aria-label="Pages">
-              <span class="pm-pagination__link pm-pagination__link--current" aria-current="page">1</span>
-              ${pages
-                .slice(1)
-                .map((p) => `<a class="pm-pagination__link" href="${pageHref(p, n)}">${p}</a>`)
-                .join("\n              ")}
-              <a class="pm-pagination__link" href="${pageHref(2, n)}" rel="next">Next</a>
+              ${pages.map(pageLink).join("\n              ")}${
+                hasNext
+                  ? `\n              <a class="pm-pagination__link" href="${pageHref(current + 1, n)}" rel="next">Next</a>`
+                  : ""
+              }
             </nav>
           </div>
         </div>
@@ -142,7 +134,6 @@ ${cards}
     depth: 2 + extraDepth,
     css: [
       "components/release-card.css",
-      "components/facets.css",
       "components/toolbar.css",
       "components/pagination.css",
       "surfaces/plp.css",

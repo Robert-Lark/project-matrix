@@ -16,6 +16,32 @@ const nextConfig: NextConfig = {
   // optional (a bare `next build` without this never emits that directory,
   // which is what "opennextjs-cloudflare build" bundles).
   output: "standalone",
+  turbopack: {
+    resolveAlias: {
+      // The fenced Apollo exhibit's REST glue is a pre-1.0 RC with a broken
+      // package entry, and this is the second half of working around it (the
+      // first is the `apollo-link-rest` packageExtensions entry in
+      // pnpm-workspace.yaml, for an rxjs import it never declares).
+      //
+      // apollo-link-rest@0.10.0-rc.2 declares `"type": "module"` with
+      // `"main": "bundle.umd.js"`, `"module": "index.js"` and NO `"exports"`
+      // map. Turbopack honours `module` for the server graph but falls back to
+      // `main` for the browser one, so the client build resolved the UMD
+      // bundle and failed with "Export RestLink doesn't exist in target
+      // module … The module has no exports at all" — the UMD wrapper reads
+      // `global.apolloClient.utilities`, a global no bundler provides.
+      // Measured in three resolvers this session, all the same way: Node's
+      // ESM loader, vite's SSR resolver (hence vitest.config.ts's
+      // `ssr.noExternal`), and Turbopack's browser condition.
+      //
+      // Aliasing the bare specifier to the ESM entry names the file the
+      // package's own `module` field already points at — it does not patch or
+      // vendor the library. ADR-0005 §7 pins the exact RC version precisely so
+      // a bump re-runs this as its canary; this alias is what that canary
+      // trips over if the packaging is ever fixed upstream.
+      "apollo-link-rest": "apollo-link-rest/index.js",
+    },
+  },
 };
 
 export default async function config(phase: string) {

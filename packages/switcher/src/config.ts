@@ -136,8 +136,15 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "One product page where the interactivity is genuine — gallery, zoom, quantity, cart. The render axis where JavaScript has real work to do. Try the swap: the cart survives; the paradigm doesn't.",
   },
   plp: {
-    variants: [],
-    plannedVariants: ["react-next", "htmx"],
+    // react-next is LIVE as of the plp-react-next build — it serves the three
+    // client-side strategy presets below (`plain`, `tanstack`, and the fenced
+    // `apollo`). Until this line landed, `chrome.ts` filtered every strategy
+    // cell against an empty array, so the PLP's ENTIRE measured-axis control
+    // — the whole point of the surface — collapsed to one dead
+    // `<span aria-current="page">`, under a panel reading "Served by 0 of 2".
+    // `htmx` stays planned until its own arm merges and hosts `/htmx/plp/`.
+    variants: ["react-next"],
+    plannedVariants: ["htmx"],
     host: "react-next",
     proves:
       "The catalogue grid under the data axis: where the data layer lives — nowhere, the browser, the server, or the edge — is the variable. The switcher is the scenario table.",

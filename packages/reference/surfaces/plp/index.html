@@ -13,7 +13,6 @@
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/footer.css">
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/button.css">
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/release-card.css">
-  <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/facets.css">
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/toolbar.css">
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/components/pagination.css">
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/surfaces/plp.css">
@@ -35,113 +34,9 @@
           <h1 class="pm-page__title">Records</h1>
           <div class="pm-toolbar">
             <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">1–24</span> of <span class="pm-toolbar__n">240</span> releases</p>
-            <form class="pm-toolbar__search" method="get" action="">
-              <div>
-                <label class="pm-toolbar__label" for="plp-q">Search the crate</label>
-                <input class="pm-toolbar__input" id="plp-q" name="q" type="search" autocomplete="off">
-              </div>
-              <button class="pm-button pm-button--secondary" type="submit">Search</button>
-            </form>
-            <form class="pm-toolbar__sort" method="get" action="">
-              <div>
-                <label class="pm-toolbar__label" for="plp-sort">Sort</label>
-                <select class="pm-toolbar__select" id="plp-sort" name="sort">
-                  <option value="" selected>Popularity</option>
-                  <option value="year-desc">Year — newest first</option>
-                  <option value="year-asc">Year — oldest first</option>
-                  <option value="price-asc">Price — low to high</option>
-                  <option value="price-desc">Price — high to low</option>
-                  <option value="title">Title — A to Z</option>
-                </select>
-              </div>
-              <button class="pm-button pm-button--secondary" type="submit">Apply</button>
-            </form>
           </div>
         </header>
         <div class="pm-plp__body">
-          <nav class="pm-facets" aria-label="Filters">
-            <section class="pm-facets__group">
-          <h3 class="pm-facets__title">Genre</h3>
-          <ul class="pm-facets__list" role="list">
-            <li><a class="pm-facets__facet" href="?genre=Jazz">
-              <span class="pm-facets__value">Jazz</span>
-              <span class="pm-facets__count">210</span></a></li>
-            <li><a class="pm-facets__facet" href="?genre=Electronic">
-              <span class="pm-facets__value">Electronic</span>
-              <span class="pm-facets__count">30</span></a></li>
-            <li><a class="pm-facets__facet" href="?genre=Classical">
-              <span class="pm-facets__value">Classical</span>
-              <span class="pm-facets__count">15</span></a></li>
-          </ul>
-        </section>
-            <section class="pm-facets__group">
-          <h3 class="pm-facets__title">Style · top 12 of 13</h3>
-          <ul class="pm-facets__list" role="list">
-            <li><a class="pm-facets__facet" href="?style=Free%20Jazz">
-              <span class="pm-facets__value">Free Jazz</span>
-              <span class="pm-facets__count">60</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Modal">
-              <span class="pm-facets__value">Modal</span>
-              <span class="pm-facets__count">58</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Bossa%20Nova">
-              <span class="pm-facets__value">Bossa Nova</span>
-              <span class="pm-facets__count">57</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Cool%20Jazz">
-              <span class="pm-facets__value">Cool Jazz</span>
-              <span class="pm-facets__count">53</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Soul-Jazz">
-              <span class="pm-facets__value">Soul-Jazz</span>
-              <span class="pm-facets__count">51</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Fusion">
-              <span class="pm-facets__value">Fusion</span>
-              <span class="pm-facets__count">50</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Hard%20Bop">
-              <span class="pm-facets__value">Hard Bop</span>
-              <span class="pm-facets__count">50</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Post%20Bop">
-              <span class="pm-facets__value">Post Bop</span>
-              <span class="pm-facets__count">50</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Downtempo">
-              <span class="pm-facets__value">Downtempo</span>
-              <span class="pm-facets__count">19</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Minimal">
-              <span class="pm-facets__value">Minimal</span>
-              <span class="pm-facets__count">18</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Ambient">
-              <span class="pm-facets__value">Ambient</span>
-              <span class="pm-facets__count">11</span></a></li>
-            <li><a class="pm-facets__facet" href="?style=Modern%20Classical">
-              <span class="pm-facets__value">Modern Classical</span>
-              <span class="pm-facets__count">10</span></a></li>
-          </ul>
-        </section>
-            <section class="pm-facets__group">
-          <h3 class="pm-facets__title">Format</h3>
-          <ul class="pm-facets__list" role="list">
-            <li><a class="pm-facets__facet" href="?format=Album">
-              <span class="pm-facets__value">Album</span>
-              <span class="pm-facets__count">240</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=LP">
-              <span class="pm-facets__value">LP</span>
-              <span class="pm-facets__count">240</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=Reissue">
-              <span class="pm-facets__value">Reissue</span>
-              <span class="pm-facets__count">88</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=Stereo">
-              <span class="pm-facets__value">Stereo</span>
-              <span class="pm-facets__count">47</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=33%20%E2%85%93%20RPM">
-              <span class="pm-facets__value">33 ⅓ RPM</span>
-              <span class="pm-facets__count">36</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=180%20Gram">
-              <span class="pm-facets__value">180 Gram</span>
-              <span class="pm-facets__count">34</span></a></li>
-            <li><a class="pm-facets__facet" href="?format=Mono">
-              <span class="pm-facets__value">Mono</span>
-              <span class="pm-facets__count">31</span></a></li>
-          </ul>
-        </section>
-          </nav>
           <div class="pm-plp__results">
             <ul class="pm-grid" role="list">
 <li class="pm-release-card">
