@@ -452,3 +452,185 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
 </html>
 `;
 }
+
+/* ── The checkout (checkout-vanilla) ───────────────────────────────────────
+   This variant's OWN re-implementation of the canonical checkout markup
+   (packages/reference/render/checkout.mjs is the contract of record). Unlike
+   editorial and the PDP this surface is DATA-FREE — `renderCheckout` takes no
+   snapshot at all (`build.mjs:78` discards it), so there is no fixture/crate
+   flavor to diverge and the whole page is authored constants.
+
+   The canonical SERVED state is the EMPTY cart (ADR-0008 §7: cart is
+   localStorage, so no paradigm can serve cart contents) with reserved
+   geometry — `cart-summary.css` holds `min-block-size: 12rem` so population
+   cannot shift the form beside it. Everything the enhancement writes into the
+   summary is therefore invisible to the JS-off drift gate, which is exactly
+   the blind spot `pdp-controls` paid for; the guards this unit adds are the
+   pre-merge half of the close.
+
+   No `novalidate` in the served markup, deliberately (checkout.mjs:9-12):
+   JS-off, native constraint validation IS the behavior the page claims. The
+   enhancement sets it at wire-up, when its own validation takes over. */
+
+/** The checkout's sheet list (packages/reference/render/checkout.mjs `css`,
+ *  prefixed by the six `head()` ships on every master). Order is cascade
+ *  order — a rendering property, not a freedom. */
+const CHECKOUT_CSS = [
+  "tokens.css",
+  "surfaces/shell.css",
+  "components/masthead.css",
+  "components/footer.css",
+  "components/button.css",
+  "components/field.css",
+  "components/format-switch.css",
+  "components/cart-summary.css",
+  "components/error-summary.css",
+  "components/plaque.css",
+  "surfaces/checkout.css",
+];
+
+/** One labelled field row — the DS default the contract fixes: label-for,
+ *  autocomplete, inputmode, and an aria-describedby hint when there is one.
+ *
+ *  NO `name`, and that is the contract, not an oversight: the form is a real
+ *  `method="post"` form, so JS off it submits natively, and an input with no
+ *  `name` is not a successful control — nothing it holds is serialized. That
+ *  is what makes the plaque's "what you type never leaves your browser" true
+ *  on the JS-off path. `required`/`pattern` mirror checkout.js's RULES, and
+ *  they still apply to unnamed controls (constraint validation ignores
+ *  `name`). The master carries the full rationale — checkout.mjs:14-42. */
+function field({
+  id,
+  label,
+  type = "text",
+  autocomplete,
+  inputmode,
+  hint,
+  required = false,
+  pattern,
+  title,
+}) {
+  const hintId = hint ? `${id}-hint` : null;
+  return `<div class="pm-field">
+              <label class="pm-field__label" for="${id}">${label}</label>
+              <input class="pm-field__control" id="${id}" type="${type}"${
+                autocomplete ? ` autocomplete="${autocomplete}"` : ""
+              }${inputmode ? ` inputmode="${inputmode}"` : ""}${required ? " required" : ""}${
+                pattern ? ` pattern="${pattern}"` : ""
+              }${title ? ` title="${title}"` : ""}${hintId ? ` aria-describedby="${hintId}"` : ""}>${
+                hint ? `\n              <span class="pm-field__hint" id="${hintId}">${hint}</span>` : ""
+              }
+            </div>`;
+}
+
+/**
+ * Render the checkout page. `depth` is how many directories below the variant
+ * root the page is written (1 for /vanilla/checkout/).
+ *
+ * The masthead marks NOTHING current: checkout is not in the store nav, and
+ * the master pins that (`renderCheckout` passes `current: null`).
+ */
+export function renderCheckoutPage({ depth = 1 } = {}) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  ${head("Checkout — Long Decay Records", { depth, css: CHECKOUT_CSS })}
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div id="pm-chrome-slot"></div>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-checkout">
+        <h1 class="pm-page__title">Checkout</h1>
+        <aside class="pm-plaque">
+          <p class="pm-plaque__kicker">Simulated commerce</p>
+          <p class="pm-plaque__name"><strong>This checkout is a demonstration.</strong></p>
+          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser — this page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
+        </aside>
+        <div class="pm-checkout__body">
+          <form class="pm-checkout__form" method="post" action="">
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Contact</legend>
+              ${field({ id: "email", label: "Email address", type: "email", autocomplete: "email", required: true, hint: "Used only to render the demo confirmation in this page — nothing is ever sent." })}
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Shipping address</legend>
+              ${field({ id: "name", label: "Full name", autocomplete: "name", required: true })}
+              ${field({ id: "address1", label: "Address", autocomplete: "address-line1", required: true })}
+              ${field({ id: "address2", label: "Apartment, suite, etc. (optional)", autocomplete: "address-line2" })}
+              <div class="pm-checkout__row">
+                ${field({ id: "city", label: "City", autocomplete: "address-level2", required: true })}
+                ${field({ id: "postal", label: "Postal code", autocomplete: "postal-code", inputmode: "numeric", required: true })}
+              </div>
+              <div class="pm-checkout__row">
+                ${field({ id: "region", label: "State / region", autocomplete: "address-level1", required: true })}
+                <div class="pm-field">
+                  <label class="pm-field__label" for="country">Country</label>
+                  <select class="pm-field__control" id="country" autocomplete="country-name">
+                    <option selected>United States</option>
+                    <option>Canada</option>
+                    <option>United Kingdom</option>
+                    <option>Germany</option>
+                    <option>Japan</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Shipping method</legend>
+              <label class="pm-format__option">
+                <input class="pm-format__input" type="radio" name="shipping" value="standard" checked>
+                <span class="pm-format__label">Standard — free, 5–8 days</span>
+              </label>
+              <label class="pm-format__option">
+                <input class="pm-format__input" type="radio" name="shipping" value="express">
+                <span class="pm-format__label">Express — $12.00, 2 days</span>
+              </label>
+            </fieldset>
+            <fieldset class="pm-checkout__section">
+              <legend class="pm-checkout__legend">Payment</legend>
+              <p class="pm-checkout__jsoff">Demo card fields — type anything; nothing you enter is stored or sent.</p>
+              ${field({ id: "card", label: "Card number", autocomplete: "off", inputmode: "numeric", required: true, pattern: "\\d{13,19}", title: "13 to 19 digits", hint: "Formats as you type — that formatting is part of what this page measures." })}
+              ${field({ id: "cardname", label: "Name on card", autocomplete: "off", required: true })}
+              <div class="pm-checkout__row">
+                ${field({ id: "expiry", label: "Expiry (MM/YY)", autocomplete: "off", inputmode: "numeric", required: true, pattern: "(0[1-9]|1[0-2])/\\d{2}", title: "Two digits for the month, then two for the year, as MM/YY" })}
+                ${field({ id: "cvc", label: "Security code", autocomplete: "off", inputmode: "numeric", required: true, pattern: "\\d{3,4}", title: "3 or 4 digits" })}
+              </div>
+            </fieldset>
+            <div><button class="pm-button" type="submit">Place order</button></div>
+            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, and native validation that gates the submit. Live card formatting and the error summary are what JavaScript adds; placing the order is the page's JavaScript moment, and that cost is the comparison.</p>
+          </form>
+          <section class="pm-cart" aria-label="Order summary">
+            <h2 class="pm-cart__title">Order summary</h2>
+            <p class="pm-cart__empty">Your cart is empty — items appear here as you add them from the store.</p>
+            <ul class="pm-cart__lines" role="list"></ul>
+            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>${namedGlyph("—", "No total yet")}</span></p>
+          </section>
+        </div>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+  <script src="${assetBase(depth)}checkout.js" defer></script>
+</body>
+</html>
+`;
+}

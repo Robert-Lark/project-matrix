@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "test": "node --test 'test/**/*.test.mjs'",
     "dev": "wrangler dev --port 8792 --inspector-port 9235",
     "deploy": "wrangler deploy"
   },

@@ -128,6 +128,22 @@
       "dependsOn": ["topo", "build"],
       "cache": false
     },
+    "@pm/vanilla#test": {
+      // Same hazard as @pm/astro#test above, same fix. The checkout and PDP
+      // master-identity guards in variants/vanilla/test render the reference
+      // master and compare it to the variant's own render, so their real
+      // inputs span packages/reference/render/** — which the default
+      // `variants/vanilla/**` input set does not cover. Under-declared inputs
+      // on THIS guard mean turbo replays a stale PASS while the master and
+      // the variant have actually diverged: exactly the divergence the guard
+      // exists to catch, silently cached green.
+      //
+      // Uncached rather than input-declared, matching every sibling
+      // (@pm/astro#test :129, @pm/qwik#test :181, @pm/repo-checks#test :198):
+      // an inputs list is a second copy of the dependency graph that goes
+      // stale on its own, and the task costs ~1s.
+      "cache": false
+    },
     "@pm/qwik#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized: qwik is a REQUEST-TIME variant
