@@ -2278,7 +2278,12 @@ it survives a variant swap), so the served page carries ZERO `hx-*`
 attributes — ISSUE E's "honest hypermedia statement," and like slice C's
 astro the variant registers NOTHING in `PERMITTED_NOISE`, with the emptiness
 asserted against raw served bytes in both the origin suite and the drift leg
-(the comparison runs under `NO_NOISE`). But the runtime still ships, because
+(the comparison runs under `NO_NOISE`). *[2026-08-29: the registration is no
+longer empty — the PLP build put three `hx-*` attributes on one paginator and
+registered `^hx-` under `behaviorAttrPatterns`, which this slice's own note
+predicted in so many words. The EDITORIAL page still carries zero `hx-`
+bytes, and that is still asserted against the served response rather than
+inferred from the registry, so nothing in the paragraph below changes.]* But the runtime still ships, because
 a hypermedia site includes its library site-wide and spends attributes where
 the server owns the interaction — dropping the script would have made the
 column a second vanilla and stopped measuring the paradigm; inventing an
@@ -3413,7 +3418,12 @@ exist.** The check was a one-time manual one; nothing re-runs it. `@pm/vanilla`
 contributes ZERO tasks to `turbo run lint typecheck test` (`--dry=json`: 30
 real commands, none of them vanilla's), so "Turbo 30/30 on the final tree" is
 the same 30 tasks that were green before the PDP existed — it cannot cover
-this variant at all. The failure that invites: a later surface at depth 1
+this variant at all. *[Closed 2026-08-29: the `checkout-vanilla` unit gave
+`@pm/vanilla` a `test` script and the merge-review pass made it
+`"cache": false`, so the workspace is covered and the real-command count is
+33 across #36/#38/#39, not 30. Derive that number, never type it —
+`--dry=json | jq '[.tasks[]|select(.command!="<NONEXISTENT>")]|length'` — a
+bare `.tasks | length` is 75.]* The failure that invites: a later surface at depth 1
 copies `{ depth: 2 }` from `build.mjs:84`, and every stylesheet, both font
 preloads and `pdp.js` 404 on 240–500 pages with nothing red. The vanilla PDP
 also has no pre-merge variant-master identity guard — the mechanism every
@@ -6031,3 +6041,461 @@ Verification on the final tree: `turbo run lint typecheck test` **31/31,
 exit 0**; origin suite green; `node packages/reference/render/build.mjs`
 leaves only `plp/index.html` changed, and re-running it a second time leaves
 `git status --porcelain packages/reference/surfaces/` empty.
+
+### The PLP, htmx: the arm whose name is half a mechanism (2026-08-28)
+
+Unit 2 of a four-agent parallel build. The brief was the catalogue grid
+in the htmx variant — the "server-rendered — loaders + PE" arm of
+ADR-0005's data-strategy comparison — and the interesting decision was
+one the repo had already written down and left for whoever got here.
+
+**The registration was pre-argued, and this build is the case it named.**
+`PERMITTED_NOISE` carried htmx as a measured-EMPTY entry, correctly:
+editorial's one interaction is client cart state, which hypermedia does
+not own, so the served page carries no `hx-*` at all. That note ended
+with a prediction — "if a later surface (the PLP build, where htmx's
+loaders+PE strategy lives) puts `hx-*` on a page, THAT build registers
+`^hx-` under behaviorAttrPatterns deliberately". The question was
+whether this build is that surface, and the answer is not a preference.
+ADR-0005 §1 defines the arm as "the server fetches the tray and returns
+finished HTML; **interactions are real links enhanced into partial
+swaps (works JS-off)**", and the switcher control that navigates to it
+is labelled "Server-rendered — loaders + PE" — a string rendered into
+every measured page. Shipping loaders without the PE would have left
+the instrument advertising a mechanism the surface does not have, which
+is the falsehood `SURFACE_CONTROLS.pdp.proves` was amended to remove
+three phases ago ("the same falsehood as the dead control, one layer
+up"). So: registered, `behaviorAttrPatterns: ["^hx-"]`, with
+`attrPatterns` and `classPatterns` empty and no `dropElementSelectors`
+— all mechanism, the qwik shape.
+
+What it actually costs on the page is three attributes on ONE element,
+**56 B raw**, all on `<nav class="pm-pagination">`: `hx-boost`,
+`hx-target`, `hx-swap`. The anchors are untouched and keep their own
+`href`, which is what makes ADR-0005's "(works JS-off)" a property of
+the markup rather than a promise — with JavaScript off a page-flip is
+ordinary navigation. `^hx-` is registered as a PREFIX rather than three
+literal names on purpose: the class exists for a paradigm's namespace
+(`^q:`, `^on:` are registered the same way), and pinning the three
+names would make the next surface's `hx-get` read as content drift.
+
+**Which interaction gets enhanced was decided by what the data plane
+can actually answer, not by what the markup shows.** ADR-0005 §5 makes
+five canonical facet params (`genre`, `style`, `format`, `sort`, `q`)
+"the PLP build's contract", and `workers/edge/src/index.js` implements
+none of them — `handlePlp` reads `n`, `page`, `cache` and `run` and
+nothing else. So the master's facet rail, search form and sort select
+are live markup with nothing behind them: **three of the surface's four
+navigation affordances are served and dead**, and pagination is the
+one that works. That is also the ADR's own choice — §5 records that the
+prototype "deliberately used page-flips (already canonical) so the
+origin stayed untouched". Enhancing a dead control would have been the
+falsehood, not the fix, so only the pagination nav carries `hx-*`. The
+edge Worker is in no unit's file boundary; the gap is reported with a
+diff, not patched from a variant.
+
+**The knob forwarding is the part that protects a number rather than a
+rendering.** The bench runner builds every measured URL as
+`?n=…&run=…` plus `&cache=cold` on the cold column
+(`tools/bench-runner/src/batch.ts:78-80`), and this arm's switcher
+preset is `/htmx/plp/?cache=cold`. A Worker that dropped `cache` would
+have the edge serve the KV warm tier under a column labelled cold — the
+server-rendered arm reading faster than it is, which is rigging in the
+FLATTERING direction, the one ADR-0001 §9 is usually read as not
+covering. Dropped `run`, the warm column inherits every previous run's
+KV state. Both are forwarded, and the effective values are read back
+off the response (`perPage`, `page`) rather than re-derived, because
+`clampN` lives in the edge Worker and two implementations of one clamp
+is how a served page and its beacon tag come to disagree. Worth
+recording as an observation, not a defect: **no request-time variant
+forwards `?cache=` on the EDITORIAL surface** — htmx, qwik, react-next
+and remix3 all call `/api/snapshot` and `/api/pdp/{id}` with no query
+string — so that surface's cold column is cold in the page fetch only.
+It is uniform across all four, so it biases nobody, and it is not this
+unit's to change.
+
+**The partial swap's byte win is real and much smaller than the phrase
+suggests, which is the sort of number this surface exists to produce.**
+Measured, fixture, page 2 at n=24: the whole document is 30,387 B raw /
+2,920 B brotli-q11; the `.pm-plp` fragment the server answers to an
+`HX-Request` is 27,729 B / 2,321 B. That is **8.7% fewer raw bytes,
+20.5% fewer compressed** — because on a catalogue grid the swapped
+region *is* nearly the whole page, and what a partial swap saves is the
+shell, not the payload. No verdict is published from this; it is a
+pre-merge measurement of a surface with no receipts yet, recorded so
+the eventual `plp-paginate` cell has a prior to argue with. One
+independent confirmation fell out of the same measurement: the vendored
+`htmx.min.js` is **14,996 B brotli-q11**, which is ADR-0005's addendum
+figure of "15.0 KB htmx" derived a second way.
+
+**The enhancement is not decoration on the mechanism; it is the part
+that keeps the enhanced path usable.** `hx-boost` replaces a navigation,
+and in doing so takes away the two things a navigation does for free:
+the browser moves focus into the new document, and it announces the new
+page. The anchor the visitor activated is inside the swapped subtree, so
+it is destroyed and focus falls to `<body>`; nothing announces that the
+catalogue changed (WCAG 2.4.3, 4.1.3). `src/plp.js` restores both — it
+focuses the results heading and writes the new range into the shell's
+existing `[data-pm-status]` live region, so the announcement costs no
+markup. `tabindex="-1"` is set by the script, never rendered: the served
+DOM must equal the master's, and a rendered focus stop with no script to
+use it is the `pm-pdp__scroll` defect exactly. **4,039 B raw / 1,479 B
+brotli-q11**, on a surface with no published receipts — re-derived against
+the file at commit time, because an earlier draft of this line said
+2,780/1,064, a figure taken before the failure announcement was added and
+45% under the file it described. The verification pass caught it; a byte
+figure nobody can re-derive is the thing this repo refuses, and it refuses
+it in a record about its own code as much as in a published cell.
+
+**One number in an earlier draft of this record was wrong, and the way
+it was wrong is the reason to say so here.** The editorial
+non-regression was first written as "byte-identical, fixture 5,915 B /
+crate 6,525 B". Those are `String.length` — UTF-16 code units — and the
+page carries non-ASCII (`—`, `·`, `’`), so the wire figures are
+**5,936 B and 6,554 B**, 21 and 29 bytes higher. The CLAIM was never in
+doubt (the two renders are equal, before and after, on both snapshots),
+but this variant's editorial column has PUBLISHED byte receipts, and a
+figure nobody can re-derive with `wc -c` is not a measurement. Caught by
+the verification pass; the numbers above are `Buffer.byteLength`.
+
+**A second dead control was found on the way, and it belongs to the
+shell rather than to this surface.** `CART_CONTRACT` says the
+enhancement populates each `[data-pm-cart-count]` slot "on every shell
+page load", and the masthead renders that slot on every page. The
+htmx variant's script list was a module constant shared by every page,
+so the question only arose once there were two surfaces — and the
+answer is that `cart.js` must ride the PLP too, or its masthead badge
+is permanently empty. It costs nothing there: it returns early when the
+editorial feature button is absent (`cart.js:62`).
+
+**What the guard is, and where it had to go.** `@pm/htmx` had no `test`
+script at all; it has one now, and a **44-leg** pre-merge guard in a new
+`variants/htmx/test/`. It is plain JavaScript, matching a workspace with
+no TypeScript toolchain and whose whole identity is "no framework, no
+compile step" — `workers/blog` is the standing precedent. The strongest
+leg is byte-strict, because this renderer is the same species as the
+reference's: `renderPlpPage` equals `renderPlp` **byte-for-byte** after
+the ADR-0008 delivery strip and the removal of the three registered
+attributes, at n=24 **and** at n=240, for **both** committed snapshots.
+Two more legs prove the registration is exactly load-bearing: the
+normalized DOM equals the master UNDER `PERMITTED_NOISE["htmx"]`, and
+does NOT equal it under `NO_NOISE` — so a registration that stopped
+doing work fails here instead of sitting in the registry as decoration.
+This splits htmx's guards across two homes (editorial's stays in
+`tools/repo-checks`, another unit's directory), which is flagged for the
+integrator rather than resolved by editing a file this unit may not.
+
+**Fifty-one sabotages, each watched failing and restored from a
+backup copy.** They are the reason two things in this record are true
+rather than hoped. One sabotage — adding the PLP's enhancement to
+`EDITORIAL_SCRIPTS` — produced **no test failure at all**, and the gap
+it exposed is worse than it looks: editorial is the one surface here
+with published byte receipts, and a `<script>` element is invisible to
+every identity guard there is, since the drift normalizer drops script
+elements as delivery and the byte-strict editorial guard's own
+`stripDelivery` removes them before comparing. A stray script on
+editorial moves a published number and passes everything. The script
+list is now pinned per surface, in both directions. And three
+assertions failed their sabotage with a bare "expected false to be
+true" — a crash, not a guard's own message, the shape this repo already
+had to name once — so they were given messages and re-sabotaged.
+
+**The verification pass found three blockers, and all three were in the
+half of this slice that had no contract to check it against.** The
+byte-identity legs are strong exactly where a master exists; above page
+1 there is none, and that is where every one of them lived.
+
+1. **A history-cache miss would have wiped the page.** The Worker chose
+   page-vs-fragment on `HX-Request` alone. htmx keeps a sessionStorage
+   cache so Back can restore a page without a round trip, and on a MISS
+   — storage blocked, quota shed, or evicted past `historyCacheSize`
+   (10) — it re-fetches the URL and swaps the answer into
+   `getHistoryElement()`, which is `document.body` unless the page
+   declares `[hx-history-elt]` (this one does not), with `swapStyle:
+   'innerHTML'`. It sends that request **with `HX-Request: true`**,
+   because `historyRestoreAsHxRequest` defaults to true
+   (`htmx.org@2.0.10/dist/htmx.js:281`; the fetch is
+   `loadHistoryFromServer`, which sets both that header and
+   `HX-History-Restore-Request`). So Back, on a cache miss, would have
+   received the bare `.pm-plp` block and written it over the entire
+   body — skip link, chrome slot, masthead, footer and every script
+   gone, leaving a grid with no navigation and no runtime. htmx's own
+   config documentation names this trap in one line at `htmx.js:277`:
+   *"This should always be disabled when using HX-Request header to
+   optionally return partial responses."* The fix is the server-side
+   half of that sentence — the partial requires `HX-Request` present
+   **and** `HX-History-Restore-Request` absent — chosen over the client
+   config it suggests because a server's correctness must not depend on
+   a client file having loaded.
+2. **No current-page marker from page 6 on.** `plpBlock` copied the
+   reference's `1..min(totalPages, 5)` window literally, which is
+   correct for a renderer that only ever draws page 1 and wrong for one
+   that does not: from page 6 the predicate matched nothing, so the nav
+   carried **no `aria-current="page"` at all** and offered no route past
+   5. Measured on both snapshots — six clicks from the front page on the
+   fixture, and the crate has 21 pages. The window now slides and is
+   clamped to contain the current page; at page 1 it is still `1..5`
+   (and `1..1` at n=240), which is why byte identity survived the fix.
+3. **A page past the last one read backwards.** The edge Worker floors
+   `page` at 1 and applies no ceiling, so `?page=11` answers 200 with an
+   empty `items` array, and the arithmetic range rendered **"Showing
+   241–240 of 240 releases"** — which `src/plp.js` would then have
+   announced to a screen reader verbatim. An empty page now shows "0",
+   which is true, and "Next" is emitted only when a next page exists —
+   **except at page 1, where the reference's unconditional link is
+   reproduced deliberately** rather than diverging from the contract at
+   the one out-of-range condition a master can actually be compared at.
+
+All three were invisible to the guard as written, and for one reason
+worth naming: **the page>1 block exercised page 2 and nothing else**,
+and page 2 is the single page above 1 where both (2) and (3) are hidden.
+The leg now sweeps every page of both snapshots — 31 renders, cheap —
+and asserts exactly one current marker on each. That is the same shape
+as the defect Phase 15 opens with: a guard whose one driven case
+happened to be the case that could not fail.
+
+**A SECOND contract defect on the same `<nav>`, and it is the one that
+moves a number.** `renderPlp`'s `pageHref` (`plp.mjs:60-68`) carries a
+comment claiming its hrefs "preserve the WHOLE condition (URL-as-receipt,
+ADR-0004 §5)". They carry `page`, and `n` when it differs from the
+default, and nothing else — and a query-only relative reference REPLACES
+the entire query (RFC 3986 §5.3; verified,
+`new URL("?page=2", ".../plp/?cache=cold&run=bench-7&n=240")` →
+`.../plp/?page=2`). So every page-flip silently drops `cache`, `run` and
+`profile`. From this arm's own switcher preset — `/htmx/plp/?cache=cold`
+— one click on "2" serves from the KV **warm** tier while the injected
+chrome, rendered server-side against the original search and sitting
+outside the swapped subtree, still prints `cache: cold` and the line
+"The URL is the whole measurement condition". The address bar and the
+instrument disagree about one visit, in the flattering direction, and
+`plp-paginate`'s measured step would land in a different KV namespace
+than its own priming load because `run` goes too. This is the same class
+as the `rel="next"` defect below and materially worse; both are the
+contract's, not this variant's, and both are reported with diffs rather
+than patched from a consumer. What this unit did do is stop repeating
+the false claim: the variant's copy of that comment now states what the
+code does, and a guard leg pins the master's href shape so the reference
+fix cannot land on one side only.
+
+**Deliberately NOT diverged from, though it is wrong.** `renderPlp`
+emits its `rel="next"` link unconditionally
+(`packages/reference/render/plp.mjs:134`), so at n=240 — where
+`totalPages` is 1 — the master points "Next" at an empty page. No test
+has ever rendered the PLP at any n but the default: `renderPlp` has
+exactly one caller, `packages/reference/render/build.mjs:77`. The
+temptation was to fix it in the variant, and that would have been the
+wrong instinct — a deliberate divergence at a condition the gate does
+not compare is the vacuous-guard shape this repo refuses, and
+`packages/reference/**` is the contract, not this unit's file. The
+variant reproduces the reference exactly at every n the reference can
+render, and the one-line fix is written into the handoff for whoever
+owns it. The same reasoning bounds `?page=`: the reference renderer has
+no `page` option at all, so at page > 1 there is nothing to be identical
+to, and the two lines that must vary — the count range and which link
+carries the current marker — are variant-defined until the reference
+grows the option.
+
+**The verification pass then found the FOURTH registry consumer nobody
+had named, and it is the one that fails silently.**
+`tools/repo-checks/test/warm-tier-discipline.test.ts:33` finds tray
+requests by literal — ``/["'`]\/api\/(plp|pdp)/`` — and enforces that
+every one carries `run=` or `cache=cold`, because an un-nonced write
+mints a canonical KV entry with **no TTL** (`workers/edge/src/index.js:84`
+applies the TTL only when the nonce is non-empty) and the next crate
+re-seed then serves a stale catalogue to real visitors indefinitely.
+`/htmx/plp/` is now the first PAGE path in the repo that reaches KV: it
+proxies the tray server-side, so it never names `/api/` and the guard
+cannot see it. The moment the PLP drift leg is written — whose natural
+first line is `get("/htmx/plp/")` — the discipline is evaded by
+construction. That guard's own header records this defect class being
+found three separate times in one pass. `tools/repo-checks/**` is
+another unit's boundary; the one-line widening is in the handoff.
+
+**And one of this unit's own detectors was the narrow shape the suite had
+already rejected for this same variant.** The guard's `hx-*` matcher was
+`\s(hx-[a-z-]+)=`, which reports `hx-on:click` (a colon in the name,
+`htmx.js:2752`), `hx-disable` (valueless, `:206`) and `data-hx-boost`
+(the documented prefix form `getAttributeValue` falls back to, `:418`) as
+ABSENT — all three live mechanisms in the pinned runtime. Sabotage
+confirmed the cost: an `hx-on:click` on an anchor left "exactly three
+attributes" and "no anchor is touched" both green. The origin suite had
+rejected exactly this shape for htmx's editorial leg
+(`drift.browser.test.ts:901-907`) and the guard here was written narrower
+anyway. It now uses the suite's family, and pins that the page carries no
+`data-hx-` spelling — because `^hx-` deliberately does not match it, so
+that spelling must fail loudly rather than be read as drift.
+
+**The fourth lens found the two defects the identity guard was
+structurally incapable of seeing, and both are on the arm's own seams.**
+The byte-strict legs are only as strong as the payload they are handed,
+and this guard hands itself one.
+
+*The tray's SHAPE was proven by nothing.* `plpBlock` destructures six
+keys off the edge's response and the test assembles those same six keys
+itself, so every identity leg passes by construction whatever
+`workers/edge` actually returns. Measured, not argued: a payload
+identical to `handlePlp`'s but with `perPage` renamed renders a **200**
+page carrying `Showing NaN–NaN of 240 releases`, with every pagination
+href `?page=N&n=undefined`. Nothing throws, so the branded 503 never
+fires; `plp.js` reads that same string and announces "Showing NaN to
+NaN" to a screen reader — the exact defect class this section already
+records fixing for the reversed range — and the edge clamps
+`n=undefined` back to 24, so a visitor on `?n=240` is silently reset by
+clicking "2". The contract is now asserted where the data ENTERS, so the
+existing 503 owns it, and it holds at runtime against the deployed plane
+rather than against a payload the test wrote.
+
+Sabotaging that check then exposed a second, smaller thing worth
+recording: deleting its FACETS clauses produced **no failure at all**,
+because every malformed-`facets` payload also throws during template
+interpolation, so the route answers 503 either way. The clauses were
+real but unprovable through `fetch`. Rather than keep an unprovable
+clause or drop a useful one, the check is exported and driven directly,
+where each clause is a defect a test can see — and the code comment says
+plainly which clauses change the route's behaviour on their own and
+which do not.
+
+*The enhancement was not idempotent, and htmx re-runs it.*
+`cleanInnerHtmlForHistory` (`htmx.js:3237-3248`) strips only the request
+class and `data-disabled-by-htmx` from its history snapshot, so
+`<script>` elements are KEPT; `allowScriptTags` defaults true (`:160`)
+and `duplicateScript` (`:549`) builds a node the browser executes. One
+Back press therefore ran `plp.js` a second time, and its listeners are
+on `document`, which survives the body swap — so every later page-flip
+announced the range TWICE into a `role="status"` region and focused
+twice, growing with each Forward/Back cycle. A file whose entire purpose
+is a11y parity would have made the enhanced path worse than the
+unenhanced one. A `window` flag makes it re-entrant; the guard now loads
+the real file three times against one document and asserts exactly one
+announcement per swap. The original legs loaded it once, so idempotence
+was never exercised — the same shape as the page-2-only pagination legs
+above.
+
+**A fourth finding belongs to a Worker this unit may not edit, and that
+Worker's own comment predicted it.** `workers/front` injects the
+switcher/HUD chrome into `div#pm-chrome-slot` on any `text/html`
+response and asserts slot cardinality of exactly one, logging
+`chrome-slot-count` as an ERROR otherwise
+(`workers/front/src/index.js:147-183`). A partial has no slot by
+design, so every page-flip would log an error against a Worker behaving
+correctly. That file already carries a variant-scoped pass-through for
+remix3's frame partials and says, at `:126-128`, that the exception is
+*"deliberately variant-scoped … the PLP build (htmx loaders+PE) should
+generalize this deliberately when it does."* The variant half of that
+generalization is applied here — the partial response declares itself
+with `x-pm-partial: 1`, so the front Worker's rule can be one
+variant-agnostic line rather than a second hardcoded path prefix — and
+the header is INERT until that one line lands. Its diff is in the
+handoff; `workers/front/**` is the measurement pass's file, and a stray
+edit there makes published receipts unpublishable.
+
+**`pnpm run check` is 31/31, exit 0 — and 31 is the honest number.** It
+was 30 at `ae97f8e` and the brief asked for 30; the same brief mandates
+a `test` script for `@pm/htmx`, and turbo's `test` task depends only on
+`topo`, so the new script adds exactly one command and cannot add fewer.
+Derived, not counted by hand:
+`pnpm turbo run lint typecheck test --dry=json | jq '[.tasks[] | select(.command != "<NONEXISTENT>")] | length'`
+→ 31, breaking down as 1 lint + 16 typecheck + **12** test + 2 builds.
+`@pm/htmx#test` is declared `cache: false` in `turbo.json` for the
+reason its three siblings are: its real inputs span the reference
+render tree, both committed snapshots and `workers/edge`, and an
+under-declared input replays a stale PASS — precisely the hole the guard
+exists to close.
+
+### The registration that was right, and the four sentences that had gone false (2026-08-29)
+
+This was the batch's only red PR, and the red was inherited rather than
+introduced — which made the first decision the important one: **do not delete
+the thing that is failing.**
+
+`tools/drift-gate/src/normalize.ts` gained
+`htmx: { attrPatterns: [], classPatterns: [], behaviorAttrPatterns: ["^hx-"] }`,
+and two assertions in `tools/origin-suite` require that entry to be
+`undefined`. The tempting fix — drop the entry, CI goes green — would have
+been exactly wrong. The entry fulfils a prediction written into the comment
+it replaces:
+
+> if a later surface (the PLP build …) puts `hx-*` on a page, THAT build
+> registers `^hx-` under behaviorAttrPatterns deliberately.
+
+This is that build. `render.mjs` ships three real `hx-*` attributes —
+`hx-boost`, `hx-target`, `hx-swap` — on one `<nav class="pm-pagination">`,
+and one occurrence in the whole tree (tool-counted across every rendered
+file on the branch). The variant's own suite proves the entry is
+load-bearing rather than decorative by asserting the comparison FAILS under
+`NO_NOISE` and that the first divergence contains `hx-`. Deleting it would
+have made the gate green by making it blind.
+
+So the two assertions moved instead. They now check the entry's **shape**,
+and the shape is the point: `attrPatterns: []` is the load-bearing half,
+because that class admits ordinary markup and would let real drift past the
+gate — the one thing this entry must never become. `behaviorAttrPatterns`
+admits only the paradigm's own mechanism, which is what the class exists
+for.
+
+The `expect(body).not.toMatch(/\s(?:data-)?hx-/i)` byte assertion above each
+one is **kept**, and it is what actually keeps editorial honest. That was
+worth verifying rather than assuming: the editorial drift leg passes
+`NO_NOISE` explicitly on both sides, so it never consulted the registry at
+all — the registration could not have loosened that surface's comparison
+even in principle. The `toBeUndefined()` line was belt-and-braces over a
+comparison that was already braced, and it is simply obsolete now.
+
+**The prose was where the real risk was, because prose has no test.** Four
+places said htmx registers nothing. Three were the obvious kind —
+`variants/README.md`, `variants/remix3/DIFF-TO-STARTER.md`, and the same
+sentence duplicated into `decision-map.md`'s slice-F node, plus a fifth in
+`build-log.md`'s own slice-E phase, which no list had. The fourth is the one
+worth recording, because a reflex sweep for "htmx registers nothing" misses
+it entirely: `variants/README.md:71` is about **remix3**, and calls its
+emptiness "the **third** earned emptiness". The subject is right; the ordinal
+is the lie, and it counts htmx to get there. Fixing what a grep finds would
+have left a false sentence behind in a file whose whole job is telling the
+next reader what is true.
+
+**A gate loosening justified by a file nobody can open.** `decision-map.md`
+pointed the reviewer at `~/Desktop/pm-unit2-plp-htmx-handoff.md` for the
+exact diffs reconciling the fairness gate. That is the gate defeating
+itself: the registration is defensible precisely because its reasoning can
+be read, and the reasoning was on someone's Desktop. It is committed at
+`docs/handoffs/2026-08-28-plp-htmx.md`, alongside the nine already there,
+with a header saying what this pass changed under it and leaving its
+verification numbers as the numbers of the day they were taken.
+
+**The guard that would have caught the disagreement.** This arm and
+react-next's had contradicted each other about every page past the first —
+this one gated `rel="next"` and rendered `0`, that one emitted the link
+unconditionally and rendered `0–0`. Neither was reckless: the reference
+could only render page 1, so each generalized alone, and each PINNED its own
+answer in its own suite, which meant they could never drift into agreement.
+#38 made `renderPlp` page-aware, so this arm's `page === 1 ||` escape — which
+existed only to reproduce the master's defect at the single condition the
+master could express — is gone.
+
+That fixes today. `tools/repo-checks/test/plp-arms-agree.test.ts` is what
+fixes tomorrow: it renders BOTH implementations from ONE tray at page 1, at
+the last real page, and at `totalPages + 1`, on both snapshots, and compares
+normalized DOM under both paradigms' registrations. It lives in
+`repo-checks` because that is the only workspace where both are importable —
+the two variant suites each see one arm, which is structurally why nothing
+could see this. Two details it had to get right to be worth anything: it
+compares the `div.pm-plp` **swap target** (htmx's `renderPlpFragment` against
+react-next's `PlpArticle`) rather than a document against a fragment, and it
+lowercases attribute names first, because linkedom preserves React's
+`fetchPriority` where a real browser's tokenizer lowercases it — without
+that, the two arms "disagree" on every card image over a parser gap no
+visitor could observe. Sabotage-proven: restoring react-next's unconditional
+`Next` fails it with the exact extra anchor named.
+
+Also settled here, because it is the last merge: the `(fog)` node claimed
+these surfaces run "in that order, one node at a time", which three parallel
+units had just falsified. The rewrite records what the real constraint turned
+out to be — not order, but shared files, and specifically one object
+(`SURFACE_CONTROLS`) that all three PRs owed a registration to and none
+supplied, so each shipped a page the instrument reported as unserved. And the
+map's own line 3 — "keep it compact" — was amended rather than obeyed: every
+unit for months has landed a prose block instead, and a rule nothing enforces
+and everything violates is worse than no rule. Trimming the entries was
+rejected on the grounds that the build record IS the product; what is given
+up is stated, and the next call (split per phase, or archive resolved nodes)
+is named rather than deferred silently.

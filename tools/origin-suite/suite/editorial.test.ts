@@ -1254,14 +1254,32 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     if (EXPECT_BROTLI) expect(encoding).toBe("br");
   });
 
-  it("htmx registers NO permitted noise — a measured result, and non-vacuously so", async () => {
-    // The paradigm's mechanism is `hx-*` behavior attributes (slice A's
-    // behaviorAttrPatterns class exists for exactly them) — but editorial's
-    // one interaction is client cart state, which hypermedia does not own,
-    // so the served page idiomatically carries none: ISSUE E's honest
-    // hypermedia statement. The drift leg compares this page under NO_NOISE,
-    // which is what makes the empty registration load-bearing.
-    expect(PERMITTED_NOISE["htmx"]).toBeUndefined();
+  it("the htmx EDITORIAL page carries zero hx- bytes, whatever the registry says", async () => {
+    // This used to assert `PERMITTED_NOISE["htmx"]` was undefined, and that
+    // was the right assertion right up until a surface put `hx-*` on a page.
+    // The PLP build did (`variants/htmx/src/render.mjs`, three attributes on
+    // one `<nav class="pm-pagination">`), and the note this replaced had
+    // predicted exactly that: "if a later surface (the PLP build …) puts
+    // `hx-*` on a page, THAT build registers `^hx-` under
+    // behaviorAttrPatterns deliberately." It did. The registration is the
+    // prediction coming true, not a regression.
+    //
+    // The registry entry is asserted by SHAPE rather than absence, so this
+    // still fails if someone widens it — `attrPatterns` must stay empty:
+    // registering a plain attribute class would let real markup drift past
+    // the gate, which is the thing the entry must never become.
+    expect(PERMITTED_NOISE["htmx"]).toEqual({
+      attrPatterns: [],
+      classPatterns: [],
+      behaviorAttrPatterns: ["^hx-"],
+    });
+    // What actually keeps EDITORIAL honest is the byte assertion below, and
+    // it never depended on the registry: this page's drift leg normalizes
+    // both sides with NO_NOISE explicitly (`drift.browser.test.ts`), so the
+    // entry could not have loosened this surface's comparison even in
+    // principle. Editorial's one interaction is client cart state, which
+    // hypermedia does not own, so the served page idiomatically carries no
+    // hx- at all — ISSUE E's honest hypermedia statement, still true.
     const body = await (await get("/htmx/editorial/")).text();
     // The WHOLE mechanism family, not just valued hx-foo= attributes:
     // htmx 2.0.10 also processes `hx-on:*`/`hx-on::*` (colon in the name),

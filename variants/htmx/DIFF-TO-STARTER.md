@@ -80,16 +80,40 @@ Pinned tooling: `htmx.org 2.0.10` (exact — see decision 2), `wrangler
    skipped 3.x); a pre-release runtime would make this a fenced exhibit
    under ADR-0003's first addendum (the qwik-v2 precedent), so 2.0.10 — the
    newest stable at build time — is the pin.
-3. **Zero `hx-*` attributes on the served page is an honest hypermedia
-   statement, so NOTHING registers in `PERMITTED_NOISE`** (editorial-build
-   ISSUE E names exactly this case). Like astro (slice C) the entry's
-   absence is a MEASURED outcome asserted against raw served bytes, not a
-   design assumption — the drift comparison runs under `NO_NOISE`, and the
-   suite fails if an `hx-*` shape ever appears without a deliberate
-   registration through slice A's `behaviorAttrPatterns` class.
+3. **`PERMITTED_NOISE` registers `^hx-` under `behaviorAttrPatterns`, and
+   nothing else — superseding this variant's measured-EMPTY registration
+   (the PLP build, 2026-08-28).** Through the editorial slice the entry was
+   absent, correctly and for a measured reason: zero `hx-*` attributes on
+   the served page is an honest hypermedia statement (editorial-build ISSUE
+   E names exactly this case), because editorial's one interaction is client
+   cart state, which hypermedia does not own. That note said the entry would
+   be added deliberately if a later surface put `hx-*` on a page, and the
+   PLP is that surface: its pagination links are real links enhanced into a
+   partial swap (ADR-0005 §1), which is **three attributes — `hx-boost`,
+   `hx-target`, `hx-swap` — on the ONE `<nav class="pm-pagination">`, 56 B
+   raw**. `attrPatterns` and `classPatterns` stay empty: this Worker emits
+   the markup it is asked for and wraps nothing, so the registration is all
+   MECHANISM (the qwik shape, not the placeholder's). `^hx-` is a prefix
+   rather than three literal names because the class exists for a paradigm's
+   namespace; note it does NOT match `data-hx-*`, htmx's other documented
+   prefix form, so a switch to that form fails the gate loudly and the
+   registration would be widened deliberately.
+   **`/htmx/editorial/` still carries zero `hx-*`**, asserted against raw
+   served bytes in the origin suite, and its drift comparison still runs
+   under `NO_NOISE` — the registration changed what the PLP may carry, not
+   what editorial may.
 4. **Script placement: all three script elements ride at the end of
    `<body>`** — the JSON data hook first, then `htmx.min.js` deferred, then
-   `cart.js` deferred (render.mjs emits `[...hooks, ...RUNTIME_SCRIPTS]`;
+   `cart.js` deferred (render.mjs emits `[...hooks, ...scripts]`, where
+   `scripts` is the surface's own list — `EDITORIAL_SCRIPTS` here, and
+   `PLP_SCRIPTS` on the catalogue, which appends `plp.js`. The list became
+   per-surface with the PLP build: script elements are delivery, but they
+   are still measured BYTES, and editorial has published receipts, so a
+   shared constant would let a later surface's enhancement move a published
+   number invisibly — the drift normalizer drops script elements and the
+   byte-strict guard strips them before comparing, so nothing would have
+   caught it. A sabotage proved exactly that, and there is now a leg pinning
+   editorial's script list;
    an earlier draft of this receipt recorded the hook second — caught by
    the slice's verify-slice pass, four lenses independently). Script
    elements are delivery, not contract (ADR-0008 freedoms); htmx's docs

@@ -6,10 +6,10 @@
 // (run-local.mjs spawns edge first), and the CI deploy step already deploys
 // pm-edge before the variants.
 //
-// Assets (the shared css/fonts, the vendored htmx runtime, the cart
-// enhancement) are nested under dist/htmx/ (the documented "serving a
+// Assets (the shared css/fonts, the vendored htmx runtime, the cart and
+// PLP enhancements) are nested under dist/htmx/ (the documented "serving a
 // subdirectory" shape) and served assets-first; only non-asset paths —
-// the server-rendered editorial page — reach the script. No `binding` under
+// the server-rendered editorial and PLP pages — reach the script. No `binding` under
 // `assets`: unlike qwik's middleware, nothing in this Worker's own code
 // fetches the asset layer, so an unused binding would just be surface.
 {

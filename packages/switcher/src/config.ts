@@ -136,15 +136,19 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "One product page where the interactivity is genuine — gallery, zoom, quantity, cart. The render axis where JavaScript has real work to do. Try the swap: the cart survives; the paradigm doesn't.",
   },
   plp: {
-    // react-next is LIVE as of the plp-react-next build — it serves the three
-    // client-side strategy presets below (`plain`, `tanstack`, and the fenced
-    // `apollo`). Until this line landed, `chrome.ts` filtered every strategy
-    // cell against an empty array, so the PLP's ENTIRE measured-axis control
-    // — the whole point of the surface — collapsed to one dead
-    // `<span aria-current="page">`, under a panel reading "Served by 0 of 2".
-    // `htmx` stays planned until its own arm merges and hosts `/htmx/plp/`.
-    variants: ["react-next"],
-    plannedVariants: ["htmx"],
+    // Both arms are LIVE: react-next serves the three client-side presets
+    // (`plain`, `tanstack`, the fenced `apollo`) and htmx serves
+    // `/htmx/plp/`, the server-loaders one. `plannedVariants` is GONE rather
+    // than empty, per the editorial precedent ("empty or gone"): the reading
+    // table's four strategy columns and the "Served by 2 of 2" note both
+    // derive from this array alone, and a planned list with nothing in it is
+    // a key the next reader has to check.
+    //
+    // Until these landed, `chrome.ts` filtered every strategy cell against an
+    // empty array, so the PLP's ENTIRE measured-axis control — the whole
+    // point of the surface — collapsed to one dead `<span aria-current=
+    // "page">`, under a panel reading "Served by 0 of 2".
+    variants: ["react-next", "htmx"],
     host: "react-next",
     proves:
       "The catalogue grid under the data axis: where the data layer lives — nowhere, the browser, the server, or the edge — is the variable. The switcher is the scenario table.",

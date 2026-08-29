@@ -10,7 +10,10 @@
 //    the variant's own assets and served same-origin (the documented install
 //    is a script tag; a CDN include would fail the suite's same-origin
 //    request tracker — editorial-build ISSUE E);
-//  - the cart enhancement (src/cart.js).
+//  - the cart enhancement (src/cart.js), on every page — the masthead
+//    badge is the cart contract's duty for every surface;
+//  - the PLP's focus/announcement enhancement (src/plp.js), which the
+//    hx-boost partial swap makes necessary rather than optional.
 //
 // The rendered page itself is NOT here: the Worker renders it per request.
 import { cpSync, mkdirSync, rmSync } from "node:fs";
@@ -35,5 +38,6 @@ cpSync(join(tokensRoot, "css"), join(dist, "assets", "pm", "css"), { recursive: 
 cpSync(join(tokensRoot, "fonts"), join(dist, "assets", "pm", "fonts"), { recursive: true });
 cpSync(htmxJs, join(dist, "assets", "htmx.min.js"));
 cpSync(join(root, "src", "cart.js"), join(dist, "assets", "cart.js"));
+cpSync(join(root, "src", "plp.js"), join(dist, "assets", "plp.js"));
 
-console.log("htmx: assets assembled (tokens + vendored htmx runtime + cart enhancement)");
+console.log("htmx: assets assembled (tokens + vendored htmx runtime + cart and PLP enhancements)");
