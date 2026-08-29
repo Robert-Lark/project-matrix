@@ -139,9 +139,28 @@
       // exists to catch, silently cached green.
       //
       // Uncached rather than input-declared, matching every sibling
-      // (@pm/astro#test :129, @pm/qwik#test :181, @pm/repo-checks#test :198):
-      // an inputs list is a second copy of the dependency graph that goes
-      // stale on its own, and the task costs ~1s.
+      // (@pm/astro#test :129, @pm/qwik#test, @pm/repo-checks#test): an inputs
+      // list is a second copy of the dependency graph that goes stale on its
+      // own, and the task costs ~1s.
+      "cache": false
+    },
+    "@pm/htmx#test": {
+      // The PLP master-identity guard (variants/htmx/test) renders this
+      // variant's catalogue page for BOTH snapshots and compares each against
+      // the reference renderer's own output, and its honesty leg reads
+      // workers/edge's PLP handler to assert which query params that Worker
+      // implements. Its real inputs therefore span the reference render/
+      // tree, both committed snapshots AND a third workspace — a set that is
+      // easy to under-declare, and an under-declared input here means turbo
+      // replays a stale PASS while the contract has actually moved, which is
+      // precisely the hole this guard exists to close. Uncached, like
+      // @pm/astro#test, @pm/qwik#test and @pm/remix3#test, for the same
+      // reason: correctness over ~0.4 s.
+      //
+      // No dependsOn build, like qwik's and remix3's: nothing here imports
+      // generated build output. htmx is a REQUEST-TIME variant, so there is
+      // no baked snapshot module to exist first — the guard drives the
+      // renderer and the Worker directly with tray data it reads itself.
       "cache": false
     },
     "@pm/qwik#build": {

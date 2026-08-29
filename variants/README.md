@@ -48,11 +48,19 @@ Current occupants:
   `htmx.org` runtime vendored into the variant's own assets and served
   same-origin as a script tag (never a CDN include — the suite's request
   tracker fails any request off the composed origin). Binds `pm-edge` itself
-  like `react-next`/`qwik`. Registers NOTHING in `PERMITTED_NOISE` — a
-  measured outcome, like `astro`'s: editorial's one interaction is client
-  cart state, which hypermedia does not own, so the page idiomatically
-  carries zero `hx-*` attributes (the honest hypermedia statement ISSUE E
-  names; `hx-*` earns its keep on the PLP/checkout builds). Its
+  like `react-next`/`qwik`. Registers `^hx-` under `behaviorAttrPatterns`
+  in `PERMITTED_NOISE`, and nothing else — a measured outcome, arrived at
+  in two steps. Through the editorial build it registered NOTHING, because
+  editorial's one interaction is client cart state, which hypermedia does
+  not own, so that page idiomatically carries zero `hx-*` attributes (the
+  honest hypermedia statement ISSUE E names). The PLP build is where `hx-*`
+  earned its keep: three attributes on one `<nav class="pm-pagination">`,
+  and the registration is the case the old note predicted in so many words.
+  `attrPatterns` and `classPatterns` stay empty and that is the load-bearing
+  part — the entry admits this paradigm's behavior attributes, never
+  ordinary markup. The editorial page still carries zero `hx-` bytes, which
+  the origin suite asserts against the served response rather than inferring
+  from the registry. Its
   `DIFF-TO-STARTER.md` records why the runtime still ships. Pre-merge
   master-identity guard in `tools/repo-checks` (plain-JS renderer, the
   vanilla mechanism — byte-strict, both snapshots). Completed the editorial
@@ -68,8 +76,10 @@ Current occupants:
   (never a reading-table column), and a bench runner that refuses
   `/remix3/*` targets outright. `remix` is pinned EXACT and the committed
   lockfile pins the `@remix-run/*` sub-packages; the spike's `test.sh` is
-  the canary on any bump. Registers NOTHING in `PERMITTED_NOISE` (the third
-  earned emptiness — remix's residue is comments, and its mechanism
+  the canary on any bump. Registers NOTHING in `PERMITTED_NOISE` (the
+  SECOND earned emptiness, with `astro`'s — it was written as the third
+  while htmx's was still empty, and htmx's stopped being empty when the PLP
+  build landed its paginator; remix's residue is comments, and its mechanism
   attributes live only inside the two `[data-pm-fenced]` subtrees the
   scoped drop removes). Drift comparison is ADVISORY (warns, never fails
   CI — ADR-0003 first addendum); the pre-merge master-identity guard in its

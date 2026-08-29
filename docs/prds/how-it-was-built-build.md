@@ -525,8 +525,15 @@ entirely in `workers/front`.
 6. D1, D2, D4, D5, D7, D8, D9 exist and each has been sabotage-proven, with the
    failing message recorded in the build log. D3 and D6 are re-confirmed, not
    rewritten.
-7. `pnpm run check` is 30/30 (`docs/build-log.md:3413` records the count's
-   derivation), and `node packages/reference/render/build.mjs` followed by
+7. `pnpm run check` is green on **every** task, with the count recorded in
+   the build log at the time it ran. The count is not a constant and must
+   not be typed: it was 30 on `main` at `0eec463`, and is 33 once #36/#38/#39
+   land, each adding one workspace `test` script. Derive it —
+   `turbo run lint typecheck test --dry=json | jq '[.tasks[]|select(.command!="<NONEXISTENT>")]|length'`
+   (`--dry=json` is turbo 2.10's spelling, and the `<NONEXISTENT>` filter is
+   load-bearing: a bare `.tasks | length` is 75, counting synthetic `#topo`
+   nodes and packages with no such script). Then
+   `node packages/reference/render/build.mjs` followed by
    `git status --porcelain packages/reference/surfaces/` shows
    `how-it-was-built/` and nothing else.
 8. `workers/front/methodology/index.html:17-18` and

@@ -176,8 +176,12 @@ slice-D pin lesson).
    tree — the weekly-beta weather the advisory fence exists for cannot
    reach it.
 
-9. **`PERMITTED_NOISE` registers nothing — measured-empty** (the astro/htmx
-   precedent). `rmx-target`/`rmx-src` (FINDINGS §2 named them this slice's
+9. **`PERMITTED_NOISE` registers nothing — measured-empty** (the astro
+   precedent; htmx was the other one when this was written, and stopped
+   being when the PLP build registered `^hx-` for its paginator's three
+   attributes — which is what an earned emptiness ENDING looks like, and
+   the reason this claim is worth re-reading rather than inheriting).
+   `rmx-target`/`rmx-src` (FINDINGS §2 named them this slice's
    registration call "IF they appear in served DOM") appear ONLY inside the
    fenced demo subtree, which the scoped drop removes before comparison —
    on COMPARED elements they never occur, so registering them would be

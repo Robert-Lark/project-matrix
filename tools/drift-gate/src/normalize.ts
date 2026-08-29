@@ -103,21 +103,53 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   // vanilla registers NOTHING — it is the NO_NOISE control, by design
   // (editorial-build PRD): the absence of an entry here is asserted in the
   // origin suite, and its drift comparison runs under NO_NOISE.
-  //
-  // htmx registers NOTHING EITHER, and like astro's that is a MEASURED
-  // outcome, not a design assumption (editorial-build slice E; ISSUE E names
-  // exactly this case: "an editorial page with zero hx-* is an honest
-  // hypermedia statement, and then nothing registers"). The paradigm's
-  // mechanism is `hx-*` BEHAVIOR attributes — slice A's
-  // behaviorAttrPatterns class exists for them — but editorial's one
-  // interaction is client cart state, which hypermedia does not own, so the
-  // served page idiomatically carries none. The runtime itself is a
-  // `<script>` element (delivery — dropped unconditionally). The origin
-  // suite asserts the empty registration against raw served bytes, and the
-  // drift leg compares under NO_NOISE; if a later surface (the PLP build,
-  // where htmx's loaders+PE strategy lives) puts `hx-*` on a page, THAT
-  // build registers `^hx-` under behaviorAttrPatterns deliberately.
-  //
+  /**
+   * htmx (editorial-build slice E, extended by the PLP build 2026-08-28).
+   * ALL mechanism, like qwik's: the one registered pattern is the
+   * paradigm's own behavior-attribute prefix, so `attrPatterns` and
+   * `classPatterns` stay empty and no `dropElementSelectors` is needed —
+   * this Worker emits the markup it is asked for and wraps nothing.
+   *
+   * THIS ENTRY REPLACES A MEASURED-EMPTY REGISTRATION, and the reason is
+   * the one the empty registration's own note predicted. Through slice E
+   * htmx registered nothing, correctly: editorial's single interaction is
+   * client cart state, which hypermedia does not own, so the served page
+   * carried no `hx-*` at all and the runtime rode a `<script>` element
+   * (delivery — dropped unconditionally). That note ended: "if a later
+   * surface (the PLP build, where htmx's loaders+PE strategy lives) puts
+   * `hx-*` on a page, THAT build registers `^hx-` under
+   * behaviorAttrPatterns deliberately." This is that build.
+   *
+   * What earns it, measured rather than assumed — the PLP's served page
+   * carries exactly three `hx-*` attributes, all on the ONE
+   * `<nav class="pm-pagination">` element (variants/htmx/src/render.mjs,
+   * PAGINATION_HX): `hx-boost`, `hx-target`, `hx-swap`. They are ADR-0005
+   * §1's arm definition made real — "interactions are real links enhanced
+   * into partial swaps (works JS-off)" — and nothing else on the surface
+   * carries one, because the other three navigation affordances the master
+   * renders (facet links, search, sort) have no data-plane params behind
+   * them yet and enhancing a dead control would be the falsehood, not the
+   * fix.
+   *
+   * `^hx-` is deliberately BROADER than those three names. A prefix is
+   * what the class is for (`^q:`, `^on:` are registered the same way): it
+   * is the paradigm's namespace, and pinning three literal attribute names
+   * would mean a fourth attribute — the next surface's `hx-get`, or a
+   * `hx-push-url` made explicit — silently failing the gate as content
+   * drift rather than being read as the mechanism it is.
+   *
+   * The anchors themselves are UNTOUCHED: each keeps its own `href` and is
+   * byte-identical to the master's, which is what makes the JS-off claim a
+   * property of the markup rather than a promise. Registering the noise
+   * does not widen the gate — with JS off there is nothing to strip but
+   * these three attributes, and the served DOM equals the master under
+   * them (proven pre-merge in variants/htmx/test/master-identity.test.js).
+   */
+  htmx: {
+    attrPatterns: [],
+    classPatterns: [],
+    behaviorAttrPatterns: ["^hx-"],
+  },
   // astro registers NOTHING EITHER, and unlike vanilla that is a MEASURED
   // result rather than a design choice (editorial-build slice C). Astro's two
   // noise species both turned out to be opt-in, and this page opts into

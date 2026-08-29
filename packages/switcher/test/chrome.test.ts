@@ -253,7 +253,9 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
       expect(row).toContain("Misapplication exhibit");
     }
     // And it is still not counted: the count reads `variants`, never cells.
-    expect(renderChrome(plpCtx)).toContain("Served by 1 of 2");
+    // Both PLP arms are live now, so that is 2 of 2 — the fenced exhibit
+    // adds a cell and adds nothing to the count, which is the whole rule.
+    expect(renderChrome(plpCtx)).toContain("Served by 2 of 2");
   });
 });
 

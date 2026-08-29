@@ -889,15 +889,18 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
     // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
     expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
 
-    // htmx registers NO permitted noise (normalize.ts), and like astro's
-    // that is a MEASURED result, checked against the raw served bytes: the
-    // paradigm's mechanism is `hx-*` BEHAVIOR attributes, but editorial's
-    // one interaction is client cart state, which hypermedia does not own —
-    // so the served page idiomatically carries none (ISSUE E's "honest
-    // hypermedia statement"). The runtime rides a `<script>` element, which
-    // is delivery. If a later edit puts an `hx-*` attribute on this page,
-    // this fails and the registration must be added deliberately (slice A's
-    // behaviorAttrPatterns class) instead of the comparison silently lying.
+    // THIS PAGE carries no permitted noise, and that is a MEASURED result
+    // checked against the raw served bytes below — not an inference from the
+    // registry, which since the PLP build is no longer empty. The paradigm's
+    // mechanism is `hx-*` BEHAVIOR attributes, and editorial's one
+    // interaction is client cart state, which hypermedia does not own, so
+    // this page idiomatically carries none (ISSUE E's "honest hypermedia
+    // statement"). The runtime rides a `<script>` element, which is
+    // delivery. If a later edit puts an `hx-*` attribute on THIS page, the
+    // byte assertion fails — and that is what keeps this leg honest, because
+    // the comparison below passes `NO_NOISE` explicitly (:910) and has never
+    // consulted the registry at all. The registration could not have
+    // loosened this surface even in principle.
     // The whole mechanism family (verify-slice finding): `hx-on:*` carries
     // a colon the old [a-z-]+= shape missed, `hx-disable` is valueless,
     // and `data-hx-*` is the documented prefix form — all three are live
@@ -905,7 +908,17 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
     // fails loudly.
     const raw = await page.content();
     expect(raw).not.toMatch(/\s(?:data-)?hx-/i);
-    expect(PERMITTED_NOISE["htmx"]).toBeUndefined();
+    // Asserted by SHAPE, not absence. The PLP build registers `^hx-` under
+    // behaviorAttrPatterns for its paginator's three real attributes — the
+    // case the note this replaced predicted in so many words. What must
+    // never happen is `attrPatterns` growing: that class would let ordinary
+    // markup drift past the gate, which is the opposite of what the entry
+    // is for.
+    expect(PERMITTED_NOISE["htmx"]).toEqual({
+      attrPatterns: [],
+      classPatterns: [],
+      behaviorAttrPatterns: ["^hx-"],
+    });
 
     const dom = await extractNormalizedDom(page, NO_NOISE);
     expect(dom).not.toContain("pm-chrome");
