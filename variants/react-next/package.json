@@ -6,24 +6,35 @@
     "build": "node scripts/copy-tokens.mjs && opennextjs-cloudflare build",
     "dev": "wrangler dev --port 8793 --inspector-port 9236",
     "deploy": "node scripts/copy-tokens.mjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "@apollo/client": "4.2.12",
     "@pm/data-contract": "workspace:*",
     "@pm/tokens": "workspace:*",
+    "@tanstack/react-query": "5.102.8",
+    "apollo-link-rest": "0.10.0-rc.2",
+    "graphql": "^16.14.2",
+    "next": "16.2.10",
+    "qs": "^6.15.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "rxjs": "^7.8.2",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260708.1",
     "@opennextjs/cloudflare": "1.20.1",
+    "@pm/drift-gate": "workspace:*",
+    "@pm/measurement": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "linkedom": "^0.18.13",
     "typescript": "^5",
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }
 }

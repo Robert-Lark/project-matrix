@@ -5033,3 +5033,1001 @@ JS-off 405 dead end, the phone-profile CLS from the late-populating cart
 summary, the third byte-identical copy of `read`/`count`/`renderCount`, and
 the duplicated PDP block in `pdp-controls-wired`. None blocks a merge; all
 four are cheaper before the first checkout batch than after.
+
+### The PLP's react-next arm: three data strategies over one contract (2026-08-28)
+
+Unit 1 of four working in parallel. It builds the catalogue grid in the
+react-next variant, where the measured variable is not the rendering
+paradigm but **where the data layer lives** (ADR-0005). **Three ROUTES,
+covering FOUR of the five switcher presets**: `plain` serves two of them
+(cold and edge-cache — the difference is `?cache=`, not the path),
+`tanstack` and the fenced `apollo` exhibit one each. Only the htmx
+loaders preset is outstanding, and it is Unit 2's. Counting routes as
+presets understates what is live by one, and the preset count is what an
+integrator reads for scope.
+
+**The design fork this unit had to take, and it is a real one.**
+ADR-0005 §1 describes the cold arm as "plain client fetch on render and
+on every interaction", and §6 cell 4 contrasts "finished HTML in one
+trip" against "shell-then-data in two". That is a shell-first shape, and
+the canonical markup contract forbids it: every variant's served DOM
+must equal `packages/reference/surfaces/plp/index.html` (ADR-0003 §1),
+and a shell does not. The contract wins — all three routes SSR the full
+catalogue at request time — and the strategy axis moves entirely onto
+the interaction path, which is where ADR-0005 §3 already put the
+client-warmth claim. **Cell 4's copy is therefore wrong as written**:
+on FIRST load the React arms now also arrive in one trip, so that cell
+no longer separates them from loaders on round-trips. Recorded here
+rather than absorbed, because a cell whose premise the build changed is
+exactly the kind of thing that publishes quietly.
+
+**What the three arms actually differ by.** `PlpPlain` holds no cache
+and refetches on every page change. `PlpTanstack` mounts a QueryClient
+seeded with the server's tray under the served condition's key, at the
+**published** `staleTime: 5min` of ADR-0005 §4. The claim that buys — a
+revisit adds no request — is ASSERTED rather than described: the guard
+checks that the seeded entry is not stale under the published window and
+IS stale under the library's default, which is the difference §4 exists
+to record. An earlier draft of this sentence quoted `isPending: false,
+isFetching: false` "measured under SSR", read off a throwaway probe that
+no longer existed — a runtime claim living only in a comment, which is
+the exact shape this section catches 19 times below. Staleness is
+also the right seam and fetch counts are not: `renderToStaticMarkup`
+runs no effects, so NO arm fires a request during it and an
+`isFetching() === 0` assertion would have passed whatever the config
+said. `PlpApollo` does the same through
+`@apollo/client` 4.2.12 + `apollo-link-rest` 0.10.0-rc.2 under
+`cache-first`, whose window is NOT the lead's — Apollo has no staleTime
+knob at all, so the exhibit's cache is unbounded where the lead's is a
+published five minutes. Stated as a difference rather than parity; see
+the finding below.
+
+**The exhibit's cost, measured on the real build rather than the
+prototype.** Summing each route's client-reference-manifest chunk set
+plus `rootMainFiles`, brotli q11, from `pnpm exec next build` at this
+SHA:
+
+| route | chunks | raw B | brotli B | Δ brotli vs plain |
+|---|---|---|---|---|
+| `/plp/plain/` | 7 | 528,513 | 129,143 | — |
+| `/plp/tanstack/` | 8 | 560,912 | 138,040 | **+8,897 B** |
+| `/plp/apollo/` (fenced) | 8 | 759,456 | 190,095 | **+60,952 B** |
+| `/editorial/` (control) | 7 | 521,901 | 127,168 | — |
+
+That is **6.85×**, against the prototype's build-measured 7.3× (+65.1 vs
++9.0 KB, ADR-0005 §7). Same order, same verdict, slightly cheaper on the
+real build.
+
+**The DELTAS are the measurement; the absolutes are not, and that took
+five builds to learn.** Three earlier drafts quoted rounded KiB and the
+rounded ratio flipped between 6.8× and 6.9× — a figure that changes with
+rounding is not a measurement, least of all in a table about somebody
+else's byte cost. So the table moved to bytes. But the ABSOLUTES then
+moved too, on every source edit the verification pass produced: five
+builds gave `/plp/plain/` 527,753 / 528,052 / 528,160 raw. What did not
+move is what is being claimed — the deltas held at **+8,897 to +8,915 B**
+and **+60,949 to +60,993 B** across all five, a spread under 0.3%, and
+the ratio at **6.84–6.86×**. Quote the deltas and the ratio; the
+absolutes are a property of the build, not of the strategy.
+
+`/editorial/` is carried as a CONTROL, and it earned its place: its
+figure is byte-identical (521,901 / 127,168) across every build in this
+session, INCLUDING the builds where the PLP routes moved. That is what
+says these deltas are the PLP's and not the toolchain's — and the
+verification pass proved the control works, by re-deriving the whole
+table independently from the record's stated method and matching the
+control to the byte while finding the PLP absolutes had moved under it.
+Re-derive by building and summing each route's
+`page_client-reference-manifest.js` chunk set unioned with
+`build-manifest.json`'s `rootMainFiles`, brotli quality 11; if your
+`/editorial/` figure matches, your method matches. It is a LOCAL build
+measurement, not a receipt — the bench runner mints those, and it cannot
+mint one for this surface yet (below).
+
+**The RC's packaging broke the build in three different resolvers, which
+is why ADR-0005 §7 pins its exact version.** `apollo-link-rest@0.10.0-rc.2`
+declares `"type": "module"` with `"main": "bundle.umd.js"`,
+`"module": "index.js"` and no `"exports"` map, and separately imports
+`rxjs` (`restLink.js:7`) while declaring it in neither `dependencies`
+nor `peerDependencies`. Measured failures, each distinct:
+
+1. Node's ESM loader picks the UMD bundle → `TypeError: Cannot read
+   properties of undefined (reading 'utilities')`.
+2. Its ESM entry then uses extensionless relative imports (`./restLink`)
+   → `ERR_MODULE_NOT_FOUND` under plain Node even when pointed at
+   `index.js` directly.
+3. Turbopack honours `module` for the server graph but falls back to
+   `main` for the browser one → `Export RestLink doesn't exist in target
+   module … The module has no exports at all`.
+4. Under ADR-0004 §2's no-hoisting isolation the undeclared `rxjs`
+   import fails outright → `Module not found: Can't resolve 'rxjs'`.
+
+Three fixes, none of them a patch of the library: a fourth
+`packageExtensions` entry (the OpenNext/qwik-city/remix-render-middleware
+class, declared as a PEER for the qwik-city reason — two rxjs instances
+would be worse than none), one `turbopack.resolveAlias` naming the file
+the package's own `module` field already names, and one
+`ssr.noExternal` line so vitest resolves it the way a bundler does.
+A future bump re-runs all four as its canary.
+
+**What the identity guard is, and why it lives in the variant.**
+`variants/react-next/test/master-identity.test.ts` — the package's FIRST
+test, which is what takes turbo from **30 to 31** tasks (measured:
+`--dry=json` non-`<NONEXISTENT>` commands, 30 → 31, the only delta being
+`@pm/react-next#test`). react-next's editorial and PDP guards live in
+`tools/repo-checks/`, because `render.tsx` needs no compiler; this
+surface is the first react-next one that needs workspace-local
+machinery, since the fenced exhibit is only loadable through a bundler.
+So react-next's guards are now **split across two homes**, deliberately,
+and consolidating them is an integration call rather than a silent one.
+
+The guard does something the repo did not have: it drives the **real
+edge Worker** in-process over a stub R2/KV and feeds its actual tray to
+the React render. That is not convenience. `renderPlp` computes facet
+buckets (`plp.mjs:28-41`) and the Worker computes them again
+(`index.js:101-119`); the renderer's own comment at `plp.mjs:22-27` says
+the two comparators "must match the Worker byte-for-byte or the
+crate-plane drift leg diverges", and **no test anywhere compared them**.
+Re-derived precisely rather than repeated from the survey that first
+flagged it — that survey said "two definitions plus one unrelated
+comment", which is imprecise. **Pinned to a SHA, because the first
+correction was itself falsified by writing it down:**
+`git grep -c computeFacets ae97f8e` finds **8** hits at this branch's
+base commit — two DEFINITIONS (`workers/edge/src/index.js:101`,
+`plp.mjs:28`), two call sites (`index.js:139`, `plp.mjs:74`), four prose
+mentions (`plp.mjs:23`, `cpu.ts:13`, `bench-runner/README.md:66`,
+`build-log.md:664`) — and not one assertion. An earlier draft of this
+sentence said "four prose mentions" of the WORKING TREE, and the working
+tree now has seven, because this record, the decision-map ticket and the
+guard's own comment are three of them. A count of "the tree" is falsified
+by the act of recording it; a count at a SHA is not. **That is the third
+time in this unit that an edit moved a citation the same edit was
+making** — the other two were the sixteen-line insert into
+`normalize.ts` shifting two of its own references — and pinning to a
+commit is the durable form, not more care. Comparing the rendered rail against the
+reference's now pins that agreement as a side effect, on both committed
+snapshots, which is where the ICU disagreement the comment records was
+found.
+
+Coverage: both snapshots × both ends of the `n` knob (24 and 240) — the
+axis is the CONDITION, not the tray, because `renderPlp` slices
+`snapshot.summaries` and the PDP guards' per-tray sweep would prove one
+page many times. Plus the committed master artifact, the stylesheet
+list, the fence, the seeds, the clamp, page ≥ 2, crate facet encoding,
+the cold arm's request ordering, the address-bar duties, which stylesheet
+list each route GROUP actually passes, whether each cache arm READS its
+cache at the condition's key, and whether a pagination click is really
+intercepted, and whether the seeded entry is stale under the published
+window. **37 tests / 155 `expect` calls, 1.07 s local** (derived:
+`vitest run`, `grep -c 'expect('`). The budget is the bench runner's `300_000` on the
+catalogue legs, per the standing rule that a timeout catches a HANG and
+is never fitted to a local timing — measured local→CI ratios on this
+repo span 2.1× to 15.5× on one runner in one run.
+
+**That sentence was FALSE when it was first written, and it is worth
+more than the fix.** The record claimed the budget for hours while the
+file carried none: the heaviest leg is 107 ms here, comfortably under
+vitest's 5 s default, so nothing local could ever have shown it — and
+the default is exactly what failed PR #30's `check` job and skipped its
+deploy while the merge event looked successful. Caught only by going
+back to check the claim against the file after the PR was opened. The
+budget exists now, on the four catalogue legs and on the library canary
+(155 ms and the slowest leg in the file, but two recursive greps over a
+package tree, so a cold CI filesystem is the case it is for), and it is
+proven in BOTH directions rather than asserted: a deliberate 6 s delay
+inside a budgeted leg passes, and the same delay in an unbudgeted one
+fails with `Test timed out in 5000ms`. A claim about a timeout that no
+local run can falsify is the same shape as the sixteen vacuous guards
+above — a true-sounding statement with nothing underneath — and it got
+into the record by the same route: written from intent rather than from
+the file.
+
+**52 sabotages, no crashes — and 19 of them PASSED against the
+guard as it then stood, every one of those 19 a vacuous guard this unit
+had written.** (Counts derived from the table below with `awk` after the
+final edit, not tallied by eye — an earlier draft of this sentence said
+"thirty-five" against thirty-three tabulated rows, which is the same
+class of error as everything else here.)
+
+**Where the vacuous-guard count comes from, so it is not a second
+tally.** It IS the table's "passed" column: 19 sabotages that a guard
+claiming to cover them did not catch. One further vacuous guard earned
+no row — the route-wiring gap, found by looking for the pattern rather
+than by tripping over it — and a couple of the 16 are the same guard
+vacuous on two independent axes, so "distinct guards" is a slightly
+smaller number than 16 and "instances" is 17. The honest headline is the
+one the table supports: **19 tabulated sabotages passed against a
+guard written to catch them.** Green is not proof, so each
+leg was broken on its own axis and watched to fail with the message it
+was written to give, then restored from a copy (never
+`git checkout --`), then re-verified byte-identical:
+
+| sabotage | caught by | not caught by |
+|---|---|---|
+| image boundary `i < 4` → `i <= 4` | identity, at card 5 exactly | — |
+| style facet cut 12 → 11 | identity, on the rail's title | — |
+| facet href gains `&cache=cold` | identity, on the first facet | — |
+| tanstack seed removed | the seed leg | the markup legs |
+| apollo seed removed | the seed leg | the markup legs |
+| `PLP_CSS` drops `facets.css` | the stylesheet leg **only** | identity |
+| exhibit sheet list == benchmarked | the exhibit-sheet leg | — |
+| `clampPlpN` max 240 → 200 | the clamp leg | — |
+| plaque loses `data-pm-fenced` | all three fence legs | — |
+| facet param list drops `q` | the condition leg | — |
+| `plpHistoryUrl` drops `cache` | the condition leg | — |
+| apollo island renders nothing | strategy parity + fence-drop | — |
+| ordering gate dropped on success | the cold-arm ordering leg | everything else |
+| ordering gate dropped on failure | the cold-arm fallback leg | everything else |
+| `plpHistoryUrl` drops `n` | the condition + round-trip legs | — |
+| Apollo "adds" staleTime (token swap) | the library canary | — |
+| the canary's sweep path is wrong | its non-vacuity control | the canary itself |
+| pagination window re-anchored at 1 | the page sweep, at page 6 exactly | the page-2 guard |
+| plaque version hardcoded to 9.9.9 | the installed-pin leg | — |
+| declared range floated to `^4.0.0` | the installed-pin leg | the leg's FIRST draft |
+| tanstack loses its popstate CALL | the wiring leg | **its first draft — passed** |
+| apollo loses its error-floor CALL | the wiring leg | **its first draft — passed** |
+| plain loses its navigate fallback | the wiring leg | — |
+| the hook stops removing its listener | the wiring leg | — |
+| Next anchor hardcoded to page 2 | the page-2 leg, once fixed | **its first draft — passed** |
+| benchmarked layout takes the exhibit's sheets | the layout-wiring leg | **the sheet legs — passed** |
+| exhibit layout drops the plaque sheet | the layout-wiring leg | — |
+| `PLP_CSS` reordered, same members | the stylesheet leg (order counts) | — |
+| `encodeURIComponent` dropped from facet hrefs | 9 legs, named | — |
+| the committed master truncated to 30 lines | the artifact leg | the renderer legs |
+| a route stops reading its query | the route-wiring leg | everything else |
+| a route drops `force-dynamic` | the route-wiring leg | everything else |
+| repeated param takes the LAST value | the searchParams leg | — |
+| tanstack per-query `staleTime` → 0 | the query-options leg | **the seed leg — passed** |
+| apollo `fetchPolicy` → `network-only` | options + cache-read legs | **its first draft — passed** |
+| apollo ignores its cache, renders `initial` | the cache-read leg | **the markup legs — passed** |
+| tanstack `queryKey` pinned to one page | the cache-read leg | **the seed leg — passed** |
+| `preventDefault()` removed from the click | the interception leg | — |
+| modified-click guard removed | the interception leg | — |
+| `push` → no-op in `PlpPlain` | the wiring leg | **its first draft — passed** |
+| `assign` deleted from `useNavigateOnError` | the hook-body leg | **its first draft — passed** |
+| plaque added to the BENCHMARKED plain route | the plaque-exclusivity leg | **the fence legs — passed** |
+| the published window set to the library default | the staleness leg | **the seed leg — passed** |
+| `run` dropped from the tray URL | the nonce leg | **the round-trip leg — passed** |
+| `run` dropped from the address bar | the nonce leg | **the round-trip leg — passed** |
+| `run` validation dropped (junk reaches KV) | the nonce leg | — |
+| cache arms push on the CLICK again | the wiring leg | **its first draft — passed** |
+| `usePushWhenSettled` pushes duplicates | the wiring leg | — |
+| `navigateOrReload` always assigns | the hook-body leg | **its first draft — passed** |
+| the mount latch removed | the hook-body leg | **its first draft — passed** |
+| condition compare → string compare | the hook-body leg | **its first draft — passed** |
+| `retry` back to TanStack's default | the seed leg | **its first draft — passed** |
+
+The stylesheet row is the useful one: dropping a stylesheet passes the
+normalized-DOM compare, because the normalizer serializes the BODY only
+and never the head (`normalize.ts:406-411`). That citation was
+`:392-396` in an earlier draft, which is the delivery-element drop
+inside `serializeChildren` — wrong, and wrong in a specific way worth
+recording: it was correct when written and this unit's OWN sixteen-line
+comment in the same file shifted it. Re-derived by re-opening the range
+rather than by adding sixteen. The separate stylesheet leg is the
+only thing between that and a route served unstyled — the
+`format-switch.css` failure mode, reproduced deliberately.
+
+**One of this unit's own guards was vacuous first, and the fix is the
+point.** The seeded-cache leg originally asserted that the islands
+render 24 cards on the server. Both islands render `data ?? initial`, so
+it passed whether or not the cache held anything — a cache that never
+held the tray would fire a request the server had already paid for on
+every load, and "a revisit costs 0 requests" would be false with nothing
+red. The seeding is now an exported function the guard calls directly,
+asserting the entry through the SAME key and document the components
+read, plus the complement that a DIFFERENT condition does **not**
+resolve from the seed. Rows 4 and 5 above are that fix being proven.
+
+**Six more things the verification pass changed, all but one in this
+unit's own code.**
+
+1. **A fairness defect in the cold arm, fixed.** Two quick paginate
+   clicks raced: the LAST RESPONSE won rather than the last click, so
+   clicking 2 then 3 could land on page 2 with the URL pushed to match.
+   TanStack and Apollo both get request ordering FREE from their
+   libraries (each re-keys on the condition and renders whatever the
+   current key holds), so leaving cold without it would have made the
+   baseline look worse for a reason that is not its data strategy —
+   rigging in the punishing direction, which ADR-0001 §9 forbids exactly
+   as much as the flattering kind. The fix is a ticket compared against
+   the newest request, gating BOTH the success commit and the navigation
+   fallback. It is not a cache: every navigation still pays a full
+   fetch, and a superseded response is dropped after its bytes are
+   already spent, so the byte cell is untouched. The whole request path
+   is extracted to a `paginate()` function precisely so a test can drive
+   it — `renderToStaticMarkup` runs no handlers and no effects, so an
+   inline version would have been an untested claim about the arm the
+   `plp-paginate` cell will measure. Sabotage-proven both ways.
+2. **The degenerate page is now pinned, and on the FIXTURE it is one
+   click away.** At `?n=240` the fixture holds ONE page (240 releases),
+   so the master's own unconditional `rel="next"` links `?page=2&n=240`
+   — the very next click. The crate is NOT the same and an earlier draft
+   of this line said it was: 500 releases at n=240 is THREE pages, so
+   its first empty page is 4, three clicks out (`totalPages` re-derived
+   from the Worker for both snapshots rather than reasoned). The defect
+   is identical either way — the link is unconditional, so it appears at
+   the LAST page of every `n` — but "one click" is a fixture fact, and
+   the guard is correctly fixture-scoped.
+   Measured: an empty grid, an honest `0–0` count rather than a
+   fabricated range, and ZERO `aria-current` in the pagination, since no
+   page in the 1..5 window equals the served page. The earlier draft of
+   this record called that an n=240 curiosity; it is reachable from a
+   served page in a single click, and mirroring the reference means it
+   appears at the LAST page of every `n`, not just at 240. Pinned rather
+   than fixed, for the fork reason above — the day the reference diff
+   lands, the pin fails and follows it.
+3. **`noindex` on the exhibit: considered, rejected.** It reads sensible
+   — a deliberately-wrong-tool page is not a catalogue result — but it
+   would have been the repo's FIRST indexing policy, set unilaterally
+   inside one variant. Verified before deciding rather than after: no
+   robots.txt under `workers/front`, no variant sets robots metadata
+   anywhere, the only master carrying `<meta name="robots">` is
+   `a11y/element-demos`, and the established FENCED precedent — remix3 —
+   does not noindex either.
+4. **The exhibit claimed a cache window it does not have.** An earlier
+   draft exported `APOLLO_STALE_TIME_MS = PLP_STALE_TIME_MS` and the
+   guard asserted the two equal — a true statement wired to nothing,
+   because **Apollo has no staleTime knob at all**. Verified rather than
+   recalled: `grep -rl staleTime` across the installed
+   `@apollo/client@4.2.12` returns nothing. Its window under
+   `cache-first` is unbounded. Manufacturing a five-minute TTL in Apollo
+   was rejected — ADR-0005 §4's rule is that documented configuration is
+   fair and "hand-tuning is configuration that exists only to win a
+   cell", and a hand-rolled TTL is hand-tuning in the flattering
+   direction. The exhibit now runs the library's documented default and
+   SAYS the window differs: the lead's claim is "free for five minutes,
+   by published config", the exhibit's is "free until eviction, by
+   library default". The library fact is pinned as a canary with a
+   non-vacuity control (a control sweep for a token Apollo really ships,
+   so a typo'd path cannot read as "no staleTime here"), and that canary
+   was itself sabotage-proven in both directions. Its first draft used
+   `execFileSync`, which throws on grep's exit-1 — so the guard crashed
+   on its own SUCCESS path, the crash-not-a-guard shape this log has
+   condemned before. It uses `spawnSync` and distinguishes exit 1 from
+   exit ≥ 2 now.
+5. **A second asymmetry that would have punished the exhibit.** The lead
+   carries `placeholderData: keepPreviousData`, so a paginate click
+   keeps the previous grid on screen; the exhibit had no equivalent and
+   would have snapped back to the SERVED page's data mid-navigation.
+   Apollo's own documented equivalent is `previousData` on the
+   `useQuery` result (`useQuery.d.ts:179` in the installed package), and
+   the exhibit uses it. ADR-0005 §7 requires the exhibit to be fair to
+   be evidence, and a flicker the lead does not have is not a property
+   of pointing a GraphQL client at REST.
+6. **This unit's own facet-encoding test was wrong first.** It asserted
+   that every awkward crate facet value appears URL-encoded in the
+   rail, and failed on `Indie Rock` — a style ranked 13th of 95, which
+   the `top 12` cut means the page never renders. The test now slices
+   the same way the component does. Worth recording because the failure
+   mode was a test making a claim about markup that does not exist,
+   which passes as thoroughness right up until it doesn't.
+
+**The staged verification pass found six more, and its best finding was
+one this unit had already printed and read past.** The lenses run
+sequentially against the committed tree; the first one alone returned
+seven, and every one below survived re-derivation.
+
+1. **No `aria-current` on any page from 6 onward — a full grid of 24
+   real cards, one click from page 5's own Next link.** The pagination
+   window was anchored at `[1..min(totalPages,5)]`, which is exactly
+   what `plp.mjs:88` does and is correct there because `renderPlp` only
+   ever renders page 1. Generalized to page N it means no rendered link
+   equals the served page from 6 on, so the `--current` branch never
+   runs. **This unit's own page probe had printed page 10's pagination
+   with no current marker and the reading missed it** — the window now
+   slides with the served page (reducing to `[1..5]` at page 1, which
+   the identity legs prove), and the guard sweeps pages 1,2,3,5,6,9,10
+   rather than page 2 alone. Sabotage-proven: re-anchoring fails at
+   page 6 exactly.
+2. **A failed page change painted the SERVED page's grid under the new
+   page's URL, on both cache arms.** They push history on click and
+   render `data ?? initial`, so a failed fetch left the page looking
+   fine and the receipt lying — worse than an error. Both now fall back
+   to the real navigation the anchor would have done unaided, which is
+   the floor the cold arm always had.
+3. **Three `pushState` writers and zero `popstate` listeners.** Back
+   moved the address bar while every island kept its `useState` value,
+   so the URL and the grid described different pages with nothing to
+   reconcile them. Next's own docs for this version say raw `pushState`
+   integrates with the router and updates the stack "without reloading
+   the page", so there is no document load to save it. All three arms
+   now restore through `readPlpCondition` — the same derivation the
+   server route uses, so a restored page cannot disagree with a served
+   one about what its URL means.
+4. **The plaque's "INSTALLED pins" leg compared a file with itself.** It
+   read `variants/react-next/package.json` and compared it against a
+   constant DERIVED from that same file — it could not fail under any
+   change, while its name said "the INSTALLED pins" and its comment said
+   "the versions the lockfile actually installs". It now resolves each
+   package's own manifest. Sabotage-proven on the axis the old one was
+   blind to: floating the declared range to `^4.0.0` against an
+   installed `4.2.12` now fails.
+5. **The record still claimed in two places that the exhibit "holds the
+   LEAD's window"** — in this section and in the code comment that is
+   the first thing a variant author reads — while the same document
+   proved three paragraphs later that Apollo has no such window. Both
+   rewritten.
+6. **A citation this unit's own edit invalidated.** The sentence about
+   the head discard cited `normalize.ts:392-396`, which was right when
+   written and became the delivery-element drop when this unit inserted
+   sixteen lines of comment above it. Re-derived by re-opening the
+   range, not by adding sixteen. **The lesson is the general one: an
+   edit to a file moves every citation into it, including your own.**
+
+**FIVE of this unit's own guards were vacuous, and the pattern is worth
+more than any of them.** In order of discovery:
+
+1. **The seed leg** asserted that the islands render 24 cards — true
+   whether or not either cache held anything, because both render
+   `data ?? initial`.
+2. **The structural wiring guard**, written to close findings (2) and
+   (3) above, used `src.includes("usePopstateCondition")` — satisfied by
+   the IMPORT line alone, so deleting the CALL from two of the three
+   arms left it green. Caught by sabotaging the fix and watching it
+   pass.
+3. **The plaque's "INSTALLED pins" leg** compared
+   `variants/react-next/package.json` against a constant derived from
+   that same file.
+4. **"points Next at 3"** asserted `toContain('href="?page=3"')` — which
+   at page 2 the NUMBERED link for page 3 satisfies, so hardcoding the
+   Next anchor back to page 2 survived it.
+5. **The stylesheet legs** compared the two exported constants and
+   nothing connected either to a route, so pointing the BENCHMARKED
+   group's layout at `PLP_APOLLO_CSS` — shipping the plaque sheet on the
+   two measured strategies, which is measured bytes on a published cell
+   — passed every assertion in the file.
+
+**All five are one shape: asserting that a NAME or a SUBSTRING is
+present, rather than that the MECHANISM under test runs or is
+connected.** Three of the five were found only by sabotage, and two of
+those only after the fix for an earlier finding was itself sabotaged.
+
+**Then a staged lens found EIGHT more of the same shape, and the count
+stopped being the point.** Every leg in the file proved a CONSTANT or a
+WRITE, and none proved a READ — so all of these stayed green with the
+behaviour broken: the lead's per-query `staleTime` set to 0 (the guard
+checked the CLIENT DEFAULT, which the component overrides); the
+exhibit's `fetchPolicy` swapped to `network-only`; the exhibit ignoring
+its cache entirely; either arm's cache key pinned to one page;
+`preventDefault()` deleted from the pagination click, which silently
+turns every strategy into a full document load; `push` made a no-op, so
+the URL never moves; `window.location.assign` deleted out of the error
+floor while every call site stayed; and a fenced plaque added to a
+BENCHMARKED route, which the fence legs cannot see because they render
+the ISLANDS and not the PAGE.
+
+The fix was seams rather than more assertions. Both islands' inner
+components and their query-options builders are exported, so a test can
+seed a cache with page X, ask for page Y, and watch which one renders —
+a cache that is read and a cache that is ignored are then
+distinguishable without a DOM. And `PlpArticle` is a plain function, so
+its returned element tree can be walked and the anchor's own `onClick`
+invoked with a stub event: `preventDefault` and the modified-click
+escape are now driven, not grepped. All nine sabotage-proven.
+
+**Writing the pattern down paid for itself twice: a SIXTH instance was
+found by looking for it rather than tripping over it, and the eight
+after it were found by a lens told to look for exactly that shape.** Every leg
+in the file tested the CONDITION machinery — the clamp, the facet
+forwarding, the round-trip — and not one connected it to a route. A page
+that never read `searchParams` would have served n=24 while the chrome
+tagged the visit `n=240|cache=cold`, because the beacon tag is derived
+from the URL and never from what was served
+(`packages/measurement/src/beacon.ts:47-58`): a false receipt with
+nothing red. The three inline query-parsing blobs are now one tested
+`conditionFromSearchParams`, and a structural leg holds each route to
+calling it, to fetching for the result, and to staying `force-dynamic`
+(without which `?cache=` means nothing, since a cached render serves one
+warmth under both presets). All three sabotage-proven.
+
+**And the count did not stop there.** The client-path lens added three
+more of the same shape, two of which were the FIXES for its own findings
+being vacuous on their first draft: the round-trip leg was closed under
+a dropped `?run=` (a round-trip over a type that lacks a field cannot
+notice the field going missing); the wiring leg accepted a
+`usePushWhenSettled(…, true)` that pushes on the click after all; and
+the hook-body leg accepted a `navigateOrReload` that only ever assigns.
+Sixteen tabulated sabotages passed in total, which is the number the
+table supports and the one to quote.
+
+**"The tests are green" was true the whole way through every one of
+them** — through 36 passing tests, three full `pnpm run check` runs at
+31/31, and a clean `next build`. That sentence is the finding. A suite
+that is green while 19 of its own guards excuse the behaviour they
+name is not a weaker version of a suite that catches them; it is a
+suite that reports the opposite of the truth, and nothing in the green
+distinguishes the two. The only thing that did was breaking each guard
+on purpose and watching what happened.
+
+Its limits, stated rather than implied: those two hooks are effects, and
+nothing in this workspace runs effects or has a DOM — so no test here
+proves that Back actually restores or that a failure actually navigates.
+What the guard proves is that no arm silently loses the wiring, which is
+the failure that actually happened, twice. The behavioural proof is owed
+to the origin suite's JS-on leg, where this repo already puts JS-on
+control checks, and it is named as owed rather than quietly skipped.
+
+**A fourth lens went at the CLIENT path — the half no guard in this repo
+can reach — and found the worst defect of the unit.**
+
+1. **`?run=` never reached the edge Worker, from any of the three URLs
+   this build derives.** The bench runner sets the isolation nonce on
+   every measured URL (`tools/bench-runner/src/batch.ts:79`) and the
+   Worker folds a well-formed value into the KV key
+   (`workers/edge/src/index.js:51-53, 127`) — that is how a batch mints
+   warm state without touching other runs', or live visitors'. `run` was
+   not a field of `PlpCondition`, so the SSR tray fetch, the client tray
+   fetch and the pushed history URL all dropped it: every batch, every
+   post-deploy smoke and every visitor would have shared ONE
+   infinite-TTL warm entry, and the warm column would not have been
+   reproducible in the way its own receipt claims. On the surface whose
+   entire subject is measurement. It is fixed, validated with the
+   Worker's own regex (asserted against the Worker's source, not
+   re-typed), and proven by driving the real Worker: a nonced request
+   MISSES the shared entry and mints its own.
+
+   **The guard could not see it, and the reason is the unit's own
+   pattern in a new place.** The round-trip leg asserts
+   `readPlpCondition(plpHistoryUrl(c)) === c` over `PlpCondition`
+   values — and a round-trip over a type that LACKS a field is closed
+   under that field's loss. A guard shaped like the thing it guards
+   cannot notice what the thing forgot.
+
+2. **The two cache arms moved the address bar on the click, not on the
+   content.** Under `keepPreviousData` (and Apollo's `previousData`) the
+   grid keeps painting the previous page until the new one lands, and
+   `PlpArticle` derives its whole pagination from the payload it is
+   handed — so for the entire in-flight window the URL said page 2 while
+   `aria-current="page"` said page 1: a wrong receipt AND a wrong
+   announcement. It compounded, too: the "2" link stays live in that
+   window, so a visitor who sees nothing change and clicks again pushes
+   the SAME URL a second time (`pushState` appends unconditionally,
+   unlike a hash assignment), and Back then lands on the duplicate and
+   looks dead. The cold arm never had either problem — it pushes after
+   the payload commits — and ADR-0005 §1's discipline is that the arms
+   differ by exactly one architectural move; differing in WHEN the
+   address bar moves is a second one. Both cache arms now push when the
+   displayed page is the requested page, and never push a URL the bar
+   already shows.
+
+3. **The error floor moved the visitor FORWARD on the Back path.**
+   `location.assign` always appends a history entry, including for the
+   URL already in the bar. So: press Back, the restore re-fetches, the
+   fetch fails, the floor `assign`s the re-derived URL, and the browser
+   leaves the history position the visitor just navigated to — Back goes
+   dead. Invisible on the click path, where the target really is
+   somewhere new, which is why it survived the first draft of both hooks
+   AND of the cold arm's restore. `navigateOrReload` reloads when the
+   target is where we already are and assigns otherwise.
+
+**And one this lens found that is NOT fixed here, deliberately.** A
+cmd/ctrl-click on a paginate link goes somewhere different from a plain
+click on the same link: the intercepted path preserves the whole
+condition, while the raw `href` carries only `page` and `n` — so
+cmd-clicking "2" from `?cache=cold&genre=Jazz` opens the EDGE-CACHED
+condition with the filter gone. Two measurement conditions behind one
+link. **That href IS the contract's** (`plp.mjs:63-68`, the same
+`pageHref` whose dropped `cache` is already reported above), so fixing
+it per-variant forks it again and leaves the htmx PLP to guess. It is
+therefore folded into the reference diff rather than patched here — and
+it makes that diff more urgent than "a paginate click loses the
+condition" alone suggested, because it is now also a way for two tabs to
+disagree about what they are measuring. An alternative was considered
+and rejected: having the strategy supply the href builder, so the served
+DOM keeps the master's link and the hydrated DOM carries the full
+condition. It works, and it introduces a deliberate
+server/client href difference in the one variant whose published
+initial-JS cell was already paid for once by a hydration bug.
+
+**Four things this lens SUSPECTED and cleared, recorded because a
+checked-and-cleared risk is worth as much as a finding.**
+`apollo-link-rest`'s `@rest(path: "{args.path}")` does NOT percent-encode
+the tray path — I drove the installed link with a stubbed `fetch` and it
+requested `/api/plp?n=24&page=2&cache=cold&genre=Folk%2C%20World%2C%20%26%20Country`
+verbatim, which would otherwise have 404'd every Apollo pagination click.
+No stale-closure contamination in TanStack's `queryFn` (key and function
+are installed as a pair per render). No reload loop in either error
+floor. And middle-click is safe: modern engines dispatch `auxclick`, not
+`click`, so React's handler never runs and the anchor navigates for
+real.
+
+**One follow-up this unit did NOT take, named rather than left.**
+`loadFeatured`/`loadDetail` (`src/lib/edge.ts:23-39`) drop `run` the same
+way `loadPlp` did, on the PDP and editorial paths. Those surfaces are
+already published and re-measuring them is not this unit's call, so the
+durable fix — forwarding `run` in `edgeFetch` from the incoming request
+rather than per-surface — is reported for integration instead of applied
+under a PLP branch.
+
+**The fifth lens returned NINE, and three of them were defects the
+fourth lens's fixes had just introduced.** That is the sharpest thing
+this unit learned: a verification pass is not a filter you run once.
+
+1. **`usePushWhenSettled` — the fix for the URL-timing defect — fired on
+   MOUNT.** The seeded cache resolves on the first render, so `settled`
+   is true immediately, and the hook compared STRINGS: the served
+   `?n=24&run=bench-abc&cache=cold` is not the string
+   `?cache=cold&run=bench-abc` even though it is the same condition
+   (default `n` dropped, different order). So every bench-measured load
+   of the two cache arms rewrote its own URL and took TWO history
+   entries where the cold baseline takes one — a second architectural
+   difference between the arms, introduced by the fix for the first one.
+   Now a mount latch plus a `sameCondition` comparator, both
+   sabotage-proven; `navigateOrReload` had the same string-equality bug
+   and got the same treatment.
+2. **The fenced plaque overstated its own evidence.** It said "It works,
+   and the page you are reading is the proof." It is not: the grid on
+   that page is server-rendered by `loadPlp`, byte-identically to the
+   plain arm, and handed to Apollo as a cache SEED — so Apollo issues no
+   request for anything the reader is looking at. Its REST path is
+   exercised only by a later pagination click, which nothing in this
+   repo drives yet. The exhibit was overclaiming on the one page in the
+   repo whose subject is not overclaiming. The copy now says what the
+   page shows (server-rendered grid; Apollo answers the page changes)
+   and the behavioural proof is owed to the origin suite.
+3. **"Apollo holds the lead's window" survived in a THIRD place** — the
+   `PLP_STALE_TIME_MS` docstring — after being corrected in the
+   exhibit's file header and in this log. Three homes for one falsehood,
+   found one lens at a time.
+4. **The unbacked `isPending: false, isFetching: false` claim survived
+   in the lead's file header** after being corrected here. And the
+   lens's own reasoning is the reason it was worthless: nothing fires a
+   request during `renderToStaticMarkup`, so an `isFetching` reading
+   proves nothing about a real mount either way. Staleness was always
+   the seam.
+5. **`retry: false` was a second non-default knob on the measured lead
+   arm, published nowhere.** TanStack retries three times with backoff
+   by default; this arm does not, so a failed page change reaches the
+   error floor at once instead of after three silent re-requests that
+   would put bytes and seconds into an interaction cell without
+   appearing in any receipt. ADR-0005 §4's rule is that configuration is
+   published copy — so it is published in the docstring now, and
+   asserted, because an unasserted published knob is this file's own
+   recurring shape.
+6. **Three citation and count slips, in a record that makes citation
+   discipline its standard.** `pdp.test.ts:642` is `:641` (wrong in four
+   places, and wrong when written — that file is untouched by this
+   slice, so nothing moved it; it was simply miscounted). The edge
+   Worker's parse range cited `:122-127` for `n`/`page`/`cache`/`run`,
+   but `cache` is read at `:62` inside `serveData`, outside the range.
+   And the test counts were a commit behind. The lens also confirmed
+   that roughly forty other citations in the record ARE correct, which
+   is the point: a reviewer who spot-checks one, finds it off, and stops
+   checking discounts the forty that hold.
+
+**The origin suite ran in CI, and it settles one of this unit's two open
+questions and sharpens the other.** The unit could not run it locally —
+three parallel agents held its ports — so it was designed to be
+verifiable without it and the gap was named rather than skipped. Opening
+the PR ran it: **17 files, 510 tests, all passing**, against a live
+composed origin built from this branch, with `/plp/apollo`, `/plp/plain`
+and `/plp/tanstack` all present in the build output.
+
+What that DOES settle: `suite/pdp.test.ts` (82 tests) passed, and that
+file carries the editorial eight-chunk pin at `:641`. The integration
+risk this unit flagged — that adding client islands re-groups the client
+graph under a published initial-JS cell — is now checked where it counts
+rather than inferred from a manifest diff.
+
+What it does NOT settle, and the record must not let the green imply
+otherwise: **zero legs requested `/react-next/plp/…`**. Grepping the
+suite's own output for that path returns nothing. The two `plp:` legs
+that do appear ("the normalizer extracts identically across independent
+loads", "pixels stabilize") are drift-gate self-checks over the reference
+MASTER and predate this unit. So the suite proves this branch breaks none
+of the 510 existing assertions; it proves nothing about the three routes
+it adds. Every browser-level claim about them — that the served page
+carries the App Router wrapper the noise registration excuses, that Back
+restores, that a failed page change falls back to a real navigation —
+remains owed to PLP legs that do not exist yet.
+
+**The editorial chunk pin, measured rather than worried about.**
+`tools/origin-suite/suite/pdp.test.ts:641` asserts the editorial page
+references exactly EIGHT client chunks, under a published initial-JS
+cell, and adding client islands is exactly what re-groups a chunk graph.
+Measured directly: built the app twice, once with the three PLP routes
+and their islands present and once with them moved aside, and diffed
+editorial's `page_client-reference-manifest.js` chunk set. **Identical**
+both times (three chunks, same names). That is strong evidence, not
+proof — the suite counts `<script src>` in the SERVED HTML, which
+includes root and shared chunks the manifest does not list, and only the
+origin suite can count those. Integration should re-check it there.
+
+**Two defects in the contract renderer, mirrored rather than fixed, with
+diffs reported.** `packages/reference/**` is read-only to this unit, and
+a variant that unilaterally improved on the master would fork it — the
+htmx PLP arriving in parallel would then have to guess which behaviour
+to copy. So both are reproduced exactly and reported:
+
+1. `plp.mjs:134` emits `rel="next"` unconditionally. At `?n=240` the
+   fixture has ONE page and the master still links `?page=2&n=240`, a
+   page with zero releases (verified by rendering both).
+2. `plp.mjs:51` builds facet hrefs as `?${param}=${value}` — a single
+   param that drops `n`, `cache` and `run`. Its own neighbouring comment
+   at `:60-68` says pagination hrefs "preserve the WHOLE condition
+   (URL-as-receipt, ADR-0004 §5)" after a verify-slice finding that a
+   hardcoded `?page=N` "silently reset the visitor's condition"; the
+   facet links were never given the same treatment, and `pageHref`
+   itself still drops `cache`. So a facet click on `?cache=cold` lands
+   on the edge-cached condition — which is precisely what the
+   `plp-facet-toggle` registry entry is supposed to measure.
+
+A third gap, not a defect: `renderPlp` takes no `page` argument, so page
+≥ 2 is not expressible by the contract at all while the master links to
+`?page=2..5` on every visit. Serving those a 404, or serving page 1
+under a page-2 URL, are both worse than generalizing, so this build
+generalizes — the `--current` marker moves to the served page and
+`rel="next"` points at `page + 1` — and states it. At page 1 it reduces
+to the master exactly, which is what the guard compares. **Unit 2 must
+make the same call or the two PLP variants disagree on page 2.**
+
+**Nothing new registered in `PERMITTED_NOISE`, and that is measured.**
+The catalogue, the facet rail and both cache islands normalize equal to
+the master under `NO_NOISE`. Two species the surface DOES add are
+already covered without a registration: React 19 hoists a
+`<link rel="preload" as="image">` per eager card image (a delivery
+element the normalizer drops unconditionally — invisible to the
+contract, visible in the byte cell, which is the correct split), and the
+exhibit's `[data-pm-fenced]` plaque, dropped only by the exhibit's own
+comparison legs through the call-site `dropFencedSubtrees` flag that no
+registration can smuggle in. Scope stated rather than implied: that
+measurement is in-process, and `renderToStaticMarkup` never emits the
+App Router streaming wrapper the existing registration exists for, so it
+does not re-prove the SERVED page. The origin suite owes that.
+
+**What this unit could not do, and did not fake.** The client-cache
+arm's headline cell — "a revisit costs 0 requests / 0 bytes" — is
+measurable only through a named interaction-registry entry split into an
+unmeasured priming prefix and a measured step (ADR-0005 §3).
+`INTERACTIONS` (`collect.ts:33`) is still the flat
+`(page) => Promise<void>` shape and its keys are exactly `none`,
+`body-click`, `editorial-add-to-cart`, `pdp-gallery-switch` and
+`pdp-add-to-cart` — **no `plp-*` id is a registry entry** (derived by
+parsing the object, not read by eye). Stated precisely, because an
+earlier draft of this line said the six appear "only in `docs/`" and
+that is no longer true: they appear in `docs/adr/0005`,
+`docs/build-log.md`, `docs/prototypes/surface-design/panel-findings.json`
+and in this unit's own test comment — four files, all prose, none of
+them a registration. `tools/bench-runner/**` is out of bounds. So the arm is built to the published design and the number
+is not approximated.
+
+**The fence does not reach the runner, and shipping this route opens
+that gap.** `assertBenchableTarget` (`batch.ts:125-137`) keys on
+`resolvedPathSegments(path)[1]` against `FENCED_VARIANT_PREFIXES` — a
+VARIANT set. Ran the exact derivation: `/react-next/plp/apollo/` yields
+prefix `"react-next"`, so the runner accepts it and a receipt naming the
+exhibit can be minted today. Widening that set is not the fix — it would
+refuse three benchmarked strategies plus react-next's editorial and PDP
+columns. A route-level fence needs a second registry consulted in the
+same function. FOUR more layers share the blind spot, and the fifth lens
+found the fifth:
+
+- `build.mjs:244` keys lab columns by `target.variant`. An earlier draft
+  of this line said a fenced Apollo target would OVERWRITE a benchmarked
+  react-next column. **That is not reachable, and the correction matters
+  because the reachable failure is worse-shaped.** `build.mjs:123-125`
+  compares the batch's measured variants against the registered set with
+  an EXACT match in both directions, so two `react-next` targets in one
+  receipt are refused outright. What IS reachable is **substitution**: a
+  batch that measures the exhibit *instead of* `/plp/plain/` publishes as
+  the react-next column, exact match satisfied, nothing red. Same
+  severity, different mechanism — and a fence written against the wrong
+  one would not catch it.
+- **For a `strategies` surface the column AXIS never meets.**
+  `chrome.ts:226-229` keys the reading table by strategy LABEL;
+  `build.mjs:244` keys the bundle by VARIANT. The day `plp` gets
+  `labBundle: true` and its first receipt lands, every cell renders an
+  em-dash under the caption "Every number above links its receipt", and
+  the build throws nothing, because its only column-axis check compares
+  variants against variants. C2 stated over a table with no cells —
+  precisely what `bundleFromReceipt`'s column check exists to prevent,
+  one axis over.
+- Receipts carry no strategy field at all (`batch.ts:244` destructures
+  `[, variant, surface]`), so `/plp/apollo/` and `/plp/plain/` produce
+  identical labels.
+- The HUD's `fencedHere` (`chrome.ts:279`) matches on variant, so the
+  exhibit page renders the full lab table with no fenced note.
+- **The fifth, and the only one live for real visitors on day one: the
+  beacon `surface` tag.** ADR-0005 §2 says in as many words that "the
+  data strategy rides in the existing `surface` tag's value
+  (`plp-plain`, `plp-tanstack`, `plp-loaders`, `plp-apollo`)". It is
+  unimplemented — `grep -rn` for any of those four strings across every
+  source file returns ZERO — and the front Worker derives the tag as
+  `url.pathname.split("/")[2]` (`workers/front/src/index.js:133`), so all
+  three routes beacon `surface: "plp"`. The FENCED exhibit's RUM pools
+  into the same bucket as the two benchmarked strategies, and no
+  per-strategy PLP cell can be split out of RUM at all. The exhibit's
+  numbers enter a number it is defined to be excluded from, by the one
+  path that needs no bench run to happen.
+
+All of those files are outside every unit's boundary. The single fix
+that closes the most of them: `bundleFromReceipt` resolving a strategies
+surface's column identity from the preset list (match `target.path`
+against `preset.path` + `preset.query`) and refusing a target that
+matches a `fenced` preset — that is the route-level bench hole and the
+column hole in one place. `workers/front/methodology/index.html:303-307`
+already tells readers the runner-side refusal "extends to it when the
+catalogue surface it lives on is built" — that sentence becomes false on
+merge unless the gap closes with it.
+
+**A measured regression the registry change causes, in nobody's
+boundary.** Driving the real `renderChrome` over the four registry
+states (a probe that mutates `SURFACE_CONTROLS` in memory and restores
+in a `finally`, the `chrome.test.ts:73-77` idiom):
+
+| registry state | `/plp/apollo/?cache=cold` aria-current | "Served by" |
+|---|---|---|
+| today (`variants: []`) | `["Misapplication exhibit — Apollo on REST"]` | 0 of 2 |
+| + react-next, planned deleted | **`[]`** | 1 of 1 |
+| + react-next, planned `["htmx"]` | **`[]`** | 1 of 2 |
+| + react-next + htmx, planned deleted | **`[]`** | 2 of 2 |
+
+Registering the variant makes `cells` non-empty, so the fallback at
+`chrome.ts:155-158` — the only branch that ever marks the fenced preset
+current — stops running, and `presetIsCurrent` fails for all three live
+presets because `/plp/apollo/` is not a prefix of their paths. The strip
+renders ZERO `aria-current` on the one page that most needs to say where
+you are. The variants branch has an explicit fenced-current arm
+(`:173-175`); the strategies branch has none, and no test asserts
+aria-current on a strategy switcher, so it would ship silently.
+
+**The registry deletion is right only if Unit 2 lands with this.** The
+same probe: with both variants live the panel reads "Served by 2 of 2"
+and zero "not built yet" columns, which is coherent. With only this unit
+and `plannedVariants` deleted it reads "Served by 1 of 1" while the
+table still discloses one unbuilt column — the count and the table
+disagree. If integration takes only one of the two PLP units,
+`plannedVariants` must become `["htmx"]` rather than disappear.
+
+**Three files this unit is blocked on, all outside every boundary,
+reported rather than grabbed:** the edge Worker's PLP facet params
+(ADR-0005 §5's "This is the PLP build's contract" — the Worker still
+handles `n`, `page`, `cache`, `run` only), the two `pm-plp__head` /
+`pm-plp__results` rules `plp.css` owes, and the `OWED` registry
+retirement that must land in the same branch as those rules or
+`master-styles-resolve`'s self-expiry leg fails. Until the first lands,
+a facet click serves the UNFILTERED grid under a filtered URL. The
+routes forward all five canonical params to the data plane anyway, so
+the page is already correct the day the Worker's contract does.
+
+Verification, exit codes noted rather than piped away: `pnpm run check`
+**31/31 successful, exit 0**; `pnpm exec next build` exit 0 with
+`/plp/plain`, `/plp/tanstack` and `/plp/apollo` all listed `ƒ (Dynamic)
+server-rendered on demand`. The origin suite was NOT run — it binds
+ports three other agents hold today, and this unit was designed to be
+verifiable without it.
+
+### Cutting the PLP's inert controls, and giving page 2 one answer (2026-08-29)
+
+A five-lens merge review found no defect in the three strategy arms — the
+cold fetch, the TanStack layer and the fenced Apollo exhibit were correct.
+Everything that held the PR back was either integration the unit had not
+done, or a falsehood it had faithfully inherited from the master it was
+built to mirror.
+
+**Three controls that answered every question with the same answer.** The
+PLP served a facet rail, a search form and a sort select. `workers/edge`
+`handlePlp` parses `n`, `page`, `run` and `cache`; `genre`, `style`,
+`format`, `sort` and `q` appear nowhere in it. So a facet click navigated to
+`?genre=Ambient` and got back all 500 releases, under a toolbar still
+reading "Showing 1–24 of 500 releases", with no error state and no
+indication anything had been ignored. A visitor filtering a crate and
+receiving the unfiltered crate, presented as the answer, is the worst
+outcome this project has — worse than an error, because an error is
+legible.
+
+The unit knew, and said so in a comment: the params "reach a data plane that
+ignores them", reported "rather than routed around". That is the correct
+instinct about scope and the wrong conclusion about shipping. The rule is
+this repo's own, written at `decision-map.md:323` when `pdp-controls` faced
+the dead Zoom button and the inert format group: *either the controls become
+real in all variants, or the scope cut is taken explicitly and the dead
+controls are REMOVED from the master and the CSS so no variant copies them.
+Shipping them inert is the falsely-interactive state.* Same shape, same
+answer.
+
+So they are out — `plp.mjs`, both toolbar forms, the `pm-facets` rail,
+`FacetGroup`, the `STYLE_CUT`/`FORMAT_CUT` constants, `computeFacets`,
+`components/facets.css` deleted outright, the toolbar's `__search`/`__sort`/
+`__label`/`__input`/`__select` rules, and `__body`'s rail column. The
+regenerated master is **105 deletions and zero insertions**.
+
+Implementing ADR-0005 §5 instead was costed and rejected for THIS merge, and
+the reason is not line count. §5 requires validation against the snapshot's
+real facet values, which raises three questions the ADR does not answer: does
+a filtered response recount its facets over the filtered set; does `PlpPage`
+grow a field naming the applied filters (a data-contract change every variant
+and the drift gate sees); and what bounds a KV key space that is now
+combinatorial across five params at infinite TTL — on the project whose
+subject is what infrastructure costs. That is a unit with an ADR amendment in
+front of it. What made cutting *cheap* is the timing: **no PLP number is
+published yet**, so nothing is invalidated — and had we measured first, every
+published PLP number would have described a page whose largest DOM subtree is
+a rail the finished product does not serve.
+
+Nothing about the cut is left to memory. The markup skeleton stays in three
+docblocks; the facet-encoding leg is `it.skip`ped rather than deleted, with a
+note saying it is the leg that must come back; `structure.test.ts` carries a
+comment where `facets.css` used to be; and both arms now hold a
+`plp-params-not-yet-honoured` tripwire that reads `workers/edge/src/index.js`
+from disk and fails the day a param is wired through, naming the three things
+that must follow it. htmx's arm had that tripwire and react-next did not,
+which is part of how the two builds came to disagree about what the plane
+does.
+
+**A worse version of the same bug, one layer down.** react-next did not just
+render the dead controls — it *forwarded* their params to `/api/plp`
+(`plp-condition.ts`), so the request looked filtered while the payload was
+not, and it put them in the TanStack query key (`PlpTanstack.tsx`), so
+identical unfiltered payloads cached under distinct keys. The client-cache
+cell — cell 2, this arm's headline, "a revisit costs 0 requests / 0 bytes" —
+would have been measuring a cache miss it manufactured itself. htmx's arm
+deliberately forwarded none of them, with a comment worth quoting: *"Forwarding
+their names would not filter anything; it would only make the request look
+like it had."* The address bar keeps the filters, because that is what the
+visitor asked for; only the data-plane request drops them.
+
+**Page 2, and why nothing could see that the arms disagreed.** `renderPlp`
+took no `page` argument. It rendered `summaries.slice(0, n)` and hardcoded
+"1" as current — while emitting links to `?page=2..5` on every visit. So the
+contract described page 1 and shipped invitations to pages it could not
+describe, and each arm generalized the rest alone:
+
+| | empty page count | `rel="next"` past the end |
+|---|---|---|
+| react-next | `0–0` | emitted |
+| htmx | `0` | gated |
+
+Two arms serving structurally different DOM for the same URL, which is
+precisely what a canonical markup contract exists to prevent — and both
+suites *pinned* their own answer, so neither would ever drift into agreement.
+No gate could catch it: the browser drift leg opens a committed static file,
+which cannot express `?page=2` at any condition, and both identity suites
+loop over `n` with no `page` axis at all.
+
+Patching react-next to match htmx would have fixed the symptom in the arm
+that was wrong and left the contract silent — so the next variant would guess
+again. The fix went into the file both mirror. `renderPlp(snapshot, { page })`
+now owns all of it: the five-wide window that slides with the served page
+(the naive `1..min(totalPages,5)` renders **zero** `aria-current` from page 6
+on, on a full grid of real cards), the `--current` marker, `hasNext = page <
+totalPages`, and `"0"` for an empty page. htmx's arm had already worked out
+every one of these and could not land them, because it could not touch the
+contract; its `page === 1 || page < totalPages` escape existed only to
+reproduce the master's defect at the one condition the master could render.
+That escape can now go.
+
+The whole page-aware rewrite is **byte-identical at page 1** — which is why
+the 105-line master diff is pure deletion, and why every existing identity
+leg passed it unchanged.
+
+**Registering the variant broke something, exactly where the unit predicted.**
+`SURFACE_CONTROLS.plp.variants` was `[]`, so `chrome.ts` filtered every
+strategy cell against an empty array: the PLP's entire measured-axis control
+— the surface's whole point — rendered as one dead `<span aria-current=
+"page">`, under a panel reading "Served by 0 of 2". The two-line registration
+fixes that and causes a regression, which this unit's own owed list had
+called in advance: the fallback branch that had been marking the fenced
+Apollo preset current stops running the moment `cells` is non-empty, so
+`/react-next/plp/apollo/` would render three anchors and **zero**
+`aria-current`. The fenced-current arm lands in the same commit, matched on
+**path alone** — the obvious `presetIsCurrent` match would have left the
+query-less `/react-next/plp/apollo/` unmarked, because that preset has only a
+`?cache=cold` arm. Both URLs are guarded now. Nothing about the fenced cell
+is counted: "Served by 1 of 2" reads `variants`, never cells.
+
+**Two chrome rows promising a milestone that had already passed.** The
+per-interaction byte readout and the replay control both said they "land with
+the store's PLP build". This is the store's PLP build; it delivers neither.
+They now say `not built yet`, the reading table's own wording for a planned
+column. The first draft cited "ADR-0005 §8" in the visitor-facing string and
+`repo-checks/instrument-font.test.ts` failed it — `U+00A7` is not in the
+subsetted instrument mono, so the citation would have rendered as tofu in the
+chrome. It moved to a code comment. A guard nobody was thinking about caught
+a defect nobody would have seen until a screenshot.
+
+Verification on the final tree: `turbo run lint typecheck test` **31/31,
+exit 0**; origin suite green; `node packages/reference/render/build.mjs`
+leaves only `plp/index.html` changed, and re-running it a second time leaves
+`git status --porcelain packages/reference/surfaces/` empty.

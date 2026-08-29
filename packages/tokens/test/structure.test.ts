@@ -30,7 +30,10 @@ describe("two-tier token seam (ADR-0003 §3)", () => {
       "cart-summary.css",
       "compare.css",
       "error-summary.css",
-      "facets.css",
+      // "facets.css" is deliberately absent — deleted with the PLP's inert
+      // facet rail (packages/reference/render/plp.mjs docblock). It returns
+      // with ADR-0005 §5's edge-Worker params, and this list is the check
+      // that says so out loud rather than letting an orphan sheet linger.
       "field.css",
       "footer.css",
       "format-switch.css",

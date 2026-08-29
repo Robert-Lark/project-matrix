@@ -233,6 +233,25 @@
       // other variant uses.
       "outputs": [".open-next/**"]
     },
+    "@pm/react-next#test": {
+      // The PLP master-identity guard (variants/react-next/test) renders this
+      // variant's catalogue for BOTH snapshots and BOTH ends of the `n` knob
+      // and compares each against the reference renderer's own output, over a
+      // tray it gets by driving the real edge Worker in-process. Its true
+      // inputs therefore span packages/reference/render/**, workers/edge/src/**
+      // and both committed snapshots — a set that is easy to under-declare,
+      // and an under-declared input here means turbo replays a stale PASS
+      // while the contract has actually drifted, which is precisely the hole
+      // this guard exists to close. Uncached, like @pm/astro#test,
+      // @pm/qwik#test, @pm/remix3#test and @pm/repo-checks#test, for the same
+      // reason: correctness over ~1 s.
+      //
+      // No dependsOn build, unlike @pm/astro#test: nothing here imports
+      // generated build output. react-next is a REQUEST-TIME variant, so there
+      // is no baked snapshot module to exist first — the guard drives the
+      // components directly with tray data it mints itself.
+      "cache": false
+    },
     "dev": {
       "dependsOn": ["build"],
       "cache": false,

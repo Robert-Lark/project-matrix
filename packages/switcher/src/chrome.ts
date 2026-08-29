@@ -150,7 +150,24 @@ function switcherCells(ctx: ChromeContext, controls: SurfaceControls): string {
           : `<a class="pm-chrome__cell" href="${esc(href)}">${esc(s.label)}</a>`;
       })
       .join("");
-    if (cells) return cells;
+    if (cells) {
+      // A fenced preset is never a COUNTED cell (ADR-0005 §7) and never an
+      // offer in this row — but when the visitor is standing on one, the row
+      // has to say so. Until the PLP registered a live variant this fell out
+      // of the branch below by accident; the moment `variants` was non-empty
+      // it stopped, and `/react-next/plp/apollo/` rendered three anchors and
+      // ZERO `aria-current` — the switcher losing track of where you are, on
+      // the surface whose whole point is that the URL is the condition.
+      //
+      // Matched on PATH ALONE, not `presetIsCurrent`: the Apollo preset has
+      // only a `?cache=cold` arm, so a query-less `/react-next/plp/apollo/`
+      // would still have come back unmarked. Nothing is counted by this —
+      // "Served by N of M" reads `controls.variants` and never these cells.
+      const fenced = strategies.find((s) => s.fenced && ctx.pathname.startsWith(s.path));
+      return fenced
+        ? `${cells}<span class="pm-chrome__cell pm-chrome__cell--current pm-chrome__cell--fenced" aria-current="page">${esc(fenced.label)}<span class="pm-chrome__note">&nbsp;fenced</span></span>`
+        : cells;
+    }
     // No preset live yet: name the CURRENT condition honestly (the preset
     // this URL matches), never a variant name under a "strategy" key.
     const current = strategies.find((s) => presetIsCurrent(ctx, s));
@@ -399,11 +416,20 @@ function controlsSection(ctx: ChromeContext, controls: SurfaceControls): string 
     );
   }
   if (controls.nKnob) {
+    // Both notes used to promise these "land with the store's PLP build".
+    // This IS the store's PLP build and it delivers neither, so they now
+    // state the absence in the same words the reading table's planned
+    // columns use (`not built yet`, :239) rather than naming a milestone
+    // that has already passed. ADR-0005 §8 still specifies both, and the
+    // citation stays HERE rather than in the copy: `§` is not in the
+    // subsetted instrument mono (repo-checks/instrument-font.test.ts caught
+    // exactly that on the first draft of this string), and an ADR number is
+    // not something a visitor can act on anyway.
     parts.push(
-      `<p class="pm-chrome__row"><span class="pm-chrome__key">last interaction</span><span data-pm-hud-interaction>—</span><span class="pm-chrome__note">per-interaction byte readout lands with the store's PLP build</span></p>`,
+      `<p class="pm-chrome__row"><span class="pm-chrome__key">last interaction</span><span data-pm-hud-interaction>—</span><span class="pm-chrome__note">per-interaction byte readout — not built yet</span></p>`,
     );
     parts.push(
-      `<p class="pm-chrome__row"><span class="pm-chrome__key">replay</span><span data-pm-hud-replay>—</span><span class="pm-chrome__note">the published sequence, runnable in-page, lands with the store's PLP build</span></p>`,
+      `<p class="pm-chrome__row"><span class="pm-chrome__key">replay</span><span data-pm-hud-replay>—</span><span class="pm-chrome__note">the published sequence, runnable in-page — not built yet</span></p>`,
     );
   }
   if (ctx.surface === "checkout") {
