@@ -19,12 +19,33 @@ numbers ship as dated snapshots downstream, ADR-0001 §9).
 
 One batch = one profile + one `?n=` + all targets, runs **round-robin
 interleaved** so a noisy moment hits every variant equally. Cache state is
-the two **columns** inside the batch: `cold` drives `?cache=cold` (the edge
-Worker's KV bypass — cold stays cold for all N runs); `warm` makes one
-unmeasured priming visit (the page's own data fetches pass the KV
-write-through), then measures. A `?run=` nonce keys this batch's warm state
-away from every other run's. Environment flips are separate batches by
-construction — the spec admits exactly one profile and one n.
+the two **columns** inside the batch: `cold` puts `?cache=cold` on the page
+URL; `warm` makes one unmeasured priming visit, then measures. A `?run=`
+nonce keys this batch's warm state away from every other run's. Environment
+flips are separate batches by construction — the spec admits exactly one
+profile and one n.
+
+**What the cold column measures depends on the target.** The edge Worker
+keys its KV bypass on the *tray* request's own `cache=cold`
+(`workers/edge/src/index.js` `serveData`), not the page URL the runner
+drives. The knob reaches the data plane only through a tray fetch that
+forwards it — today the PLP tray fetches (react-next `plpApiPath`, htmx
+`PLP_KNOBS`). So:
+
+- **Request-time pages on editorial and PDP** (react-next, qwik; htmx on
+  editorial) fetch `/api/pdp/{id}` server-side with no query string
+  (`variants/react-next/src/lib/edge.ts`, `variants/qwik/src/lib/edge.ts`,
+  `variants/htmx/src/index.js`) — that fetch reads the canonical KV key in
+  *both* columns, and `/api/snapshot` sits outside the warm tier in both.
+- **Build-time pages (vanilla, astro)** make no runtime data fetch at all:
+  cold ≡ warm by construction.
+- The only browser-issued `/api/` data fetch on those surfaces is the live-price
+  button's — fenced from every number, and no scripted interaction drives it.
+
+Net: on editorial and PDP the cold column exercises the edge data tier for
+**no** target, and ADR-0002 §8's cold=R2 intent is **unmeasured** there. The
+same limit applies to the `?run=` nonce — it isolates only fetches that carry
+it. The receipt's `methodNotes` state this per target class.
 
 ## Where every number comes from (never estimated)
 

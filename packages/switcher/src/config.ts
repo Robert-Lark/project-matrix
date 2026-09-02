@@ -190,3 +190,78 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "The decision record as content — ADRs, build log, reviews. The process is the evidence.",
   },
 };
+
+/**
+ * Every path the registry FENCES — the ONE derivation the bench runner's
+ * fence (tools/bench-runner batch.ts assertBenchableTarget) and the front
+ * build's receipt ingest (workers/front/build.mjs) both read, so an exhibit
+ * cannot be labeled fenced here and benchable there. Two registry homes:
+ *  - `fencedExhibits` (render axis): the variant prefix as a one-segment
+ *    path — `/remix3/` fences every page that variant serves;
+ *  - `strategies[].fenced` (data axis): the preset's full path —
+ *    `/react-next/plp/apollo/` fences one route of a variant whose OTHER
+ *    routes stay benchable.
+ * Match by segment through {@link fencedPathOf}, never by string equality:
+ * the runner accepts `react-next/plp/apollo`, `/./react-next/plp/apollo/`
+ * and `/react-next/plp/apollo//`, and a `trailingSlash: true` app 308s the
+ * slashless form ONTO the fenced page — so an exact-string fence is
+ * bypassable by everything that matters.
+ */
+export function fencedPaths(
+  controls: Readonly<Record<string, SurfaceControls>> = SURFACE_CONTROLS,
+): readonly string[] {
+  const out = new Set<string>();
+  for (const c of Object.values(controls)) {
+    for (const f of c.fencedExhibits ?? []) out.add(`/${f.variant}/`);
+    for (const s of c.strategies ?? []) if (s.fenced === true) out.add(s.path);
+  }
+  return [...out];
+}
+
+/** Non-empty segments of a path, resolved the way a URL would: query and
+ *  fragment dropped, dot-segments collapsed, doubled and missing slashes
+ *  normalized away. */
+function pathSegments(path: string): string[] {
+  return new URL(path, "https://resolve.invalid").pathname
+    .split("/")
+    .filter((s) => s !== "")
+    .map(decodeSegment);
+}
+
+/** Percent-decode one segment: URL() keeps `%61pollo` as written, but the
+ *  app decodes before routing, so `/react-next/plp/%61pollo/` serves the
+ *  fenced page. A malformed escape keeps the raw segment (it can only fail
+ *  to match). Twin in bench-runner batch.ts resolvedPathSegments. */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+/**
+ * The fenced path a target path falls under, or null. Segment-PREFIX match
+ * on the URL-resolved pathname — `/react-next/plp/apollo?cache=cold` and
+ * `react-next/plp/apollo//` both resolve to the fenced
+ * `/react-next/plp/apollo/`; `/react-next/plp/apollo-two/` does not (a
+ * segment match, not a substring one), and `/react-next/plp/plain/` is not
+ * fenced by its fenced sibling.
+ */
+export function fencedPathOf(
+  path: string,
+  fenced: readonly string[] = fencedPaths(),
+): string | null {
+  const segs = pathSegments(path);
+  for (const f of fenced) {
+    const fsegs = pathSegments(f);
+    if (
+      fsegs.length > 0 &&
+      fsegs.length <= segs.length &&
+      fsegs.every((s, i) => s === segs[i])
+    ) {
+      return f;
+    }
+  }
+  return null;
+}

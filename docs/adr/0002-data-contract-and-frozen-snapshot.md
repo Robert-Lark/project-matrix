@@ -220,3 +220,24 @@ compatible: the crate manifest and every `SOURCE api.discogs.com` receipt on the
 home surface are unchanged (the home surface bakes the crate manifest, ADR-0007).
 A free string was rejected — the union keeps provenance to an auditable,
 enumerated set.
+
+## Addendum — the cold column's scope (2026-09-01)
+
+§8 says cold = "bypass the edge cache and read R2". That holds for the fetch that
+carries `?cache=cold` and for nothing else: the edge keys the bypass on the tray
+request's own query string (`workers/edge/src/index.js:62`), and the request-time
+variants fetch the tray server-side with none
+(`variants/react-next/src/lib/edge.ts:25,:35`, `variants/qwik/src/lib/edge.ts:85`,
+`variants/htmx/src/index.js:94,:99`). Under the cold column those fetches read KV,
+the same as warm. Build-time variants make no runtime fetch. So on the editorial
+and PDP surfaces §8's cold = R2 intent is **unmeasured for every target**, and the
+receipt data shows it (cold ≈ warm server think-time for all three request-time
+variants). The cold column's scope is now stated as **browser-visible fetches**.
+§8's text above stays as written — it is the intent, and the mechanism is still
+correct for a browser-made fetch. Forwarding the knob from every server-side tray
+fetch (the htmx PLP already does, `variants/htmx/src/index.js:146`) would make the
+intent true everywhere; it stays open as a later unit, rejected for this pass
+because it touches three variants' data paths on the byte-receipted editorial
+surface for a column no published cell reads (`workers/front/build.mjs:1032-1036` at `360f90a`).
+Record: `docs/decision-map.md`, the `measurement-pass` entry; runbook
+`docs/prototypes/measurement-pass-runbook-2026-09-01.md`.

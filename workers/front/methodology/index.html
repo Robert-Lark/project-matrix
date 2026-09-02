@@ -93,15 +93,31 @@
       produce is recorded as absent rather than as a zero, so a cell's median
       is over the runs that produced a value — the receipt lists every run
       either way, so the count behind any cell is checkable. Cold and warm are
-      separate columns measuring the edge data tier; the browser cache is held
-      constant instead — every run is a fresh browser context, a first-time
-      visitor whose cache then behaves normally for the rest of the visit.
+      separate columns, and the cold one is narrower than its name. The cold
+      knob bypasses the edge cache only for a fetch that carries it. On the
+      editorial and product pages, the variants that fetch on the server at
+      request time do not pass the knob on, so that fetch reads the warm
+      tier under both columns; variants that bake the data in at build time
+      make no runtime fetch at all. There, that is every target: the cold
+      column never reaches the R2 tier on those pages, so it is scoped to
+      browser-visible fetches. The browser cache is held constant instead — every
+      run is a fresh browser context, a first-time visitor whose cache then
+      behaves normally for the rest of the visit.
       <strong>The reading table
       publishes the WARM column</strong> — steady state, per ADR-0001's
       "warm as headline, cold as a labeled callout" — no matter what cache
       knob the page you are reading it on carries; the linked receipt holds
       the cold column beside it. Numbers publish as dated snapshots pinned to
       a commit, never live-updated.
+    </p>
+    <p>
+      One change to the instrument is on the record: on 2026-08-28 the
+      runner's settled signal moved from a <code>networkidle</code> latch,
+      which resolved at once when no navigation was in flight, to tracking
+      in-flight requests and settling only after a 500 ms window with none
+      fresh — receipts record it as
+      <code>harness.quiescence: "in-flight-tracked"</code>, and receipts
+      minted before that date lack the field.
     </p>
 
     <h2 id="bytes">What the bytes mean</h2>
