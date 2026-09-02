@@ -392,18 +392,63 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
   });
 
   it("every chrome-labeled fenced exhibit is refused by the runner — the two fence registries cannot drift apart", () => {
-    // The fence is double-entry (batch.ts FENCED_VARIANT_PREFIXES names
-    // what the runner refuses; SURFACE_CONTROLS fencedExhibits names what
-    // the chrome labels) and importing @pm/switcher from the runner would
-    // invert the dependency — so the correspondence is pinned HERE, where
-    // both packages already meet (verify-slice finding, seams lens: a
-    // future exhibit registered in the chrome but not the runner would
-    // mint receipts for a variant the chrome itself declares excluded).
+    // The fence is double-entry: batch.ts FENCED_VARIANT_PREFIXES is the
+    // hand-written variant wall, and the runner's second wall (fencedPathOf)
+    // is derived from SURFACE_CONTROLS itself — @pm/switcher is already a
+    // bench-runner dependency (chrome-constant.ts imports chromeFragmentOf).
+    // The correspondence is still pinned HERE, where both packages meet, so
+    // a registry edit that breaks the derivation fails a test rather than
+    // minting receipts for an exhibit the chrome declares excluded
+    // (verify-slice finding, seams lens).
     for (const controls of Object.values(SURFACE_CONTROLS)) {
       for (const f of controls.fencedExhibits ?? []) {
         expect(() => assertBenchableTarget(`/${f.variant}/editorial/`)).toThrowError(/fenced/);
       }
     }
+  });
+
+  it("every fenced STRATEGY path is refused by the runner, in every alias shape the runner accepts", () => {
+    // The exhibit's third registry home (strategies[].fenced): a fenced
+    // ROUTE of an otherwise-benchable variant, invisible to a variant-prefix
+    // fence. Alias shapes mirror the remix3 cases above, plus the two that
+    // matter most here: the slashless form (the app 308s it ONTO the fenced
+    // page, so `page.goto` would measure the exhibit and label the receipt
+    // with the unfenced-looking path) and a query-carrying one.
+    const fencedStrategies = Object.values(SURFACE_CONTROLS)
+      .flatMap((c) => c.strategies ?? [])
+      .filter((s) => s.fenced === true);
+    expect(fencedStrategies.length).toBeGreaterThan(0);
+    for (const s of fencedStrategies) {
+      const bare = s.path.replace(/^\/+|\/+$/g, "");
+      // Percent-encoded last segment (`/react-next/plp/%61pollo/`): URL()
+      // keeps the escape, the app decodes it before routing, so the fence
+      // must decode before it compares.
+      const cut = bare.lastIndexOf("/") + 1;
+      const last = bare.slice(cut);
+      const encodedLast = `%${last.charCodeAt(0).toString(16)}${last.slice(1)}`;
+      for (const alias of [
+        s.path,
+        `/${bare}`,
+        `${bare}/`,
+        `/./${bare}/`,
+        `/${bare}//`,
+        `/${bare}/?cache=cold&run=probe`,
+        `/${bare}?cache=cold`,
+        `/${bare.slice(0, cut)}${encodedLast}/`,
+      ]) {
+        expect(() => assertBenchableTarget(alias), alias).toThrowError(/fenced/);
+      }
+      // Segment-scoped, not substring-scoped: a sibling route that merely
+      // extends the fenced path's last segment is not the exhibit.
+      expect(() => assertBenchableTarget(`/${bare}-two/`)).not.toThrow();
+    }
+    // And the fence is path-level, not variant-level: the fenced exhibit's
+    // UNFENCED siblings on the same variant stay benchable.
+    const unfenced = Object.values(SURFACE_CONTROLS)
+      .flatMap((c) => c.strategies ?? [])
+      .filter((s) => s.fenced !== true);
+    expect(unfenced.length).toBeGreaterThan(0);
+    for (const s of unfenced) expect(() => assertBenchableTarget(s.path)).not.toThrow();
   });
 
   it("runBatch rejects a batch carrying a remix3 target before driving anything", async () => {
@@ -415,6 +460,20 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
         runsPerUrl: 1,
         n: 24,
         runNonce: `${NONCE}-fence`,
+        repoRoot,
+      }),
+    ).rejects.toThrowError(/fenced exhibit/);
+  });
+
+  it("runBatch rejects a batch carrying the fenced Apollo route — slashless, the 308 shape — before driving anything", async () => {
+    await expect(
+      runBatch({
+        origin: ORIGIN,
+        targets: [{ path: "/react-next/plp/apollo", interactionId: "body-click" }],
+        profileId: PROFILE.id,
+        runsPerUrl: 1,
+        n: 24,
+        runNonce: `${NONCE}-fence-path`,
         repoRoot,
       }),
     ).rejects.toThrowError(/fenced exhibit/);

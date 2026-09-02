@@ -5,15 +5,28 @@
  * comparison. Environment flips are separate batches by construction: the
  * spec admits exactly one profile and one n.
  *
- * Cache columns (ADR-0001 §4, ADR-0002 §8):
- *  - cold: `?cache=cold` — the edge Worker's bypass; R2 every time, KV
- *    never touched, so cold stays cold for all N runs.
+ * Cache columns (ADR-0001 §4, ADR-0002 §8). What the two columns MEASURE
+ * depends on the target, because the edge Worker keys its KV bypass on the
+ * TRAY request's own `cache=cold` (workers/edge/src/index.js serveData),
+ * not on the page URL the runner drives:
+ *  - cold: the page URL carries `?cache=cold`. The knob reaches the data
+ *    plane only through a tray fetch that forwards it — today the PLP tray
+ *    fetches (react-next plpApiPath, htmx PLP_KNOBS). Request-time
+ *    editorial/PDP pages (react-next, qwik; htmx on editorial) fetch
+ *    /api/pdp/{id} server-side with NO query string (react-next lib/edge.ts,
+ *    qwik lib/edge.ts, htmx index.js), so that fetch reads the canonical KV
+ *    key in BOTH columns; /api/snapshot sits outside the warm tier in both.
+ *    Build-time pages (vanilla, astro) make no runtime data fetch, so
+ *    cold≡warm by construction. On editorial and PDP the cold column
+ *    therefore exercises the edge data tier for NO target, and ADR-0002 §8's
+ *    cold=R2 intent is unmeasured there.
  *  - warm: no cache param; ONE unmeasured priming visit drives the page so
- *    every data fetch it makes passes the KV write-through, then the N
+ *    every knob-carrying data fetch passes the KV write-through, then the N
  *    measured runs read the warm tier.
  * A run-isolation nonce (`?run=`, the edge Worker's documented knob) keys
- * this batch's warm state away from every other run's — including previous
- * post-deploy smokes against the same persistent KV.
+ * this batch's warm state away from every other run's — again only for the
+ * fetches that carry it; un-nonced server-side fetches share the canonical
+ * key with every visitor.
  *
  * Runs are ROUND-ROBIN interleaved across targets (run i of every target
  * before run i+1 of any): a noisy moment lands on every variant, not on
@@ -21,6 +34,7 @@
  */
 import { chromium, type Browser } from "playwright";
 import { getProfile, PLP_N, PROFILE_SPEC_VERSION, clampN } from "@pm/measurement";
+import { fencedPathOf } from "@pm/switcher";
 import {
   SETTLE_CAP_MS,
   INTERACTIONS,
@@ -107,6 +121,15 @@ function medians(runs: RunSampleT[]) {
  * rules. Lives HERE in runBatch rather than the CLI so the reproduce path
  * and direct library imports hit the same wall (a CLI-only guard would be
  * bypassable by everything that matters).
+ *
+ * This set is variant-scoped and hand-written; the second wall below,
+ * `fencedPathOf`, is PATH-scoped and derived from the registry the chrome
+ * reads (@pm/switcher SURFACE_CONTROLS: fencedExhibits AND
+ * strategies[].fenced). It exists because a fenced exhibit can be one
+ * ROUTE of an otherwise-benchable variant — `/react-next/plp/apollo/`
+ * (ADR-0005 §7) — which a variant-prefix fence cannot see. Segment-level
+ * matching, not string equality: the app 308s the slashless form onto the
+ * fenced page, so an exact-string fence would mint the receipt anyway.
  */
 const FENCED_VARIANT_PREFIXES = new Set(["remix3"]);
 
@@ -119,7 +142,21 @@ const FENCED_VARIANT_PREFIXES = new Set(["remix3"]);
  *  correctness lens: the fence resolved while the receipt's
  *  variant/surface labels split the raw string). */
 export function resolvedPathSegments(path: string): string[] {
-  return new URL(path, "https://resolve.invalid").pathname.split("/");
+  return new URL(path, "https://resolve.invalid").pathname
+    .split("/")
+    .map(decodeSegment);
+}
+
+/** Percent-decode one segment (twin of @pm/switcher pathSegments): URL()
+ *  keeps `%61pollo` as written, the app decodes before routing, so the
+ *  fence and the receipt labels must decode too. A malformed escape keeps
+ *  the raw segment. */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
 }
 
 export function assertBenchableTarget(path: string): void {
@@ -132,6 +169,14 @@ export function assertBenchableTarget(path: string): void {
       `${path}: "${prefix}" is a fenced exhibit — excluded from every benchmark number ` +
         `(remix3-frontier FINDINGS §7(c); ADR-0003 first addendum). The runner refuses ` +
         `the target so no receipt can ever carry it.`,
+    );
+  }
+  const fencedPath = fencedPathOf(path);
+  if (fencedPath !== null) {
+    throw new Error(
+      `${path}: falls under "${fencedPath}", a fenced exhibit — excluded from every ` +
+        `benchmark number (ADR-0005 §7; @pm/switcher SURFACE_CONTROLS strategies[].fenced / ` +
+        `fencedExhibits). The runner refuses the target so no receipt can ever carry it.`,
     );
   }
 }
@@ -347,7 +392,7 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
         "the browser HTTP cache is ON for the whole visit, and that also changed on 2026-08-28. Every run is a fresh browser context (a first-time visitor), and WITHIN that visit the cache then behaves normally — a subresource the page re-requests is served from it, exactly as a real visitor's would be. Until this date the runner captured the chrome's vitals beacons with Playwright's page routing, which the library documents as disabling the http cache (playwright-core types.d.ts: 'Enabling routing disables http cache') and which is not URL-scoped at the browser: one beacon route took the cache away from every request of the visit. Measured consequence on this project's own pages: a paradigm that re-assigns an image `src` to the value it already holds costs 0 B with the cache on and re-downloads the image with it off, which inflated one variant's measured interaction cost by 26,838 B (52,032 vs 25,194) — an instrument artifact no visitor can experience. Beacons are now intercepted by URL pattern at the browser (CDP Fetch.enable scoped to /api/beacon), so lab traffic still never reaches the RUM collector and nothing else is intercepted. Editorial's published byte cells were re-measured across the change and did not move.",
         "document bytes are decomposed (ADR-0001 §3 addendum, 2026-08-15, superseding addendum G's uncompressed-share rule): the single compressed document transferSize stays the authority on the TOTAL, and the split between html/js/data/STRIPPED instrumentation markup takes its ratios from leave-one-out marginals — what the compressed document loses when exactly that part is removed — computed with the WIRE'S OWN CODEC (brotli for a br wire, zstandard for the zstd wire Chromium negotiates, …) at the setting calibrated per document against the observed compressed body (codec, setting, and residual recorded per run in kb.docAttribution). Inline executable script counts as JS (an inlined bundle is not 0 KB), inline non-executable script (application/json, qwik/json, …) counts as data, and the injected chrome markup + its /_pm/ tags are stripped like the /_pm/ subresource payloads (ADR-0001 §6). An uncompressed document needs no estimate and uses exact uncompressed share. Stated bias: disjoint parts' marginals under-sum the whole (shared redundancy belongs to no single part, measured 0.94–0.95x on the live shapes), so normalisation scales parts up ~x1.05 pro-rata.",
         "ttfb sub-phases (travelMs/serverMs) are attributed BENEATH any CDP network emulation: Chromium rebases navigation-timing under applied throttling (demonstrated 2026-07-10: a 500ms emulated latency delivers on the wall clock but responseStart still reads ~1ms), so the decomposition reflects the plane's REAL serving — compare it across variants, not against the profile's emulated RTT. FCP/LCP/INP paint/interaction timestamps are wall-clock and DO reflect the applied profile.",
-        "every run is a fresh browser context (first-time visitor): the browser HTTP cache is a held-constant, not a measured axis — the cold/warm columns measure the edge tier (ADR-0002 §8).",
+        "every run is a fresh browser context (first-time visitor): the browser HTTP cache is a held-constant, not a measured axis. What the cold/warm columns measure depends on the target, because the edge Worker keys its KV bypass on the TRAY request's own `cache=cold` (workers/edge serveData), not on the page URL the runner drives. The knob reaches the data plane only through a tray fetch that forwards it — today the PLP tray fetches (react-next plpApiPath, htmx PLP_KNOBS). Request-time editorial/PDP targets (react-next, qwik; htmx on editorial) fetch /api/pdp/{id} server-side with NO query string (react-next lib/edge.ts, qwik lib/edge.ts, htmx index.js): that fetch reads the canonical KV key in BOTH columns, and /api/snapshot sits outside the warm tier in both. Build-time targets (vanilla, astro) make no runtime data fetch, so cold≡warm by construction. The only browser-issued /api/ data fetch on those surfaces is the live-price button's, fenced from every number and driven by no scripted interaction. So on editorial and PDP the cold column exercises the edge data tier for NO target — the two columns there are two samples of one serving path — and ADR-0002 §8's cold=R2 intent is UNMEASURED there. The `?run=` nonce likewise isolates warm state only for fetches that carry it; un-nonced server-side fetches share the canonical key with every visitor.",
         "PRECONDITION for a comparable re-run against a DEPLOYED plane: the effective URLs below must be warmed until they serve compressed before measuring. A brand-new URL's first hit is a cache MISS that Cloudflare serves UNCOMPRESSED (the class tools/origin-suite's wireEncoding warms against), and because the run nonce is part of the URL, a reproduce with a fresh nonce makes every URL brand new — so run 1 of every target pays an inflated, non-comparable transfer. `bench reproduce --nonce <this receipt's environment.runNonce>` re-drives the exact published URLs so they can be pre-warmed; without it the reproduction is same-paths/profile/runs/interaction with fresh cache state, not same-URL.",
       ],
       targets,

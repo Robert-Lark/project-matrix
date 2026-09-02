@@ -497,7 +497,7 @@ function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants) {
 const switcherBundle = buildSync({
   stdin: {
     contents:
-      'export { renderChrome, chromeFragmentOf, SURFACE_CONTROLS } from "@pm/switcher"; export { getProfile, PROFILES } from "@pm/measurement";',
+      'export { renderChrome, chromeFragmentOf, SURFACE_CONTROLS, fencedPathOf } from "@pm/switcher"; export { getProfile, PROFILES } from "@pm/measurement";',
     resolveDir: root,
     loader: "js",
   },
@@ -719,6 +719,20 @@ for (const file of readdirSync(labReceiptsDir).sort()) {
     if (target.surface !== surface) {
       throw new Error(
         `front lab: ${file} is filed under "${surface}" but its ${target.variant} target measured "${target.surface}" — a receipt cannot publish under a surface its own targets disprove`,
+      );
+    }
+    // The fence, mirrored at ingest (ADR-0005 §7 / ADR-0008 §3: fenced
+    // exhibits never get a column). The runner refuses to MINT a receipt
+    // naming a fenced path (bench-runner batch.ts assertBenchableTarget);
+    // the build refuses to PUBLISH one — same registry (SURFACE_CONTROLS
+    // fencedExhibits + strategies[].fenced), same segment-level derivation
+    // (@pm/switcher fencedPathOf, bundled above), so a hand-edited or
+    // pre-fence receipt cannot reach a table the chrome declares the
+    // exhibit excluded from.
+    const fenced = switcherMod.fencedPathOf(target.path);
+    if (fenced !== null) {
+      throw new Error(
+        `front lab: ${file} names ${target.path}, which falls under the fenced exhibit ${fenced} — fenced exhibits are excluded from every benchmark number (ADR-0005 §7; ADR-0008 §3), so a receipt naming one is refused, never published`,
       );
     }
   }
