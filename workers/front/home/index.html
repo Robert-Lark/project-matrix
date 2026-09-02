@@ -132,7 +132,11 @@
               <h3 class="cat__name">Product page</h3>
               <p class="cat__line">Gallery, zoom, cart: if a runtime earns its bytes anywhere, it should be here.</p>
             </div>
-            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/decision-map.md" rel="noopener">decision map</a></p>
+            <!-- Flipped at surface completion (ADR-0007 §1/§4; all four planned
+                 cells live, `plannedVariants` gone — config.ts). The href is the
+                 crate's featured PDP, derived at build from the committed
+                 summaries tray, never typed. -->
+            <p class="cat__status"><strong class="cat__live">Public today</strong> · <a href="%%PDP_FEATURED_HREF%%">open a product</a></p>
           </li>
           <li class="cat__row reveal">
             <span class="cat__num" aria-hidden="true">PM‑003</span>
@@ -141,9 +145,20 @@
               <p class="cat__line">Where should the data layer live — nowhere, the browser, the server, or the
                 edge — and what does cache warmth do to the answer? Ships with the fenced
                 misapplication exhibit, build-measured: the wrong data tool on the same page
-                costs <span class="num">+65.1&nbsp;KB</span> brotli against <span class="num">+9.0&nbsp;KB</span>.</p>
+                <!-- Real-build deltas, brotli q11, quoted in BYTES per the source's own
+                     rule — docs/decision-map.md:475 (plp-react-next unit: "TanStack
+                     +8,897 B, Apollo +60,952 B brotli — 6.85×"). A local build
+                     measurement, not a receipt: no committed machine-readable artifact
+                     carries these yet, so they are typed here rather than substituted
+                     from a fabricated one. When such an artifact lands, replace them
+                     with a build-substituted marker in the LAB_ED_SPREAD style. -->
+                costs <span class="num">+60,952&nbsp;B</span> brotli against <span class="num">+8,897&nbsp;B</span> — <span class="num">6.85×</span>.</p>
             </div>
-            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0005-plp-data-strategy-comparison.md" rel="noopener">ADR‑0005, 2026‑07‑12</a></p>
+            <!-- Flipped at surface completion (ADR-0007 §1/§4; both arms live,
+                 `plannedVariants` gone — config.ts). The grid serves; the search,
+                 filter and sort controls the title promises do not yet
+                 (plp-data-plane-prompt.md), and the status says so. -->
+            <p class="cat__status"><strong class="cat__live">Public today</strong> · <a href="/react-next/plp/plain/">open the grid</a> · filters not yet served</p>
           </li>
           <li class="cat__row reveal">
             <span class="cat__num" aria-hidden="true">PM‑004</span>

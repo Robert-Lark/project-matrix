@@ -76,6 +76,29 @@ if (
     "front: crate manifest is missing or malformed in a receipt field (releaseCount / capturedAt / commitSha / source)",
   );
 }
+// Home's Product-page row href (repo-shopfront): the crate's featured PDP,
+// whose slug is READ from the committed summaries tray rather than typed — a
+// typed slug is the hand-typed-SHA failure one field over. The id is a
+// constant of the DESIGN (`CRATE_FEATURED.pdp`, packages/reference/render/
+// lib.mjs — the crate predates curation.json's `featured` field; the vanilla
+// build carries the editorial twin the same way). summaries.json is declared
+// as a turbo input beside the manifest for the same cache reason.
+const CRATE_FEATURED_PDP_ID = 896191;
+const crateSummaries = JSON.parse(
+  readFileSync(
+    join(root, "..", "..", "tools", "snapshot-capture", "crate", "summaries.json"),
+    "utf8",
+  ),
+);
+const featuredSummary = Array.isArray(crateSummaries)
+  ? crateSummaries.find((s) => s?.id === CRATE_FEATURED_PDP_ID)
+  : undefined;
+if (typeof featuredSummary?.slug !== "string" || !/^[a-z0-9-]+$/.test(featuredSummary.slug)) {
+  throw new Error(
+    `front: crate summaries carry no usable slug for the featured PDP id ${CRATE_FEATURED_PDP_ID} — home's Product page row cannot link a product it cannot name`,
+  );
+}
+const pdpFeaturedHref = `/vanilla/pdp/${featuredSummary.slug}/`;
 const esc = (v) =>
   String(v)
     .replace(/&/g, "&amp;")
@@ -1138,6 +1161,9 @@ const home = readFileSync(join(root, "home", "index.html"), "utf8")
   // one on the front door. The whole clause is composed above from the same
   // bundle the values come from, so the href cannot drift from what it backs.
   .replaceAll("%%LAB_ED_SPREAD%%", () => homeSpread)
+  // The Product-page row's link: the crate's featured PDP, slug read from the
+  // committed summaries tray above (never typed, same rule as the receipts).
+  .replaceAll("%%PDP_FEATURED_HREF%%", () => esc(pdpFeaturedHref))
   .replaceAll("%%TOKEN_PAPER%%", () => token("--pm-neutral-0"))
   .replaceAll("%%TOKEN_VINYL_URI%%", () => uriHex(token("--pm-neutral-950")))
   .replaceAll("%%TOKEN_PAPER_SUNK_URI%%", () => uriHex(token("--pm-neutral-50")));

@@ -2,10 +2,16 @@
 
 The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
 
-- `front` — the front routing Worker (issue #3): path-prefix dispatch over
-  service bindings + the throwaway chrome-free index at `/`. Routes `/api/*`
-  and `/assets/*` to the edge Worker. Chrome injection and the `/_pm/*`
-  instrumentation path arrive with issue #5.
+- `front` — the front routing Worker (ADR-0004 §3, §7): path-prefix dispatch
+  over service bindings — `/{variant}/…` to each variant Worker, `/api/*` and
+  `/assets/*` to the edge Worker, `/blog/*` to the blog plane — injecting the
+  switcher/HUD chrome into variant HTML via HTMLRewriter (HTML only; every
+  other response passes through byte-identical). Serves its own static
+  singletons assets-first, both composed at build from committed artifacts:
+  the home surface at `/` (ADR-0007) and `/methodology/` (ADR-0001 §9). Also
+  serves the `/_pm/*` instrumentation path — `chrome.css`, the pinned
+  measurement bundle, the `build.json` attestation, and the published lab
+  receipts and per-surface bundles under `/_pm/lab/`.
 - `edge` — the data plane (issue #4): the frozen-snapshot R2 origin behind
   `GET /api/plp` + `GET /api/pdp/:id` (Zod-contract trays), `/assets/img/*`
   image serving, the KV warm tier (`?cache=` bypass; `x-pm-cache-state`
@@ -186,4 +192,6 @@ left in between; issue #11 removed the last one):**
    the crate's manifest and assert the crate's committed trays + its
    `images-index.json` sha256s — proven green locally against a crate-seeded
    plane before this was recorded (issue #11).
-5. Close #3, then #1.
+5. Done: steps 1–4 were executed at the 2026-07-11 arming and #3 and #1 are
+   closed. A re-arm or re-seed ends at step 4 — the green crate-mode smoke is
+   the finish line; there is no issue left to close.
