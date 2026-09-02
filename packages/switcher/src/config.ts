@@ -34,6 +34,14 @@
  * placeholders), is part of the build ticket's definition of done. Until a
  * surface registers, its chrome renders the current condition with no
  * offers — true statements only, never "singleton".
+ *
+ * Completion has a second edit (ADR-0007 §1/§4): the commit that empties a
+ * surface's `plannedVariants` also flips its home catalogue row in
+ * `workers/front/home/index.html` from "In build" to "Public today" with a
+ * same-origin link — at SURFACE completion, not first serve. The origin
+ * suite's home-rows leg (`composed-origin.test.ts`) derives the expected
+ * state from this object, so a completed matrix surface whose row still
+ * reads "In build" goes red; singletons flip theirs by hand.
  */
 
 export interface StrategyPreset {

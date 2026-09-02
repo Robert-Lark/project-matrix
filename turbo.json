@@ -41,7 +41,14 @@
       // nothing under workers/front would replay a cached dist carrying the
       // OLD receipts, and the deploy leg would ship it before the post-deploy
       // smoke caught the drift.
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json"],
+      // summaries.json for the same reason: home's PDP row href is derived from
+      // the crate's featured release slug (repo-shopfront), so a re-slug must
+      // miss the cache too.
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json",
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/summaries.json"
+      ],
       // generated/** is the Worker's LAB_BUNDLES module, written by build.mjs
       // from the labBundle-flagged surfaces. Declared as an output for the
       // same reason astro's src/data modules are: an undeclared build output

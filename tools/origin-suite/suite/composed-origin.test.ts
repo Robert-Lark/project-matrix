@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { SURFACE_CONTROLS } from "@pm/switcher";
 
 const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 const EXPECT_BROTLI = process.env.PM_EXPECT_BROTLI === "1";
@@ -92,6 +93,45 @@ describe("front Worker: own assets + dispatch", () => {
     expect(body).toContain(`SOURCE ${manifest.source}`);
     // And the hero's visible-copy receipt (entity-encoded nbsp in source).
     expect(body).toContain(`${manifest.releaseCount}&nbsp;real`);
+  });
+
+  it("home's catalogue rows match SURFACE_CONTROLS completion state (ADR-0007 §1, §4)", async () => {
+    // The row flip is a unit-completion duty (editorial PRD duties; ADR-0007
+    // §4: "In build" → "Public today" as surfaces land) and it fires at
+    // SURFACE completion — the surface's `plannedVariants` gone — not at
+    // first serve. Derived from the same registry the chrome renders from,
+    // never typed, so a surface that completes without flipping its row (the
+    // 2026-08-29 audit found three) goes red here. Matrix surfaces only: the
+    // singletons (a11y, how-it-was-built) have no derivable completion state.
+    const ROWS: Record<string, string> = {
+      Editorial: "editorial",
+      "Product page": "pdp",
+      "Search + filters": "plp",
+      Checkout: "checkout",
+    };
+    const body = await (await get("/")).text();
+    for (const [name, key] of Object.entries(ROWS)) {
+      const controls = SURFACE_CONTROLS[key];
+      expect(controls, `SURFACE_CONTROLS registers ${key}`).toBeDefined();
+      const complete =
+        controls!.variants.length > 0 && (controls!.plannedVariants?.length ?? 0) === 0;
+      const row = body
+        .split('<li class="cat__row')
+        .find((chunk) => chunk.includes(`<h3 class="cat__name">${name}</h3>`));
+      expect(row, `home has a catalogue row named ${name}`).toBeDefined();
+      const status = row!.match(/<p class="cat__status">([\s\S]*?)<\/p>/)?.[1] ?? "";
+      expect(status, `${name}: the row carries a status token`).not.toBe("");
+      if (complete) {
+        expect(status, `${name} is complete in SURFACE_CONTROLS, so its row is live`).toContain("Public today");
+        expect(status).not.toContain("In build");
+        // A live row opens the surface on THIS origin — never a GitHub document.
+        expect(status, `${name}: a live row links a same-origin path`).toMatch(/href="\/[^"]*"/);
+      } else {
+        const owed = controls!.plannedVariants?.length ?? 0;
+        expect(status, `${name} has ${owed} planned cell(s) unbuilt, so its row stays In build`).toContain("In build");
+        expect(status).not.toContain("Public today");
+      }
+    }
   });
 
   it("home's canonical font leg at /pm/* is byte-identical to @pm/tokens", async () => {
