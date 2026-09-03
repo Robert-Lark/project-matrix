@@ -6499,3 +6499,178 @@ and everything violates is worse than no rule. Trimming the entries was
 rejected on the grounds that the build record IS the product; what is given
 up is stated, and the next call (split per phase, or archive resolved nodes)
 is named rather than deferred silently.
+
+### The last surface, built — and the two things the spec had not seen (2026-09-02)
+
+The spec session could not run a server, so the first thing this one did was
+the probe it owed. Front Worker alone on 8787, before any change:
+`GET /how-it-was-built/` → `HTTP/1.1 404 Not Found`, body `not found`, the
+Worker's log line `{"event":"unknown-prefix","path":"/how-it-was-built/"}`;
+`/` and `/methodology/` → 200; `/_pm/build.json` attesting `87113f6`, clean.
+Every store page's footer linked that 404 — 2,006 of them over the crate, as
+the spec counted. After the change the same probe returns 200 with
+`class="pm-doc"`, no `data-pm-chrome`, no `pm-chrome-slot`, no `<script`, and
+the composed-origin suite now holds all of that on every run.
+
+**The build followed the PRD's five decisions. Two of them met facts the PRD
+had not seen, and both changed the shape of what shipped.**
+
+**The page is written at attestation time.** The PRD pictured `build.mjs`
+passing the stamped SHA into `renderHowBuilt`. Turbo replays a cached front
+dist whenever the package's inputs are unchanged, and `stamp-build.mjs` exists
+precisely because a replayed dist carries the SHA of the commit that BUILT it —
+`run-local` and the `dev` script re-stamp after every turbo build. A page baked
+in `build.mjs`'s body would name one commit while the re-stamped attestation
+named another, and the served-vs-master leg would fail on a disagreement the
+cache manufactured. So `stampBuild()` now renders the page and writes it beside
+`build.json` from ONE `{sha, dirty}`, rendering FIRST so a thrown render cannot
+leave a fresh attestation beside a stale page (the design review's should-fix).
+`@pm/front` declares `@pm/reference` — the first workspace to — which is what
+puts the renderer into turbo's cache key for the front build (`--dry=json`:
+`@pm/front#build` gains `@pm/reference#topo` with `render/*.mjs` among its
+inputs; the suite's file-URL import pattern would have left it out). ADR-0004
+§2's "not consumed" gets an addendum saying what it protects: no component
+runtime, never shipped code; build-time spec consumption is the `@pm/tokens`
+class.
+
+**GitHub does not render the build log.** The PRD's deep links were to be
+SHA-pinned files; this build also anchors them, and checked what GitHub shows.
+An ADR page carries `user-content-*` ids for every heading, so an addendum
+links GitHub's heading anchor — the rule is github-slugger's, and it is pinned
+in `packages/reference/test/reference.test.ts` to anchors fetched from GitHub
+today: em dash → `--`, `§` and quotes and backticks dropped, `#16 + audit` →
+`16--audit`, `Addendum A —` → `addendum-a--`, and ADR-0008's `## Consequences`
+/ `### Consequences` → `consequences` / `consequences-1` (the dedupe numbers
+across all levels). The build log's page payload, by contrast, carries
+`"richText":null,"richTextTruncated":true,"renderedFileInfo":null` at 403 KB
+— no rendered view, so a heading fragment scrolls nowhere. A phase therefore
+links the code view at its heading's own line, `?plain=1#L<n>`: exact at a
+pinned SHA, and checked offline without any slug rule at all (line *n* of the
+file must BE the heading the link shows). Two anchor forms, each honest about
+what the target can display.
+
+**What the review caught before it was code.** Three independent lenses read
+the design note against the tree and the PRD (design review, in the session
+record): (1) render-first in the stamp, above; (2) the D9 dirty arm would
+never run anywhere — CI planes are always clean — so all three arms (master,
+clean, dirty) are now rendered in-process by the reference test, and the HTTP
+leg asserts the arm the plane is in by value; (3) a second copy of the slugger
+in the repo-check would prove only that two copies agree, so the repo-check
+imports the one exported rule and the golden vectors carry the GitHub
+agreement; (4) the frame prose claimed "the two paragraphs … are the only
+hand-written text" on a page with five hand-written section intros — the
+honesty page overstating its honesty; it now says what is true (every list is
+generated; the prose between lists is written by hand); (5) the build line sat
+inside `.pm-prose`, whose contract is "no classes inside" — it is the header's
+dek now; (6) home's PM-006 row moved to link the surface (ADR-0007 §4: rows
+update as surfaces land) and was the one live row no leg pinned — pinned now;
+(7) the `%%LAB_RUNS%%` slot renders "N" by whitelist, any other marker in a
+heading refusing the render.
+
+**Nine duties, fired and restored from a backup copy** (never `git checkout
+--`; `git status --porcelain` identical before and after each run):
+
+| Duty | Sabotage | Failure it produced (verbatim) | Owner |
+|---|---|---|---|
+| D1 (was absent) | `docs/adr/0010-probe.md` with frontmatter + `# title` | `committed how-built is missing ADR 0010-probe — re-run: node render/build.mjs` — 1 failed, 39 passed; 40/40 after `rm` | `packages/reference/test/reference.test.ts` |
+| D1, addenda arm | `## Addendum — sabotage probe (2026-09-02)` appended to ADR-0009 | `committed how-built is missing addendum 2 of 0009-blog-plane — re-run: node render/build.mjs` | same |
+| D2 | `how-built-page.mjs`: `return renderHowBuilt({ head, build })` → `return renderHowBuilt({ head, build }).replace("Decision records</h2>", "Decision record</h2>")` — a post-render edit of the body, because the composition owns only the `<head>` and an edit to the renderer changes the suite's re-render identically (verify-slice caught the first row's wording as unreproducible) | `first divergence at normalized line 87: … <h2 id="decision-records">Decision records</h2> … actual … Decision record</h2>` | `tools/origin-suite/suite/how-it-was-built.test.ts` |
+| D3 (existed) | `## Phase 99 — sabotage probe` appended to the build log | `committed how-built is missing Phase 99 — re-run: node render/build.mjs` | `reference.test.ts` |
+| D4 | `docs/adr/0009-blog-plane.md` renamed | `deep links to files that do not exist — re-run: node render/build.mjs: … "docs/adr/0009-blog-plane.md"` | `tools/repo-checks/test/how-built-links-resolve.test.ts` |
+| D4, fragment arm | one addendum fragment misspelled in the master | `fragments naming no heading in their file — the heading was reworded, or the anchor rule drifted: … 0002-…#addendum--strategy-review-correctionz-2026-07-12` | same |
+| D4, line arm | one line inserted above `## Phase 3` in the build log | `line anchors that no longer point at their heading — re-run: … "docs/build-log.md?plain=1#L886 is \"(sabotage: one inserted line — delete me)\", link says \"## Phase 3 — Store data\"", … (13 entries, every phase from 3 on)` | same |
+| D5 | `id="phase-3"` → `id="phase-33"` in the master | `TOC anchors with no matching id: … "phase-3"` | same |
+| D6 (existed) | `labBundle: true` on the singleton's registry entry | `front lab: surface "how-it-was-built" is both singleton and labBundle — a singleton is off the benchmarked matrix (ADR-0007 §5) …` | `workers/front/build.mjs` |
+| D7 | the page write in `stampBuild()` removed | `GET /how-it-was-built/ -> 404`; leg: `expected 404 to be 200` (status asserted before any body read) | the suite leg |
+| D8 | `## Phase 99` appended to the build log; an addendum appended to ADR-0009 | turbo's own verdict for `@pm/front#build` via `--dry=json`: `HIT` (control) → `MISS` → `HIT` (restored) → `MISS` → `HIT` | `turbo.json` |
+| D9 | the composition passed `dirty: false` while `/_pm/build.json` said `dirty: true` | `expected '87113f60ad187b6190f1aa4c19c85a2948c6f…' to be 'main'` | the suite leg (both arms also rendered in-process by `reference.test.ts`) |
+| PM-006 row | home's status link pointed back at the GitHub build log | `PM-006 must link the served surface: expected '<strong class="cat__live">Public toda…' to contain 'href="/how-it-was-built/"'` | the suite leg |
+
+**The line anchor was observed, not assumed.** GitHub's blob page for the
+build log carries `"large":false,"truncated":false` and a `lineInfo` of
+6,501 lines for the plain view, and a real Chromium (Playwright, 2026-09-02)
+opened `…/blob/main/docs/build-log.md?plain=1#L886` with the line present,
+reading `## Phase 3 — Store data`, highlighted, no "too large" notice, the
+file at 412,355 B. The code view has its own size behaviour for big files
+and this file only grows, so the repo-check pins the observation to a
+512 KiB ceiling: crossing it fails with an instruction to re-observe and
+raise the ceiling with the new date and size — a guess is not a receipt.
+
+**Verify-slice, four lenses, after the sabotage pass.** The first run died on
+the session limit with `4 started / 0 results` — an empty findings array that
+reads exactly like a clean pass and was not one (the 2026-08-14 lesson); the
+journal was read before anything was believed, and the run was resumed. The
+resumed run returned 24 raw findings, 14 distinct, none refuted on re-reading
+the code; all are fixed in this commit: (1) the served-vs-master leg rendered
+its expected body from THIS checkout's docs, so a plane built from another
+commit would read as composition drift with a message blaming the wrong
+thing — it now refuses a checkout/plane SHA mismatch by name, the bench
+runner's rule; (2) the dirty-build leg accepted either arm on the DEPLOYED
+plane, so a deploy-job step leaving one unignored file would ship every link
+on `main` with everything green — the remote run now requires a clean
+attestation; (3) the head's `<meta name="description">` claimed SHA-pinned
+links in both arms while the dirty body said the opposite, and the head is
+exempt from the body compare — it is derived from the attestation and pinned
+per arm; (4) the methodology `<h2 id="…">` regex was attribute-order-blind in
+the renderer AND every guard, so a `<h2 class="x" id="y">` would vanish from
+the index with all guards agreeing — one exported extractor now, comments
+stripped, an id-less `<h2>` refusing the render, and a floor that every `<h2`
+on the page is indexed; (5) the master's byte-regeneration exemption hid a
+flipped ADR status, a reworded title or heading text — it is byte-compared
+now, after the index pins so their messages still name the missing entry;
+(6) `githubSlug` slugs the source while GitHub slugs the rendered text, so a
+heading with a link, HTML, an entity or `_emphasis_` would mint a fragment
+GitHub never renders — indexed headings carrying those now refuse the
+render; (7) the anchor vectors were typed strings with no committed
+evidence — `packages/reference/test/fixtures/github-heading-anchors.json`
+now holds every rendered heading of all nine ADR pages with the id GitHub
+served beside it (URL, bytes, date, ref), and the test re-slugs each page as
+one document against that sequence; (8) missing metadata rendered an
+invalid `<time datetime="">` — the renderer refuses, naming file and field;
+(9) `@pm/reference` could have gained an extension-less `exports` map past
+the no-component-runtime check — its `exports` is pinned undefined; (10) a
+hand-typed "six rendering paradigms" beside home's "Five architectures" —
+the number is gone; (11) the D2 sabotage row was unreproducible as worded —
+the exact edit is recorded above; (12) ADR-0007 §4 still said the PM-006 row
+links the build log — addendum; (13) `workers/README.md` listed two
+singletons — three now, with the stamp-time write; (14) the line-anchor
+behaviour was reasoned, not observed — observed, above.
+
+**Stale prose fixed, as owed:** `workers/front/methodology/index.html`'s header
+no longer promises a move this surface declined — it records that the page
+keeps its URL and is indexed by its `<h2 id>`s; `surfaces/how-built.css` no
+longer claims "decision-map rows"; README's surface row no longer says "not
+built". ADR-0008 addendum B records §8 as built, and the `(fog)` node's count
+of unbuilt surfaces drops to one.
+
+**Verification, counts tool-derived (final tree):** `pnpm run check` → **33
+successful, 33 total**, exit 0; the count derived, not typed: `turbo run lint
+typecheck test --dry=json | jq '[.tasks[]|select(.command!="<NONEXISTENT>")]|length'`
+→ `33`. `node packages/reference/render/build.mjs` followed by `git status
+--porcelain packages/reference/surfaces/` → `how-it-was-built/index.html`
+and nothing else. Origin suite, fixture mode, run alone: **18 files, 519
+tests passed**, 143.0 s, `run-local` exit 0. Crate mode
+(`PM_SEED_DIR=tools/snapshot-capture/crate`), on the committed tree: **18
+files, 519 tests passed**, 143.2 s, exit 0, the plane stamping
+`dist/how-it-was-built/index.html` from a CLEAN tree — every deep link on
+the served page pinned to the attested commit, `blob/main/` absent, the
+build line and the head's description naming it; D2 byte-identical at that
+attestation; five suite fetches of the URL, all 200. (The runs necessarily
+preceded this paragraph, whose commit is an amend of the one they ran on, so
+the SHA they pinned is not the SHA that ships; the post-deploy smoke repeats
+the same legs against the deployed SHA.) Two earlier fixture runs that
+overlapped other load on this machine failed with 86 and then 26 browser
+timeouts, all in `pdp-controls`, `bench`, `bench-interaction` and the pixel
+legs of `drift` — the files CI's own post-deploy smoke flaked on at
+`87113f6` (`gh run view 33647164503`: origin ✓, check ✓, smoke ✗ on one qwik
+stepper assertion); each re-run alone passed in 143 s against 803–1,541 s
+loaded. Run the suite alone, and never pipe the runner through `tail` — the
+first run's exit code was `tail`'s.
+
+**What this leaves.** The footer's other dead link, `/vanilla/a11y/`, is the
+a11y unit's. No field data for this surface (reversible for ~2.5 KB of
+`measure.js` plus one normalizer exclusion). The committed master pins `main`
+and carries line anchors into the build log, so an edit ABOVE a phase heading
+— mid-file, not an append — moves the lines and fails the repo-check until the
+master is re-rendered; that is the price of a citation that names a line, and
+the guard says exactly which line moved.

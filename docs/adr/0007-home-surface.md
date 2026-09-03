@@ -195,3 +195,14 @@ stands where a locked count exists.
   it can now be ticketed on its own merits.
 - The copy deck, six-lens panel findings, and this page's build narrative are
   "How it was built" source material (build-log Phase 7).
+
+## Addendum — §4's "How it was built" row links the served surface (2026-09-02)
+
+§4 shipped the PM-006 row "Public today, linking the build log" — the day-one
+way to show a live token on a catalogue where nothing else was live yet. The
+surface exists now (ADR-0008 addendum B), so the row links
+`/how-it-was-built/`, under §4's own rule that rows update one at a time as
+surfaces land. The composed-origin suite pins it the way it pins every other
+live row: a live row opens the surface on THIS origin, never a GitHub
+document. No other §4 sentence changes; the build log Phase 15 records the
+change and why no ADR question was reopened by it.

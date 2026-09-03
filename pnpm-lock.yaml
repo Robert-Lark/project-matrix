@@ -617,6 +617,9 @@ importers:
       '@pm/measurement':
         specifier: workspace:*
         version: link:../../packages/measurement
+      '@pm/reference':
+        specifier: workspace:*
+        version: link:../../packages/reference
       '@pm/switcher':
         specifier: workspace:*
         version: link:../../packages/switcher

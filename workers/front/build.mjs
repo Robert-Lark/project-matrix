@@ -22,6 +22,13 @@
 // hands renderChrome are the SAME artifact, so they cannot drift — and the
 // methodology page (ADR-0001 §9) is composed like home, every number on it
 // substituted from a committed artifact, never typed.
+//
+// The how-it-was-built page (ADR-0008 §8; docs/prds/how-it-was-built-build.md)
+// is NOT composed here: it is the committed master's own renderer
+// (@pm/reference) under this Worker's head, written by stampBuild() at the
+// end of this build — and again by every re-stamp — so its deep links pin the
+// exact SHA /_pm/build.json attests. See how-built-page.mjs and
+// stamp-build.mjs.
 import {
   cpSync,
   existsSync,
@@ -38,16 +45,13 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { FIT } from "./lab/fit.mjs";
 import { stampBuild } from "./stamp-build.mjs";
+// The real @pm/tokens sources + the head-colour/escape helpers, shared with
+// how-built-page.mjs (the how-it-was-built page is composed at stamp time).
+import { buttonCss, esc, token, tokensCss, tokensRoot, uriHex } from "./tokens-source.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(join(root, "package.json"));
 const dist = join(root, "dist");
-
-// Resolve the @pm/tokens package root through this package's own dependency
-// graph (isolation-honest, same shape as the variant builds).
-const tokensRoot = dirname(
-  dirname(require.resolve("@pm/tokens/css/tokens.css")),
-);
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(join(dist, "_pm", "lab", "receipts"), { recursive: true });
@@ -99,29 +103,6 @@ if (typeof featuredSummary?.slug !== "string" || !/^[a-z0-9-]+$/.test(featuredSu
   );
 }
 const pdpFeaturedHref = `/vanilla/pdp/${featuredSummary.slug}/`;
-const esc = (v) =>
-  String(v)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const tokensCss = readFileSync(join(tokensRoot, "css", "tokens.css"), "utf8");
-const buttonCss = readFileSync(
-  join(tokensRoot, "css", "components", "button.css"),
-  "utf8",
-);
-
-// Head colors (theme-color, favicon) cannot read CSS custom properties, so
-// they are substituted from the REAL token file at build — a re-pour of the
-// primitive tier moves them with it, same anti-drift rule as the receipts.
-const token = (name) => {
-  const m = tokensCss.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{3,8})`));
-  if (!m) throw new Error(`front: token ${name} not found in tokens.css`);
-  return m[1];
-};
-const uriHex = (hex) => hex.replace("#", "%23");
 
 // ── /_pm/lab/* — the published-runs artifacts (ADR-0008 §3; ADR-0001 §9) ──
 // Inputs are COMMITTED: lab/receipts/{surface}-{profile}.json (raw batch
@@ -1316,5 +1297,5 @@ cpSync(
 stampBuild();
 
 console.log(
-  "front: dist assembled (home + methodology + /pm fonts + /_pm instrumentation + lab bundle)",
+  "front: dist assembled (home + methodology + how-it-was-built + /pm fonts + /_pm instrumentation + lab bundle)",
 );

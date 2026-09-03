@@ -167,12 +167,18 @@ ${content}
   </div>`;
 }
 
-/** One page, assembled. */
-export function page({ title, depth, css, current, content, noindex }) {
+/** One page, assembled. `head` (optional) is a consumer-composed <head>
+ *  inner that REPLACES the canonical relative-link head — the front Worker
+ *  serves how-it-was-built with inlined CSS and /pm/ font paths (the home
+ *  delivery shape, ADR-0007 §6) while the committed master keeps `head()`.
+ *  The body is identical either way; the served-vs-master drift leg
+ *  (tools/origin-suite/suite/how-it-was-built.test.ts) relies on exactly
+ *  that, and ADR-0008's serialization freedoms exempt the <head> subtree. */
+export function page({ title, depth, css, current, content, noindex, head: headInner }) {
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${head({ title, depth, css, noindex })}
+  ${headInner ?? head({ title, depth, css, noindex })}
 </head>
 <body>${shell({ current, content })}
 </body>

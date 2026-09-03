@@ -53,6 +53,19 @@ describe("no shared component runtime exists (ADR-0003 §1, ADR-0004 §2)", () =
           /\.(js|mjs|cjs|ts|mts|cts|tsx)$/,
         );
       }
+      // @pm/reference must not gain an exports map AT ALL (how-it-was-built
+      // build, 2026-09-02): the front Worker's build imports
+      // `@pm/reference/render/how-built.mjs` by deep path, which any exports
+      // map would close, and a subpath pattern like "./render/*" carries no
+      // extension for the check above to see while still opening a JS entry
+      // surface (verify-slice, seams lens). @pm/tokens' map names CSS and
+      // fonts only and stays under the extension check.
+      if (name === "reference") {
+        expect(
+          pkg.exports,
+          "reference must not gain an exports map — see workers/front/how-built-page.mjs",
+        ).toBeUndefined();
+      }
     }
   });
 });

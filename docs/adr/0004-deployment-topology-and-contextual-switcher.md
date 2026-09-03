@@ -306,3 +306,31 @@ One sentence for the methodology page: *lab throttling is an emulation both
 of us can run; the HUD's RUM readout is your real network — we never fake
 slowness at you, and we never publish a throttled verdict our cross-check
 disagrees with.*
+
+## Addendum — §2's "not consumed": build-time spec consumption is allowed (2026-09-02)
+
+§2's layout comment reads `reference/ (golden-master SPEC, not consumed)` and
+the paragraph beneath it repeats the phrase: `reference/` "holds the
+framework-free golden master as a *spec*, not consumed code". The
+how-it-was-built build (`docs/prds/how-it-was-built-build.md`, Decision 4)
+made `@pm/reference` a declared dependency of `@pm/front` — the first
+workspace to declare it — so the front Worker's build renders
+`/how-it-was-built/` with the SAME function that renders the committed
+master, and the served page cannot drift from the spec. The §2 decision
+stands; what "not consumed" protects is now stated precisely:
+
+- **What §2 forbids is a component runtime** — code a paradigm would bundle
+  and ship to a visitor, which would bias the numbers the project measures
+  (ADR-0003 §1). That prohibition is unchanged, and `tools/repo-checks`
+  still enforces that `@pm/reference` exposes no JS entry point and must
+  never gain an `exports` map naming one.
+- **What is allowed is build-time consumption, as spec** — the `@pm/tokens`
+  class (ADR-0007 §6): tooling imports the renderer at build, the output is
+  static HTML, and nothing from `packages/reference` reaches a bundle. The
+  drift gate and the measurement harness already reused the reference render
+  this way (ADR-0003 Consequences: "a shared build artifact"); declaring the
+  dependency makes the reuse honest in the build graph (turbo hashes the
+  renderer into the front's cache key) rather than reached by file path.
+
+One sentence for the layout comment, should it be redrawn: *`reference/`
+(golden-master SPEC — consumed at build time only, never shipped).*
