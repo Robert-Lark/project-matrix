@@ -1,0 +1,378 @@
+{
+  "fetchedAt": "2026-09-02",
+  "ref": "main = 87113f60ad187b6190f1aa4c19c85a2948c6f21d (origin/main at fetch time)",
+  "how": "curl -sL <url> (the GitHub blob page). The page embeds the rendered markdown as the JSON string field \"richText\"; each heading renders as <div class=\"markdown-heading\"><hN …>TEXT</hN><a id=\"user-content-SLUG\" class=\"anchor\" …></div>. Pairs are (rendered heading text, slug) exactly as GitHub served them, in document order (the dedupe counter -1, -2 is document-wide).",
+  "pages": [
+    {
+      "file": "docs/adr/0001-benchmark-measurement-methodology.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0001-benchmark-measurement-methodology.md",
+      "pageBytes": 493256,
+      "headings": [
+        {
+          "text": "Benchmark measurement methodology — fair metrics across rendering paradigms",
+          "slug": "benchmark-measurement-methodology--fair-metrics-across-rendering-paradigms"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — strategy-review clarifications (2026-07-12)",
+          "slug": "addendum--strategy-review-clarifications-2026-07-12"
+        },
+        {
+          "text": "Addendum — the ruler's accounting fixes (2026-08-01, issue #16 + audit)",
+          "slug": "addendum--the-rulers-accounting-fixes-2026-08-01-issue-16--audit"
+        },
+        {
+          "text": "Addendum — first publication: environment, chrome constant, serialization caveat (2026-08-13)",
+          "slug": "addendum--first-publication-environment-chrome-constant-serialization-caveat-2026-08-13"
+        },
+        {
+          "text": "Addendum — the dilution fix: wire-priced attribution, and both addendum-N holes closed (2026-08-15, bench-instrumentation-dilution)",
+          "slug": "addendum--the-dilution-fix-wire-priced-attribution-and-both-addendum-n-holes-closed-2026-08-15-bench-instrumentation-dilution"
+        },
+        {
+          "text": "Addendum — the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, interaction-registry)",
+          "slug": "addendum--the-interaction-boundary-the-cache-the-instrument-was-taking-away-and-the-inp-asymmetry-2026-08-28-interaction-registry"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0002-data-contract-and-frozen-snapshot.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0002-data-contract-and-frozen-snapshot.md",
+      "pageBytes": 314301,
+      "headings": [
+        {
+          "text": "Data contract — frozen snapshot origin, zero-bias payload, R2/KV serving",
+          "slug": "data-contract--frozen-snapshot-origin-zero-bias-payload-r2kv-serving"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Verified API facts",
+          "slug": "verified-api-facts"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — strategy-review corrections (2026-07-12)",
+          "slug": "addendum--strategy-review-corrections-2026-07-12"
+        },
+        {
+          "text": "Addendum — the manifest states its true provenance (2026-08-01)",
+          "slug": "addendum--the-manifest-states-its-true-provenance-2026-08-01"
+        },
+        {
+          "text": "Addendum — the cold column's scope (2026-09-01)",
+          "slug": "addendum--the-cold-columns-scope-2026-09-01"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0003-design-system-and-zero-bias-presentation.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0003-design-system-and-zero-bias-presentation.md",
+      "pageBytes": 309771,
+      "headings": [
+        {
+          "text": "Design system — shared tokens/components + zero-bias presentation",
+          "slug": "design-system--shared-tokenscomponents--zero-bias-presentation"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — §6 scope for the fenced Remix 3 exhibit (2026-07-11)",
+          "slug": "addendum--6-scope-for-the-fenced-remix-3-exhibit-2026-07-11"
+        },
+        {
+          "text": "Addendum — \"idiomatic default\" gets a mechanism (2026-07-12)",
+          "slug": "addendum--idiomatic-default-gets-a-mechanism-2026-07-12"
+        },
+        {
+          "text": "Addendum — CSS delivery is nominal on the editorial slices (2026-08-01)",
+          "slug": "addendum--css-delivery-is-nominal-on-the-editorial-slices-2026-08-01"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0004-deployment-topology-and-contextual-switcher.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0004-deployment-topology-and-contextual-switcher.md",
+      "pageBytes": 335458,
+      "headings": [
+        {
+          "text": "Deployment topology — single canonical plane, one-SHA monorepo, contextual switcher",
+          "slug": "deployment-topology--single-canonical-plane-one-sha-monorepo-contextual-switcher"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Working knowledge, to verify at build time",
+          "slug": "working-knowledge-to-verify-at-build-time"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — verified by cf-composition-spike (2026-07-06)",
+          "slug": "addendum--verified-by-cf-composition-spike-2026-07-06"
+        },
+        {
+          "text": "Addendum — Remix 3 frontier hosting, decided by remix3-frontier (2026-07-11)",
+          "slug": "addendum--remix-3-frontier-hosting-decided-by-remix3-frontier-2026-07-11"
+        },
+        {
+          "text": "Addendum — §7 qualified by the surface-design session (2026-07-17)",
+          "slug": "addendum--7-qualified-by-the-surface-design-session-2026-07-17"
+        },
+        {
+          "text": "Addendum — §6 clarified: what \"synthetic throttle\" rejects (2026-07-12)",
+          "slug": "addendum--6-clarified-what-synthetic-throttle-rejects-2026-07-12"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0005-plp-data-strategy-comparison.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0005-plp-data-strategy-comparison.md",
+      "pageBytes": 308618,
+      "headings": [
+        {
+          "text": "PLP data-strategy comparison — scenarios, client warmth, strategy mapping",
+          "slug": "plp-data-strategy-comparison--scenarios-client-warmth-strategy-mapping"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — strategy-review qualifications (2026-07-12)",
+          "slug": "addendum--strategy-review-qualifications-2026-07-12"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0006-aesthetic-direction-catalogue.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0006-aesthetic-direction-catalogue.md",
+      "pageBytes": 280319,
+      "headings": [
+        {
+          "text": "Aesthetic direction — the \"Catalogue\" pour",
+          "slug": "aesthetic-direction--the-catalogue-pour"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0007-home-surface.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0007-home-surface.md",
+      "pageBytes": 289407,
+      "headings": [
+        {
+          "text": "Home surface — the front door as a receipt",
+          "slug": "home-surface--the-front-door-as-a-receipt"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0008-store-surfaces-and-instrument.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0008-store-surfaces-and-instrument.md",
+      "pageBytes": 465344,
+      "headings": [
+        {
+          "text": "Store surfaces + the instrument — the canonical spec layer",
+          "slug": "store-surfaces--the-instrument--the-canonical-spec-layer"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "What a variant may vary (normative — the serialization freedoms)",
+          "slug": "what-a-variant-may-vary-normative--the-serialization-freedoms"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — the fragment budget, re-set against a real populated state (2026-08-14)",
+          "slug": "addendum--the-fragment-budget-re-set-against-a-real-populated-state-2026-08-14"
+        },
+        {
+          "text": "Addendum — the PDP master set, and a qty stepper the panel missed (2026-08-14)",
+          "slug": "addendum--the-pdp-master-set-and-a-qty-stepper-the-panel-missed-2026-08-14"
+        },
+        {
+          "text": "Addendum A — a control that cannot act does not ship (2026-08-15)",
+          "slug": "addendum-a--a-control-that-cannot-act-does-not-ship-2026-08-15"
+        },
+        {
+          "text": "1. Zoom — WIRED",
+          "slug": "1-zoom--wired"
+        },
+        {
+          "text": "2. The format radio group — CUT, not wired",
+          "slug": "2-the-format-radio-group--cut-not-wired"
+        },
+        {
+          "text": "3. pm-pdp__scroll — STYLED",
+          "slug": "3-pm-pdp__scroll--styled"
+        },
+        {
+          "text": "3b. The thumb strip — WRAPPED (found by the guard, on real data)",
+          "slug": "3b-the-thumb-strip--wrapped-found-by-the-guard-on-real-data"
+        },
+        {
+          "text": "4. The guards, and why two were needed",
+          "slug": "4-the-guards-and-why-two-were-needed"
+        },
+        {
+          "text": "4b. The verification pass found a regression this slice INTRODUCED",
+          "slug": "4b-the-verification-pass-found-a-regression-this-slice-introduced"
+        },
+        {
+          "text": "4c. The instrument advertised the control too",
+          "slug": "4c-the-instrument-advertised-the-control-too"
+        },
+        {
+          "text": "5. Bare glyphs are barred",
+          "slug": "5-bare-glyphs-are-barred"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences-1"
+        }
+      ]
+    },
+    {
+      "file": "docs/adr/0009-blog-plane.md",
+      "url": "https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0009-blog-plane.md",
+      "pageBytes": 309294,
+      "headings": [
+        {
+          "text": "The blog plane — Rob's writing home and its CMS",
+          "slug": "the-blog-plane--robs-writing-home-and-its-cms"
+        },
+        {
+          "text": "Context",
+          "slug": "context"
+        },
+        {
+          "text": "Decision",
+          "slug": "decision"
+        },
+        {
+          "text": "Considered alternatives",
+          "slug": "considered-alternatives"
+        },
+        {
+          "text": "Consequences",
+          "slug": "consequences"
+        },
+        {
+          "text": "Addendum — phase 2: the editor made luxurious (2026-07-18)",
+          "slug": "addendum--phase-2-the-editor-made-luxurious-2026-07-18"
+        }
+      ]
+    }
+  ]
+}

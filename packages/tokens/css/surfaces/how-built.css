@@ -1,18 +1,30 @@
 /*
  * Surface module — How it was built (front-Worker static singleton, the home
- * precedent). The decision record as a reading surface: a sticky table of
- * contents beside long-form prose. Content is GENERATED at build from docs/
- * (ADR excerpts, decision-map rows, build-log phases) — never re-typed.
+ * precedent). The decision record as an INDEX, not a reading surface: a
+ * sticky table of contents beside long-form prose. Content is GENERATED at
+ * build from docs/ — the ADR index with each ADR's addenda, the build-log
+ * phase headings, the reviews — and from /methodology/'s own <h2 id> list;
+ * never re-typed. The decision map is NOT rendered (PRD
+ * docs/prds/how-it-was-built-build.md, Decision 1); an earlier version of
+ * this comment said "decision-map rows", which was never true.
  *
  * Skeleton:
  *   <div class="pm-doc">
  *     <nav class="pm-doc__toc" aria-label="Contents">
- *       <details open><summary>Phase 7 — the front door</summary>
+ *       <details open><summary>Decision records</summary>
  *         <ul role="list">…</ul></details> …
  *     </nav>
  *     <div class="pm-doc__body">
- *       <header>…kicker + h1 + intro…</header>
- *       <div class="pm-prose">…generated sections…</div>
+ *       <header>
+ *         …kicker + h1…
+ *         <p class="pm-doc__build">…the dek: the build line — which commit
+ *           the deep links pin, or that the tree was unclean…</p>
+ *       </header>
+ *       <div class="pm-prose">
+ *         …two framing paragraphs, then the generated sections; an ADR's
+ *           addenda nest as a <ul> inside its <li>. No classes inside the
+ *           prose scope (prose.css's contract)…
+ *       </div>
  *     </div>
  *   </div>
  */
@@ -78,3 +90,29 @@
 }
 
 .pm-doc__body { min-width: 0; }
+
+/* The build line is a receipt, in the quiet voice: it names the commit the
+   deep links pin (or says the tree was unclean). It is the header's dek —
+   the slot prose.css leaves to the surface composition — and the one line on
+   the page that is neither an index entry nor prose. */
+.pm-doc__build {
+  margin: var(--space-stack-sm) 0 0;
+  max-width: 65ch;
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text-muted);
+  padding-block: var(--space-stack-xs);
+  border-block: 1px solid var(--color-border);
+}
+
+.pm-doc__build a { color: var(--color-accent); }
+.pm-doc__build a:hover { color: var(--color-accent-hover); }
+.pm-doc__build a:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* An ADR's corrections nest under its own entry; the nested list hangs
+   close to the record it amends rather than opening a new block. */
+.pm-doc__body .pm-prose li > ul {
+  margin: var(--space-stack-xs) 0 0;
+}

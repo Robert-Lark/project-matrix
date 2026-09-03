@@ -7,8 +7,12 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
   `/assets/*` to the edge Worker, `/blog/*` to the blog plane — injecting the
   switcher/HUD chrome into variant HTML via HTMLRewriter (HTML only; every
   other response passes through byte-identical). Serves its own static
-  singletons assets-first, both composed at build from committed artifacts:
-  the home surface at `/` (ADR-0007) and `/methodology/` (ADR-0001 §9). Also
+  singletons assets-first: the home surface at `/` (ADR-0007) and
+  `/methodology/` (ADR-0001 §9), both composed at build from committed
+  artifacts, and `/how-it-was-built/` (ADR-0008 §8), rendered by the
+  reference master's own renderer and written by `stamp-build.mjs` beside
+  `/_pm/build.json`, so its SHA-pinned deep links move with the attestation
+  on every re-stamp rather than with the build. Also
   serves the `/_pm/*` instrumentation path — `chrome.css`, the pinned
   measurement bundle, the `build.json` attestation, and the published lab
   receipts and per-surface bundles under `/_pm/lab/`.

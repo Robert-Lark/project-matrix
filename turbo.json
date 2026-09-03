@@ -44,10 +44,26 @@
       // summaries.json for the same reason: home's PDP row href is derived from
       // the crate's featured release slug (repo-shopfront), so a re-slug must
       // miss the cache too.
+      // The how-it-was-built page (how-it-was-built build, 2026-09-02) is
+      // rendered from docs/ by @pm/reference's renderer, so docs/ ARE inputs
+      // of this task's dist and are declared as such — an undeclared input is
+      // a lie in the build graph: a docs-only commit would replay a dist whose
+      // page carries yesterday's index. The serving paths happen to survive
+      // that lie (stamp-build.mjs re-renders the page on every re-stamp, and
+      // the deploy script rebuilds fully), which is belt over braces, not a
+      // reason to leave the graph wrong. Price: one ~0.6 s front rebuild per
+      // docs commit. The renderer itself (packages/reference/render/*.mjs) is
+      // hashed through the declared @pm/reference dependency; these globs are
+      // the inputs @pm/reference#test declares for the same renderer (below).
+      // methodology/index.html is under workers/front, so $TURBO_DEFAULT$
+      // already covers it.
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/tools/snapshot-capture/crate/manifest.json",
-        "$TURBO_ROOT$/tools/snapshot-capture/crate/summaries.json"
+        "$TURBO_ROOT$/tools/snapshot-capture/crate/summaries.json",
+        "$TURBO_ROOT$/docs/adr/*.md",
+        "$TURBO_ROOT$/docs/build-log.md",
+        "$TURBO_ROOT$/docs/reviews/*.md"
       ],
       // generated/** is the Worker's LAB_BUNDLES module, written by build.mjs
       // from the labBundle-flagged surfaces. Declared as an output for the
@@ -299,7 +315,12 @@
         // added the crate leg; this input did not follow it).
         "$TURBO_ROOT$/tools/snapshot-capture/crate/*.json",
         "$TURBO_ROOT$/docs/adr/*.md",
-        "$TURBO_ROOT$/docs/build-log.md"
+        "$TURBO_ROOT$/docs/build-log.md",
+        // The how-it-was-built master also indexes the reviews and the
+        // methodology page's <h2 id> sections, and the regeneration test pins
+        // both indexes (how-it-was-built build, 2026-09-02).
+        "$TURBO_ROOT$/docs/reviews/*.md",
+        "$TURBO_ROOT$/workers/front/methodology/index.html"
       ]
     },
     "@pm/repo-checks#test": {

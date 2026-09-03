@@ -780,3 +780,45 @@ to every other check because all four resolved masters have years.
   editorial receipts are untouched by them; the five landed variants'
   re-typings were corrected in the same commit so spec and re-implementation
   cannot drift apart in a branch no test exercises.
+
+## Addendum B — §8's "How it was built", as built (2026-09-02)
+
+§8 specified the surface in one sentence: a front-Worker static singleton at
+`/how-it-was-built/`, "a `pm-doc` TOC + prose layout whose content is
+generated from `docs/`". The build (`docs/prds/how-it-was-built-build.md`;
+build-log Phase 15, 2026-09-02) holds to it and settles four things the
+sentence left open:
+
+- **One renderer, two heads.** `@pm/front` renders the served page with the
+  reference renderer itself (`packages/reference/render/how-built.mjs`),
+  under its own `<head>` in ADR-0007 §6's delivery shape (inlined CSS, `/pm/`
+  font paths). The served `<body>` is held byte-identical to a fresh render
+  from the checkout the plane was built from, with links pinned at its
+  attested build (`tools/origin-suite`; the leg refuses a checkout/plane
+  mismatch by name rather than reading it as drift); this ADR's
+  serialization freedoms already exempt the `<head>`. That is the drift tie
+  for a hostless singleton, which no variant comparison could give it, and it
+  is why `@pm/reference` became a declared dependency of `@pm/front`
+  (ADR-0004, addendum of the same date).
+- **One source outside `docs/`, named.** The page indexes `/methodology/` —
+  one entry per `<h2 id>` of `workers/front/methodology/index.html`,
+  deep-linked to `/methodology/#id`. That page keeps its URL: the chrome links
+  it from every measured page, and moving the link would invalidate the
+  chrome constant. Indexing it is what ADR-0001's Consequences meant by the
+  methodology page "doubl[ing] as source content"; its `<h2 id>`s are
+  therefore a contract the surface's guards read, and `turbo.json` declares
+  the file as an input of `@pm/reference#test`.
+- **Deep links are receipts.** Every link into the record pins the build's
+  attested SHA (`/_pm/build.json`), or `main` — said on the page — when the
+  tree was unclean. An index entry that could dereference to different bytes
+  tomorrow is the unreproducible-number defect one layer up. Links into a
+  rendered ADR carry GitHub's heading anchor; links into the build log carry
+  a line anchor (`?plain=1#L…`), because GitHub does not render a markdown
+  file of that size and a heading fragment would scroll nowhere.
+- **It indexes; it does not copy — and says what it leaves out.** ADRs and
+  each ADR's addenda, build-log phases, reviews, methodology sections; not
+  the decision map, handoffs, prototypes or PRDs, which the page names as
+  unindexed. No figure appears on it (ADR-0007 §5: off the matrix, no lab
+  snapshot will ever exist), the build line being the one exception and a
+  receipt. Rendering whole ADRs as pages was declined (PRD Decision 1) and
+  stays an addendum-plus-dependency-review question, not a slice's call.

@@ -14,8 +14,13 @@
        this page is substituted at build from a committed artifact (the
        chrome-constant probe output, the published receipts, the crate
        manifest) — hand-typing a number here is how a wrong claim ships.
-       Its long-term home is the "How it was built" surface (ADR-0008 §8),
-       which is unbuilt; this standalone page is the recorded interim. -->
+       This page KEEPS its URL. The "How it was built" surface (ADR-0008 §8;
+       docs/prds/how-it-was-built-build.md, Decision 2) INDEXES it — one
+       generated entry per <h2 id> below, deep-linked to /methodology/#id —
+       rather than absorbing or redirecting it: the chrome links this URL from
+       every measured page, and moving that link would invalidate the chrome
+       constant (workers/front/build.mjs, the fragment-hash refusal). The ids
+       on the <h2>s are therefore a contract the surface's guards read. -->
   <link rel="preload" href="/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/pm/css/fonts.css">
   <style>

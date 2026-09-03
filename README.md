@@ -36,7 +36,7 @@ disagree, the registry is right and this table is stale.
 | Search + filters | react-next (`plain`, `tanstack`, the fenced `apollo`), htmx | `/react-next/plp/plain/`, `/htmx/plp/` | Not yet. The grid serves; search, filters and sort do not |
 | Checkout | vanilla; react-next and htmx still planned | `/vanilla/checkout/` | Not yet |
 | Accessibility | not built | — | — |
-| How it was built | surface not built; the home row links its source, `docs/build-log.md` | — | — |
+| How it was built | the front Worker — an assets-first singleton, no variant, no chrome | `/how-it-was-built/` | No — off the benchmarked matrix by design; the page indexes the record and renders no figure |
 
 ## Reproduce
 
