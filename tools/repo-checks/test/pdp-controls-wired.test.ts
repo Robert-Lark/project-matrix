@@ -37,7 +37,7 @@
  *    the registered component sources. Weaker on purpose and stated so: the
  *    behavior half lives in the browser leg, which is variant-generic.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -657,6 +657,278 @@ describe("the checkout master advertises no control the variant leaves dead", ()
       const live = reachOf(script, enhancement.mechanism, document);
       expect(live.reaches(document.querySelector(".pm-checkout__form"), [])).toBe(true);
       expect(live.reaches(document.querySelector("#card"), [])).toBe(true);
+    }
+  });
+});
+
+/**
+ * The same rule, on the accessibility exhibit (a11y-section build,
+ * 2026-09-03) — the surface where a dead control is the project's worst
+ * possible bug, because the page's whole claim is that its controls behave.
+ *
+ * Three pages, one enhancement (variants/vanilla/src/a11y.js), and two
+ * registries the other blocks did not need, each a CHECKED claim:
+ *  - SPECIMENS. The focus, target-size and mode-stage demos render the
+ *    store's own button as an exhibit of its RENDERING; the forms demo
+ *    renders the field in its error-wired state as an exhibit of that WIRING.
+ *    A specimen BUTTON is still wired — a11y.js answers every press through
+ *    the shell's status region (the behave test drives it) — so the reach leg
+ *    holds them like any control. The two INPUTS are the exception: typing is
+ *    the browser's and the served wiring is the demo, so they are registered
+ *    native by class WITH the reason — and the leg asserts every such element
+ *    sits inside a compare box, so the row cannot excuse a real form field
+ *    anywhere else on the surface.
+ *  - SERVED SPECIMEN STATE. The forms demo serves `aria-invalid="true"` (the
+ *    state IS the exhibit), so the "every rendered script-only state is
+ *    written by the enhancement" rule would demand a11y.js write an attribute
+ *    the page deliberately serves static. The registry names the attribute,
+ *    the one selector it may appear on, and the exact count; every OTHER
+ *    rendered or sheet-promised script-only state (aria-pressed, here) must
+ *    still be written by the enhancement, and the leg proves that half bites.
+ */
+const A11Y_ENHANCEMENTS: Record<string, Enhancement> = {
+  vanilla: {
+    files: ["variants/vanilla/src/a11y.js"],
+    mechanism: "selectors",
+  },
+};
+
+/** The committed a11y masters that render controls, DERIVED FROM DISK — the
+ *  index is asserted control-free separately, and a fourth master committed
+ *  tomorrow joins this loop by existing rather than by being remembered. The
+ *  sibling guard in this same slice
+ *  (`variants/vanilla/test/a11y-master-identity.test.mjs`) derives the identical
+ *  set the same way; a hand-typed array beside a derived one is the
+ *  record-not-code shape `master-styles-resolve` already records paying for
+ *  (its own master list said "eight" through three additions). */
+function a11yControlMasters(): string[] {
+  const dir = join(repoRoot, "packages", "reference", "surfaces", "a11y");
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory() && existsSync(join(dir, entry.name, "index.html"))) {
+      found.push(`a11y/${entry.name}`);
+    }
+  }
+  return found.sort();
+}
+const A11Y_CONTROL_MASTERS = a11yControlMasters();
+
+/** Controls the BROWSER owns on this surface: class, the tag it must be, and
+ *  exactly how many the masters may render. All three, because a bare class
+ *  row is an open door — a `<button class="pm-field__control">` dropped into
+ *  a compare box, or a sixth field added to the forms demo, would inherit the
+ *  exemption without anyone arguing for it (F-S3, verification pass). The
+ *  count is the registry's teeth: it fails on the change rather than after
+ *  it. Every excused element must also sit inside a compare box, asserted
+ *  below, so the row can never excuse a real form field elsewhere. */
+const A11Y_SPECIMEN_NATIVE: Record<string, { tag: string; count: number; reason: string }> = {
+  "pm-field__control": {
+    tag: "input",
+    count: 2, // the DS-ON field and its placeholder-only twin
+    reason:
+      "the forms demo's field, served in its error-wired state — typing is the browser's; " +
+      "the wiring the screen reader announces is the exhibit (a11y.mjs demo-forms)",
+  },
+};
+
+const A11Y_SERVED_SPECIMEN_STATE: Record<string, { selector: string; count: number; reason: string }> = {
+  "aria-invalid": {
+    selector: '.pm-compare__box .pm-field__control[aria-invalid="true"]',
+    count: 1,
+    reason:
+      "the forms demo's DS-ON field displays the error-wired state as its exhibit — " +
+      "the attribute is served, never entered (a11y.mjs demo-forms)",
+  },
+};
+
+describe("the a11y masters advertise no control the variant leaves dead", () => {
+  it("every LIVE a11y variant has a registered enhancement to check", () => {
+    const controls = SURFACE_CONTROLS["a11y"]!;
+    // The registration ships with the routes (decision map, 2026-08-29): a
+    // served section whose registry still says `variants: []` is the
+    // parallel-builds falsehood, and this leg would be vacuous over it.
+    expect(
+      controls.variants.length,
+      "a11y registers no live variant — either the section is unserved or the registration was left out of the commit that served it",
+    ).toBeGreaterThan(0);
+    expect(controls.singleton, "a11y is a singleton off the benchmarked matrix").toBe(true);
+    const unregistered = controls.variants.filter((v) => !(v in A11Y_ENHANCEMENTS));
+    expect(
+      unregistered,
+      "an a11y variant is live but this guard does not know where its enhancement lives — point A11Y_ENHANCEMENTS at it",
+    ).toEqual([]);
+  });
+
+  it("the enhancement map names only the variant the registry serves", () => {
+    const controls = SURFACE_CONTROLS["a11y"]!;
+    for (const variant of Object.keys(A11Y_ENHANCEMENTS)) {
+      expect(controls.variants, `A11Y_ENHANCEMENTS names ${variant}, which the a11y registry does not serve`).toContain(variant);
+    }
+  });
+
+  it("the index page renders no control and no script-only state — a checked claim, not a skipped page", () => {
+    const { document } = parseHTML(master("a11y"));
+    expect([...document.querySelectorAll("button, input, select, textarea, [tabindex]")]).toEqual([]);
+    for (const attr of SCRIPT_ONLY_STATE) {
+      expect(document.querySelectorAll(`[${attr}]`).length, `index renders [${attr}]`).toBe(0);
+    }
+    // But it IS the shell: the masthead's cart link is there for the badge
+    // the enhancement populates (CART_CONTRACT).
+    expect(document.querySelectorAll("[data-pm-cart-count]").length).toBe(1);
+  });
+
+  for (const [variant, enhancement] of Object.entries(A11Y_ENHANCEMENTS)) {
+    const script = enhancementSource(enhancement);
+
+    for (const surface of A11Y_CONTROL_MASTERS) {
+      it(`${variant} · ${surface}: every script-only state the master renders is written by the enhancement, or is the registered served specimen`, () => {
+        const { document } = parseHTML(master(surface));
+        const rendered = SCRIPT_ONLY_STATE.filter(
+          (attr) => document.querySelectorAll(`[${attr}]`).length > 0,
+        );
+        expect(rendered.length, `${surface} renders no script-only state — this leg is vacuous`).toBeGreaterThan(0);
+        for (const attr of rendered) {
+          const served = A11Y_SERVED_SPECIMEN_STATE[attr];
+          if (served) {
+            // The registry is a claim about the markup, checked: exactly
+            // `count` instances on the surface, every one of them the
+            // registered specimen. A second [aria-invalid] anywhere on the
+            // page fails here until it is wired or registered.
+            const all = document.querySelectorAll(`[${attr}]`).length;
+            const registered = document.querySelectorAll(served.selector).length;
+            expect(
+              all,
+              `${surface}: [${attr}] appears ${all}× but the registry excuses ${served.count} served specimen(s)`,
+            ).toBe(served.count);
+            expect(registered, `${surface}: [${attr}] is not on the registered specimen`).toBe(served.count);
+            continue;
+          }
+          expect(
+            script.includes(attr),
+            `${surface} renders [${attr}] but ${variant}'s enhancement never writes it — ` +
+              `the control announces a state it can never enter`,
+          ).toBe(true);
+        }
+      });
+
+      it(`${variant} · ${surface}: every script-only state the master's own sheets promise is written by the enhancement, unless the master serves it`, () => {
+        const { document } = parseHTML(master(surface));
+        const promised = statesPromisedByStyles(surface, master(surface), document);
+        expect(promised.length, `${surface}'s linked sheets promise no script-only state — vacuous`).toBeGreaterThan(0);
+        for (const attr of promised) {
+          if (attr in A11Y_SERVED_SPECIMEN_STATE) {
+            // The rule CAN match: the master itself carries the attribute.
+            expect(document.querySelectorAll(`[${attr}]`).length).toBeGreaterThan(0);
+            continue;
+          }
+          expect(
+            script.includes(attr),
+            `${surface}'s sheets style [${attr}] but ${variant}'s enhancement never writes it — ` +
+              `the rule can never match, and the state it draws can never appear`,
+          ).toBe(true);
+        }
+      });
+
+      it(`${variant} · ${surface}: every control the master renders is reached by the enhancement`, () => {
+        const { document } = parseHTML(master(surface));
+        const controls = [
+          ...document.querySelectorAll("button, input, select, textarea, [tabindex]"),
+        ];
+        expect(controls.length).toBeGreaterThan(3);
+        const { reaches, matched } = reachOf(script, enhancement.mechanism, document);
+        expect(matched, `${variant}'s enhancement reaches nothing in the master`).toBeGreaterThan(2);
+
+        const unwired: string[] = [];
+        for (const raw of controls) {
+          const el = raw as unknown as {
+            getAttribute: (n: string) => string | null;
+            closest: (s: string) => unknown;
+            outerHTML: string;
+          };
+          const classes = (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
+          if (classes.some((c) => c in NATIVE_BEHAVIOUR)) continue;
+          const excused = classes.map((c) => A11Y_SPECIMEN_NATIVE[c]).find(Boolean);
+          if (excused) {
+            // Inside a compare box and nowhere else…
+            expect(
+              el.closest(".pm-compare__box"),
+              `${surface}: a ${classes.join(" ")} outside a compare box is a real control, not a specimen`,
+            ).not.toBeNull();
+            // …and the TAG the row names. A button wearing a field's class is
+            // a control, not a specimen, and must be wired like one.
+            expect(
+              (el as unknown as { tagName: string }).tagName.toLowerCase(),
+              `${surface}: the specimen row excuses <${excused.tag}>, not this`,
+            ).toBe(excused.tag);
+            continue;
+          }
+          if (!reaches(raw, classes)) unwired.push(el.outerHTML.slice(0, 120));
+        }
+        expect(unwired, `${surface}: controls ${variant}'s enhancement never reaches`).toEqual([]);
+      });
+    }
+  }
+
+  it("the specimen registry's counts are exactly what the masters render — the row's teeth", () => {
+    // A registry that excuses "any number of these" excuses the next one too.
+    for (const [cls, row] of Object.entries(A11Y_SPECIMEN_NATIVE)) {
+      let seen = 0;
+      for (const surface of A11Y_CONTROL_MASTERS) {
+        const { document } = parseHTML(master(surface));
+        for (const el of document.querySelectorAll(`.${cls}`)) {
+          seen += 1;
+          expect(
+            el.closest(".pm-compare__box"),
+            `${surface}: a .${cls} outside a compare box`,
+          ).not.toBeNull();
+        }
+      }
+      expect(seen, `.${cls}: the registry excuses ${row.count}, the masters render ${seen}`).toBe(row.count);
+    }
+  });
+
+  it("mode-demos: the emulation is keyed on the toggle's own aria-pressed — the ONE state the enhancement writes", () => {
+    // mode-demo.css applies each emulation from
+    // `.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="…"]`,
+    // so the visual state cannot exist without the programmatic one (ADR-0003
+    // §5) — which holds only if the master places every stage DIRECTLY after
+    // its toggle with matching keys, and every mode has its rule.
+    const html = master("a11y/mode-demos");
+    const { document } = parseHTML(html);
+    const toggles = [...document.querySelectorAll(".pm-mode__toggle")] as unknown as Element[];
+    expect(toggles.length).toBe(3);
+    const css = linkedSheets("a11y/mode-demos", html);
+    for (const toggle of toggles) {
+      const mode = toggle.getAttribute("data-pm-mode-toggle");
+      expect(mode).toBeTruthy();
+      const stage = toggle.nextElementSibling;
+      expect(stage?.classList.contains("pm-mode__stage"), `${mode}: the stage is not adjacent to its toggle`).toBe(true);
+      expect(stage?.getAttribute("data-pm-mode")).toBe(mode);
+      expect(css).toContain(
+        `.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="${mode}"]`,
+      );
+    }
+  });
+
+  it("fires on an enhancement that does the badge and nothing else", () => {
+    // The other blocks' self-proof, this surface's version: the shape an
+    // exhibit enhancement fails in — one that populates the cart badge (every
+    // shell page does) and never touches a demo. Both halves must fail on it
+    // and pass on the real one.
+    const { document } = parseHTML(master("a11y/mode-demos"));
+    const deadScript = '/* a cart badge and nothing else */ "[data-pm-cart-count]"';
+    expect(deadScript.includes("aria-pressed")).toBe(false);
+    const dead = reachOf(deadScript, "selectors", document);
+    expect(dead.reaches(document.querySelector(".pm-mode__toggle"), [])).toBe(false);
+    for (const enhancement of Object.values(A11Y_ENHANCEMENTS)) {
+      const script = enhancementSource(enhancement);
+      expect(script.includes("aria-pressed")).toBe(true);
+      const live = reachOf(script, enhancement.mechanism, document);
+      expect(live.reaches(document.querySelector(".pm-mode__toggle"), [])).toBe(true);
+      expect(live.reaches(document.querySelector(".pm-mode__stage button.pm-button"), [])).toBe(true);
+      const demos = parseHTML(master("a11y/element-demos")).document;
+      const liveDemos = reachOf(script, enhancement.mechanism, demos);
+      expect(liveDemos.reaches(demos.querySelector('[data-pm-demo="status-off"]'), [])).toBe(true);
     }
   });
 });

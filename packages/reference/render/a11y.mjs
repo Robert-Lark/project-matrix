@@ -5,12 +5,49 @@
  * unfocusable and hidden from AT — the default keyboard path never enters an
  * exhibit). Element-demos is noindex (strategy-review finding 21). Labels
  * come BEFORE defects, the compliant twin is adjacent.
+ *
+ * SERVED by the vanilla variant through THIS renderer (a11y-section build,
+ * 2026-09-03): `variants/vanilla` renders /vanilla/a11y/* with these three
+ * functions under its own <head> (`head` callback), its chrome slot and its
+ * one script (`slot`, `scripts` — shell.mjs `page()`), so the served body and
+ * the committed master are one function's output and cannot drift. Build-time
+ * spec consumption, the how-it-was-built precedent (ADR-0004 §2 addendum,
+ * 2026-09-02); nothing here ships to a visitor. The three options default off
+ * and the masters render exactly as before.
+ *
+ * The enhancement contract, for the script that wires these pages
+ * (variants/vanilla/src/a11y.js; guarded by tools/repo-checks):
+ *  - `[data-pm-demo="<key>"]` buttons write into `[data-pm-demo-out="<key>"]`
+ *    — the DS-ON slot is role="status", the DS-OFF slot a plain element;
+ *  - `.pm-mode__toggle[data-pm-mode-toggle="<mode>"]` toggles its own
+ *    `aria-pressed` and NOTHING else — mode-demo.css applies the emulation to
+ *    the ADJACENT `.pm-mode__stage[data-pm-mode="<mode>"]` from that
+ *    attribute (one state, the accessible one; ADR-0003 §5);
+ *  - every other button in a compare box or a stage is a SPECIMEN (the
+ *    exhibit is its rendering); the DS-ON forms field is served in its
+ *    error-wired state as the specimen of that wiring. Pressing one writes
+ *    into `[data-pm-a11y-response]`, the page's OWN visible `role="status"`
+ *    line — never the shell's `[data-pm-status]`, which is `.pm-sr-only`
+ *    geometry (masthead.css: 1×1, clipped) and would leave a sighted pointer
+ *    user with no answer at all on the page whose subject is target size.
+ *    The message names the demo AND the box, so the two twins of a compare
+ *    never produce the same string: identical text is what a live region
+ *    does not re-announce, and telling the twins apart is the whole task.
  */
 import { page } from "./shell.mjs";
 
-const INTRO_CSS = ["components/prose.css", "components/plaque.css", "surfaces/a11y.css"];
+/* No plaque sheet: the index rendered ZERO `pm-plaque*` classes while linking
+   `components/plaque.css` — a rule set shipped to every visitor of this page
+   with nothing on it to style, which is `pm-pdp__scroll` in mirror image
+   (`master-styles-resolve` only walks class → rule, so nothing caught it).
+   And no plaque is owed: CONTEXT.md reserves the FENCED form for "true
+   number-exclusions", this section publishes no number at all, and the DS-OFF
+   twins are already labeled twice over — the `<details>` summary that opens
+   them ("deliberately fails") and the box's own `pm-compare__tag`. Found by
+   the verification pass, 2026-09-03. */
+const INTRO_CSS = ["components/prose.css", "surfaces/a11y.css"];
 
-export function renderA11yIndex({ extraDepth = 0 } = {}) {
+export function renderA11yIndex({ extraDepth = 0, head, slot, scripts } = {}) {
   const content = `      <div class="pm-a11y">
         <header>
           <p class="pm-page__kicker">Accessibility, shown</p>
@@ -32,6 +69,9 @@ export function renderA11yIndex({ extraDepth = 0 } = {}) {
     css: INTRO_CSS,
     current: null,
     content,
+    head,
+    slot,
+    scripts,
   });
 }
 
@@ -52,10 +92,11 @@ function compare({ id, title, walkthrough, on, off }) {
               </div>
             </details>
           </div>
+          <p class="pm-a11y__response" role="status" data-pm-a11y-response></p>
         </section>`;
 }
 
-export function renderA11yElementDemos({ extraDepth = 0 } = {}) {
+export function renderA11yElementDemos({ extraDepth = 0, head, slot, scripts } = {}) {
   const demos = [
     compare({
       id: "demo-focus",
@@ -88,7 +129,7 @@ export function renderA11yElementDemos({ extraDepth = 0 } = {}) {
     compare({
       id: "demo-contrast",
       title: "Contrast that survives sunlight",
-      walkthrough: `<p>The default muted text still clears WCAG AA (our worst shipped pair measures 6.14:1). The twin is the same sentence at a contrast that disappears on a bright screen or a cheap panel — and it is exactly what "light grey looks refined" ships.</p>`,
+      walkthrough: `<p>The default muted text clears WCAG AA wherever the system puts it: 6.14:1 on this paper ground, and 5.73:1 on the sunk panels where the editorial feature note and the checkout's empty-cart line live. The twin is the same sentence at a contrast that disappears on a bright screen or a cheap panel — and it is exactly what "light grey looks refined" ships.</p>`,
       on: `<p style="margin:0;">Shipping is free on orders over $50 — <span style="color: var(--color-text-muted);">rates update at checkout.</span></p>`,
       off: `<p style="margin:0;">Shipping is free on orders over $50 — <span style="color: #c9c4b8;">rates update at checkout.</span></p>`,
     }),
@@ -134,6 +175,9 @@ ${demos.join("\n")}
     current: null,
     content,
     noindex: true,
+    head,
+    slot,
+    scripts,
   });
 }
 
@@ -146,6 +190,7 @@ function mode({ id, title, walkthrough, buttonLabel, stage, modeKey }) {
           <div class="pm-mode__stage" data-pm-mode="${modeKey}">
             ${stage}
           </div>
+          <p class="pm-a11y__response" role="status" data-pm-a11y-response></p>
         </section>`;
 }
 
@@ -163,7 +208,7 @@ const STAGE = `<ul class="pm-grid" role="list" style="grid-template-columns: rep
             </ul>
             <p style="margin: var(--space-stack) 0 0;"><button class="pm-button" type="button">Add to cart</button></p>`;
 
-export function renderA11yModeDemos({ extraDepth = 0 } = {}) {
+export function renderA11yModeDemos({ extraDepth = 0, head, slot, scripts } = {}) {
   const demos = [
     mode({
       id: "mode-fc",
@@ -213,5 +258,8 @@ ${demos.join("\n")}
     ],
     current: null,
     content,
+    head,
+    slot,
+    scripts,
   });
 }

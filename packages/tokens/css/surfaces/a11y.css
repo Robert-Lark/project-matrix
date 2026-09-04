@@ -48,3 +48,36 @@
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
+
+/* The demos' shared answer line (a11y-section build, 2026-09-03). VISIBLE and
+   `role="status"`: the shell's own live region is `.pm-sr-only` geometry
+   (masthead.css — 1×1, clipped), so routing a specimen press there would
+   answer a screen-reader user and leave a sighted pointer user with nothing,
+   on the page whose subject is whether controls are usable. Geometry is
+   reserved (`min-height`) so filling it cannot shift the demos below it — the
+   zero-CLS posture cart-summary.css already follows. Empty in the served
+   state, which is the state the drift gate compares.
+
+   THE RESERVE IS THREE LINES (4.5em at the 1.5 line-height below), and it is
+   a measurement rather than a guess. At 3em it held at 412 px and 1440 px and
+   FAILED at 360 px and 320 px, where the longest message the script can build
+   wrapped to three lines: the box went 73 -> 96 px and pushed the next demo
+   down 23 px (measured 2026-09-03; the verification pass found the claim, the
+   browser leg now holds it). 320 px is the width WCAG 1.4.10 and this page's
+   own reflow demo are about, which makes it the worst possible place for this
+   page to shift. The cost is paid knowingly: five reserved panels stand empty
+   until pressed, on the demos page only. Correct beats compact here, and an
+   empty bordered area that says "an answer appears here" is an affordance
+   rather than only whitespace (`:empty` dims its accent to say so). */
+.pm-a11y__response {
+  min-height: 4.5em;
+  margin-block: var(--space-stack);
+  padding: var(--space-inset-sm) var(--space-inset);
+  font: var(--text-small) / 1.5 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface-sunk);
+  border-inline-start: 3px solid var(--color-accent);
+  border-radius: var(--radius-control);
+}
+
+.pm-a11y__response:empty { border-inline-start-color: var(--color-border); }

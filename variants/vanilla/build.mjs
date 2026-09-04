@@ -15,7 +15,13 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { renderCheckoutPage, renderEditorialPage, renderPdpPage } from "./render.mjs";
+import {
+  A11Y_PAGES,
+  renderA11yPage,
+  renderCheckoutPage,
+  renderEditorialPage,
+  renderPdpPage,
+} from "./render.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(root, "..", "..");
@@ -94,6 +100,20 @@ writeFileSync(
   renderCheckoutPage({ depth: 1 }),
 );
 
+// The a11y section (a11y-section build): three static pages, data-free like
+// the checkout, rendered by the reference renderer itself under this
+// variant's head, slot and script (render.mjs, DIFF-TO-STARTER decision 6).
+// Written from the exported table so the build and the identity guard can
+// never disagree about which pages exist or how deep they sit. Before this
+// loop every store page's footer linked /vanilla/a11y/ and the assets
+// Worker answered 404 (probed 2026-09-03, see the build log).
+let a11yCount = 0;
+for (const rel of Object.keys(A11Y_PAGES)) {
+  mkdirSync(join(dist, rel), { recursive: true });
+  writeFileSync(join(dist, rel, "index.html"), renderA11yPage(rel));
+  a11yCount += 1;
+}
+
 // The cart catalogue: id → what the order summary needs to render a line
 // (cart-summary.css pins the shape — thumb, title × qty, price). Cart is
 // localStorage, so no paradigm can SERVE cart contents (ADR-0008 §7) and
@@ -129,7 +149,8 @@ cpSync(join(tokensRoot, "fonts"), join(dist, "assets", "pm", "fonts"), {
 cpSync(join(root, "src", "cart.js"), join(dist, "assets", "cart.js"));
 cpSync(join(root, "src", "pdp.js"), join(dist, "assets", "pdp.js"));
 cpSync(join(root, "src", "checkout.js"), join(dist, "assets", "checkout.js"));
+cpSync(join(root, "src", "a11y.js"), join(dist, "assets", "a11y.js"));
 
 console.log(
-  `vanilla: editorial + ${pdpCount} PDPs + checkout rendered from the ${name} snapshot`,
+  `vanilla: editorial + ${pdpCount} PDPs + checkout + ${a11yCount} a11y pages rendered from the ${name} snapshot`,
 );

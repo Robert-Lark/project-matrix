@@ -113,6 +113,20 @@ export const CART_CONTRACT = {
   announce: (title, count) => `Added "${title}" to cart — ${count} in cart.`,
 };
 
+/** The @pm/tokens sheets EVERY master links, in cascade order, ahead of its
+ *  own `css` list (fonts.css rides with the font markup, not here). Named so
+ *  a consumer that composes its own <head> for a page this package renders
+ *  (the a11y section served by @pm/vanilla, 2026-09-03) receives the full
+ *  ordered list through `page()`'s head callback instead of re-typing it —
+ *  the stylesheet-order guards compare the two lists tail-for-tail. */
+export const SHELL_SHEETS = [
+  "tokens.css",
+  "surfaces/shell.css",
+  "components/masthead.css",
+  "components/footer.css",
+  "components/button.css",
+];
+
 /** The canonical <head> for a master at `depth` directories below
  *  packages/reference/ (font markup verbatim per tokens/fonts/loading-markup,
  *  base path adjusted only). `css` lists component/surface modules. */
@@ -127,21 +141,19 @@ export function head({ title, depth, css, noindex = false }) {
     `<link rel="preload" href="${t}/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>`,
     `<link rel="preload" href="${t}/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>`,
     `<link rel="stylesheet" href="${t}/css/fonts.css">`,
-    `<link rel="stylesheet" href="${t}/css/tokens.css">`,
-    `<link rel="stylesheet" href="${t}/css/surfaces/shell.css">`,
-    `<link rel="stylesheet" href="${t}/css/components/masthead.css">`,
-    `<link rel="stylesheet" href="${t}/css/components/footer.css">`,
-    `<link rel="stylesheet" href="${t}/css/components/button.css">`,
-    ...css.map((f) => `<link rel="stylesheet" href="${t}/css/${f}">`),
+    ...[...SHELL_SHEETS, ...css].map((f) => `<link rel="stylesheet" href="${t}/css/${f}">`),
   ].join("\n  ");
 }
 
-/** current: which masthead link (if any) marks aria-current="page". */
-export function shell({ current, content }) {
+/** current: which masthead link (if any) marks aria-current="page".
+ *  slot: emit the variants-only `<div id="pm-chrome-slot"></div>` after the
+ *  skip link (the first ✂ line of the skeleton above) — the front Worker
+ *  fills it; masters never carry it (reference.test.ts pins the absence). */
+export function shell({ current, content, slot = false }) {
   const link = (href, label, key) =>
     `<a class="pm-masthead__link" href="${href}"${current === key ? ` aria-current="page"` : ""}>${label}</a>`;
   return `
-  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>${slot ? `\n  <div id="pm-chrome-slot"></div>` : ""}
   <div class="pm-page">
     <header class="pm-masthead">
       <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
@@ -173,14 +185,42 @@ ${content}
  *  delivery shape, ADR-0007 §6) while the committed master keeps `head()`.
  *  The body is identical either way; the served-vs-master drift leg
  *  (tools/origin-suite/suite/how-it-was-built.test.ts) relies on exactly
- *  that, and ADR-0008's serialization freedoms exempt the <head> subtree. */
-export function page({ title, depth, css, current, content, noindex, head: headInner }) {
+ *  that, and ADR-0008's serialization freedoms exempt the <head> subtree.
+ *
+ *  `head` may also be a FUNCTION `({ title, css, noindex }) => string`: it
+ *  receives the page's own metadata with `css` as the COMPLETE ordered sheet
+ *  list (SHELL_SHEETS + this page's modules), so a consumer serving a page
+ *  from its own asset base composes the head without a second copy of the
+ *  list (the vanilla variant's a11y section, 2026-09-03 — DIFF-TO-STARTER
+ *  decision 6).
+ *
+ *  `slot` and `scripts` are the skeleton's two ✂ lines, variants only: the
+ *  chrome slot after the skip link, and the paradigm's script elements at
+ *  the end of <body>. Both default OFF, so every committed master renders
+ *  exactly as before (the regeneration test holds the bytes) and the
+ *  delivery strip the identity guards apply (head, scripts, the slot) is
+ *  precisely what these add — nothing else may differ. */
+export function page({
+  title,
+  depth,
+  css,
+  current,
+  content,
+  noindex,
+  head: headInner,
+  slot = false,
+  scripts = [],
+}) {
+  const resolvedHead =
+    typeof headInner === "function"
+      ? headInner({ title, css: [...SHELL_SHEETS, ...css], noindex: noindex === true })
+      : (headInner ?? head({ title, depth, css, noindex }));
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${headInner ?? head({ title, depth, css, noindex })}
+  ${resolvedHead}
 </head>
-<body>${shell({ current, content })}
+<body>${shell({ current, content, slot })}${scripts.map((s) => `\n  ${s}`).join("")}
 </body>
 </html>
 `;

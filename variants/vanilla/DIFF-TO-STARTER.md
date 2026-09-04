@@ -52,3 +52,32 @@ committed `pnpm-lock.yaml`).
    value, count = Σ qty, announcement via `[data-pm-status]`); the masthead
    count populates from storage on every page load, which is what makes the
    cart survive a variant swap.
+6. **The a11y section is rendered by `@pm/reference`'s own renderer, not
+   re-typed** (a11y-section build, 2026-09-03) — the ONE exception to
+   decision 1, and it is an exception by kind rather than by convenience.
+   Decision 1's rationale is ADR-0003 §1: paradigms are compared on identical
+   markup, so each re-implements the spec in its own idiom and the gate proves
+   the outputs match. The a11y section is a singleton hosted in this variant
+   alone and measured by nothing (ADR-0007 §5 / ADR-0008 §8): there is no
+   second implementation for a re-typed copy to be compared against, so
+   re-typing would have produced 330 lines whose only property is that a
+   guard holds them equal to the function that could have produced them. The
+   how-it-was-built build had already made the same call for the other
+   singleton and qualified ADR-0004 §2 to allow it ("build-time spec
+   consumption is the @pm/tokens class"); this variant declares
+   `@pm/reference` as a dependency for that reason — turbo hashes the
+   renderer into `@pm/vanilla#build`'s key (proven HIT → MISS → HIT), and
+   nothing from it reaches a visitor: the output is static HTML, the one
+   script is this variant's own. What stays this variant's: the `<head>`
+   (its asset base — the master's ordered sheet list arrives through
+   `page()`'s head callback, never re-typed), the chrome slot, and
+   `assets/a11y.js`. `test/a11y-master-identity.test.mjs` holds each page to
+   its master after the delivery strip, so the composition can add exactly
+   those three things. The benchmarked surfaces above stay re-typed; a future
+   benchmarked surface must not cite this decision.
+7. **`a11y.js` is the fourth vanilla `read()`** of the cart contract (badge
+   only — the page never writes storage), re-implemented for the reason
+   `pdp.js` and `checkout.js` record; the uniqueness clause is checked. The
+   mode toggles write ONLY their own `aria-pressed`: the emulation is CSS on
+   the adjacent stage keyed on that attribute (ADR-0003 §5), which is what
+   keeps the on-page caveat true.

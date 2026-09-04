@@ -6674,3 +6674,273 @@ and carries line anchors into the build log, so an edit ABOVE a phase heading
 — mid-file, not an append — moves the lines and fails the repo-check until the
 master is re-rendered; that is the price of a citation that names a line, and
 the guard says exactly which line moved.
+
+### The footer's last 404, and the exhibit that must not have a dead control (2026-09-03)
+
+The probe first, on the held composed origin: with the a11y directory absent
+from the vanilla dist — main's state, where it has never existed —
+`GET /vanilla/a11y/` → `404`, the front log recording
+`"event":"dispatch","variant":"vanilla","path":"/vanilla/a11y/","status":404`
+(the assets Worker's own not-found, an empty body); `element-demos/` and
+`mode-demos/` the same. With the directory present, all three `200`, the body
+carrying `class="pm-a11y"`, exactly one `data-pm-chrome="1"` stamped
+`data-pm-surface="a11y"`, `<meta name="robots" content="noindex">` on
+element-demos alone, and no `<details` served `open`. The 2026-08-29 audit
+counted the footer's OTHER dead link at ~2,006 pages; this one sat in the same
+footer on every one of them.
+
+**The design was settled; the build made three calls the design left open.**
+
+**One renderer, two heads — the second time, for a variant-hosted singleton.**
+The vanilla variant re-types every benchmarked surface it serves
+(DIFF-TO-STARTER decision 1) and it does NOT re-type this one: `render.mjs`
+renders the three pages with `@pm/reference`'s own `renderA11y*` under the
+variant's head, chrome slot and one script. The re-implementation rule exists
+so paradigms are compared on identical markup (ADR-0003 §1); this section is
+served in one variant and measured by nothing, so a re-typed copy would have
+been 330 lines whose only property is that a guard holds them equal to the
+function that could have produced them — and two renderers over one spec is
+the failure this log keeps recording. `shell.mjs` `page()` grew the skeleton's
+two ✂ lines as options (`slot`, `scripts`) and a `head` callback that hands the
+consumer the master's own ordered sheet list, all default off:
+`node render/build.mjs` followed by `git status --porcelain
+packages/reference/surfaces/` printed nothing, and the regeneration test holds
+the bytes. `@pm/vanilla` is the second workspace to declare `@pm/reference`
+(`pnpm-lock.yaml` +3 lines, the same three `@pm/front` added the day before);
+`turbo run build --filter=@pm/vanilla --dry=json` shows `@pm/reference#build`
+among `@pm/vanilla#build`'s dependencies and `render/a11y.mjs`,
+`render/shell.mjs` among `@pm/reference#topo`'s inputs, and a comment edit in
+`a11y.mjs` took the vanilla build's cache verdict HIT → MISS → HIT (restored).
+DIFF-TO-STARTER decision 6 records the call and fences it: a future
+benchmarked surface may not cite it.
+
+**The emulation has one state, and it is the accessible one.** The design said
+"additive-only emulations gated behind the real media queries" and the first
+draft of the script wrote a `data-pm-emulate` attribute onto the stage — a
+second state, a styling hook the accessible state would have to be kept in
+step with. The canonical markup places each stage DIRECTLY after its toggle,
+so `mode-demo.css` applies every emulation through
+`.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="…"]`,
+and the script writes `aria-pressed` and nothing else: the visual state cannot
+exist without the programmatic one (ADR-0003 §5 — the gallery's zoom scales
+its stage from the same attribute). "Never override your OS setting" is then a
+mechanism rather than a sentence: with a toggle off no rule matches and the
+real query stands. The forced-colors rule's custom properties are
+`tokens.css`'s `@media (forced-colors: active)` block verbatim, and a
+repo-check parses both and holds them equal — a copied remap that drifts from
+the seam it demonstrates is the kind of quiet falsehood this exhibit cannot
+carry. The browser leg then asserts the promise under Playwright's
+`reducedMotion: "reduce"` and `forcedColors: "active"` contexts: the collapsed
+duration and the remapped canvas stand with the toggle off, on, and off again.
+
+**Specimens are wired.** The focus, target-size and mode-stage demos render
+the store's own button for its rendering — its ring, its 24×24, its colours
+under a mode — and the design said nothing about what pressing one does. A
+button that does nothing when pressed is the dead-control state Phase 12
+recorded, on the one page where that is the worst possible bug, so a press
+answers in the compare's or the mode's OWN visible `role="status"` line, never
+the shell's `[data-pm-status]` — which `masthead.css` sizes 1×1 and clips, so
+an answer routed there reaches a screen reader and leaves a sighted pointer
+user with a button that visibly does nothing, on the page whose subject is
+whether a control can be hit. The verification pass found that, and then found
+the fix's own first draft putting ONE line at the top of the page, up to three
+viewports above the button. The line is per section now, and its sentence names
+the demo, the side and the press count, because a live region does not
+re-announce unchanged text and the target-size walkthrough invites repeats. The live-region twins are
+excluded by attribute: each writes the SAME sentence into its own slot —
+`role="status"` on the DS-ON side, a plain element on the DS-OFF side — and
+never into the shell's region, because routing the DS-OFF twin there would
+announce the silence the exhibit exists to show. The forms demo's field is a
+STATIC specimen served in its error-wired state: live validation on one twin
+would break "differs only in accessibility", on both would re-implement the
+checkout on an exhibit page. The controls guard carries it as a registry entry
+that is CHECKED — exactly one served `aria-invalid`, on that field, inside a
+compare box — never as a skip. `a11y.js` is also the fourth vanilla `read()`
+of the cart contract (badge only, never a write; the uniqueness clause
+checked), because the masthead is the shell and the cart survives a swap onto
+this page too.
+
+**Guards, each fired by sabotage and restored from a backup copy** (never
+`git checkout --`; `git status --porcelain` identical before and after every
+row):
+
+| Guard | Sabotage | Failure it produced (verbatim) | Owner |
+|---|---|---|---|
+| identity after the delivery strip | `renderA11yPage` given a post-render `.replace("Five defaults, on and off", "Five default, on and off")` — the D2 class | `first divergence at character 738: … <h1 class="pm-page__title">Five defaults, on and off</h1> … actual … Five default, on and off …` · `a11y/element-demos has drifted from its master (see above)` | `variants/vanilla/test/a11y-master-identity.test.mjs` |
+| exactly one slot | `slot: true` → `slot: false` | `Expected values to be strictly equal: actual: undefined, expected: 1` (now named: `a11y: exactly one chrome slot …`) | same |
+| noindex carried through | the head callback dropped `noindex` | `variant a11y/element-demos: actual: false, expected: true` | same |
+| script-only state written | `aria-pressed` → `data-pressed` in the toggle handler, the two comment mentions left in place | `a11y/mode-demos renders [aria-pressed] but vanilla's enhancement never writes it — the control announces a state it can never enter`; the sheet-promised leg and the self-proof failed with it (comments stripped by `codeOnly`, as the checkout pass required) | `tools/repo-checks/test/pdp-controls-wired.test.ts`, a11y block |
+| every control reached | the specimen loop deleted | `a11y/element-demos: controls vanilla's enhancement never reaches: expected [ …(3) ] to deeply equal []` and the same three on mode-demos | same |
+| the shell stays silent | the live-region handler also called `announce()` | `expected 'Added "A sample record" to the demo c…' to be ''` — on the DS-ON leg, the DS-OFF leg and the specimen leg | `a11y-controls-behave.test.ts` |
+| emulation ≡ seam | one system colour in the forced-colors rule changed (`--color-accent: Highlight`) | `the forced-colors rule's custom properties are the media query's, verbatim … expected [ …(10) ] to deeply equal [ …(10) ]` | same |
+| registration ships with routes | `variants: ["vanilla"]` → `[]` | `a11y registers no live variant — either the section is unserved or the registration was left out of the commit that served it: expected 0 to be greater than 0` | pdp-controls-wired, a11y block |
+| masters cannot move | `page()`'s `slot` default → `true`; separately `scripts` default → one script | `editorial/index.html is stale — re-run: node render/build.mjs` (both) — `shell()`'s own default is unreachable through `page()`, which passes its own; the first attempt flipped that one and nothing moved, so the row records the default that guards | `packages/reference/test/reference.test.ts` |
+| a master edit moves both sides | `Five defaults` → `Five default` in `a11y.mjs` | regeneration: `a11y/element-demos/index.html is stale`; the identity test PASSED (17/17) — recorded as its designed blind spot, the regeneration test being the guard for it | reference.test.ts |
+| turbo hashes the renderer | a comment appended to `a11y.mjs` | `@pm/vanilla#build` cache: `HIT` (control) → `MISS` → `HIT` (restored) | `turbo.json` graph via `@pm/reference#topo` |
+| additive, stage-scoped | the toggle handler also toggled a class on `<html>` | `expected '{"elements":["html[class=pm-emulating…' to be '{"elements":["html[lang=en]","head[]"…'` | a11y-controls-behave |
+| …and the guard's own name made true | the toggle also set `aria-hidden="true"` on the honesty CAVEAT — the dishonesty this page must never ship, and it touches no class, no inline style, not `<html>`/`<body>` and not the stage, so the fingerprint's FIRST draft missed it entirely | the fingerprint is total now (every element, every attribute, `aria-pressed` on the toggles masked) and it fires: `expected '{"elements":["html[lang=en]","head[]"…' to be …` | a11y-controls-behave |
+| the published ratios are the palette's | the superlative put back in the copy | `the copy publishes an unverifiable superlative: worst shipped` | `a11y-controls-behave` |
+| …and they track the tokens | `--pm-neutral-600` darkened to `#4a443a` | `the paper pairing moved — requote the page: expected '9.40' to be '6.14'` | same |
+| the specimen registry has teeth | a sixth field added to the forms demo (masters regenerated) | `.pm-field__control: the registry excuses 2, the masters render 3` | pdp-controls-wired, a11y block |
+| …and names a tag | a `<button>` given the excused field class | `the specimen row excuses <input>, not this: expected 'button' to be 'input'` | same |
+| the twins stay distinguishable | the sentence stopped naming the side | `expected 'Specimen: "Add to cart", a box. …' not to be 'Specimen: "Add to cart", a box. …'` | a11y-controls-behave |
+| a repeat says something new | the press counter removed | `a repeated press repeated itself — silent to AT: expected 1 to be 3` | same |
+| the renderer cannot drift from the masters | a heading edited in `a11y.mjs` with NO regeneration | `a11y/element-demos/index.html is stale — re-run: node render/build.mjs` | `reference.test.ts` |
+| filling the answer line shifts nothing | the reserve put back to `3em` | `a11y/element-demos @320px: filling the answer line moved the next demo: expected 23 to be +0` | `a11y.browser.test.ts` |
+| the forced-colors leg tests the SEAM, not the browser | tokens.css's whole `@media (forced-colors: active)` block deleted | `expected { text: '#201c16', …(4) } to deeply equal { text: 'CanvasText', …(4) }` — and this is the row that justifies the rewrite: the leg's FIRST version compared painted colours, which Chromium forces whatever the author CSS says, so it would have PASSED with the design system's seam deleted | same |
+| the URL serves | the a11y directory moved out of the served dist | `/vanilla/a11y/ → 404`; leg: `expected 404 to be 200` on all three pages (status asserted before any body read), plus the two sheet legs on the vanished pages | `tools/origin-suite/suite/a11y.test.ts` |
+| the home row is derived | the PM‑005 row reverted to `In build` | `PM-005 status: expected 'In build · <a href="https://github.co…' to contain 'Public today'` and the derived home-rows leg red beside it (`home's catalogue rows match SURFACE_CONTROLS completion state`) | `composed-origin.test.ts` home-rows leg + `a11y.test.ts` |
+| the drift gate sees the composed page | post-render body edit, dist rebuilt | `normalized DOM drift (dom-vanilla-a11y-element-demos) — full extracts in .dev-logs/drift/` | `drift.browser.test.ts`, a11y block |
+| the OS setting wins — additive only | an `[aria-pressed="false"]` rule appended to mode-demo.css that re-enables motion in the stage (a subtractive emulation); dist rebuilt | `expected 0.12 to be less than 0.001` under Playwright's `reducedMotion: "reduce"` — the one guard that can see it; the repo-check's block compare and the DOM legs stay green through it, which is why the browser leg exists | `a11y.browser.test.ts` |
+
+**Verify-slice, four lenses.** **four lenses, 25 raw findings, 16 distinct, none refuted, all fixed here.**
+The pass is the reason this section is longer than the build was. Its first
+run died on the Fable limit with `4 started / 0 results` — an empty findings
+array that reads exactly like a clean sweep and was not one, the 2026-08-14
+lesson arriving for the second time in three units; the journal was read
+before anything was believed and the four lenses were re-run.
+
+Four of the sixteen are defects in this session's OWN mid-pass fix, which is
+the part worth keeping. The correctness lens found that a specimen press
+answered through the shell's `[data-pm-status]` — 1×1 and clipped, so the
+answer reached a screen reader and left a sighted pointer user with a button
+that visibly did nothing, on the page whose subject is whether controls can be
+hit — and that both focus twins produced byte-identical text, which a live
+region does not re-announce. Fixing that introduced three more, all caught:
+the new line went in ONE page-level copy, up to three viewports above the
+button; its `min-height: 3em` reserve held at 412 px and 1440 px and shifted
+the next demo 23 px at 320 px, the width this page's own reflow demo is about;
+and inserting it between a toggle and its stage broke the adjacent-sibling
+selector every emulation is keyed on — that last one caught within seconds by
+this slice's own adjacency guard, which is what the guard was for.
+
+The rest, by kind. **Two false claims:** the exhibit's only published number
+was a superlative ("our worst shipped pair") that is false — muted ink on the
+sunk surface is 5.73:1 and ships in three places — and three documents of
+record plus a test docstring described the pre-fix mechanism the code
+deliberately rejects, which for ADR-0008 means the rationale of record would
+have taught the next author to reintroduce the defect. **Four vacuous or
+under-powered guards:** the browser leg asserted the abandoned region and a
+sentence the script never writes (a guaranteed-red leg, and the pages'
+visible answer line had no browser coverage at all); the forced-colors leg
+compared painted colours, which Chromium forces regardless, so it would have
+passed with the seam deleted; the reflow leg pinned the 320 without the
+`box-sizing` declaration that makes 320 mean the frame; and the "not the
+sr-only shape" check tested for a class the line would never have carried.
+**Three registries and lists that could go stale:** the specimen exemption
+excused a class with no tag and no count, the a11y master list was hand-typed
+beside a sibling that derives the same set from disk, and the browser
+fingerprint sampled four attribute families while its linkedom twin had
+already gone total for that exact reason. **Two records that did not match
+their tree:** the "counts tool-derived (final tree)" figure was 189 on a tree
+that was not final (193), and the page hashes were stale with character counts
+labelled bytes. **One shipped waste:** the index linked `plaque.css` and
+rendered no plaque class — `pm-pdp__scroll` in mirror image, which
+`master-styles-resolve` cannot see because it only walks class → rule.
+
+Every one is fixed in this commit, and the fixes brought their own guards: the
+published ratios are now recomputed from the palette with superlatives barred
+by name, the answer line's reserve is a measurement with a zero-shift leg at
+four widths, and the forced-colors leg reads custom properties rather than
+paint.
+
+**The exhibit's one published number was a superlative, and the superlative
+was false.** The contrast demo said "our worst shipped pair measures 6.14:1".
+6.14:1 is right for the pair it shows — `--color-text-muted` (`#675f52`) on
+the paper ground (`#fdfcfa`) — and this is the commit that makes the sentence
+public, so it was computed from the tokens rather than inherited. But "worst"
+was checked by nothing, and it is wrong: the same muted ink on
+`--color-surface-sunk` (`#f6f4ef`) is **5.73:1**, and that pairing ships in
+three places — both `pm-editorial__feature-note` lines inside the editorial
+feature aside (six variants) and the checkout's `pm-cart__empty` line, which
+is the checkout's canonical served state, so every visitor sees it. Nothing
+fails AA either way; what failed was the claim. A skeptic with a colour picker
+would have falsified the exhibit's only quantitative sentence on the page whose
+whole argument is that the numbers here are honest. The copy now names both
+pairs and no superlative: "6.14:1 on this paper ground, and 5.73:1 on the sunk
+panels where the editorial feature note and the checkout's empty-cart line
+live." Found by the verification pass.
+
+**The pages stay snapshot-independent, which is what lets the crate smoke run
+what CI runs.** `renderA11yPage` has arity 1 (a page key; no snapshot can
+reach it) and the a11y block references no tray field, so the three pages hash
+to 4d39e470, 4b0933cf and eb5db5a5 whatever `PM_SNAPSHOT` says — 3,731 /
+11,034 / 8,353 characters, which is 3,747 / 11,076 / 8,374 BYTES in UTF-8.
+Those are two different numbers and the first draft of this paragraph labelled
+the character counts "B", which the verification pass caught: the em dashes
+and the `×` in the demos are multibyte, and a byte figure that is really a
+character figure is exactly the sort of number this log exists to not publish.
+
+**Verification, counts tool-derived (final tree):** `pnpm run check` → **33
+successful, 33 total**; derived, not typed —
+`turbo run lint typecheck test --dry=json | jq '[.tasks[]|select(.command!="<NONEXISTENT>")]|length'`
+→ `33` (the new tests live inside existing task scripts, so the count holds).
+`@pm/repo-checks` **195 passed / 1 skipped**; `@pm/vanilla` **17 passed**;
+`@pm/reference` **40 passed**; lint clean. The repo-checks delta is measured,
+not subtracted from memory: `git stash` on this tree and the same command on
+`main` gives **163 passed / 1 skipped**, so the slice adds **+32** legs there.
+That figure was written **189** and then **193** in earlier drafts of this
+paragraph, both times because a "final tree" count had been taken on a tree
+that was not yet final — the verification pass caught the first, and its own
+follow-on guards (the visible-answer, twin-distinctness and repeated-press
+legs, the specimen registry's count, and the two contrast checks) moved it
+twice more. Which is the argument for deriving a count at the end rather than
+quoting one from the middle.
+`node packages/reference/render/build.mjs` then `git status --porcelain
+packages/reference/surfaces/` → nothing. Origin suite, run ALONE from a torn-down plane, on the
+final tree: fixture **20 files, 551 tests passed**, 142.8 s, exit 0; crate
+(`PM_SEED_DIR=tools/snapshot-capture/crate`) **20 files, 551 tests passed**,
+142.7 s, exit 0 — the "both snapshot modes" half of the done list, run rather
+than argued, and the build line proves the plane really swapped (`editorial +
+500 PDPs + checkout + 3 a11y pages rendered from the crate snapshot` against
+the fixture run's `240 PDPs`; the a11y count is 3 in both, which is the
+snapshot-independence above showing up where a reader can check it). The
+baseline on `main` at 0233451 was 18 files / 519 tests, so this slice adds two
+files and 32 legs: `a11y.test.ts` **13**, `a11y.browser.test.ts` **7**, and
+the drift block **12** — three pages × one normalized-DOM leg plus three pixel
+profiles, which is `drift.browser.test.ts` going 93 → **105**. 13 + 7 + 12 =
+32, and 519 + 32 = 551.
+
+**Two runs were thrown away before those two, and the reason is a standing
+hazard rather than a mistake.** An earlier pass raced this session's own
+rebuilds — `wrangler dev` was watching files that were being rewritten under
+it — and reported mass failures across blog, pdp, chrome and composed-origin;
+that is Phase 15's "run the suite alone" lesson, earned again. A LATER pass
+ran alone and still died, with 5,000 ms browser timeouts through
+`pdp-controls.browser.test.ts`, which is the same flake this machine produced
+at `87113f6` and CI produced in its own post-deploy smoke. So "run it alone"
+is necessary and not sufficient on this hardware: the honest procedure is run
+it alone, and re-run a timeout-shaped failure before believing it. Both
+recorded runs above are clean first attempts after a full teardown.
+
+**One thing the exhibit found in the shell, and did NOT fix.** Measuring the
+DS-ON specimens in a real browser to confirm the target-size demo's claim
+(`.pm-button` is 123×47 — the claim is true) also measured the rest of the
+page, and `.pm-masthead__brand` is **170×23**, a pixel under WCAG 2.5.8's
+24 px floor — the one masthead control with no `min-height`, where its two
+siblings both carry `min-height: var(--target-min)`
+(`components/masthead.css:59` link, `:86` cart; the brand at `:33-34` sets
+only a `font` shorthand). Pre-existing and site-wide, not this slice's: the
+editorial page measures the same 170×23.
+
+**And it is not a conformance failure — the first draft of this paragraph and
+its decision-map node both said it was.** 2.5.8's own *Equivalent* exception
+covers it: "The function can be achieved through a different control on the
+same page that meets this criterion." The brand is `href="/"` and the footer's
+`What is this?` link is the same destination at 24 px, on every page. So the
+true statement is narrower and worth less: a 23 px target whose function is
+also reachable at a conforming size, where closing it buys robustness rather
+than compliance. The verification pass caught the overclaim, and on the
+commit that ships an accessibility exhibit a WCAG citation that does not hold
+is precisely the wrong thing to be wrong about. It is recorded rather than
+fixed because the fix belongs in the shared component and its blast radius is
+every surface: masthead.css is linked by all twelve committed masters, so a
+1 px height change regenerates every one of them and re-baselines every pixel
+drift leg across three profiles. That is a unit, not a line. The exhibit is
+what made it visible, which is the argument for building the exhibit.
+
+**What this leaves.** The masthead brand's target size, above. No live
+validation on the forms demo (the call above). The exhibit pages carry the
+chrome and its HUD like every variant page and will never publish a lab table
+(ADR-0007 §5). Every footer link on every store page now resolves; the `(fog)`
+node's list of unbuilt surfaces is empty.

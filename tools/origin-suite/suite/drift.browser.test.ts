@@ -1192,3 +1192,60 @@ for (const [variant, noise] of PDP_DRIFT_VARIANTS) {
     }
   });
 }
+
+describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03)", () => {
+  // The section is DATA-FREE, so unlike editorial and the PDP there is no
+  // re-render from the served snapshot: the committed fixture masters ARE the
+  // masters for every plane, served by the gate's static server exactly as the
+  // masters-health block above serves them. The served body is the master
+  // renderer's own output under the variant's head, slot and script
+  // (variants/vanilla/render.mjs renderA11yPage — DIFF-TO-STARTER decision 6),
+  // so what this leg proves is the COMPOSED page: chrome injected, sheets and
+  // fonts from the variant's own copied tree, the variant's head — still
+  // normalizes and paints as the spec. A sheet missing from the copy, a head
+  // that dropped a stylesheet, or a post-render edit of the body all land here.
+  // No images on any of the three pages, so no settleImages.
+  const A11Y = ["a11y", "a11y/element-demos", "a11y/mode-demos"] as const;
+  const servedUrl = (surface: string) => `${ORIGIN}/vanilla/${surface}/`;
+  const masterUrl = (surface: string) => `${statics.origin}/packages/reference/surfaces/${surface}/`;
+  const key = (surface: string) => surface.replaceAll("/", "-");
+
+  for (const surface of A11Y) {
+    it(`${surface}: the served page equals the committed master by normalized DOM — under NO_NOISE (vanilla is the control)`, async () => {
+      const context = await browser.newContext({ javaScriptEnabled: false });
+      const masterPage = await openTracked(context, masterUrl(surface));
+      const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+      await masterPage.close();
+      expect(masterDom).not.toBe("");
+      expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+      expect(masterDom).toContain("pm-a11y");
+
+      const page = await openTracked(context, servedUrl(surface));
+      // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+      expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+      const dom = await extractNormalizedDom(page, NO_NOISE);
+      expect(dom).not.toContain("pm-chrome");
+      assertDomEqual(`dom-vanilla-${key(surface)}`, masterDom, dom);
+      await page.close();
+      await context.close();
+    }, 90_000);
+
+    for (const profileId of PROFILE_IDS) {
+      it(`${surface}: pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+        const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
+        const masterPage = await openTracked(context, masterUrl(surface));
+        // The committed master has no chrome slot — part of the contract.
+        expect(await neutralizeChrome(masterPage)).toBe(0);
+        const referenceShot = await captureTracked(masterPage);
+        await masterPage.close();
+
+        const page = await openTracked(context, servedUrl(surface));
+        expect(await neutralizeChrome(page)).toBe(1);
+        const shot = await captureTracked(page);
+        assertPixelsEqual(`pixels-${profileId}-vanilla-${key(surface)}`, referenceShot, shot);
+        await page.close();
+        await context.close();
+      }, 120_000);
+    }
+  }
+});

@@ -332,5 +332,14 @@ stands; what "not consumed" protects is now stated precisely:
   dependency makes the reuse honest in the build graph (turbo hashes the
   renderer into the front's cache key) rather than reached by file path.
 
+- **The second consumer, and its scope (2026-09-03).** `@pm/vanilla` declares
+  `@pm/reference` for exactly one purpose: the a11y section it hosts — a
+  singleton off the benchmarked matrix — is rendered by the reference
+  renderer under the variant's own head, slot and script (ADR-0008 addendum
+  C; `variants/vanilla/DIFF-TO-STARTER.md` decision 6). Every benchmarked
+  surface the variant serves stays re-typed; the dependency does not license
+  a paradigm to render a compared surface from the spec, and the variant's
+  DIFF-TO-STARTER says so.
+
 One sentence for the layout comment, should it be redrawn: *`reference/`
 (golden-master SPEC — consumed at build time only, never shipped).*

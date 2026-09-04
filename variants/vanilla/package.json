@@ -11,6 +11,7 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
+    "@pm/reference": "workspace:*",
     "@pm/tokens": "workspace:*"
   },
   "devDependencies": {
