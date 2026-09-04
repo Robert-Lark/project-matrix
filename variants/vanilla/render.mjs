@@ -1,13 +1,26 @@
 // The vanilla editorial page — this variant's OWN re-implementation of the
 // canonical markup (ADR-0003 §1: a component is a spec, re-implemented per
 // paradigm; ADR-0008: packages/reference/surfaces/editorial/ is the contract
-// of record). Nothing here imports the reference renderer: essay copy is
-// re-typed as variant-owned content and the formatting rules are
-// re-implemented to the canonical spec (packages/reference/render/lib.mjs is
-// the rules of record) — the drift gate polices textual identity both ways,
-// in CI against the fixture master and on the deployed plane against the
-// master re-rendered from the resolved snapshot (ADR-0008 §9). That call —
-// re-type, not build-time import — is recorded in DIFF-TO-STARTER.md.
+// of record). Nothing here imports the reference renderer FOR A BENCHMARKED
+// SURFACE: essay copy is re-typed as variant-owned content and the formatting
+// rules are re-implemented to the canonical spec (packages/reference/render/
+// lib.mjs is the rules of record) — the drift gate polices textual identity
+// both ways, in CI against the fixture master and on the deployed plane
+// against the master re-rendered from the resolved snapshot (ADR-0008 §9).
+// That call — re-type, not build-time import — is recorded in
+// DIFF-TO-STARTER.md (decision 1).
+//
+// The ONE exception is the a11y section at the bottom of this file, a
+// SINGLETON off the benchmarked matrix: it is rendered by the reference
+// renderer itself under this variant's head, slot and script (DIFF-TO-STARTER
+// decision 6; the how-it-was-built precedent, ADR-0004 §2 addendum). Re-typing
+// buys the store nothing where no paradigm is being compared, and two
+// renderers over one spec is this repo's recorded recurring failure.
+import {
+  renderA11yElementDemos,
+  renderA11yIndex,
+  renderA11yModeDemos,
+} from "@pm/reference/render/a11y.mjs";
 
 /** HTML-escape interpolated tray values (frozen data is still external). */
 function esc(value) {
@@ -155,12 +168,16 @@ function fontMarkup(depth) {
   ];
 }
 
-function head(title, { depth = 1, css = CSS } = {}) {
+function head(title, { depth = 1, css = CSS, noindex = false } = {}) {
   const a = assetBase(depth);
   return [
     `<meta charset="utf-8">`,
     `<meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<title>${esc(title)}</title>`,
+    // The master's own <meta name="robots"> line, byte for byte (shell.mjs
+    // head()); the element-demos page is noindex by contract (strategy-review
+    // finding 21) and the head callback below carries the flag through.
+    ...(noindex ? [`<meta name="robots" content="noindex">`] : []),
     ...fontMarkup(depth),
     ...css.map((f) => `<link rel="stylesheet" href="${a}pm/css/${f}">`),
   ].join("\n  ");
@@ -633,4 +650,52 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
 </body>
 </html>
 `;
+}
+
+/* ── The a11y section (a11y-section build, 2026-09-03) ─────────────────────
+   Three pages, a SINGLETON off the benchmarked matrix (ADR-0008 §8; decision
+   map `a11y-section`): /vanilla/a11y/ · /vanilla/a11y/element-demos/ ·
+   /vanilla/a11y/mode-demos/. Data-free, like the checkout — no snapshot
+   flavour, byte-identical under fixture and crate.
+
+   ONE renderer, two heads — the how-it-was-built precedent (ADR-0008 addendum
+   B; ADR-0004 §2 addendum: build-time spec consumption is the @pm/tokens
+   class, never a component runtime). The body is `renderA11y*` from
+   @pm/reference — the very functions that render the committed masters — so
+   the served page and the spec cannot drift; what is this variant's is the
+   <head> (its own asset base, the master's own sheet list handed back through
+   the callback), the chrome slot, and the one script. The pre-merge identity
+   guard (test/a11y-master-identity.test.mjs) holds each page to its master
+   after the delivery strip, so the composition can add exactly those three
+   things and nothing else. Why not re-type, like every surface above: the
+   re-implementation rule exists so paradigms are compared on identical
+   markup (ADR-0003 §1), and this section compares no paradigms — it is
+   served in one variant, measured by nothing. DIFF-TO-STARTER decision 6. */
+
+/** The three pages: dist path → how deep it sits below /vanilla/ (the asset
+ *  base derives from depth, never a second literal) and the master renderer
+ *  that IS its body. Exported so the build and the guards write and check
+ *  the same table. */
+export const A11Y_PAGES = {
+  a11y: { depth: 1, render: renderA11yIndex },
+  "a11y/element-demos": { depth: 2, render: renderA11yElementDemos },
+  "a11y/mode-demos": { depth: 2, render: renderA11yModeDemos },
+};
+
+/**
+ * Render one a11y page for this variant's delivery. `rel` is a key of
+ * A11Y_PAGES. The head callback receives the master's OWN title, complete
+ * ordered sheet list and noindex flag (shell.mjs `page()`), so no sheet
+ * list is re-typed here and the element-demos page's `noindex` is the
+ * master's, not this file's memory of it.
+ */
+export function renderA11yPage(rel) {
+  const entry = A11Y_PAGES[rel];
+  if (!entry) throw new Error(`renderA11yPage: ${rel} is not an a11y page`);
+  const { depth, render } = entry;
+  return render({
+    head: ({ title, css, noindex }) => head(title, { depth, css, noindex }),
+    slot: true,
+    scripts: [`<script src="${assetBase(depth)}a11y.js" defer></script>`],
+  });
 }

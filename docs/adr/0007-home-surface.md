@@ -206,3 +206,14 @@ surfaces land. The composed-origin suite pins it the way it pins every other
 live row: a live row opens the surface on THIS origin, never a GitHub
 document. No other §4 sentence changes; the build log Phase 15 records the
 change and why no ADR question was reopened by it.
+
+## Addendum — §4's "Accessibility" row links the served section (2026-09-03)
+
+§4 shipped the PM‑005 row "In build · ADR‑0003, 2026‑07‑06". The section exists
+now (ADR-0008 addendum C), so the row reads Public today and links
+`/vanilla/a11y/`, under §4's own rule that rows update one at a time as
+surfaces land. Unlike PM‑006 the row's state is DERIVED: the section's one
+designated host variant is its completion (`SURFACE_CONTROLS.a11y.variants`,
+no planned cells), so the composed-origin suite's home-rows leg holds this row
+to the registry exactly as it holds the four matrix rows, and a separate leg
+pins the href by name. No other §4 sentence changes.

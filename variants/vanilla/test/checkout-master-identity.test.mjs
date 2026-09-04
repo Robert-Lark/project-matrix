@@ -21,21 +21,18 @@
  * is the idiom, and its own comment records why: attribute order is NOT
  * freed here, so a serialization change surfaces as a visible edit).
  *
- * The reference renderer is reached by FILE URL, never by package specifier:
- * `@pm/reference` exposes no JS entry point on purpose (ADR-0003 §1, asserted
- * by `no-component-runtime.test.ts:40-57`), so importing it as a dependency
- * is not available and not wanted.
+ * The reference renderer is reached by FILE URL here, never by package
+ * specifier: `@pm/reference` exposes no JS entry point on purpose (ADR-0003
+ * §1, asserted by `no-component-runtime.test.ts`). This workspace DOES now
+ * declare `@pm/reference` — for the a11y section only, a singleton rendered
+ * by the master renderer at build time (DIFF-TO-STARTER decision 6, ADR-0004
+ * §2 addendum) — but the checkout is a re-typed benchmarked surface and its
+ * guard keeps the file-URL import so the two sides stay independent.
  *
- * DISCLOSED LIMIT — read this before trusting a green: `@pm/vanilla#test`
- * inherits turbo's default `cache: true` with inputs limited to
- * `variants/vanilla/**`, so a change to `packages/reference/render/checkout.mjs`
- * alone can replay a STALE PASS here. Every sibling variant guard avoids that
- * with `"cache": false` (`turbo.json:129` astro, `:181` remix3, `:198` qwik).
- * The one-line turbo.json entry is owed and is written into this unit's
- * handoff note, NOT applied — turbo.json is a shared root file and four
- * agents are in this tree. Until it lands, the un-cached copy of this
- * comparison in `@pm/repo-checks#test` (`cache: false`, always runs) is what
- * makes the tree sound; this file is not load-bearing on its own.
+ * `@pm/vanilla#test` is `"cache": false` in turbo.json (the entry this file
+ * once recorded as owed landed with the checkout unit), matching every
+ * sibling variant guard, so a change to `packages/reference/render/*` alone
+ * cannot replay a stale PASS here.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

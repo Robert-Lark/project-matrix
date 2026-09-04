@@ -822,3 +822,69 @@ sentence left open:
   snapshot will ever exist), the build line being the one exception and a
   receipt. Rendering whole ADRs as pages was declined (PRD Decision 1) and
   stays an addendum-plus-dependency-review question, not a slice's call.
+
+## Addendum C — §8's A11y section, as built (2026-09-03)
+
+§8 specified the section in one paragraph: a vanilla singleton of three pages —
+index, five two-box element compares with the DS-OFF twin inside a collapsed
+`<details>`, three additive-only mode emulations with the honesty caveat —
+element-demos `noindex` (strategy-review finding 21). The build (build-log
+Phase 15, "The footer's last 404"; decision map `a11y-section`) holds to it and
+settles four things the paragraph left open:
+
+- **One renderer, two heads — for a variant-hosted singleton.** The vanilla
+  variant does not re-type the pages: it renders them with this package's own
+  `renderA11y*` under its head (its asset base; the master's ordered sheet list
+  arrives through `page()`'s head callback), its chrome slot and one script.
+  `shell.mjs` `page()` gained the skeleton's two ✂ lines as options (`slot`,
+  `scripts`) and `head` as a callback, all default off — the regeneration test
+  holds every committed master byte-identical, and each default was flipped
+  under sabotage to prove it fires. ADR-0003 §1's re-implementation rule exists
+  so paradigms are compared on identical markup; this section compares no
+  paradigms, so `@pm/vanilla` became the second workspace to declare
+  `@pm/reference` (ADR-0004 §2 addendum of 2026-09-02, extended the same way).
+  The benchmarked surfaces stay re-typed, and `variants/vanilla/DIFF-TO-STARTER.md`
+  decision 6 says a future benchmarked surface may not cite this.
+- **The emulation has one state, and it is the accessible one.** A toggle
+  writes its own `aria-pressed` and nothing else; `components/mode-demo.css`
+  applies each emulation to the ADJACENT stage through
+  `.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="…"]`
+  (ADR-0003 §5 — the visual state cannot exist without the programmatic one).
+  "Additive-only, gated behind the real media queries" is therefore a
+  mechanism: with a toggle off no rule matches and the real query stands, so
+  a visitor whose OS already reduces motion or forces colours sees no change
+  in either toggle direction — asserted in a real browser under Playwright's
+  `reducedMotion: "reduce"` and `forcedColors: "active"` contexts. The
+  forced-colors rule's custom properties are `tokens.css`'s
+  `@media (forced-colors: active)` remap verbatim, and a repo-check holds the
+  two blocks equal so the demonstration of the seam cannot drift from the
+  seam. Reflow narrows the stage to WCAG 1.4.10's 320 CSS px.
+- **Specimens are wired, not exempt.** Every button in a compare box or a stage
+  is the store's own component shown for its rendering; a press answers in the
+  page's own visible `role="status"` line — one per compare and per mode
+  (`[data-pm-a11y-response]`), never the shell's `[data-pm-status]`, which
+  `masthead.css` sizes 1×1 and clips. Both halves of that were defects the
+  verification pass found and are guarded: the shell's region answers a
+  screen-reader user and leaves a sighted pointer user with a button that
+  visibly does nothing, and one page-level line leaves the answer up to three
+  viewports above the control. It names the demo, the side and the press
+  count, so no two specimens and no two presses produce the same string — a
+  live region does not re-announce text that has not changed, and the
+  target-size walkthrough invites repeats. It names itself a specimen, because a button that
+  does nothing when pressed is the dead-control state (addendum A) on whatever
+  page it sits. The live-region demo writes the same sentence into each twin's
+  own slot — `role="status"` versus a plain element — and never into the
+  shell's region, or the DS-OFF twin would be announced too and the exhibit
+  would show nothing. The forms demo's field is a STATIC specimen served in its
+  error-wired state: live validation on one twin would break "differs only in
+  accessibility", and on both would re-implement the checkout on an exhibit
+  page. It is a checked registry entry in the controls guard (exactly one
+  served `aria-invalid`, on that field, inside a compare box), not a skip.
+- **The section is a variant page and carries the chrome.** Unlike
+  how-it-was-built it is served by a variant through the front Worker, so the
+  slot is a page contract and the instrument is present: the singleton reading
+  sentence, one current cell, no offer (ADR-0004 §7). No lab table will ever
+  publish for it (ADR-0007 §5), and `SURFACE_CONTROLS.a11y` moved
+  `variants: ["vanilla"]` in the same commit as the routes (decision map,
+  2026-08-29) — home's PM‑005 row is derived from that array by the origin
+  suite, alongside the matrix rows.

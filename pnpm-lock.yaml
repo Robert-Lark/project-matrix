@@ -503,6 +503,9 @@ importers:
 
   variants/vanilla:
     dependencies:
+      '@pm/reference':
+        specifier: workspace:*
+        version: link:../../packages/reference
       '@pm/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens

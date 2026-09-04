@@ -174,7 +174,12 @@
               <h3 class="cat__name">Accessibility</h3>
               <p class="cat__line">The same store, compliant and stripped, side by side: what do design-system defaults change?</p>
             </div>
-            <p class="cat__status">In build · <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0003-design-system-and-zero-bias-presentation.md" rel="noopener">ADR‑0003, 2026‑07‑06</a></p>
+            <!-- Flipped at surface completion (ADR-0007 §1/§4): the singleton's
+                 one host variant is live (`SURFACE_CONTROLS.a11y.variants`,
+                 config.ts) and the composed-origin home-rows leg derives this
+                 row's state from that array. A live row opens the surface on
+                 THIS origin — never a GitHub document. -->
+            <p class="cat__status"><strong class="cat__live">Public today</strong> · <a href="/vanilla/a11y/">open the demos</a></p>
           </li>
           <li class="cat__row reveal">
             <span class="cat__num" aria-hidden="true">PM‑006</span>

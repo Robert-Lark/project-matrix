@@ -35,7 +35,7 @@ disagree, the registry is right and this table is stale.
 | Product page | vanilla, react-next, astro, qwik | `/vanilla/pdp/{slug}/` | Registered; the bundle is empty until the PDP batches run |
 | Search + filters | react-next (`plain`, `tanstack`, the fenced `apollo`), htmx | `/react-next/plp/plain/`, `/htmx/plp/` | Not yet. The grid serves; search, filters and sort do not |
 | Checkout | vanilla; react-next and htmx still planned | `/vanilla/checkout/` | Not yet |
-| Accessibility | not built | — | — |
+| Accessibility | vanilla — a singleton with one host variant; compliant vs stripped, not paradigm vs paradigm | `/vanilla/a11y/` | No — off the benchmarked matrix by design; the exhibit publishes no figure |
 | How it was built | the front Worker — an assets-first singleton, no variant, no chrome | `/how-it-was-built/` | No — off the benchmarked matrix by design; the page indexes the record and renders no figure |
 
 ## Reproduce

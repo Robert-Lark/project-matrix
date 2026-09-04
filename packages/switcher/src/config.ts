@@ -185,7 +185,15 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       "A realistic checkout form. The measured question is interaction latency under main-thread load — INP, scripted and labeled. The lab profile's CPU multiplier is the device axis.",
   },
   a11y: {
-    variants: [],
+    // vanilla is LIVE as of the a11y-section build (2026-09-03): all three
+    // pages under `/vanilla/a11y/` serve, so the designated host moves into
+    // `variants` in the SAME commit as the routes it makes true — the
+    // parallel-builds lesson (decision map, 2026-08-29: three PRs shipped
+    // pages this registry reported as unserved). A singleton with one live
+    // variant renders one current cell and no offer (ADR-0004 §7: singletons
+    // get no render-switcher), and the plain-sentence reading section. The
+    // home-rows leg derives this row's "Public today" from this array.
+    variants: ["vanilla"],
     singleton: true,
     host: "vanilla",
     proves:

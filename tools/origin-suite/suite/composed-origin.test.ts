@@ -102,12 +102,17 @@ describe("front Worker: own assets + dispatch", () => {
     // first serve. Derived from the same registry the chrome renders from,
     // never typed, so a surface that completes without flipping its row (the
     // 2026-08-29 audit found three) goes red here. Matrix surfaces only: the
-    // singletons (a11y, how-it-was-built) have no derivable completion state.
+    // singletons differ: a11y's one designated host variant IS its completion
+    // (a11y-section build, 2026-09-03 — `variants: ["vanilla"]`, no planned
+    // cells), so its row is derived here like the matrix rows; how-it-was-built
+    // is served by the front Worker, not a variant, so its `variants` is empty
+    // by design and its row is pinned by name in how-it-was-built.test.ts.
     const ROWS: Record<string, string> = {
       Editorial: "editorial",
       "Product page": "pdp",
       "Search + filters": "plp",
       Checkout: "checkout",
+      Accessibility: "a11y",
     };
     const body = await (await get("/")).text();
     for (const [name, key] of Object.entries(ROWS)) {
