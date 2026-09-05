@@ -121,15 +121,18 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    * behaviorAttrPatterns deliberately." This is that build.
    *
    * What earns it, measured rather than assumed — the PLP's served page
-   * carries exactly three `hx-*` attributes, all on the ONE
-   * `<nav class="pm-pagination">` element (variants/htmx/src/render.mjs,
-   * PAGINATION_HX): `hx-boost`, `hx-target`, `hx-swap`. They are ADR-0005
-   * §1's arm definition made real — "interactions are real links enhanced
-   * into partial swaps (works JS-off)" — and nothing else on the surface
-   * carries one, because the other three navigation affordances the master
-   * renders (facet links, search, sort) have no data-plane params behind
-   * them yet and enhancing a dead control would be the falsehood, not the
-   * fix.
+   * carries exactly three `hx-*` attribute NAMES on five elements
+   * (variants/htmx/src/render.mjs, PLP_HX_ROOT / HX_BOOST): `hx-target` and
+   * `hx-swap` on the `.pm-plp` root, inherited by everything inside it, and
+   * `hx-boost` on the FOUR navigation containers — the facet rail, the
+   * search form, the sort form, the pagination. They are ADR-0005 §1's arm
+   * definition made real — "interactions are real links enhanced into
+   * partial swaps (works JS-off)" — and `hx-boost` is deliberately NOT on
+   * the root: it would boost the 24 card links too and swap a PDP document
+   * into the grid. Until 2026-09-04 only the pagination was boosted, because
+   * the other three affordances had no data-plane params behind them; the
+   * PLP data-plane unit landed ADR-0005 §5's five params and the controls
+   * with them.
    *
    * `^hx-` is deliberately BROADER than those three names. A prefix is
    * what the class is for (`^q:`, `^on:` are registered the same way): it

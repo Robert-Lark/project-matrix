@@ -101,7 +101,8 @@
         { "value": "Reissue", "count": 318 },
         { "value": "180 Gram", "count": 121 }
       ]
-    }
+    },
+    "applied": { "genre": null, "style": null, "format": null, "sort": null, "q": null }
   },
 
   "sampleManifest": {

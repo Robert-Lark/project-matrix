@@ -85,7 +85,33 @@ export const FacetBucket = z.object({
   count: z.number().int().nonnegative(),
 });
 
-/** Response of GET /api/plp — the small tray, paginated, with facet counts. */
+/** The sort orders the data plane implements (ADR-0005 §5 `sort`). The
+ *  default — absent, or `null` in `applied` — is the snapshot's committed
+ *  order, which is id-ascending (snapshot-capture normalize.ts: "the one
+ *  neutral, deterministic order that is not a presentation choice"); the UI
+ *  labels it "Catalogue order", never "Popularity", because it is not one. */
+export const PlpSort = z.enum(["year-desc", "year-asc", "price-asc", "price-desc", "title"]);
+
+/**
+ * The query the data plane APPLIED to produce a page (ADR-0005 addendum,
+ * 2026-09-04). Always present, `null` for an unapplied knob, so the tray is
+ * self-describing: a renderer derives the rail's selected facet, the sort
+ * select's chosen option and the search box's value from the payload it is
+ * showing — never from the URL it was asked for — so a client-cache arm
+ * holding the PREVIOUS page on screen while a new one is in flight cannot
+ * show one condition's grid under another condition's controls.
+ */
+export const PlpApplied = z.object({
+  genre: z.string().nullable(),
+  style: z.string().nullable(),
+  format: z.string().nullable(),
+  sort: PlpSort.nullable(),
+  q: z.string().nullable(),
+});
+
+/** Response of GET /api/plp — the small tray, paginated, with facet counts
+ *  RECOUNTED over the filtered set (each group with its own filter lifted) and
+ *  the applied query. */
 export const PlpPage = z.object({
   items: z.array(ReleaseSummary),
   page: z.number().int().positive(),
@@ -97,6 +123,7 @@ export const PlpPage = z.object({
     styles: z.array(FacetBucket),
     formats: z.array(FacetBucket),
   }),
+  applied: PlpApplied,
 });
 
 /**
@@ -125,5 +152,7 @@ export type Label = z.infer<typeof Label>;
 export type Format = z.infer<typeof Format>;
 export type ReleaseDetail = z.infer<typeof ReleaseDetail>;
 export type FacetBucket = z.infer<typeof FacetBucket>;
+export type PlpSort = z.infer<typeof PlpSort>;
+export type PlpApplied = z.infer<typeof PlpApplied>;
 export type PlpPage = z.infer<typeof PlpPage>;
 export type SnapshotManifest = z.infer<typeof SnapshotManifest>;

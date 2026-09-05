@@ -394,6 +394,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     );
     for (const id of PROFILE_IDS) {
       for (const { surface, variant, path } of pages) {
+        // kv-exempt: lab surfaces (editorial, pdp) via vanilla/remix3 — static pages, or the un-nonced server-side PDP fetch that is the measurement-pass known; never the PLP warm tier
         const body = await (await get(`${path}?profile=${id}`)).text();
         const fragment = body.match(
           /<aside id="pm-chrome"[\s\S]*?<\/aside><script src="\/_pm\/measure\.js" defer><\/script>/,

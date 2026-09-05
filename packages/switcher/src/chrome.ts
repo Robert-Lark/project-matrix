@@ -70,11 +70,31 @@ function profileHref(pathname: string, search: string, profileId: string): strin
   return `${pathname}?${params.toString()}`;
 }
 
-/** Same path/query with only the n knob replaced. */
+/** Same path/query with only the n knob replaced — and `page` dropped: a
+ *  density change re-paginates the list, so page 8 of 24-a-page is past the
+ *  end at 240-a-page (the edge serves it as the honest empty "0", uncached).
+ *  Filters, sort, search, cache, run and profile all stay. */
 function nHref(pathname: string, search: string, n: number): string {
   const params = new URLSearchParams(search);
   params.set("n", String(n));
+  params.delete("page");
   return `${pathname}?${params.toString()}`;
+}
+
+/** A strategy preset's href: the visitor's WHOLE condition carried onto the
+ *  preset's path, with only `cache` set or cleared per the preset (ADR-0005
+ *  §2: strategy is the path, cold-vs-edge is the query). Until 2026-09-04
+ *  this was `path + preset.query`, which REPLACED the query — so switching
+ *  strategy from `?genre=Jazz&style=Modal&n=240` landed on the unfiltered
+ *  first page at n=24, on the one surface whose axis the switcher is.
+ *  `swapHref` (the render axis) always kept the search; this is its twin. */
+function presetHref(preset: StrategyPreset, search: string): string {
+  const params = new URLSearchParams(search);
+  const cold = new URLSearchParams(preset.query).get("cache") === "cold";
+  if (cold) params.set("cache", "cold");
+  else params.delete("cache");
+  const query = params.toString();
+  return `${preset.path}${query ? `?${query}` : ""}`;
 }
 
 /** A strategy preset is live iff the variant its path targets serves it. */
@@ -144,7 +164,7 @@ function switcherCells(ctx: ChromeContext, controls: SurfaceControls): string {
     const cells = strategies
       .filter((s) => !s.fenced && controls.variants.includes(presetVariant(s)))
       .map((s) => {
-        const href = `${s.path}${s.query}`;
+        const href = presetHref(s, ctx.search);
         return presetIsCurrent(ctx, s)
           ? `<span class="pm-chrome__cell pm-chrome__cell--current" aria-current="page">${esc(s.label)}</span>`
           : `<a class="pm-chrome__cell" href="${esc(href)}">${esc(s.label)}</a>`;

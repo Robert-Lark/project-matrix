@@ -6944,3 +6944,380 @@ validation on the forms demo (the call above). The exhibit pages carry the
 chrome and its HUD like every variant page and will never publish a lab table
 (ADR-0007 §5). Every footer link on every store page now resolves; the `(fog)`
 node's list of unbuilt surfaces is empty.
+
+### The controls come back, and the tier learns what it may hold (2026-09-04 · verified 2026-09-18)
+
+The map called this its largest owed item and the 2026-08-29 audit put it
+third: the PLP's commercial form is "search + faceted filters + sort", and
+the served pages had none of it. The rail, the search form and the sort
+select were cut on 2026-08-29 — correctly, rather than shipped inert —
+because `workers/edge` `handlePlp` read `n`, `page`, `run` and `cache` and
+nothing else, so every one of those controls navigated to a filtered URL and
+got the unfiltered grid back under a count that still said "of 500". ADR-0005
+§5 had named the contract fourteen months earlier and left two questions and
+one bound open. This unit closes them, and the order it did so in is the
+useful part.
+
+**Step 0 went first, on its own branch, because it did not need the rest.**
+`handlePlp` floored `page` at 1 with no ceiling, folded the raw integer into
+the KV key, and wrote every miss through with no TTL. So `for p in $(seq 1
+1000000); do curl "?page=$p"; done` minted one immortal ~10 KB entry per
+integer — the attacker pays nothing, the project pays writes and storage
+forever, on the surface whose thesis is pricing infrastructure honestly. The
+obvious fix is wrong: clamping `page` BEFORE the KV lookup needs
+`totalPages`, which needs the snapshot, which needs R2, and that puts ~400 ms
+of origin on every warm hit and erases the edge-cache cell. So the ceiling is
+applied on the way OUT — `serveData` gained a `cacheable(payload)` predicate,
+the lookup stays one KV read, and a page past `totalPages` is still the
+honest empty "0" every arm renders but is never stored and says so
+(`x-pm-cache-state: none`, the state a 4xx already carried: not a warm-tier
+resource). `@pm/edge` had no test at all; it has a vitest suite now (turbo
+33 → 34), driving the Worker in-process with a RECORDING KV stub so "never
+written" is asserted on the store rather than inferred from a header.
+Sabotage: predicate removed, 4 of 9 legs fail. Committed as `fec4a29` on
+`plp-page-ceiling` before anything else was written.
+
+**The design went in front of a panel before the code did.** Four skeptics
+(measurement integrity, the contract and the arms, cost and anti-rigging,
+seams) attacked the design note against the repo: 33 findings, 6 kills. Two
+kills were already right in the code by the time the panel returned — a
+search skips the KV lookup entirely (the note's order of operations would
+have let `?q=ambient` HIT the unfiltered page-1 entry every visitor had
+warmed, and serve it as a hit), and an empty `sort=` is absent, never a 400
+(it is what an untouched select submits). Three changed the design:
+
+- **`hx-boost` was going on the `.pm-plp` root.** htmx boosts every
+  descendant same-origin anchor, and the 24 card links to
+  `/vanilla/pdp/<slug>/` are descendants — a click on a record title would
+  have fetched the PDP document and swapped it INTO the grid, masthead and
+  second chrome slot included. `hx-target`/`hx-swap` ride the root (inherited);
+  `hx-boost` rides the four navigation containers — the rail, both forms, the
+  pagination — and never the root or a card. The guard pins the placement
+  and that no card anchor carries an `hx-*`.
+- **The tray's shape changed under an unchanged `v1:` key prefix.**
+  Visitor-facing entries have no TTL, so the default condition's pre-deploy
+  entry would have served a tray without `applied` after the deploy and both
+  arms would have thrown on `applied.q` for every visitor until a manual
+  flush — and the nonced smoke would have stayed green. The prefix is now the
+  tray-shape version (`PLP_TRAY_VERSION`, beside the shape, `v2:`), and the
+  htmx boundary refuses a tray without `applied` as a 503 rather than a
+  TypeError.
+- **The "zero storage" residual was false.** Any well-formed `?run=` nonce on
+  a cacheable condition is one KV write and one ~4 KB entry for an hour — a
+  time-bounded dimension, not zero, and the same holds for `/api/pdp`. The
+  ADR addendum says so, and flags the one thing this session could not
+  verify: whether the `pm-warm` namespace is on Cloudflare's Free plan
+  (1,000 writes/day), which would make that dimension an outage vector.
+
+The discounts were folded in too: `q` normalized client-side by the same rule
+so a cache arm's `settled` can ever be true; a junk filter a 404 "No such
+filter" on both arms rather than htmx's "data plane didn't answer" 503 beside
+react-next's error boundary; the RUM `cacheState` tag saying `none` for a
+search instead of blending an R2 read into the KV column; the bench runner
+refusing a PLP batch at an n the tier never holds; the strategy presets
+carrying the visitor's whole condition instead of replacing it; the n knob
+dropping `page`. Every item is in the ADR addendum with what it gave up.
+
+**Q1 and Q2, settled.** Facet counts under a filter RECOUNT over the filtered
+set with the selected group's own filter lifted — a count is what the click
+returns: switching within the group you filtered by, adding in the others.
+And `PlpPage` grows `applied`, because every renderer now draws the
+selected facet, the chosen sort and the search value from the payload, never
+from the URL: under `keepPreviousData` the previous tray is on screen while
+a new condition is in flight, and controls drawn from the request would show
+one condition's selection over another's grid — a toggle-off link that does
+not toggle off. The arms-agree guard found the reference and react-next
+disagreeing about an EMPTY result the day the filters landed (a lone current
+"1" over "Showing 0 of 0" against an empty nav — page 1 of 0 either way);
+neither is what a visitor needs, so an empty result has no pagination
+landmark at all, in all three renderers.
+
+**One implementation of the semantics, and the third consumer of the spec.**
+The Worker had re-typed the reference's facet comparator, and the react-next
+guard's own header had counted the `computeFacets` hits and found "not one
+assertion" comparing the two. Filtering and sorting would have been a second
+and third copy of the same class. So the semantics — filter, ASCII-case-
+insensitive search over title or artist, five sorts with nulls last and
+committed-order tie-breaks, the recount, the slice — are ONE pure, import-free
+module, `packages/reference/render/plp-query.mjs`, imported by the reference
+renderer and by the edge Worker. `@pm/edge` declares `@pm/reference`, and the
+ADR-0004 §2 addendum records the one exception to "never shipped" it makes:
+the data plane is not a paradigm, its bundle is never a measured client
+bundle, and what the exception buys is that the master and the served page
+cannot disagree about what a filtered condition contains. The two arms still
+re-type the MARKUP; the three rules a paradigm cannot import — the n clamp,
+the q normalizer, the href rule — are re-typed in react-next and pinned equal
+over tables of inputs.
+
+**The key-cardinality policy, measured rather than estimated.** A key is
+written only when `q` is absent, `n` is one of the two published knob values,
+and the page is within the filtered set. The URL-derivable half is one
+derivation (`plpWarmable`, @pm/measurement) for the Worker and for the
+chrome's RUM tag. The ceiling was computed by building every cacheable
+payload with the real query module and counting its bytes: **37,182 keys /
+0.162 GB / $0.19 of writes / $0.08 per month** for the real crate — against
+4,548,342 keys / ~19.7 GB / $22.74 / $9.87 per month with `n` free in
+1..240, against unbounded before. Prices fetched from Cloudflare's pricing
+pages that day. The first draft of the ceiling script counted facet bytes
+over the filtered set, not the lifted one, and the cost lens caught the 1.5×
+under-count; the number above is the corrected one.
+
+**The controls, back in the master first.** One href rule for pagination,
+facets, both forms' hidden inputs and every client-side history write —
+canonical order, defaults omitted, the bare condition spelled `?page=1`,
+form-submit encoding — closes the first PLP build's handoff §6.2(ii): a
+page-flip from `?cache=cold` stays cold. The regenerated master is **105
+insertions and zero deletions**, the mirror image of the 105-line cut. The
+default sort is labelled "Catalogue order": snapshot-capture stores rows
+id-ascending, and the pre-cut master's "Popularity" was a false label in the
+spec layer. The front Worker honours `x-pm-partial` — every htmx page-flip
+had been an ERROR log against a correct Worker since 2026-08-28. The
+warm-tier guard now covers PAGE paths that proxy the tray: `/htmx/plp` as the
+handoff predicted, and `/react-next/plp`, which the handoff missed and which
+carried a live un-nonced instance in `a11y.test.ts` that planted the
+canonical PLP key on every deployed smoke.
+
+**Verification.** The two unfinished halves of the unit ran on 2026-09-18, fourteen days after
+the code, on the same tree plus what the verification itself changed.
+
+**The origin suite, alone, both snapshots.** Fixture run 2 on the resumed
+tree: 572 passed, 1 failed. The six run-1 failures — React's `<!-- -->` text
+boundaries in the count line, browser waits keyed on the input's value, htmx
+pushing the raw form URL — were gone; the one failure was
+`bench.browser.test.ts`'s one-command-reproduce leg hitting its 600 s cap
+while run 1's WHOLE suite had taken 143 s. Timeout-shaped, so it was re-run
+before it was believed: run 3, 573 of 573 in 144 s; crate mode, 573 of 573
+in 143 s. The hang was a one-off, and no Worker reloaded under it (each
+wrangler log shows one `reloadStart`, at startup). A mechanism that produces
+exactly that shape is on record rather than fixed, because it is not this
+unit's code: `tools/bench-runner/src/cpu.ts` `CdpConnection.send()` awaits
+an inspector reply with no timeout, so one lost `Profiler.stop` holds a
+batch until vitest's cap.
+
+**The react-next 404, read rather than reasoned about.** Run 1 had left one
+question open: the junk-filter page on react-next answered 404 with "No such
+filter" in the body and ZERO injected chrome. A held plane settled it. The
+served document is `<html id="__next_error__">` — Next's own error shell —
+with the branded boundary present only inside the RSC flight payload, no
+chrome slot, and the front Worker logging `chrome-slot-count` 0: byte-for-
+byte the shape the PDP's 404 has shipped since its build (DIFF-TO-STARTER
+item 25; `pdp.test.ts` asserts the status alone). The htmx 404 carries the
+chrome once and `x-pm-cache-state: none`. So the suite leg pins the recorded
+shape for react-next — status, sentence, `__next_error__` — and the chrome
+count for htmx; a Next release that starts SSR-ing the boundary fails the
+leg and tightens it. The two new `not-found.tsx` docblocks had claimed the
+shell "keeps the chrome slot present" — copied from the PDP's, and false in
+served HTML on both arms of that claim; corrected. The PDP's own
+`not-found.tsx` and `lib/plp-error.tsx` carry the same sentence and predate
+this unit: flagged, not fixed here.
+
+**The sabotage table: 36 rows, one deliberate defect each, the owning guard
+must fail.** First pass 31 caught, 5 missed — and the misses are the useful
+part. Four were one shape: a claim tested by equality with the module under
+test. `plp-params.test.js` compared the Worker's tray to `applyPlpQuery`,
+which the Worker IMPORTS, so dropping the artist half of the search (Q1) or
+reversing the tie-break (Q4) moved both sides together and the "title OR
+artist" and "ties on committed order" legs stayed green; react-next's guard
+pinned `normalizePlpQ` equal to the reference over a table but never that
+the route CALLED it (N2); and `loadPlp`'s one line that decides
+404-versus-outage (`400 → null`, N7) had no in-process test, because the
+guard drives the edge Worker directly and never went through it. Each gained
+a leg with an independent oracle — the raw summaries (a word that occurs in
+some artist and in no title; each row's position in the committed order), the
+route function itself, a mocked `getCloudflareContext` — and each re-run was
+caught. The pre-check had already found G7: `@pm/bench-runner` had no test
+task at all, so the addendum's "the bench runner refuses a PLP batch at any
+other n" was typechecked prose. The fence is now an exported function with
+the package's first test (turbo 34 → 35), which also pins it equal to
+`plpWarmable` over every n in 1..240 — one derivation, held to the other.
+One row stays missed, honestly. G5, the front Worker's `x-pm-partial`
+pass-through: its only observable effect is the ABSENCE of a
+`chrome-slot-count` ERROR log. HTMLRewriter is workerd-only, so there is no
+in-process test, and the seam leg pins the visible half (no chrome and no
+head sheet on a partial; chrome exactly once on the document) but cannot
+see a log line. Proven by the log instead: across the crate run, zero
+slot-count errors on any `/htmx/plp/` response (17 documents and partials
+served), and every error logged was one of the recorded 404 shapes. And one
+row was retired: DELETING the tie-break is a no-op, because
+`Array.prototype.sort` is stable — "Since version 10 (or ECMAScript 2019),
+the specification dictates that `Array.prototype.sort` is stable" (MDN,
+fetched 2026-09-18) — so the row that bites is the reversal. Final: 35 of 36.
+
+| row | file | defect | result | guard that failed |
+|---|---|---|---|---|
+| W1 | `workers/edge/src/index.js` | warm-tier gate `tiered: plpWarmable(…)` → always tiered | CAUGHT | `test/plp-params.test.js` |
+| W2 | `workers/edge/src/index.js` | page ceiling `cacheable: page <= totalPages` → always cacheable | CAUGHT | `test/plp-page-ceiling.test.js` |
+| W3 | `workers/edge/src/index.js` | facet-value validation disabled | CAUGHT | `test/plp-params.test.js` |
+| W4 | `workers/edge/src/index.js` | unknown `sort` no longer 400s | CAUGHT | `test/plp-params.test.js` |
+| W5 | `workers/edge/src/index.js` | empty `?genre=` no longer treated as absent | CAUGHT | `test/plp-params.test.js` |
+| W6 | `workers/edge/src/index.js` | over-long facet value no longer refused before the lookup | CAUGHT | `test/plp-params.test.js` |
+| W7 | `workers/edge/src/index.js` | KV key prefix pinned to `v1:` (tray-shape version dropped) | CAUGHT | `test/plp-page-ceiling.test.js` |
+| W8 | `workers/edge/src/index.js` | `run` nonce dropped from the key | CAUGHT | `test/plp-params.test.js` |
+| Q1 | `packages/reference/render/plp-query.mjs` | search matches title only (artist half removed) | MISSED → CAUGHT (leg added 2026-09-18) | `test/plp-params.test.js` |
+| Q2 | `packages/reference/render/plp-query.mjs` | nulls sort FIRST instead of last | CAUGHT | `test/plp-params.test.js` |
+| Q3 | `packages/reference/render/plp-query.mjs` | genre facets counted over the filtered set (own filter not lifted) | CAUGHT | `test/plp-params.test.js` |
+| Q4 | `packages/reference/render/plp-query.mjs` | sort tie-break REVERSED (`b.index - a.index`) | MISSED → CAUGHT (leg added 2026-09-18) | `test/plp-params.test.js` |
+| R1 | `packages/reference/render/plp.mjs` | `cache=cold` dropped from the reference href rule | CAUGHT | `test/master-identity.test.js` |
+| R2 | `packages/reference/render/plp.mjs` | bare condition spelled `?` instead of `?page=1` | CAUGHT | `test/master-identity.test.ts` |
+| R3 | `packages/reference/render/plp.mjs` | selected facet outside the cut no longer appended | CAUGHT | `test/plp-arms-agree.test.ts` |
+| R4 | `packages/reference/render/plp.mjs` | default sort relabelled "Popularity" | CAUGHT | `test/master-identity.test.js` |
+| H1 | `variants/htmx/src/render.mjs` | `hx-boost` removed from the navigation containers | CAUGHT | `test/master-identity.test.js` |
+| H2 | `variants/htmx/src/render.mjs` | `hx-boost` moved onto the `.pm-plp` root | CAUGHT | `test/master-identity.test.js` |
+| H3 | `variants/htmx/src/index.js` | htmx forwards only the four old knobs | CAUGHT | `test/master-identity.test.js` |
+| H4 | `variants/htmx/src/index.js` | tray 400 no longer distinguished from 503 | CAUGHT | `test/master-identity.test.js` |
+| H5 | `variants/htmx/src/index.js` | tray without `applied` accepted | CAUGHT | `test/master-identity.test.js` |
+| H6 | `variants/htmx/src/render.mjs` | htmx condition drops cache/run/profile | CAUGHT | `test/master-identity.test.js` |
+| N1 | `variants/react-next/src/lib/plp-condition.ts` | `cache=cold` dropped from react-next's href rule (both call sites) | CAUGHT | `test/master-identity.test.ts` |
+| N2 | `variants/react-next/src/lib/plp-condition.ts` | react-next route stops normalizing `q` | MISSED → CAUGHT (leg added 2026-09-18) | `test/master-identity.test.ts` |
+| N3 | `variants/react-next/src/lib/plp-condition.ts` | `profile` forwarded unvalidated | CAUGHT | `test/master-identity.test.ts` |
+| N4 | `variants/react-next/src/components/PlpTanstack.tsx` | TanStack `settled` falls back to page equality | CAUGHT | `test/master-identity.test.ts` |
+| N5 | `variants/react-next/src/lib/plp.tsx` | selected facet loses `aria-current` | CAUGHT | `test/plp-arms-agree.test.ts` |
+| N6 | `variants/react-next/src/lib/plp.tsx` | facet click no longer resets `page` to 1 | CAUGHT | `test/master-identity.test.ts` |
+| N7 | `variants/react-next/src/lib/edge.ts` | react-next `loadPlp` lets a 400 fall through to the error boundary | MISSED → CAUGHT (leg added 2026-09-18) | `test/edge.test.ts` |
+| G1 | `tools/repo-checks/test/warm-tier-discipline.test.ts` | warm-tier guard regex narrowed back to `/api/(plp|pdp)` | CAUGHT | `test/warm-tier-discipline.test.ts` |
+| G2 | `packages/measurement/src/beacon.ts` | `plpWarmable` ignores `n` | CAUGHT | `test/profiles.test.ts` |
+| G3 | `packages/switcher/src/chrome.ts` | n knob keeps `page` | CAUGHT | `test/chrome.test.ts` |
+| G4 | `packages/switcher/src/chrome.ts` | strategy presets drop the visitor's condition | CAUGHT | `test/chrome.test.ts` |
+| G5 | `workers/front/src/index.js` | front Worker `x-pm-partial` pass-through disabled | MISSED — unguardable by test; proven by log (see text) | — |
+| G6 | `packages/tokens/css/surfaces/plp.css` | `.pm-plp__results` rule renamed (OWED retirement broken) | CAUGHT | `test/master-styles-resolve.test.ts` |
+| G7 | `tools/bench-runner/src/batch.ts` | bench-runner PLP n fence disabled | CAUGHT | `test/batch.test.ts` |
+
+
+**The key policy, read off the store.** The crate run's local KV holds 21
+keys. Nine are PLP: eight nonced (`run=suite-…`, TTL 3600 s) and one
+un-nonced canonical `v2:/api/plp?n=24&page=1`, written 7.07 s before the
+suite's first nonce — the runner's own `/api/plp` readiness probe
+(`run-local.mjs`), local-only; the post-deploy smoke never runs it. Zero
+keys carry `q=`; zero carry an n outside {24, 240}; zero carry the `v1:` PLP
+prefix. The twelve PDP keys are six nonced and six un-nonced server-side
+page fetches, the measurement-pass known. `kv-ceiling.mjs` re-run on the
+crate reproduces the addendum's numbers to the digit — 37,182 keys /
+0.162 GB / $0.19 / $0.08 per month, against 4,548,342 / 19.745 GB / $22.74 /
+$9.87 — and the regenerated masters are +105/−0 (plp) and +1/−0
+(how-it-was-built), as recorded.
+
+**verify-slice.** Four lenses, sequential (the limit-resilient shape), on the
+tree above; 15 raw findings across the first three, refuted or fixed inline,
+and every fix given a guard that a second sabotage round (13 rows, table
+below) proves bites. The correctness and conformance lenses converged
+independently on the same six defects — the signal worth having. (1) An
+EMPTY intersection dropped the SELECTED facet from the rail: `genre=Jazz&
+style=Minimal` with no such record rendered "0 of 0", no marked facet and no
+link that removed either filter — 637 of the crate's 855 genre × style pairs
+are empty — and all three renderers agreed on the wrong markup, so
+arms-agree could not see it. The query module now lists the selected value at
+its honest count, 0 (ADR Q1's one exception, recorded); the edge test holds
+it to a real empty pair, arms-agree renders one and reads two `aria-current`
+facets whose hrefs each drop their own param. (2) `?page=` of 309+ digits
+parsed to Infinity: the tray carried `"page":null` against its own Zod
+contract, htmx answered a false "data plane didn't answer" 503, and
+react-next held Infinity while the Worker read its `page=Infinity` as page 1,
+so `settled` could never be true. Both clamps cap at `MAX_SAFE_INTEGER` —
+past the end, empty, never stored — and react-next's is pinned to the
+module's over a table. (3) The junk-value length bound measured with
+`encodeURIComponent` while the key is spelled by `URLSearchParams`, which
+encodes `! ' ( ) ~` as three bytes: two values of 96 `!`s passed the bound
+and handed `KV.get` a 613-byte key — a 500 where the policy promises 400
+`none`. The bound now uses the key's own encoder, and a whole-key belt
+refuses anything KV would; the leg asserts the message so each layer is
+proven separately. (4) react-next's sort select and search box were
+UNCONTROLLED, and React never re-applies a changed `defaultValue` to a
+mounted select or a dirty input: after Back the controls kept one condition
+over another's grid — the very thing Q2 was decided to prevent, and a
+behaviour htmx (whole-block swap) did not share. Keyed on their applied
+values they remount, SSR bytes untouched; a browser leg now drives search →
+sort → Back → Back on both arms. (5) The sort form's hidden `q` sat before
+the select, so a JS-off sort with a search applied spelled `…&q=…&sort=…` — a
+third spelling of one condition the code comment denied. Hidden knobs split
+around the control in all three renderers, and arms-agree serializes both
+forms in tree order against the href rule. (6) The Worker header restated the
+ceiling with stale storage numbers. The seams lens added two: `@pm/edge#test`
+was a CACHED turbo task reading the crate by an unhashed path — a crate
+re-freeze would have replayed a stale PASS for exactly the legs that hold the
+policy to the real crate — now uncached like every sibling guard that drives
+a Worker over the crate; and the instrument's `nKnob` was a literal copy of
+`PLP_N.warmed` with nothing pinning the two — now the derivation itself,
+pinned by identity. Two more from the first lens: the warm-tier guard was
+blind to the browser suite's template-literal request shape (its two tray
+requests were cold and nonced by luck of the object form), so the regex now
+sees `${…}/api/plp` and the helpers spell the literals; and the decision-map
+node cited a build-log entry that did not yet exist — this one. The skeptic lens (re-run after
+an expired login token killed its first attempt; the three finished lenses
+replayed from the journal) added five. Two were real behaviour: react-next's
+`HiddenKnobs` re-emitted a junk `run`/`profile` unbounded where the reference
+and htmx drop it — the one place the three renderers disagreed, reachable
+only through the exported `PlpArticle` seam — now bounded by the same rule
+and pinned by an arms-agree case; and the browser suite drove only the plain
+react-next arm, so Q2's in-flight guarantee (`keepPreviousData`, `settled`
+= `appliedMatches`) was never observed where it exists — the TanStack arm is
+now a third arm of every browser leg. Two were record hygiene: the committed
+design note carried the superseded ceiling and key shape beside the record
+of record (a supersession note now heads it; the ceiling script's usage
+line and `v1:` prefix corrected, numbers unmoved), and RUM tags a page past
+the end or an empty intersection `default` while the Worker serves `none` —
+recorded in the addendum's "given up" bullet as the ADR-0001 §8 matter it
+is. The fifth was the guard blindness above, seen from the other side: the
+`${arm.path}?…` lines the two new files are built from matched nothing, so
+their discipline rested on a comment. The regex gained a path-variable
+alternative, the suite's request helper refuses an undisciplined path at
+request time, and the one unrelated `${path}?` line in the suite carries
+its own exemption.
+
+**The one finding the fixes surfaced that no lens made.** Proving the
+react-next remount guard bites — a sabotaged plane, the browser file alone —
+failed the Back leg on react-next as intended AND on htmx, which the lenses
+had called immune. Standalone replays passed every time; the failure needed
+a freshly started plane and the suite's own timing. Logged from inside
+vitest against a cold plane: the sort submit fired NATIVELY (`native
+submit`, no `htmx:beforeRequest`, the in-flight beacons aborted by a full
+navigation). htmx processes swapped-in content in a settle task
+`settleDelay` (20 ms) after insertion, and pushes the URL BEFORE it; a leg
+that acts the instant the address bar moves submits a form htmx has not yet
+boosted. The browser then navigated for real, and Back restored the
+previous document's form state — the browser's own behaviour, and
+progressive enhancement's honest fallback, not an htmx defect. The suite now
+waits for the `htmx-added` marker to clear after every swap before touching
+a control; on a fresh plane the file passes first time, both arms, in 3 s.
+The `key` proof stands: without it react-next fails the leg on the
+assertion; with it, both arms pass.
+
+Round 2 — one row per fix landed this day:
+
+| row | defect | result | guard that failed |
+|---|---|---|---|
+| S1 | selected value no longer appended at 0 on an empty intersection (query module) | CAUGHT | `test/plp-params.test.js` |
+| S1b | same defect, seen by the arms-agree case | CAUGHT | `test/plp-arms-agree.test.ts` |
+| S2 | `clampPage` cap removed (Infinity again) — Worker | CAUGHT | `test/plp-page-ceiling.test.js` |
+| S3 | `clampPlpPage` cap removed — react-next | CAUGHT | `test/master-identity.test.ts` |
+| S4 | per-value bound measured with `encodeURIComponent` again | CAUGHT | `test/plp-params.test.js` |
+| S5 | whole-key belt disabled (per-value bound intact) | MISSED — unreachable by construction: with the per-value bound intact no key can exceed 512 bytes (3 × 96 + overhead ≈ 420); the belt is proven by S4+S5 | — |
+| S4+S5 | both bounds wrong — the original 500 scenario | CAUGHT | `test/plp-params.test.js` |
+| S6 | reference emits the sort form's hidden `q` before the select | CAUGHT | `test/plp-arms-agree.test.ts` |
+| S6h | htmx does | CAUGHT | `test/master-identity.test.js` |
+| S6r | react-next does | CAUGHT | `test/plp-arms-agree.test.ts` |
+| S6-all3 | ALL THREE do — only the serialization oracle can see it | CAUGHT | `test/plp-arms-agree.test.ts` (the serialization oracle) |
+| S8 | warm-tier regex narrowed back (blind to `${ORIGIN}/api/plp`) | CAUGHT | `test/warm-tier-discipline.test.ts` |
+| S9 | browser suite's tray helper drops `cache=cold&run=` | CAUGHT | `test/warm-tier-discipline.test.ts` |
+
+
+**The suite once more, on the final tree.** Fixture 579 of 579 in 143 s;
+crate 579 of 579 in 142 s — six legs more than the morning's runs (the
+Back leg on each arm, the TanStack arm's four). The first crate attempt is
+on record too: seven seconds in, the front Worker's `wrangler dev` process
+died with an empty internal error and the SDK's own "please create an
+issue" text, and 0 of 206 legs reached the plane; run alone again, green.
+Not this unit's code, and not the first wrangler tree to misbehave today:
+the morning's held plane survived `pkill -f "wrangler dev"` because the
+process is spelled `wrangler.js dev`, and its orphans rebuilt on every
+source edit until the load average read 101. `run-local.mjs`'s own
+pre-flight hint names the wrong pattern; flagged.
+
+**`pnpm run check`:** 35 of 35 tasks green, both before and after the
+findings were folded in.
+
+**What this leaves.** For Rob: whether the `pm-warm` namespace is on the Free
+plan — the `run` nonce is a time-bounded key dimension and 1,000 writes/day
+is an outage vector, not a cost line. Flagged, not fixed: the PDP
+`not-found.tsx` and `lib/plp-error.tsx` docblocks (the same false sentence
+this unit corrected in its own), and the bench runner's uncapped CDP send.
+The measurement-pass items the addendum names stay with the pass.

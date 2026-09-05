@@ -32,7 +32,13 @@ export interface BeaconEvent {
  * (n=0240, n=99999, and junk all collapse to their effective value, and the
  * tag can never exceed the collector's byte limits).
  */
-export const PLP_N = { default: 24, max: 240 } as const;
+export const PLP_N = {
+  default: 24,
+  max: 240,
+  /** The two values the switcher offers (`SURFACE_CONTROLS.plp.nKnob`) and
+   *  the ONLY two the edge Worker's warm tier holds — see `plpWarmable`. */
+  warmed: [24, 240],
+} as const;
 
 export function clampN(raw: string | null | undefined): number {
   const parsed = parseInt(raw ?? "", 10) || PLP_N.default;
@@ -40,18 +46,39 @@ export function clampN(raw: string | null | undefined): number {
 }
 
 /**
+ * Can the warm tier hold this condition at all? ONE derivation, consumed by
+ * the edge Worker (which skips KV in both directions when the answer is no)
+ * and by the chrome's `cacheState` tag (which would otherwise stamp a
+ * search or a hand-typed `?n=48` as `default` — a KV-tier column — while
+ * every one of those requests was served from R2). The rule is the URL-
+ * derivable half of the key-cardinality policy (ADR-0005 addendum,
+ * 2026-09-04): free-text search has no finite key space, and `n` is warmed
+ * only at the two published knob values. The page ceiling is the other
+ * half and needs the snapshot, so it lives in the Worker alone.
+ */
+export function plpWarmable(params: URLSearchParams): boolean {
+  const n = clampN(params.get("n"));
+  const q = (params.get("q") ?? "").trim();
+  return (PLP_N.warmed as readonly number[]).includes(n) && q === "";
+}
+
+/**
  * The environment + cache-state beacon tags, canonicalized from a query
  * string. Wire format (pinned by tests, relied on by the bench runner's
- * batch keys): environment = `n=<effective>|cache=<cold|default>`.
+ * batch keys): environment = `n=<effective>|cache=<cold|default>` — the
+ * REQUESTED column, unchanged. `cacheState` is the tier the request can
+ * actually reach: `cold` (bypass asked), `default` (the warm tier), or
+ * `none` for a condition the warm tier never holds (`plpWarmable`), so RUM
+ * for a search is not blended into the KV column it never touched.
  */
 export function knobTags(search: string): {
   environment: string;
-  cacheState: "cold" | "default";
+  cacheState: "cold" | "default" | "none";
 } {
   const params = new URLSearchParams(search);
   const cache = params.get("cache") === "cold" ? "cold" : "default";
   return {
     environment: `n=${clampN(params.get("n"))}|cache=${cache}`,
-    cacheState: cache,
+    cacheState: cache === "cold" ? "cold" : plpWarmable(params) ? "default" : "none",
   };
 }

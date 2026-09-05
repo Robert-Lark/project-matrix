@@ -323,6 +323,20 @@
         "$TURBO_ROOT$/workers/front/methodology/index.html"
       ]
     },
+    "@pm/edge#test": {
+      // The data-plane guard (workers/edge/test/plp-params.test.js) drives the
+      // Worker over BOTH committed snapshots and reads the crate by
+      // repo-relative path — a path turbo does not hash, because
+      // @pm/snapshot-capture is not a dependency of @pm/edge (and should not
+      // be: a capture tool's tree in the data plane's install for a test-only
+      // read). Cached, a crate re-freeze would replay a stale PASS for exactly
+      // the legs that hold the key policy to the real crate ("every crate
+      // facet value round-trips to a 200"). Uncached like every sibling guard
+      // that drives a Worker over the crate by path (@pm/htmx#test,
+      // @pm/react-next#test, @pm/repo-checks#test): correctness over ~0.5 s
+      // (verify-slice, seams lens, 2026-09-18).
+      "cache": false
+    },
     "@pm/repo-checks#test": {
       "cache": false
     }

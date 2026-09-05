@@ -127,6 +127,31 @@ stated state before the measured step. The revisit sequence (A→B→A) measures
 the return; its fresh twin (A→B→C) measures the honest boundary where no
 cache can help.
 
+**Applied query**:
+The five ADR-0005 §5 params the data plane actually applied to produce a
+tray — `PlpPage.applied`, `null` for an unapplied knob. Every renderer draws
+the rail's selected facet, the sort select's chosen option and the search
+box's value from it, never from the URL, so a client-cache arm showing the
+previous page while a new one is in flight cannot show one condition's
+controls over another's grid. _Avoid_: "the filters in the URL" (the URL is
+the request; `applied` is the answer).
+
+**Facet recount**:
+How the rail's counts are computed under a filter: each group over the items
+passing every applied filter except that group's own, so a count is always
+what the click would return — switching within the selected group, adding
+in the others. Unfiltered it is the whole-crate count. _Avoid_: "global
+counts" for a filtered page (a count that does not predict the click is the
+dead-control falsehood in numbers).
+
+**Warmable condition**:
+A PLP condition the KV warm tier may hold: no search (`q`), `n` at one of the
+two published knob values, page within the filtered set. Everything else is
+served from R2 and marked `x-pm-cache-state: none`. One derivation
+(`plpWarmable`, @pm/measurement) decides it for the Worker and for the RUM
+`cacheState` tag. _Avoid_: "cacheable" without saying by whom — the browser
+and the client-cache arms have their own caches.
+
 **Misapplication exhibit**:
 The fenced fifth PLP option: the same page built with a tool that is wrong
 for this data shape (Apollo Client on REST), measured with the same harness.

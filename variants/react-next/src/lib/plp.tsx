@@ -8,66 +8,81 @@
  * DELIBERATELY SELF-CONTAINED — no import from `render.tsx`, `format.ts` or
  * `cart.ts`, and the release card is re-typed here rather than shared. That is
  * the `pdp-format.ts`/`pdp-cart.ts` precedent, and it is load-bearing rather
- * than stylistic: `tools/origin-suite/suite/pdp.test.ts:641` pins the
- * editorial page at exactly 8 client chunks, `render.tsx` is IN the client
- * graph (`src/app/(editorial)/editorial/error.tsx:1-3` is a client entry that
- * imports `Shell`), and adding an export or a prop there re-groups the chunk
- * set under a published initial-JS cell. `render.tsx`'s own `ReleaseCard`
- * (:135-162) also has no escape hatch for the PLP's POSITIONAL image
- * attributes, so sharing it would drift on every card anyway.
+ * than stylistic: `tools/origin-suite/suite/pdp.test.ts` pins the editorial
+ * page at exactly 8 client chunks, `render.tsx` is IN the client graph, and
+ * adding an export or a prop there re-groups the chunk set under a published
+ * initial-JS cell. `render.tsx`'s own `ReleaseCard` also has no escape hatch
+ * for the PLP's POSITIONAL image attributes, so sharing it would drift on
+ * every card anyway.
  *
  * Framework-neutral by construction (relative imports, no Next API, no
  * "use client"): the pre-merge identity guard in `test/master-identity.test.ts`
  * calls it straight through `react-dom/server`, exactly as the editorial and
  * PDP guards call `render.tsx` and `pdp.tsx`.
  *
- * WHERE THE FACETS COME FROM. This module computes NO facet buckets. The tray
- * carries them (`GET /api/plp` → `PlpPage.facets`, minted by
- * `workers/edge/src/index.js:101-119`), which is ADR-0005 §5's "every strategy
- * delegates filter/sort/search to the data plane" applied to the one
- * derivation that is byte-load-bearing: `packages/reference/render/plp.mjs:22-27`
- * records that `localeCompare` disagreed with the Worker at four positions on
- * the real crate and is ICU-version-dependent. A third copy of that comparator
- * living in a variant is exactly the second-opinion class this repo keeps
- * paying for.
+ * WHERE EVERYTHING COMES FROM: THE PAYLOAD. This module computes NO facet
+ * buckets, filters nothing, sorts nothing — the tray (`GET /api/plp` →
+ * `PlpPage`) carries the paginated slice, the facets RECOUNTED over the
+ * filtered set, and the query the data plane APPLIED, and the whole
+ * `.pm-plp` block is rendered from that one object. That is ADR-0005 §5's
+ * "every strategy delegates filter/sort/search to the data plane" applied to
+ * the last inch: the rail's selected facet, the sort select's chosen option
+ * and the search box's value come from `payload.applied`, never from the URL
+ * the island was asked for. The distinction is live on the two client-cache
+ * arms — under `keepPreviousData`/`previousData` the PREVIOUS tray is on
+ * screen while a new condition is in flight, and controls rendered from the
+ * request would show one condition's selection over another condition's
+ * grid: a toggle-off link that does not toggle off. `carry` contributes only
+ * the three knobs a tray cannot know (`cache`, `run`, `profile`).
+ *
+ * THE RAIL, THE SEARCH FORM AND THE SORT SELECT ARE BACK (2026-09-04). They
+ * were cut on 2026-08-29 because the edge Worker honoured none of the params
+ * they navigated to, and this arm made it worse than htmx's did: it FORWARDED
+ * the params to /api/plp, so the request looked filtered while the payload
+ * was not, and keyed TanStack's cache on them, so identical unfiltered
+ * payloads cached under distinct keys. The plane honours all five now
+ * (ADR-0005 §5 + its 2026-09-04 addendum), so the forwarding is true again.
  */
-import type { PlpPage, Price, ReleaseSummary } from "@pm/data-contract";
+import type { PlpPage, PlpSort, Price, ReleaseSummary } from "@pm/data-contract";
+import {
+  PER_PAGE,
+  PLP_RUN_RE,
+  PLP_SORTS,
+  clampPlpN,
+  clampPlpPage,
+  normalizePlpQ,
+  plpHref,
+  type PlpCondition,
+} from "./plp-condition";
+
+// Kept as exports of THIS module for the guard and the islands, which read
+// them here historically; the definitions moved beside the href rule.
+export { PER_PAGE, clampPlpN, clampPlpPage };
 
 /** Designated hosts — `packages/reference/render/shell.mjs` HOSTS, ported.
  *  Re-typed rather than imported from render.tsx for the chunk reason above;
  *  only the two entries this surface actually links are carried. A card's
  *  title links the PDP's DESIGNATED HOST (`/vanilla/pdp/…`), never this
- *  variant's own PDP — the sparse-matrix rule, asserted at
- *  `tools/origin-suite/suite/pdp.test.ts:514-523`. */
+ *  variant's own PDP — the sparse-matrix rule. */
 export const PLP_HOSTS = {
   pdp: (slug: string) => `/vanilla/pdp/${slug}/`,
 };
 
-/* ── Canonical knobs, mirrored from the contract ──────────────────────────── */
+/** `packages/reference/render/plp.mjs` STYLE_CUT / FORMAT_CUT: all genres,
+ *  the top 12 styles, the top 8 formats, each group titled with its cut. */
+export const STYLE_CUT = 12;
+export const FORMAT_CUT = 8;
 
-/** `packages/reference/render/plp.mjs`. The master renders exactly PER_PAGE
- *  cards, which is what the drift comparison is taken at. */
-export const PER_PAGE = 24;
-
-/** The data-volume knob's canonical bounds. The rule of record is
- *  `packages/measurement/src/beacon.ts:35-40` (`PLP_N` + `clampN`), consumed by
- *  the edge Worker's served condition AND by the chrome's `environment` beacon
- *  tag — so a variant that clamped differently would serve one condition and
- *  publish another. Re-implemented rather than imported because
- *  `@pm/measurement` publishes TypeScript source (`"exports": "./src/index.ts"`)
- *  and this module is compiled by Next, which does not transpile workspace
- *  packages without `transpilePackages`. The duplication is not left to trust:
- *  `test/master-identity.test.ts` asserts this function equals the real
- *  `clampN` over a table of inputs, including the junk and out-of-range ones. */
-export function clampPlpN(raw: string | null | undefined): number {
-  const parsed = parseInt(raw ?? "", 10) || PER_PAGE;
-  return Math.min(Math.max(parsed, 1), 240);
-}
-
-/** `?page=` is a positive integer; anything else is page 1. */
-export function clampPlpPage(raw: string | null | undefined): number {
-  return Math.max(parseInt(raw ?? "", 10) || 1, 1);
-}
+/** The sort select's options (plp.mjs SORT_OPTIONS). The default is the
+ *  snapshot's committed order — id-ascending — labelled as such. */
+export const SORT_OPTIONS: readonly (readonly [PlpSort | "", string])[] = [
+  ["", "Catalogue order"],
+  ["year-desc", "Year — newest first"],
+  ["year-asc", "Year — oldest first"],
+  ["price-asc", "Price — low to high"],
+  ["price-desc", "Price — high to low"],
+  ["title", "Title — A to Z"],
+];
 
 /* ── Canonical formatting rules ───────────────────────────────────────────────
  * `packages/reference/render/lib.mjs` is the rules of record; re-implemented,
@@ -97,27 +112,6 @@ export function metaLine(summary: Pick<ReleaseSummary, "format" | "year">): stri
   return summary.year == null ? summary.format : `${summary.format} · ${summary.year}`;
 }
 
-/* ── Within-surface condition links ───────────────────────────────────────── */
-
-/**
- * `packages/reference/render/plp.mjs:63-68`, ported EXACTLY — including what it
- * does not carry.
- *
- * The renderer's own comment says these hrefs "preserve the WHOLE condition
- * (URL-as-receipt, ADR-0004 §5)", and the code preserves `n` only: `?cache=`
- * is dropped, so a paginate click from `?cache=cold` silently lands on the
- * edge-cached condition. That is a defect in the CONTRACT, reported with its
- * diff rather than fixed here — a variant that unilaterally improved on the
- * master would fork it, and the htmx PLP arriving in parallel would then have
- * to guess which behaviour to copy.
- */
-export function pageHref(page: number, n: number): string {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  if (n !== PER_PAGE) params.set("n", String(n));
-  return `?${params.toString()}`;
-}
-
 /* ── Components ───────────────────────────────────────────────────────────── */
 
 /** `packages/reference/render/lib.mjs namedGlyph` — a bare "—" is not an
@@ -134,9 +128,9 @@ function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
 
 /**
  * The release card (`shell.mjs releaseCard`), with the PLP's POSITIONAL image
- * attributes (`plp.mjs:76-86`): card 1 eager + `fetchpriority="high"`, cards
- * 2-4 eager, the rest `loading="lazy" decoding="async"`; every card carries
- * the same `sizes`. The index boundary is `< 4`, and it is a needle — get it
+ * attributes (`plp.mjs`): card 1 eager + `fetchpriority="high"`, cards 2-4
+ * eager, the rest `loading="lazy" decoding="async"`; every card carries the
+ * same `sizes`. The index boundary is `< 4`, and it is a needle — get it
  * wrong and exactly one of twenty-four cards diverges.
  *
  * React spells the prop `fetchPriority` and emits it CAMEL-CASED into the wire
@@ -145,8 +139,8 @@ function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
  * the identity guard lowercases attribute names before normalizing (linkedom
  * does not). React ALSO hoists a `<link rel="preload" as="image">` out of the
  * card for every eager image; `link` is a DELIVERY element the drift gate
- * drops unconditionally (`normalize.ts:295`), so it is invisible to the
- * contract and visible in the byte cell, which is the correct split.
+ * drops unconditionally, so it is invisible to the contract and visible in
+ * the byte cell, which is the correct split.
  */
 function ReleaseCard({ summary, index }: { summary: ReleaseSummary; index: number }) {
   const price = formatPrice(summary.priceFrom);
@@ -183,98 +177,210 @@ function ReleaseCard({ summary, index }: { summary: ReleaseSummary; index: numbe
   );
 }
 
+/** The three URL knobs a tray cannot know (plp.mjs `renderPlpBlock`'s second
+ *  argument). Everything else the block renders comes from the payload. */
+export interface PlpCarry {
+  cache?: "cold" | "default";
+  run?: string;
+  profile?: string;
+}
+
+type FacetGroupKey = "genres" | "styles" | "formats";
+type FacetParam = "genre" | "style" | "format";
+
+/** The condition the block's hrefs are built from: the payload's served
+ *  state plus the carried knobs. `n` is the payload's `perPage`, never a
+ *  prop — the served value is the only one the hrefs may spell. */
+function blockCondition(payload: PlpPage, carry: PlpCarry): PlpCondition {
+  return {
+    n: payload.perPage,
+    page: payload.page,
+    cache: carry.cache === "cold" ? "cold" : "default",
+    run: carry.run ?? "",
+    profile: carry.profile ?? "",
+    genre: payload.applied.genre,
+    style: payload.applied.style,
+    format: payload.applied.format,
+    sort: payload.applied.sort,
+    q: payload.applied.q,
+  };
+}
+
+/** A GET form's hidden inputs (plp.mjs `hiddenKnobs`): every non-default
+ *  knob except `page` (a new filter starts at page 1) and the form's own
+ *  control, in canonical order so DOM-order serialization spells the URL the
+ *  way the href rule does. `defaultValue`, not `value`: these are
+ *  uncontrolled and React must not warn about a missing onChange. */
+function HiddenKnobs({
+  condition,
+  own,
+  side,
+}: {
+  condition: PlpCondition;
+  own: "q" | "sort";
+  /** A browser serializes a GET form in TREE order, so the knobs that
+   *  canonically FOLLOW the form's own control (the sort form's `q`) render
+   *  AFTER it — `side="after"` — and a JS-off submit spells the condition the
+   *  way the href rule does (plp.mjs `hiddenKnobs`; verify-slice 2026-09-18). */
+  side: "before" | "after";
+}) {
+  const fields: [string, string][] = [];
+  const knobs = ["genre", "style", "format", "sort", "q"] as const;
+  const ownAt = knobs.indexOf(own);
+  if (side === "before") {
+    if (condition.n !== PER_PAGE) fields.push(["n", String(condition.n)]);
+    if (condition.cache === "cold") fields.push(["cache", "cold"]);
+    // Bounded like the reference's CARRY_RE and this arm's own href rule
+    // (plpHistoryUrl): a junk `run`/`profile` is dropped, never re-emitted.
+    // The routes blank a malformed carry before it gets here, but PlpArticle
+    // is an exported seam, and unbounded here it was the one place the three
+    // renderers disagreed (verify-slice, skeptic lens, 2026-09-18).
+    if (PLP_RUN_RE.test(condition.run)) fields.push(["run", condition.run]);
+    if (PLP_RUN_RE.test(condition.profile)) fields.push(["profile", condition.profile]);
+  }
+  knobs.forEach((key, i) => {
+    const value = condition[key];
+    if (key === own || value === null) return;
+    if ((i < ownAt) === (side === "before")) fields.push([key, value]);
+  });
+  return (
+    <>
+      {fields.map(([name, value]) => (
+        <input key={name} type="hidden" name={name} defaultValue={value} />
+      ))}
+    </>
+  );
+}
+
 /**
  * The catalogue, assembled — the whole `div.pm-plp` subtree.
  *
- * `onSelectPage` is the seam every data strategy plugs into. When it is
- * absent (the server render, and this guard's render) the pagination anchors
- * are exactly the master's plain links, so the SERVED page is byte-faithful
- * and works JS-off — ADR-0005 §8's "the anchor-link core stays JS-off
- * functional". When a strategy island supplies it, the click is intercepted
- * and the strategy's data layer answers instead.
+ * `onNavigate` is the seam every data strategy plugs into. When it is absent
+ * (the server render, and this guard's render) every anchor is exactly the
+ * master's plain link and every form is a plain GET form, so the SERVED page
+ * is byte-faithful and works JS-off — ADR-0005 §8's "the anchor-link core
+ * stays JS-off functional". When a strategy island supplies it, the click or
+ * submit is intercepted and the strategy's data layer answers instead, with
+ * the SAME condition the anchor's href spells.
  *
- * WHAT THE CONTRACT COVERS — ALL OF IT, NOW.
- * `renderPlp` used to take no `page` argument: it rendered page 1 from
- * `summaries.slice(0, n)` and always marked "1" current, while the master
- * itself linked `?page=2..5` on every visit. Page ≥ 2 was therefore not
- * expressible by the reference at all, and both arms had to generalize it
- * unaided — which they did DIFFERENTLY: this one emitted `rel="next"`
- * unconditionally and rendered "0–0" on an empty page, htmx gated the link
- * and rendered "0". Two arms serving structurally different DOM for one URL
- * is precisely what the canonical markup contract exists to prevent, and no
- * gate could see it because the only thing either was compared against
- * rendered page 1.
- *
- * The reference is now page-aware (`renderPlp(snapshot, { page })`), so the
- * generalization is the CONTRACT's and this file mirrors it rather than
- * inventing it: sliding window, `--current` on the served page, `Next` only
- * when `page < totalPages`, and "0" for an empty page. At page 1 it reduces
- * to the committed master byte-for-byte, which is what the identity guard
- * proves, and the cross-arm leg below proves the rest.
+ * Everything rendered derives from `payload` (see the header): the sliding
+ * five-wide page window, the `--current` marker, `Next` only when
+ * `page < totalPages`, "0" for an empty page, the selected facet, the chosen
+ * sort, the search box's value. `carry` adds only cache/run/profile to the
+ * hrefs. At the default condition it reduces to the committed master
+ * byte-for-byte, which the identity guard proves; `plp-arms-agree` holds
+ * both arms to the reference for the conditions the master cannot express.
  */
 export function PlpArticle({
   payload,
-  n,
-  onSelectPage,
+  carry = {},
+  onNavigate,
 }: {
   payload: PlpPage;
-  n: number;
-  onSelectPage?: (page: number) => void;
+  carry?: PlpCarry;
+  onNavigate?: (next: PlpCondition) => void;
 }) {
+  const condition = blockCondition(payload, carry);
+  const { applied } = payload;
   const shown = payload.items.length;
   const start0 = (payload.page - 1) * payload.perPage;
-  // An empty page reads "0", not "0–0". The master renders the same string
-  // from the same arithmetic (`plp.mjs` `range`), and htmx's arm does too —
-  // one sentence, three renderers, because a screen reader reads whichever
-  // one the visitor landed on.
+  // An empty page reads "0", not "0–0" — one sentence, three renderers.
   const range = shown === 0 ? "0" : `${start0 + 1}–${start0 + shown}`;
-  // The window SLIDES with the served page rather than anchoring at 1.
-  // Anchoring is what the reference does (`plp.mjs:88`), and it is correct
-  // there because `renderPlp` only ever renders page 1 — but generalized to
-  // page N it means no rendered link equals the served page from page 6 on,
-  // so the `--current` marker never renders and a full grid of 24 real cards
-  // ships with ZERO `aria-current` in its pagination. Reachable in one click
-  // from page 5's own Next link, and found by the verification pass reading
-  // this unit's own probe output, which had printed it.
-  //
-  // At page 1 this reduces to the reference exactly — `start` is 1 and the
-  // window is [1..5] — which is what the identity legs prove.
   const PAGE_WINDOW = 5;
   const span = Math.min(payload.totalPages, PAGE_WINDOW);
-  const start = Math.min(
+  const first = Math.min(
     Math.max(payload.page - Math.floor(PAGE_WINDOW / 2), 1),
     Math.max(payload.totalPages - PAGE_WINDOW + 1, 1),
   );
-  const pages = Array.from({ length: span }, (_, i) => start + i);
-  // Gated, matching the master (`plp.mjs` `hasNext`) and htmx's arm. It was
-  // unconditional here — mirroring a reference that could only render page 1
-  // — which meant "Next" walked forever into empty pages, and meant the two
-  // PLP arms served structurally different DOM for the same URL: htmx gated
-  // it, this one did not. The reference is now page-aware, so there is one
-  // answer and all three renderers give it.
+  const pages = Array.from({ length: span }, (_, i) => first + i);
   const hasNext = payload.page < payload.totalPages;
 
-  const pageLink = (page: number, rel?: "next", label?: string) => (
-    <a
-      key={rel ?? page}
-      className="pm-pagination__link"
-      href={pageHref(page, n)}
-      rel={rel}
-      onClick={
-        onSelectPage
-          ? (event) => {
-              // Modified clicks stay real navigations (open-in-new-tab must
-              // keep working); everything else is answered by the strategy.
-              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-              event.preventDefault();
-              onSelectPage(page);
-            }
-          : undefined
+  const intercept = (next: PlpCondition) =>
+    onNavigate
+      ? (event: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; preventDefault: () => void }) => {
+          // Modified clicks stay real navigations (open-in-new-tab must keep
+          // working); everything else is answered by the strategy.
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          onNavigate(next);
+        }
+      : undefined;
+
+  const pageLink = (page: number, rel?: "next", label?: string) => {
+    const next = { ...condition, page };
+    return (
+      <a
+        key={rel ?? page}
+        className="pm-pagination__link"
+        href={plpHref(condition, { page })}
+        rel={rel}
+        onClick={intercept(next)}
+      >
+        {label ?? String(page)}
+      </a>
+    );
+  };
+
+  const facetGroup = (title: string, param: FacetParam, group: FacetGroupKey, cut: number) => {
+    const buckets = payload.facets[group];
+    const selected = applied[param];
+    let list = cut ? buckets.slice(0, cut) : buckets;
+    // The selected value is always listed: outside its group's cut it is
+    // appended after the cut (plp.mjs facetGroup).
+    if (selected !== null && !list.some((b) => b.value === selected)) {
+      const own = buckets.find((b) => b.value === selected);
+      if (own) list = [...list, own];
+    }
+    const cutNote = cut && buckets.length > cut ? ` · top ${cut} of ${buckets.length}` : "";
+    return (
+      <section className="pm-facets__group">
+        <h3 className="pm-facets__title">
+          {title}
+          {cutNote}
+        </h3>
+        <ul className="pm-facets__list" role="list">
+          {list.map((b) => {
+            const isSelected = b.value === selected;
+            // A selected facet's href REMOVES its param — the same link
+            // toggles it off. Every facet href resets `page`.
+            const next: PlpCondition = { ...condition, page: 1, [param]: isSelected ? null : b.value };
+            return (
+              <li key={b.value}>
+                <a
+                  className="pm-facets__facet"
+                  href={plpHref(condition, { page: 1, [param]: isSelected ? null : b.value })}
+                  aria-current={isSelected ? "true" : undefined}
+                  onClick={intercept(next)}
+                >
+                  <span className="pm-facets__value">{b.value}</span>
+                  <span className="pm-facets__count">{String(b.count)}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
+  };
+
+  // The two GET forms: plain navigation JS-off (the browser serializes the
+  // hidden knobs + the control in canonical order); intercepted JS-on into
+  // the same condition the submit would have reached.
+  const onSearch = onNavigate
+    ? (event: { currentTarget: HTMLFormElement; preventDefault: () => void }) => {
+        event.preventDefault();
+        const raw = new FormData(event.currentTarget).get("q");
+        onNavigate({ ...condition, page: 1, q: normalizePlpQ(typeof raw === "string" ? raw : null) });
       }
-    >
-      {label ?? String(page)}
-    </a>
-  );
+    : undefined;
+  const onSort = onNavigate
+    ? (event: { currentTarget: HTMLFormElement; preventDefault: () => void }) => {
+        event.preventDefault();
+        const raw = new FormData(event.currentTarget).get("sort");
+        const sort = typeof raw === "string" && raw !== "" ? raw : null;
+        onNavigate({ ...condition, page: 1, sort });
+      }
+    : undefined;
 
   return (
     <div className="pm-plp">
@@ -285,44 +391,101 @@ export function PlpArticle({
             Showing <span className="pm-toolbar__n">{range}</span> of{" "}
             <span className="pm-toolbar__n">{String(payload.total)}</span> releases
           </p>
-          {/* The search form, the sort select and the facet rail were here,
-              mirroring the master. They are OUT with it: the edge Worker
-              reads `n`, `page`, `run` and `cache` and nothing else, so every
-              one of them navigated to a filtered URL and got the unfiltered
-              grid back under a count that still said "of 500". This arm made
-              it worse than htmx's did — it FORWARDED the params to /api/plp,
-              so the request looked filtered, and it put them in the TanStack
-              query key, so identical unfiltered payloads cached under
-              distinct keys and the client-cache cell measured a fiction.
-              They return with ADR-0005 §5's params — see the plp.mjs
-              docblock for why that is a unit and not a merge fix. */}
+          <form className="pm-toolbar__search" method="get" action="" onSubmit={onSearch}>
+            <HiddenKnobs condition={condition} own="q" side="before" />
+            <div>
+              <label className="pm-toolbar__label" htmlFor="plp-q">
+                Search the crate
+              </label>
+              {/* `key`: both controls are UNCONTROLLED (`defaultValue`), the
+                  plain-GET-form shape, and React never re-applies a changed
+                  defaultValue to a mounted select or a dirty input. So on
+                  Back/Forward — `applied` changes under a live island — the
+                  select kept the old sort and the box the old search over a
+                  grid that had moved: one condition's controls over another's,
+                  the very thing addendum Q2 exists to prevent. Keying each on
+                  its applied value remounts it when that value changes and
+                  leaves the SSR bytes untouched (verify-slice, 2026-09-18). */}
+              <input
+                key={applied.q ?? ""}
+                className="pm-toolbar__input"
+                id="plp-q"
+                name="q"
+                type="search"
+                autoComplete="off"
+                defaultValue={applied.q ?? undefined}
+              />
+            </div>
+            <HiddenKnobs condition={condition} own="q" side="after" />
+            <button className="pm-button pm-button--secondary" type="submit">
+              Search
+            </button>
+          </form>
+          <form className="pm-toolbar__sort" method="get" action="" onSubmit={onSort}>
+            <HiddenKnobs condition={condition} own="sort" side="before" />
+            <div>
+              <label className="pm-toolbar__label" htmlFor="plp-sort">
+                Sort
+              </label>
+              <select
+                key={applied.sort ?? ""}
+                className="pm-toolbar__select"
+                id="plp-sort"
+                name="sort"
+                defaultValue={applied.sort ?? ""}
+              >
+                {SORT_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <HiddenKnobs condition={condition} own="sort" side="after" />
+            <button className="pm-button pm-button--secondary" type="submit">
+              Apply
+            </button>
+          </form>
         </div>
       </header>
       <div className="pm-plp__body">
+        <nav className="pm-facets" aria-label="Filters">
+          {facetGroup("Genre", "genre", "genres", 0)}
+          {facetGroup("Style", "style", "styles", STYLE_CUT)}
+          {facetGroup("Format", "format", "formats", FORMAT_CUT)}
+        </nav>
         <div className="pm-plp__results">
           <ul className="pm-grid" role="list">
             {payload.items.map((summary, i) => (
               <ReleaseCard key={summary.id} summary={summary} index={i} />
             ))}
           </ul>
-          <nav className="pm-pagination" aria-label="Pages">
-            {pages.map((p) =>
-              p === payload.page ? (
-                <span
-                  key={p}
-                  className="pm-pagination__link pm-pagination__link--current"
-                  aria-current="page"
-                >
-                  {String(p)}
-                </span>
-              ) : (
-                pageLink(p)
-              ),
-            )}
-            {hasNext ? pageLink(payload.page + 1, "next", "Next") : null}
-          </nav>
+          {/* An EMPTY result has no pagination landmark at all (plp.mjs): a
+              lone current "1" over "Showing 0 of 0" is page 1 of 0. */}
+          {payload.totalPages > 0 ? (
+            <nav className="pm-pagination" aria-label="Pages">
+              {pages.map((p) =>
+                p === payload.page ? (
+                  <span
+                    key={p}
+                    className="pm-pagination__link pm-pagination__link--current"
+                    aria-current="page"
+                  >
+                    {String(p)}
+                  </span>
+                ) : (
+                  pageLink(p)
+                ),
+              )}
+              {hasNext ? pageLink(payload.page + 1, "next", "Next") : null}
+            </nav>
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
+
+/** Exported for the guard: the sort list the select offers must be the data
+ *  plane's (a value outside it is a 404, not a default). */
+export { PLP_SORTS };

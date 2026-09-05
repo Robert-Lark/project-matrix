@@ -7,7 +7,7 @@
  * of attributes.
  */
 import { describe, expect, it } from "vitest";
-import { PROFILE_IDS } from "@pm/measurement";
+import { PLP_N, PROFILE_IDS, plpWarmable } from "@pm/measurement";
 import { renderChrome } from "../src/chrome";
 import { SURFACE_CONTROLS, type SurfaceControls } from "../src/config";
 
@@ -215,6 +215,56 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     const html = renderChrome(plpCtx);
     expect(html).toContain('aria-current="true">n=24<');
     expect(html).toMatch(/href="\/react-next\/plp\/plain\/\?cache=cold&amp;n=240"/);
+  });
+
+  it("the n knob keeps filters, sort and search but drops `page` — a density change re-paginates", () => {
+    // Page 8 at n=24 is past the end at n=240; carrying it would land the
+    // visitor on the honest empty "0" page from an instrument control.
+    const html = renderChrome({
+      ...plpCtx,
+      search: "?cache=cold&page=8&genre=Jazz&style=Modal&sort=title&q=blue&run=r1&profile=slow-4g-mid-phone",
+    });
+    const row = html.match(/<p class="pm-chrome__row"><span class="pm-chrome__key">data volume<\/span>[\s\S]*?<\/p>/)?.[0] ?? "";
+    expect(row).toContain("n=240");
+    const href = row.match(/href="([^"]+)"/)?.[1] ?? "";
+    expect(href).not.toContain("page=");
+    for (const kept of ["cache=cold", "genre=Jazz", "style=Modal", "sort=title", "q=blue", "run=r1", "profile=slow-4g-mid-phone", "n=240"]) {
+      expect(href, `n knob dropped ${kept}`).toContain(kept);
+    }
+  });
+
+  it("strategy presets carry the visitor's whole condition — only `cache` moves with the preset", () => {
+    // Switching strategy from a filtered, dense, nonced page used to land on
+    // the unfiltered first page at n=24 (`path + preset.query` replaced the
+    // whole query), on the one surface whose axis the switcher is.
+    const html = renderChrome({
+      ...plpCtx,
+      pathname: "/htmx/plp/",
+      variant: "htmx",
+      search: "?cache=cold&genre=Jazz&style=Modal&n=240&page=2&run=r1&profile=slow-4g-mid-phone",
+    });
+    const cells = html.match(/<a class="pm-chrome__cell" href="([^"]+)">([^<]+)<\/a>/g) ?? [];
+    const hrefs = Object.fromEntries(
+      cells.map((c) => {
+        const m = c.match(/href="([^"]+)">([^<]+)</)!;
+        return [m[2]!, m[1]!.replace(/&amp;/g, "&")];
+      }),
+    );
+    // The cold presets keep cache=cold; the edge preset CLEARS it; every other knob rides along.
+    expect(hrefs["No caching (cold)"]).toBe(
+      "/react-next/plp/plain/?cache=cold&genre=Jazz&style=Modal&n=240&page=2&run=r1&profile=slow-4g-mid-phone",
+    );
+    expect(hrefs["Client cache — TanStack Query"]).toContain("/react-next/plp/tanstack/?cache=cold&genre=Jazz");
+    expect(hrefs["Edge cache — KV"]).toBe(
+      "/react-next/plp/plain/?genre=Jazz&style=Modal&n=240&page=2&run=r1&profile=slow-4g-mid-phone",
+    );
+    // The current preset (loaders, cold) is a span, not an anchor.
+    expect(html).toContain('aria-current="page">Server-rendered — loaders + PE</span>');
+    expect(hrefs["Server-rendered — loaders + PE"]).toBeUndefined();
+    // And from the bare edge condition the cold presets still spell exactly `?cache=cold`.
+    const bare = renderChrome({ ...plpCtx, search: "" });
+    expect(bare).toContain('href="/react-next/plp/tanstack/?cache=cold"');
+    expect(bare).toContain('href="/htmx/plp/?cache=cold"');
   });
 
   it("readout and replay slots state the absence, not a milestone that passed", () => {
@@ -556,5 +606,22 @@ describe("the interaction cell's three new render branches (ADR-0001 addendum T)
     });
     expect(zero).toContain("Indistinguishable at this sample size.");
     expect(zero).not.toContain("the same bytes, not a ranking");
+  });
+});
+
+describe("the PLP n knob IS the warm set (ADR-0005 addendum, 2026-09-04)", () => {
+  it("SURFACE_CONTROLS.plp.nKnob is PLP_N.warmed itself — one derivation with the edge Worker and the bench runner", () => {
+    // A literal copy of the set sat here with nothing pinning it to the tier
+    // (verify-slice, seams lens, 2026-09-18): a later `[24, 120, 240]` would
+    // have put an "Edge cache — KV" preset on the instrument that the tier
+    // never serves warm, while the bench runner refused the same n. Identity,
+    // not equality: the knob must BE the derivation, not agree with it today.
+    const knob = SURFACE_CONTROLS.plp!.nKnob!;
+    expect(knob).toBe(PLP_N.warmed);
+    expect([...knob]).toEqual([24, 240]);
+    for (const n of knob) {
+      expect(plpWarmable(new URLSearchParams({ n: String(n) })), `n=${n}`).toBe(true);
+    }
+    expect(plpWarmable(new URLSearchParams({ n: "48" }))).toBe(false);
   });
 });

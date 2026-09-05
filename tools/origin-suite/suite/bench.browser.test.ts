@@ -25,6 +25,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { computeCostReport, parseRateCard, renderReport } from "@pm/cost-calculator";
 import { SURFACE_CONTROLS } from "@pm/switcher";
 import {
+  PLP_N,
   PROFILE_SPEC_VERSION,
   PROFILES,
   kbpsToBytesPerSecond,
@@ -465,10 +466,32 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
     ).rejects.toThrowError(/fenced exhibit/);
   });
 
+  it("runBatch refuses a PLP batch at an n the warm tier never holds — before driving anything", async () => {
+    // The PLP key policy (ADR-0005 addendum, 2026-09-04) warms n ∈ {24, 240}
+    // only; a PLP batch at any other n would measure R2 under a column
+    // labelled warm, and on react-next nothing in the receipt could say so
+    // (its tray fetch is server-side). The fence is a mechanism, like the
+    // fenced-exhibit refusal below: a typo cannot mint an unfalsifiable receipt.
+    await expect(
+      runBatch({
+        origin: ORIGIN,
+        // kv-exempt: runBatch refuses the unwarmed n before any request is made
+        targets: [{ path: "/react-next/plp/plain/", interactionId: "none" }],
+        profileId: PROFILE.id,
+        runsPerUrl: 1,
+        n: 48,
+        repoRoot,
+      }),
+    ).rejects.toThrow(/warm tier holds only n/);
+    // A non-PLP target at the same n is not the PLP's business.
+    expect(PLP_N.warmed).toEqual([24, 240]);
+  });
+
   it("runBatch rejects a batch carrying the fenced Apollo route — slashless, the 308 shape — before driving anything", async () => {
     await expect(
       runBatch({
         origin: ORIGIN,
+        // kv-exempt: runBatch refuses the fenced target before any request is made
         targets: [{ path: "/react-next/plp/apollo", interactionId: "body-click" }],
         profileId: PROFILE.id,
         runsPerUrl: 1,

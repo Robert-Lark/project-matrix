@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { loadPlp } from "@/lib/edge";
 import { conditionFromSearchParams } from "@/lib/plp-condition";
 import { Shell } from "@/lib/render";
@@ -26,6 +27,8 @@ export default async function PlpPlainPage({
 }) {
   const condition = conditionFromSearchParams(await searchParams);
   const initial = await loadPlp(condition);
+  // A facet or sort value the snapshot does not hold: a 404, not an error.
+  if (!initial) notFound();
 
   return (
     <Shell current="plp">

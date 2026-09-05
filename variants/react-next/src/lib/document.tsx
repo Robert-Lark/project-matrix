@@ -48,10 +48,12 @@ export const PDP_CSS: readonly string[] = [
   "surfaces/pdp.css",
 ];
 
-/** The PLP surface's full list (plp.mjs `css`, after the shell's). */
+/** The PLP surface's full list (plp.mjs PLP_CSS, after the shell's).
+ *  `facets.css` is back with the rail it styles (2026-09-04). */
 export const PLP_CSS: readonly string[] = [
   ...SHELL_CSS,
   "components/release-card.css",
+  "components/facets.css",
   "components/toolbar.css",
   "components/pagination.css",
   "surfaces/plp.css",

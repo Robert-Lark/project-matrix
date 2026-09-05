@@ -4,6 +4,7 @@
 // here. The front Worker forwards the ORIGINAL request untouched, so the
 // /htmx/ prefix — routes, asset URLs, redirects — is this Worker's own duty.
 import {
+  plpConditionHref,
   renderEditorialPage,
   renderPlpFragment,
   renderPlpPage,
@@ -129,21 +130,38 @@ async function loadEditorialData(env) {
  *  - `n` — the data-volume knob (`nKnob: [24, 240]`), cell 5's variable.
  *  - `page` — pagination, the one navigation the data plane implements.
  *
- * Deliberately ABSENT: the five canonical facet params ADR-0005 §5 makes
- * "the PLP build's contract" — `genre`, `style`, `format`, `sort`, `q`.
- * The edge Worker has none of them today (verified: no such parameter is
- * read anywhere in workers/edge/src/index.js), so the master's facet
- * links, search form and sort select are live markup with nothing behind
- * them. Forwarding names that would not make them work; it would only hide
- * which half is missing. The gap is reported in this unit's handoff, not
- * papered over here.
+ *  - `genre`, `style`, `format`, `sort`, `q` — ADR-0005 §5's five, honoured
+ *    by the data plane since 2026-09-04. Between 2026-08-28 and then this
+ *    list deliberately OMITTED them: the edge read none of them, so
+ *    forwarding their names "would not filter anything; it would only make
+ *    the request look like it had", and the rail and forms were cut from
+ *    the master rather than shipped inert. They are back, filtering.
  *
  * NOTE the effective values are read back off the RESPONSE (`perPage`,
- * `page`), never re-derived here: `clampN` and the page floor live in the
- * edge Worker, and two implementations of one clamp is how the served page
- * and the beacon's environment tag come to disagree.
+ * `page`, `applied`), never re-derived here: `clampN`, the page floor and
+ * the facet-value validation live in the edge Worker, and two
+ * implementations of one rule is how the served page and the beacon's
+ * environment tag come to disagree. `profile` is NOT forwarded: it is the
+ * chrome's snapshot selector, not a data-plane knob — the renderer carries
+ * it in hrefs only.
  */
-const PLP_KNOBS = ["n", "page", "cache", "run"];
+const PLP_KNOBS = ["n", "page", "cache", "run", "genre", "style", "format", "sort", "q"];
+
+/** A tray 400 — a facet or sort value the snapshot does not hold. Distinct
+ *  from every other non-2xx (the data plane NOT answering) because the page
+ *  must say a different thing: a 404, not a 503. */
+class PlpBadRequest extends Error {}
+
+/** The three URL knobs the tray cannot know and every in-surface href must
+ *  carry (packages/reference/render/plp.mjs conditionHref). Read raw; the
+ *  renderer bounds `run`/`profile` before emitting them. */
+function plpCarry(url) {
+  return {
+    cache: url.searchParams.get("cache") === "cold" ? "cold" : undefined,
+    run: url.searchParams.get("run") ?? undefined,
+    profile: url.searchParams.get("profile") ?? undefined,
+  };
+}
 
 async function loadPlpData(env, url) {
   const params = new URLSearchParams();
@@ -154,6 +172,7 @@ async function loadPlpData(env, url) {
   const query = params.toString();
   const path = query ? `/api/plp?${query}` : "/api/plp";
   const res = await edgeFetch(env, path);
+  if (res.status === 400) throw new PlpBadRequest(`GET ${path} -> 400`);
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   const data = await res.json();
   assertPlpPayload(path, data);
@@ -207,7 +226,13 @@ export function assertPlpPayload(path, data) {
     typeof data.facets === "object" &&
     Array.isArray(data.facets.genres) &&
     Array.isArray(data.facets.styles) &&
-    Array.isArray(data.facets.formats);
+    Array.isArray(data.facets.formats) &&
+    // `applied` (2026-09-04): the rail's selected state is rendered from it,
+    // so a tray without it — a pre-`v2:` warm entry, were one ever served —
+    // is a 503 at the boundary, never a TypeError inside the template.
+    data.applied !== null &&
+    typeof data.applied === "object" &&
+    ["genre", "style", "format", "sort", "q"].every((k) => k in data.applied);
   if (!ok) throw new Error(`GET ${path} -> payload does not match the PLP tray contract`);
 }
 
@@ -296,13 +321,30 @@ export default {
       try {
         const { data, cacheState } = await loadPlpData(env, url);
         const partial = wantsPartial(request);
-        const body = partial ? renderPlpFragment(data) : renderPlpPage(data);
+        const carry = plpCarry(url);
+        const body = partial ? renderPlpFragment(data, carry) : renderPlpPage(data, carry);
         const headers = { ...(partial ? HTML_PARTIAL : HTML_VARY_HX) };
         // Only when the edge actually sent one: inventing a value would be
         // worse than the absence it replaces.
         if (cacheState) headers[CACHE_STATE] = cacheState;
+        // A boosted swap pushes the REQUEST URL by default — for a boosted
+        // form that is the raw typed value in htmx's own encoding. The
+        // address bar should name the condition the swap now shows, spelled
+        // the way every link on the page spells it (the one href rule), so
+        // the receipt a visitor copies is canonical on this arm too.
+        if (partial) headers["HX-Push-Url"] = `${url.pathname}${plpConditionHref(data, carry)}`;
         return new Response(body, { headers });
-      } catch {
+      } catch (err) {
+        // A facet or sort value the snapshot does not hold: the plane
+        // ANSWERED (400), so this is a 404 that says so — never the
+        // "data plane didn't answer" shell, which would report a hand-typed
+        // `?genre=jazz` as an outage. `none`: not a warm-tier resource.
+        if (err instanceof PlpBadRequest) {
+          return new Response(renderUnavailablePage({ current: "plp", reason: "no-such-filter" }), {
+            status: 404,
+            headers: { ...HTML, [CACHE_STATE]: "none" },
+          });
+        }
         // `current: "plp"` — the fallback marks the surface the visitor is
         // actually on. Editorial's own 503 above keeps the default and stays
         // byte-identical to what its receipts were measured against.

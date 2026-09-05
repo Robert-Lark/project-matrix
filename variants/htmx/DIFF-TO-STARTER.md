@@ -88,10 +88,14 @@ Pinned tooling: `htmx.org 2.0.10` (exact — see decision 2), `wrangler
    E names exactly this case), because editorial's one interaction is client
    cart state, which hypermedia does not own. That note said the entry would
    be added deliberately if a later surface put `hx-*` on a page, and the
-   PLP is that surface: its pagination links are real links enhanced into a
-   partial swap (ADR-0005 §1), which is **three attributes — `hx-boost`,
-   `hx-target`, `hx-swap` — on the ONE `<nav class="pm-pagination">`, 56 B
-   raw**. `attrPatterns` and `classPatterns` stay empty: this Worker emits
+   PLP is that surface: its pagination links, facet links and both toolbar
+   forms are real controls enhanced into a partial swap (ADR-0005 §1), which
+   is **three attribute names — `hx-target` and `hx-swap` on the `.pm-plp`
+   root, `hx-boost` on the four navigation containers** (the rail, the two
+   forms, the pagination), never on the root and never on a card link — a
+   root-level boost would swap a PDP document into the grid. (Until the PLP
+   data plane landed on 2026-09-04 only the pagination was boosted: the other
+   controls had no params behind them and were cut from the master.) `attrPatterns` and `classPatterns` stay empty: this Worker emits
    the markup it is asked for and wraps nothing, so the registration is all
    MECHANISM (the qwik shape, not the placeholder's). `^hx-` is a prefix
    rather than three literal names because the class exists for a paradigm's

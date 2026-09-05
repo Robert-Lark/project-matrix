@@ -118,10 +118,12 @@ const EDITORIAL_CSS = [
   "surfaces/editorial.css",
 ];
 
-/** The PLP's per-surface sheets (packages/reference/render/plp.mjs:143-149). */
+/** The PLP's per-surface sheets (packages/reference/render/plp.mjs PLP_CSS).
+ *  `facets.css` is back with the rail it styles (2026-09-04). */
 const PLP_CSS = [
   ...SHELL_CSS,
   "components/release-card.css",
+  "components/facets.css",
   "components/toolbar.css",
   "components/pagination.css",
   "surfaces/plp.css",
@@ -325,107 +327,159 @@ ${releaseCard(featured)}
       (packages/reference/render/plp.mjs), never imported: same rule as the
       editorial page above. ─────────────────────────────────────────────── */
 
-/** The reference's defaults, re-typed (plp.mjs:18-20). PER_PAGE is
- *  load-bearing beyond the default page size: `pageHref` omits `n` when it
- *  equals PER_PAGE, so the master's hrefs read `?page=2` rather than
- *  `?page=2&n=24`. */
+/** The reference's defaults, re-typed (plp.mjs PER_PAGE / STYLE_CUT /
+ *  FORMAT_CUT). PER_PAGE is load-bearing beyond the default page size:
+ *  `conditionHref` omits `n` when it equals PER_PAGE, so the master's hrefs
+ *  read `?page=2` rather than `?page=2&n=24`. */
 const PER_PAGE = 24;
+const STYLE_CUT = 12;
+const FORMAT_CUT = 8;
 
-// STYLE_CUT / FORMAT_CUT and `facetGroup` lived here, re-typing the master's
-// facet rail. Both are gone with the rail itself — the edge Worker honours
-// none of the params those links carried, so every one of them answered a
-// filtered request with the unfiltered grid. See the plp.mjs docblock; this
-// arm's own tripwire below is what fails the day the Worker grows them.
+/** The sort select's options, in the master's order (plp.mjs SORT_OPTIONS).
+ *  The default is the snapshot's committed order — id-ascending, per
+ *  snapshot-capture — and is labelled as such, never "Popularity". */
+const SORT_OPTIONS = [
+  ["", "Catalogue order"],
+  ["year-desc", "Year — newest first"],
+  ["year-asc", "Year — oldest first"],
+  ["price-asc", "Price — low to high"],
+  ["price-desc", "Price — high to low"],
+  ["title", "Title — A to Z"],
+];
+
+/** The knobs a carried value must look like to ride an href (plp.mjs
+ *  CARRY_RE) — `run` and `profile` are opaque pass-throughs, bounded. */
+const CARRY_RE = /^[A-Za-z0-9._-]{1,64}$/;
 
 /**
- * The master's pagination href shape, reproduced exactly (plp.mjs:63-68) —
- * including a defect, and the comment says so because the reference's does
- * not.
+ * THE ONE HREF RULE, re-typed from the master (plp.mjs `conditionHref`):
+ * knobs in canonical order, each omitted at its default, the bare condition
+ * spelled `?page=1`, `URLSearchParams` encoding. Pagination, facets, both
+ * forms' hidden inputs and the boosted swaps all spell a condition this way.
  *
- * `renderPlp`'s own comment above that function claims these hrefs "preserve
- * the WHOLE condition (URL-as-receipt, ADR-0004 §5)". They do not. A
- * query-only relative reference REPLACES the entire query (RFC 3986 §5.3,
- * verified: `new URL("?page=2", ".../plp/?cache=cold&run=bench-7&n=240")` →
- * `.../plp/?page=2`), and this builds a fresh `URLSearchParams` carrying
- * `page` and — only when it differs from the default — `n`. So a page-flip
- * silently drops `cache`, `run` and `profile`: the three knobs ADR-0004 §5
- * calls live request modifiers and the snapshot selector. From this arm's
- * own switcher preset (`/htmx/plp/?cache=cold`) a click on "2" lands on the
- * WARM tier while the injected chrome — rendered server-side against the
- * original search, and outside the swapped subtree — still reads
- * `cache: cold`. The address bar and the instrument disagree about one
- * visit, in the flattering direction.
- *
- * NOT diverged from here, for the reason the `rel="next"` defect is not
- * either: the master emits these exact hrefs and the identity guard compares
- * them at page 1, so a variant-side fix would be a silent disagreement with
- * the contract. The fix belongs in `packages/reference/render/plp.mjs`,
- * whose comment should stop claiming the opposite of its three lines; the
- * diff is in this unit's handoff note, and a guard leg pins the current
- * shape so it cannot land on one side only.
+ * It carries `cache`, `run` and `profile` — the defect the first PLP build
+ * reported and could not fix alone: a page-flip from this arm's own preset
+ * (`/htmx/plp/?cache=cold`) used to land on the WARM tier while the injected
+ * chrome, rendered against the original search outside the swapped subtree,
+ * still read `cache: cold`. A query-only relative reference REPLACES the
+ * whole query (RFC 3986 §5.3), so every knob rides explicitly.
  */
-function pageHref(target, n) {
+export function conditionHref(condition) {
   const params = new URLSearchParams();
-  params.set("page", String(target));
-  if (n !== PER_PAGE) params.set("n", String(n));
-  return `?${params.toString()}`;
+  const pageNo = condition.page ?? 1;
+  if (pageNo !== 1) params.set("page", String(pageNo));
+  if ((condition.n ?? PER_PAGE) !== PER_PAGE) params.set("n", String(condition.n));
+  if (condition.cache === "cold") params.set("cache", "cold");
+  if (condition.run && CARRY_RE.test(condition.run)) params.set("run", condition.run);
+  if (condition.profile && CARRY_RE.test(condition.profile)) params.set("profile", condition.profile);
+  for (const key of ["genre", "style", "format", "sort", "q"]) {
+    if (condition[key]) params.set(key, condition[key]);
+  }
+  const query = params.toString();
+  return query === "" ? "?page=1" : `?${query}`;
+}
+
+/** A GET form's hidden inputs (plp.mjs `hiddenKnobs`): every non-default
+ *  knob except `page` (a new filter starts at page 1) and the form's own
+ *  control, in canonical order so DOM-order serialization spells the URL the
+ *  way `conditionHref` does. */
+function hiddenKnobs(condition, own) {
+  // Two halves (plp.mjs): a browser serializes a GET form in TREE order, so
+  // the knobs that canonically FOLLOW the form's own control — the sort
+  // form's `q` — are emitted after it, and a JS-off submit spells the
+  // condition the way `plpConditionHref` does (verify-slice, 2026-09-18).
+  const before = [];
+  const after = [];
+  const field = (name, value) => `<input type="hidden" name="${name}" value="${esc(value)}">`;
+  if ((condition.n ?? PER_PAGE) !== PER_PAGE) before.push(field("n", String(condition.n)));
+  if (condition.cache === "cold") before.push(field("cache", "cold"));
+  if (condition.run && CARRY_RE.test(condition.run)) before.push(field("run", condition.run));
+  if (condition.profile && CARRY_RE.test(condition.profile)) before.push(field("profile", condition.profile));
+  const knobs = ["genre", "style", "format", "sort", "q"];
+  const ownAt = knobs.indexOf(own);
+  knobs.forEach((key, i) => {
+    if (key === own || !condition[key]) return;
+    (i < ownAt ? before : after).push(field(key, condition[key]));
+  });
+  return { before, after };
 }
 
 /**
  * THE PARADIGM'S MECHANISM, and the reason this build registers `^hx-`
  * under `behaviorAttrPatterns` (tools/drift-gate/src/normalize.ts).
  *
- * `hx-boost` is htmx's documented "real links, enhanced" attribute: the
- * anchors below keep their own `href` and are byte-identical to the
- * master's, so with JavaScript off the pagination is ordinary navigation —
+ * `hx-target` and `hx-swap` ride the `.pm-plp` ROOT and are inherited by
+ * every boosted element inside it; `hx-boost="true"` rides the FOUR
+ * navigation containers — the facet rail, the search form, the sort form,
+ * the pagination — and NOT the root. That placement is load-bearing, and
+ * the design critique caught the alternative before it shipped: `hx-boost`
+ * on the root would boost every descendant same-origin anchor
+ * (htmx.js `boostElement`), including the 24 card links to
+ * `/vanilla/pdp/<slug>/` — so a click on a record title would GET the whole
+ * PDP document and swap it INTO the grid, masthead and second chrome slot
+ * included. Cards stay plain navigation; the four containers that navigate
+ * WITHIN this surface are enhanced. A boosted GET form is htmx's documented
+ * "real forms, enhanced" (the same `hx-boost` covers forms and anchors), so a
+ * search and a sort become partial swaps exactly as a page-flip does.
+ *
+ * Six attributes on five elements, all under the one registered prefix. The
+ * anchors and forms keep their own `href`/`action`, byte-identical to the
+ * master's, so with JavaScript off every control is ordinary navigation —
  * ADR-0005 §1's "(works JS-off)" is a property of the markup, not a claim.
- * With htmx loaded, the same click becomes a GET whose response replaces
- * `.pm-plp` in place and pushes the URL (boosted links push by default),
- * so the measurement condition stays a URL-shaped receipt (ADR-0004 §5).
  *
- * All three attributes ride the ONE `<nav>` element rather than each
- * anchor: `hx-target` and `hx-swap` are inherited by htmx's own attribute
- * inheritance and `hx-boost` applies to descendant anchors, so the links
- * themselves need nothing. That keeps the registered noise to three
- * attributes on one element — the smallest registration that buys the
- * mechanism.
- *
- * The server half is in src/index.js: a request carrying htmx's
- * `HX-Request` header is answered with this block alone instead of the
- * whole document, which is what makes the swap a PARTIAL one and what the
- * `plp-paginate` interaction cell (ADR-0005 §3) would eventually measure.
+ * The server half is in src/index.js: a request carrying htmx's `HX-Request`
+ * header is answered with this block alone instead of the whole document,
+ * which is what makes the swap a PARTIAL one.
  */
-const PAGINATION_HX = ` hx-boost="true" hx-target=".pm-plp" hx-swap="outerHTML"`;
+const PLP_HX_ROOT = ` hx-target=".pm-plp" hx-swap="outerHTML"`;
+const HX_BOOST = ` hx-boost="true"`;
+
+function facetGroup(title, param, buckets, cut, condition) {
+  const selected = condition[param] ?? null;
+  let shown = cut ? buckets.slice(0, cut) : buckets;
+  if (selected !== null && !shown.some((b) => b.value === selected)) {
+    const own = buckets.find((b) => b.value === selected);
+    if (own) shown = [...shown, own];
+  }
+  const cutNote = cut && buckets.length > cut ? ` · top ${cut} of ${buckets.length}` : "";
+  const facet = (b) => {
+    const isSelected = b.value === selected;
+    const href = conditionHref({ ...condition, page: 1, [param]: isSelected ? null : b.value });
+    return `<li><a class="pm-facets__facet" href="${esc(href)}"${isSelected ? ` aria-current="true"` : ""}>
+              <span class="pm-facets__value">${esc(b.value)}</span>
+              <span class="pm-facets__count">${b.count}</span></a></li>`;
+  };
+  return `<section class="pm-facets__group">
+          <h3 class="pm-facets__title">${esc(title)}${cutNote}</h3>
+          <ul class="pm-facets__list" role="list">
+            ${shown.map(facet).join("\n            ")}
+          </ul>
+        </section>`;
+}
 
 /**
- * The `.pm-plp` block — the whole surface, and the unit a page-flip swaps.
+ * The `.pm-plp` block — the whole surface, and the unit a swap replaces.
  *
- * Takes the edge Worker's `/api/plp` payload verbatim
- * (`{ items, page, perPage, total, totalPages, facets }`, workers/edge
- * handlePlp): the tray already carries the paginated slice AND the facet
- * buckets computed over the full snapshot with the same count-desc,
- * code-unit tie-break comparator the reference uses, so this renderer
- * re-derives nothing the data plane already decided. That is the arm:
- * "where the data layer lives" is the server, and the server asks the edge.
- *
- * KNOWN LIMIT, stated rather than hidden: the reference renderer has no
- * `page` option — it renders page 1 and nothing else (plp.mjs:70-72,
- * `summaries.slice(0, n)`; the current-page marker is the literal `1` at
- * :129). At page 1 this function is byte-identical to it, which the
- * pre-merge guard proves. At page > 1 there is no master to be identical
- * TO, so the three things that must vary — the count range, the
- * page-number window, and whether a next link exists at all — are this
- * variant's own until the reference grows the option (the diff is in this
- * unit's handoff note).
+ * Takes the edge Worker's `/api/plp` payload verbatim (`{ items, page,
+ * perPage, total, totalPages, facets, applied }`): the tray already carries
+ * the paginated slice, the facet buckets RECOUNTED over the filtered set, and
+ * the query the data plane APPLIED. Everything the block shows — the grid,
+ * the count, the selected facet, the chosen sort, the search box's value —
+ * comes from the payload; `carry` contributes only the three knobs the tray
+ * cannot know (`cache`, `run`, `profile`), read off the request URL. That is
+ * the arm: "where the data layer lives" is the server, and the server asks
+ * the edge, and re-derives nothing the data plane already decided.
  */
-function plpBlock({ items, page, perPage, total, totalPages }) {
+function plpBlock({ items, page, perPage, total, totalPages, facets, applied }, carry = {}) {
   const n = perPage;
+  const condition = { n, page, cache: carry.cache, run: carry.run, profile: carry.profile, ...applied };
   const start = (page - 1) * n;
   // An out-of-range page answers 200 with an empty `items` array (the edge
-  // Worker floors `page` at 1 but applies no ceiling, workers/edge:125), and
-  // the arithmetic range then reads BACKWARDS — "Showing 241–240 of 240",
-  // measured, and `src/plp.js` would announce that sentence to a screen
-  // reader verbatim. An empty page shows "0", which is true.
+  // floors `page` at 1 and applies its ceiling on the way out — a page past
+  // the end is served, never stored), and the arithmetic range would read
+  // BACKWARDS — "Showing 241–240 of 240"; `src/plp.js` would announce that
+  // sentence to a screen reader verbatim. An empty page shows "0", which is
+  // true.
   const range = items.length ? `${start + 1}–${start + items.length}` : "0";
 
   const cards = items
@@ -441,14 +495,10 @@ function plpBlock({ items, page, perPage, total, totalPages }) {
     })
     .join("\n");
 
-  // A five-wide window that CONTAINS the current page, clamped to the ends.
-  // The reference pins `1..min(totalPages, 5)` because it only ever renders
-  // page 1 (plp.mjs:88), and copying that literally was a defect this unit
-  // shipped and then measured: from page 6 on, `p === page` matched nothing,
-  // so the nav carried NO `aria-current="page"` at all and offered no route
-  // past 5 — six clicks from the front page, on both snapshots. At page 1
-  // this window is `1..5` (and `1..1` at n=240), which is why byte identity
-  // with the master survives the fix.
+  // A five-wide window that CONTAINS the current page, clamped to the ends
+  // (plp.mjs): from page 6 on the naive `1..5` window carried NO
+  // `aria-current="page"` at all — measured on both snapshots before the
+  // reference grew its `page` option.
   const first = Math.min(Math.max(page - 2, 1), Math.max(totalPages - 4, 1));
   const pages = Array.from(
     { length: Math.min(5, Math.max(totalPages - first + 1, 1)) },
@@ -457,66 +507,101 @@ function plpBlock({ items, page, perPage, total, totalPages }) {
   const pageLink = (p) =>
     p === page
       ? `<span class="pm-pagination__link pm-pagination__link--current" aria-current="page">${p}</span>`
-      : `<a class="pm-pagination__link" href="${pageHref(p, n)}">${p}</a>`;
-
-  // "Next" is the reference's one unconditional element (plp.mjs:134) — it
-  // emits the link even when there is no next page, which at n=240 points at
-  // an empty one. That defect is REPRODUCED at page 1, deliberately: the
-  // master can render that condition and the identity guard compares it, so
-  // diverging here would be a silent disagreement with the contract at a
-  // condition nothing checks. Above page 1 the reference cannot render at
-  // all, so there is no contract to honour and the link is emitted only when
-  // a next page exists — otherwise "Next" walks forever into empty pages.
-  // The one-line reference fix is in this unit's handoff note.
-  //
-  // THAT FIX LANDED (`renderPlp` now takes `page`), so the escape is gone.
-  // `page === 1 ||` existed for exactly one reason: to reproduce the master's
-  // unconditional Next at the single condition the master could render, so
-  // this arm would not silently disagree with the contract. The contract now
-  // gates it too, and react-next mirrors the same rule — one answer, three
-  // renderers, which is the point of having a master at all.
+      : `<a class="pm-pagination__link" href="${esc(conditionHref({ ...condition, page: p }))}">${p}</a>`;
+  // Gated on a real next page, as the master gates it. An EMPTY result has
+  // no pagination landmark at all (plp.mjs): no page 1 of 0.
   const hasNext = page < totalPages;
 
-  return `      <div class="pm-plp">
+  const searchHidden = hiddenKnobs(condition, "q");
+  const sortHidden = hiddenKnobs(condition, "sort");
+  const qValue = applied.q ? ` value="${esc(applied.q)}"` : "";
+  const options = SORT_OPTIONS.map(
+    ([value, label]) =>
+      `<option value="${value}"${(applied.sort ?? "") === value ? " selected" : ""}>${esc(label)}</option>`,
+  );
+
+  return `      <div class="pm-plp"${PLP_HX_ROOT}>
         <header class="pm-plp__head">
           <h1 class="pm-page__title">Records</h1>
           <div class="pm-toolbar">
             <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">${range}</span> of <span class="pm-toolbar__n">${total}</span> releases</p>
+            <form class="pm-toolbar__search" method="get" action=""${HX_BOOST}>${searchHidden.before.map((f) => `\n              ${f}`).join("")}
+              <div>
+                <label class="pm-toolbar__label" for="plp-q">Search the crate</label>
+                <input class="pm-toolbar__input" id="plp-q" name="q" type="search" autocomplete="off"${qValue}>
+              </div>${searchHidden.after.map((f) => `\n              ${f}`).join("")}
+              <button class="pm-button pm-button--secondary" type="submit">Search</button>
+            </form>
+            <form class="pm-toolbar__sort" method="get" action=""${HX_BOOST}>${sortHidden.before.map((f) => `\n              ${f}`).join("")}
+              <div>
+                <label class="pm-toolbar__label" for="plp-sort">Sort</label>
+                <select class="pm-toolbar__select" id="plp-sort" name="sort">
+                  ${options.join("\n                  ")}
+                </select>
+              </div>${sortHidden.after.map((f) => `\n              ${f}`).join("")}
+              <button class="pm-button pm-button--secondary" type="submit">Apply</button>
+            </form>
           </div>
         </header>
         <div class="pm-plp__body">
+          <nav class="pm-facets" aria-label="Filters"${HX_BOOST}>
+            ${facetGroup("Genre", "genre", facets.genres, 0, condition)}
+            ${facetGroup("Style", "style", facets.styles, STYLE_CUT, condition)}
+            ${facetGroup("Format", "format", facets.formats, FORMAT_CUT, condition)}
+          </nav>
           <div class="pm-plp__results">
             <ul class="pm-grid" role="list">
 ${cards}
-            </ul>
-            <nav class="pm-pagination" aria-label="Pages"${PAGINATION_HX}>
+            </ul>${
+              totalPages > 0
+                ? `
+            <nav class="pm-pagination" aria-label="Pages"${HX_BOOST}>
               ${pages.map(pageLink).join("\n              ")}${
                 hasNext
-                  ? `\n              <a class="pm-pagination__link" href="${pageHref(page + 1, n)}" rel="next">Next</a>`
+                  ? `\n              <a class="pm-pagination__link" href="${esc(conditionHref({ ...condition, page: page + 1 }))}" rel="next">Next</a>`
                   : ""
               }
-            </nav>
+            </nav>`
+                : ""
+            }
           </div>
         </div>
       </div>`;
 }
 
-
-/** The full document. `data` is the edge's `/api/plp` payload. */
-export function renderPlpPage(data) {
+/** The full document. `data` is the edge's `/api/plp` payload; `carry` the
+ *  three URL knobs the tray cannot know (see plpBlock). */
+export function renderPlpPage(data, carry = {}) {
   return pageFrame({
     title: `Records — Long Decay Records`,
-    content: plpBlock(data),
+    content: plpBlock(data, carry),
     css: PLP_CSS,
     current: "plp",
     scripts: PLP_SCRIPTS,
   });
 }
 
-/** The partial: the swap target's own markup, nothing else. Answered to
- *  htmx-originated requests (the `HX-Request` header). */
-export function renderPlpFragment(data) {
-  return `${plpBlock(data).trimStart()}\n`;
+/** The partial: the `.pm-plp` block ALONE — exactly the swap target, so a
+ *  boosted request replaces the surface and nothing else. */
+export function renderPlpFragment(data, carry = {}) {
+  return `${plpBlock(data, carry).trimStart()}\n`;
+}
+
+/** The canonical spelling of the condition a tray ANSWERS — the served
+ *  page/n/applied query plus the carried knobs — for the Worker's
+ *  `HX-Push-Url`. htmx pushes the REQUEST URL by default, which for a boosted
+ *  form is whatever the visitor typed (`?q=++Golden++`, encodeURIComponent
+ *  spelling); the data plane normalizes `q` and the address bar should name
+ *  the condition it now shows, spelled the way every link spells it. */
+export function plpConditionHref(data, carry = {}) {
+  return conditionHref({
+    n: data.perPage,
+    page: data.page,
+    cache: carry.cache,
+    run: carry.run,
+    profile: carry.profile,
+    ...data.applied,
+  });
 }
 
 /**
@@ -534,14 +619,29 @@ export function renderPlpFragment(data) {
  * stylesheets stay editorial's either way: the fallback markup is
  * `.pm-editorial`, so those are the sheets it actually needs.
  */
-export function renderUnavailablePage({ current = "editorial" } = {}) {
-  const content = `      <div class="pm-editorial">
+export function renderUnavailablePage({ current = "editorial", reason = "unavailable" } = {}) {
+  // `reason: "no-such-filter"` is the PLP's answer to a tray 400 — a facet or
+  // sort value the snapshot does not hold. It is a 404 and says so; the
+  // generic branch below is the data plane NOT ANSWERING, and reporting a
+  // near-miss filter as an outage was the served falsehood the design
+  // critique caught (the plane answered — with a 400).
+  const content =
+    reason === "no-such-filter"
+      ? `      <div class="pm-editorial">
+        <p class="pm-page__kicker">Records</p>
+        <h1>No such filter</h1>
+        <p>Nothing in the crate is filed under that value. The filters on the <a href="/htmx/plp/">catalogue</a> list what there is.</p>
+      </div>`
+      : `      <div class="pm-editorial">
         <p class="pm-page__kicker">Staff pick</p>
         <h1>This page couldn&#39;t load</h1>
         <p>The store&#39;s data plane didn&#39;t answer. This is a simulated demo storefront — nothing was ordered, nothing was lost.</p>
       </div>`;
   return pageFrame({
-    title: "This page couldn't load — Long Decay Records",
+    title:
+      reason === "no-such-filter"
+        ? "No such filter — Long Decay Records"
+        : "This page couldn't load — Long Decay Records",
     content,
     css: EDITORIAL_CSS,
     current,

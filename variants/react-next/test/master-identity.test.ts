@@ -45,8 +45,11 @@ import { PER_PAGE, PlpArticle, clampPlpN, clampPlpPage } from "../src/lib/plp";
 import {
   PLP_FACET_PARAMS,
   PLP_RUN_RE,
+  PLP_SORTS,
   PLP_STALE_TIME_MS,
+  appliedMatches,
   conditionFromSearchParams,
+  normalizePlpQ,
   plpApiPath,
   sameCondition,
   plpHistoryUrl,
@@ -198,9 +201,52 @@ const condition = (over: Partial<PlpCondition> = {}): PlpCondition => ({
   page: 1,
   cache: "cold",
   run: "",
-  filters: [],
+  profile: "",
+  genre: null,
+  style: null,
+  format: null,
+  sort: null,
+  q: null,
   ...over,
 });
+
+/** The reference's OWN modules, by path (a paradigm never declares the spec —
+ *  ADR-0004 §2): the query semantics the Worker serves from, and the renderer
+ *  whose href rule this variant re-types. */
+async function loadReferenceQuery() {
+  return (await import(
+    pathToFileURL(join(repoRoot, "packages", "reference", "render", "plp-query.mjs")).href
+  )) as {
+    normalizeQ: (raw: string | null | undefined) => string | null;
+    facetValueSets: (s: unknown[]) => { genre: Set<string>; style: Set<string>; format: Set<string> };
+  };
+}
+async function loadReferenceHref() {
+  return (await import(
+    pathToFileURL(join(repoRoot, "packages", "reference", "render", "plp.mjs")).href
+  )) as { conditionHref: (c: Partial<Record<keyof PlpCondition, unknown>>) => string };
+}
+
+/** The conditions the committed master cannot express, one per restored
+ *  control, with values found in the snapshot rather than typed. */
+function restoredConditions(summaries: { genres: string[]; styles: string[]; title: string }[]) {
+  const genre = summaries[0]!.genres[0]!;
+  const styleCounts = new Map<string, number>();
+  for (const s of summaries) for (const v of s.styles) styleCounts.set(v, (styleCounts.get(v) ?? 0) + 1);
+  const ranked = [...styleCounts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+  const rareStyle = ranked[ranked.length - 1]![0];
+  const word = summaries[3]!.title.split(" ").find((w) => /^[A-Za-z]{3,}$/.test(w))!;
+  return [
+    { label: "genre", over: { genre } },
+    { label: "rare style", over: { style: rareStyle } },
+    { label: "search", over: { q: word } },
+    { label: "sort", over: { sort: "price-desc" } },
+    {
+      label: "deep page + every knob",
+      over: { page: 2, genre, sort: "title", cache: "cold" as const, run: "bench-abc", profile: "slow-4g-mid-phone" },
+    },
+  ];
+}
 
 async function loadReference() {
   const lib = await import(
@@ -210,8 +256,8 @@ async function loadReference() {
     pathToFileURL(join(repoRoot, "packages", "reference", "render", "plp.mjs")).href
   );
   return { lib, plp } as {
-    lib: { loadSnapshot: (n: string) => unknown };
-    plp: { renderPlp: (s: unknown, o: { origin: string; n: number }) => string };
+    lib: { loadSnapshot: (n: string) => { summaries: { genres: string[]; styles: string[]; title: string }[] } };
+    plp: { renderPlp: (s: unknown, o: Record<string, unknown>) => string };
   };
 }
 
@@ -238,7 +284,7 @@ describe("react-next PLP equals the master by normalized DOM (pre-merge)", () =>
         expect(master).not.toBe("");
 
         const payload = await servedTray(name, condition({ n }));
-        const body = shellHtml(createElement(PlpArticle, { payload, n }));
+        const body = shellHtml(createElement(PlpArticle, { payload }));
 
         const masterDom = normalizeHtml(master, NO_NOISE);
         const variantDom = normalizeHtml(documentOf(body), REACT_NEXT_NOISE);
@@ -274,7 +320,7 @@ describe("react-next PLP equals the master by normalized DOM (pre-merge)", () =>
       "utf8",
     );
     const payload = await servedTray("fixture", condition());
-    const body = shellHtml(createElement(PlpArticle, { payload, n: PER_PAGE }));
+    const body = shellHtml(createElement(PlpArticle, { payload }));
     expect(normalizeHtml(documentOf(body), REACT_NEXT_NOISE)).toBe(
       normalizeHtml(master, NO_NOISE),
     );
@@ -291,11 +337,47 @@ describe("react-next PLP equals the master by normalized DOM (pre-merge)", () =>
     const { lib, plp } = await loadReference();
     const snapshot = lib.loadSnapshot("fixture");
     const payload = await servedTray("fixture", condition());
-    const body = shellHtml(createElement(PlpArticle, { payload, n: PER_PAGE }));
+    const body = shellHtml(createElement(PlpArticle, { payload }));
     expect(normalizeHtml(documentOf(body), NO_NOISE)).toBe(
       normalizeHtml(plp.renderPlp(snapshot, { origin: "", n: PER_PAGE }), NO_NOISE),
     );
   });
+
+  for (const name of ["fixture", "crate"] as const) {
+    it(`${name}: matches renderPlp at every RESTORED condition — a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
+      // The conditions the committed master cannot express, rendered by the
+      // reference for the same query and compared normalized. The tray is the
+      // REAL Worker's, so this also proves the Worker forwards and filters.
+      const { lib, plp } = await loadReference();
+      const snapshot = lib.loadSnapshot(name);
+      for (const { label, over } of restoredConditions(snapshot.summaries)) {
+        const cond = condition(over);
+        const payload = await servedTray(name, cond);
+        const carry = { cache: cond.cache, run: cond.run, profile: cond.profile };
+        const body = shellHtml(createElement(PlpArticle, { payload, carry }));
+        const master = plp.renderPlp(snapshot, {
+          origin: "",
+          n: cond.n,
+          page: cond.page,
+          genre: cond.genre,
+          style: cond.style,
+          format: cond.format,
+          sort: cond.sort,
+          q: cond.q,
+          cache: cond.cache,
+          run: cond.run,
+          profile: cond.profile,
+        });
+        const variantDom = normalizeHtml(documentOf(body), REACT_NEXT_NOISE);
+        const masterDom = normalizeHtml(master, NO_NOISE);
+        expect(payload.items.length, `${name}/${label} served nothing`).toBeGreaterThan(0);
+        expect(
+          variantDom === masterDom ? undefined : `${label}: ${firstDomDivergence(masterDom, variantDom, 4)}`,
+        ).toBeUndefined();
+        expect(variantDom).toBe(masterDom);
+      }
+    }, 300_000);
+  }
 });
 
 /* ── 2. Every strategy serves the same contract ───────────────────────────── */
@@ -309,8 +391,11 @@ describe("all three strategy routes serve the master's markup", () => {
   it("plain, tanstack and apollo all render the master's catalogue", async () => {
     const { lib, plp } = await loadReference();
     const snapshot = lib.loadSnapshot("fixture");
+    // The islands are served under `condition()` — cache cold — and carry the
+    // column into every in-surface href and both forms' hidden inputs (the
+    // one href rule), so the master is rendered for the SAME condition.
     const masterDom = normalizeHtml(
-      plp.renderPlp(snapshot, { origin: "", n: PER_PAGE }),
+      plp.renderPlp(snapshot, { origin: "", n: PER_PAGE, cache: "cold" }),
       NO_NOISE,
     );
     const initial = await servedTray("fixture", condition());
@@ -395,7 +480,7 @@ describe("pages the reference cannot render", () => {
   it("page 2 moves the current marker and the count window, and points Next at 3", async () => {
     const payload = await servedTray("fixture", condition({ page: 2 }));
     const html = renderToStaticMarkup(
-      createElement(PlpArticle, { payload, n: PER_PAGE }),
+      createElement(PlpArticle, { payload }),
     );
     expect(html).toContain(">Showing <");
     expect(html).toContain('<span class="pm-toolbar__n">25–48</span>');
@@ -425,7 +510,7 @@ describe("pages the reference cannot render", () => {
     for (const page of [1, 2, 3, 5, 6, 9, 10]) {
       const payload = await servedTray("fixture", condition({ page }));
       expect(payload.items.length, `page ${page} served nothing`).toBe(PER_PAGE);
-      const html = renderToStaticMarkup(createElement(PlpArticle, { payload, n: PER_PAGE }));
+      const html = renderToStaticMarkup(createElement(PlpArticle, { payload }));
       expect(
         (html.match(/aria-current="page"/g) ?? []).length,
         `page ${page} does not carry exactly one aria-current`,
@@ -457,7 +542,7 @@ describe("pages the reference cannot render", () => {
     const payload = await servedTray("fixture", condition({ n: 240, page: 2 }));
     expect(payload.totalPages).toBe(1);
     expect(payload.items.length).toBe(0);
-    const html = renderToStaticMarkup(createElement(PlpArticle, { payload, n: 240 }));
+    const html = renderToStaticMarkup(createElement(PlpArticle, { payload }));
     expect((html.match(/<li class="pm-release-card">/g) ?? []).length).toBe(0);
     expect(html).toContain('<span class="pm-toolbar__n">0</span>');
     expect(html).not.toContain('<span class="pm-toolbar__n">0–0</span>');
@@ -473,46 +558,76 @@ describe("pages the reference cannot render", () => {
     const last = await servedTray("crate", condition({ n: 240, page: 3 }));
     expect(last.totalPages).toBe(3);
     expect(last.items.length).toBeGreaterThan(0);
-    const lastHtml = renderToStaticMarkup(createElement(PlpArticle, { payload: last, n: 240 }));
+    const lastHtml = renderToStaticMarkup(createElement(PlpArticle, { payload: last }));
     expect(lastHtml).not.toContain('rel="next"');
 
     const mid = await servedTray("crate", condition({ n: 240, page: 2 }));
-    const midHtml = renderToStaticMarkup(createElement(PlpArticle, { payload: mid, n: 240 }));
+    const midHtml = renderToStaticMarkup(createElement(PlpArticle, { payload: mid }));
     expect(midHtml).toContain('rel="next"');
   });
 
-  it("the toolbar count is the only thing left in the toolbar", async () => {
-    // The facet rail, the search form and the sort select are OUT (see the
-    // plp.mjs docblock): the edge Worker honours none of the params they
-    // navigated to, so each one answered a filtered request with the
-    // unfiltered grid under a count that still said "of 500". This leg is
-    // what stops them being restored by reflex before the Worker can honour
-    // them — restoring the markup without the params fails here.
+  it("the toolbar carries the count, the search form and the sort form; the body carries the rail", async () => {
+    // Until 2026-09-04 this leg pinned the OPPOSITE — that the rail and both
+    // forms were absent — because the edge Worker honoured none of the params
+    // they navigated to. It honours all five now, so the controls are back
+    // and this pins that they stay.
     const payload = await servedTray("crate", condition());
-    const html = renderToStaticMarkup(createElement(PlpArticle, { payload, n: PER_PAGE }));
+    const html = renderToStaticMarkup(createElement(PlpArticle, { payload }));
     expect(html).toContain('class="pm-toolbar__count"');
-    for (const gone of [
-      "pm-facets",
-      "pm-toolbar__search",
-      "pm-toolbar__sort",
-      "pm-toolbar__select",
-      "pm-toolbar__input",
+    // React orders a form's `action` first and spells `autoComplete` as
+    // written (a browser lowercases it on parse, which the identity legs
+    // account for); these are substring checks, so they name attributes,
+    // not attribute order.
+    for (const present of [
+      '<nav class="pm-facets" aria-label="Filters">',
+      'class="pm-toolbar__search"',
+      'class="pm-toolbar__sort"',
+      'method="get"',
+      'class="pm-toolbar__select"',
+      'class="pm-toolbar__input"',
       'name="q"',
       'name="sort"',
+      '<option value="" selected="">Catalogue order</option>',
     ]) {
-      expect(html, `${gone} is back in the served PLP without the Worker params`).not.toContain(
-        gone,
-      );
+      expect(html, `${present} is missing from the served PLP`).toContain(present);
     }
+    expect((html.match(/<form /g) ?? []).length).toBe(2);
+    expect(html).not.toContain("Popularity");
   });
 
-  it.skip("facet hrefs URL-encode every crate value that needs it", async () => {
-    // SKIPPED, not deleted: the rail it checks is cut, and this is the leg
-    // that must come back with it. 119 of the crate's 213 facet values carry
-    // a character that must be encoded — `&`, commas, spaces — and that is a
-    // real hazard the day the rail returns, not a fact about the old build.
+  it("everything rendered comes from the PAYLOAD: the same tray under two conditions is byte-identical except for the carried knobs", async () => {
+    // The in-flight rule (plp.tsx header): under keepPreviousData the previous
+    // tray is on screen while a new condition is in flight, so the selected
+    // facet, the sort and the search value must come from `payload.applied`,
+    // never from the condition — or a toggle-off link would not toggle off.
+    // `carry` (cache/run/profile) is the ONLY thing a condition may add.
+    const { lib } = await loadReference();
+    const { genre } = restoredConditions(lib.loadSnapshot("crate").summaries)[0]!.over;
+    const payload = await servedTray("crate", condition({ genre }));
+    const a = renderToStaticMarkup(createElement(PlpArticle, { payload }));
+    const b = renderToStaticMarkup(createElement(PlpArticle, { payload, carry: { cache: "default", run: "", profile: "" } }));
+    expect(b).toBe(a);
+    // The selected state is the payload's, whatever a caller might think the condition is.
+    expect(a).toContain('aria-current="true"');
+    expect(a).toContain(`<span class="pm-facets__value">${genre}</span>`);
+    // And carry changes hrefs ONLY: strip every href and the two renders are equal.
+    const c = renderToStaticMarkup(
+      createElement(PlpArticle, { payload, carry: { cache: "cold", run: "r1", profile: "slow-4g-mid-phone" } }),
+    );
+    const noHrefs = (h: string) => h.replace(/ href="[^"]*"/g, "").replace(/<input type="hidden"[^>]*>/g, "");
+    expect(noHrefs(c)).toBe(noHrefs(a));
+    expect(c).toContain("cache=cold&amp;run=r1&amp;profile=slow-4g-mid-phone");
+  });
+
+  it("facet hrefs URL-encode every crate value that needs it — in the form-submit spelling", async () => {
+    // UN-SKIPPED with the rail (it was skipped, not deleted, on 2026-08-29).
+    // 119 of the crate's 213 facet values carry a character that must be
+    // encoded — `&`, commas, spaces, quotes, a non-ASCII glyph. The spelling
+    // is `URLSearchParams`' (`+` for a space), the same encoding a browser
+    // gives a GET form submit, so the rail's links and a JS-off search spell
+    // one condition alike (the reference's conditionHref rule).
     const payload = await servedTray("crate", condition());
-    const html = renderToStaticMarkup(createElement(PlpArticle, { payload, n: PER_PAGE }));
+    const html = renderToStaticMarkup(createElement(PlpArticle, { payload }));
     const rendered = [
       ...payload.facets.genres,
       ...payload.facets.styles.slice(0, 12),
@@ -523,16 +638,25 @@ describe("pages the reference cannot render", () => {
     expect(rendered).toContain("Folk, World, & Country");
     expect(rendered).toContain('12"');
     expect(rendered).toContain("33 ⅓ RPM");
+    const formEncoded = (v: string) => new URLSearchParams({ v }).toString().slice(2);
     for (const v of tricky) {
-      expect(html, `facet "${v}" is not encoded in its href`).toContain(
-        `=${encodeURIComponent(v)}"`,
-      );
+      expect(html, `facet "${v}" is not encoded in its href`).toContain(`=${formEncoded(v)}"`);
     }
     // The two shapes that break a naive encoder: an ampersand (which must not
     // become a second query param) and a non-ASCII glyph.
-    expect(html).toContain('href="?genre=Folk%2C%20World%2C%20%26%20Country"');
-    expect(html).toContain('href="?format=33%20%E2%85%93%20RPM"');
+    expect(html).toContain('href="?genre=Folk%2C+World%2C+%26+Country"');
+    expect(html).toContain('href="?format=33+%E2%85%93+RPM"');
     expect(html).toContain('href="?format=12%22"');
+    // And every one of them round-trips through the REAL Worker to a 200.
+    for (const v of tricky.slice(0, 6)) {
+      const param = payload.facets.genres.some((b) => b.value === v)
+        ? "genre"
+        : payload.facets.styles.some((b) => b.value === v)
+          ? "style"
+          : "format";
+      const tray = await servedTray("crate", condition({ [param]: v }));
+      expect(tray.applied[param as "genre" | "style" | "format"], v).toBe(v);
+    }
   }, 300_000);
 });
 
@@ -701,7 +825,7 @@ describe("the Apollo exhibit is fenced, and the two benchmarked routes are not",
     // be excusing nothing and the leg above would be vacuously green.
     const { lib, plp } = await loadReference();
     const snapshot = lib.loadSnapshot("fixture");
-    const master = normalizeHtml(plp.renderPlp(snapshot, { origin: "", n: PER_PAGE }), NO_NOISE);
+    const master = normalizeHtml(plp.renderPlp(snapshot, { origin: "", n: PER_PAGE, cache: "cold" }), NO_NOISE);
     const initial = await servedTray("fixture", condition());
     const body = documentOf(
       shellHtml(
@@ -877,6 +1001,7 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
   // the flattering kind. Driven directly because `renderToStaticMarkup` runs
   // no handlers and no effects: an inline version of this would be an
   // untested claim about the arm the `plp-paginate` cell will measure.
+  const APPLIED_NONE = { genre: null, style: null, format: null, sort: null, q: null };
   const tray = (page: number): PlpPage => ({
     items: [],
     page,
@@ -884,6 +1009,7 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
     total: 240,
     totalPages: 10,
     facets: { genres: [], styles: [], formats: [] },
+    applied: APPLIED_NONE,
   });
 
   it("a superseded response is dropped, and the newest click wins", async () => {
@@ -975,10 +1101,11 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
       perPage: PER_PAGE,
       total: 240,
       totalPages: 10,
-      facets: { genres: [], styles: [], formats: [] },
+      facets: { genres: [{ value: "Jazz", count: 3 }], styles: [], formats: [] },
+      applied: APPLIED_NONE,
     };
     const chosen: number[] = [];
-    walk(PlpArticle({ payload, n: PER_PAGE, onSelectPage: (p) => chosen.push(p) }));
+    walk(PlpArticle({ payload, onNavigate: (c) => chosen.push(c.page) }));
     expect(anchors.length, "no intercepted pagination anchors were found").toBeGreaterThan(
       3,
     );
@@ -1011,7 +1138,7 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
         false,
       );
     }
-    expect(chosen, "a modified click still called onSelectPage").toEqual([]);
+    expect(chosen, "a modified click still called onNavigate").toEqual([]);
 
     // And with no strategy mounted (the server render, and JS-off) the anchors
     // carry no handler at all — the master's plain links.
@@ -1029,8 +1156,77 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
       }
       walkBare(el.props["children"]);
     };
-    walkBare(PlpArticle({ payload, n: PER_PAGE }));
+    walkBare(PlpArticle({ payload }));
     expect(bare, "the served page carries click handlers").toEqual([]);
+  });
+
+  it("a facet click hands the strategy the whole next CONDITION — filter set, page reset — and a form submit does too", () => {
+    // The seam every control shares (plp.tsx `onNavigate`): a facet click is
+    // a condition change, not a page change. Walked without a DOM like the
+    // leg above; the forms' onSubmit handlers are invoked with a stub event
+    // carrying a real FormData.
+    type Node = { type?: unknown; props?: { children?: unknown; [k: string]: unknown } } | null;
+    const found: { className: string; props: Record<string, unknown> }[] = [];
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      const el = node as Node;
+      if (el === null || typeof el !== "object" || !("props" in el) || !el.props) return;
+      const cls = el.props["className"];
+      if (typeof cls === "string" && (el.props["onClick"] || el.props["onSubmit"])) {
+        found.push({ className: cls, props: el.props });
+      }
+      walk(el.props["children"]);
+    };
+    const payload: PlpPage = {
+      items: [],
+      page: 3,
+      perPage: PER_PAGE,
+      total: 240,
+      totalPages: 10,
+      facets: { genres: [{ value: "Jazz", count: 3 }, { value: "Rock", count: 2 }], styles: [], formats: [] },
+      applied: { ...APPLIED_NONE, genre: "Jazz" },
+    };
+    const seen: PlpCondition[] = [];
+    walk(PlpArticle({ payload, carry: { cache: "cold", run: "r1" }, onNavigate: (c) => seen.push(c) }));
+    const facets = found.filter((f) => f.className === "pm-facets__facet");
+    expect(facets).toHaveLength(2);
+    const noMods = { metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, preventDefault: () => {} };
+    // The SELECTED facet toggles off; the other adds itself. Both reset page,
+    // both keep the carried knobs and the payload's other applied values.
+    (facets[0]!.props["onClick"] as (e: unknown) => void)(noMods);
+    (facets[1]!.props["onClick"] as (e: unknown) => void)(noMods);
+    expect(seen[0]).toEqual(condition({ page: 1, genre: null, cache: "cold", run: "r1" }));
+    expect(seen[1]).toEqual(condition({ page: 1, genre: "Rock", cache: "cold", run: "r1" }));
+    // The search form: `q` normalized client-side, page reset, genre kept.
+    const search = found.find((f) => f.className === "pm-toolbar__search")!;
+    const form = (fields: Record<string, string>) =>
+      ({
+        currentTarget: { entries: () => Object.entries(fields) } as unknown as HTMLFormElement,
+        preventDefault: () => {},
+      });
+    const realFormData = globalThis.FormData;
+    // FormData over a fake form: hand the handler the same iterable shape.
+    globalThis.FormData = class {
+      private readonly f: Record<string, string>;
+      constructor(el: { entries: () => [string, string][] }) {
+        this.f = Object.fromEntries(el.entries());
+      }
+      get(k: string) {
+        return this.f[k] ?? null;
+      }
+    } as unknown as typeof FormData;
+    try {
+      (search.props["onSubmit"] as (e: unknown) => void)(form({ q: "  Miles   Davis  " }));
+      const sort = found.find((f) => f.className === "pm-toolbar__sort")!;
+      (sort.props["onSubmit"] as (e: unknown) => void)(form({ sort: "" }));
+      (sort.props["onSubmit"] as (e: unknown) => void)(form({ sort: "title" }));
+    } finally {
+      globalThis.FormData = realFormData;
+    }
+    expect(seen[2]).toEqual(condition({ page: 1, genre: "Jazz", q: "Miles Davis", cache: "cold", run: "r1" }));
+    // An untouched select (`sort=`) is the default, never a value.
+    expect(seen[3]).toEqual(condition({ page: 1, genre: "Jazz", sort: null, cache: "cold", run: "r1" }));
+    expect(seen[4]).toEqual(condition({ page: 1, genre: "Jazz", sort: "title", cache: "cold", run: "r1" }));
   });
 
   it("all three arms wire the address-bar duties — checked structurally, since no DOM runs here", () => {
@@ -1139,8 +1335,11 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
       // Pushing on the click is what made the URL and `aria-current` disagree
       // for the whole in-flight window; a call with `true` here would restore
       // that silently.
+      // Settled = the PAYLOAD's applied query matches the requested condition
+      // (ADR-0005 addendum Q2) — page alone would push a facet click's URL
+      // while the previous grid was still on screen.
       expect(read(file), `${file} pushes without waiting for the content`).toMatch(
-        /usePushWhenSettled\(current,[\s\S]{0,80}?\.page === current\.page\)/,
+        /usePushWhenSettled\(current,[\s\S]{0,80}?appliedMatches\([a-z]+, current\)\)/,
       );
     }
     expect(hooks, "usePushWhenSettled does not write the address bar").toContain(
@@ -1167,16 +1366,16 @@ describe("the cold arm answers the last CLICK, not the last response", () => {
       condition({ cache: "default" }),
       condition(),
       condition({ n: 240, page: 4 }),
-      condition({ n: 240, cache: "default", filters: [["genre", "Folk, World, & Country"]] }),
+      condition({ n: 240, cache: "default", genre: "Folk, World, & Country" }),
       condition({
         page: 3,
-        filters: [
-          ["genre", "Jazz"],
-          ["style", "Dark Jazz"],
-          ["format", '12"'],
-          ["sort", "year-desc"],
-          ["q", "a b&c"],
-        ],
+        genre: "Jazz",
+        style: "Dark Jazz",
+        format: '12"',
+        sort: "year-desc",
+        q: "a b&c",
+        profile: "slow-4g-mid-phone",
+        run: "bench-1",
       }),
     ];
     for (const c of cases) {
@@ -1205,68 +1404,133 @@ describe("the served condition is the URL's condition", () => {
     expect(PER_PAGE).toBe(PLP_N.default);
   });
 
-  it("reads the five facet params off the URL but does NOT send them to the data plane", () => {
+  it("reads the five data-plane params off the URL AND sends them to the data plane — profile stays behind", () => {
+    // Until 2026-09-04 this leg pinned the opposite: the params were parsed
+    // but NOT forwarded, because the Worker honoured none of them and a
+    // request that looked filtered while the payload was not put identical
+    // trays under distinct TanStack keys. The Worker filters on all five now.
     const c = readPlpCondition(
-      new URLSearchParams("n=240&page=3&cache=cold&genre=Jazz&style=Modal&sort=year-desc&q=miles&junk=x"),
+      new URLSearchParams(
+        "n=240&page=3&cache=cold&genre=Jazz&style=Modal&sort=year-desc&q=miles&profile=slow-4g-mid-phone&junk=x",
+      ),
     );
-    // Parsing them is still right: the condition is what the URL says, and
-    // `plpHistoryUrl` keeps them in the address bar.
     expect(c).toEqual({
       n: 240,
       page: 3,
       cache: "cold",
       run: "",
-      filters: [
-        ["genre", "Jazz"],
-        ["style", "Modal"],
-        ["sort", "year-desc"],
-        ["q", "miles"],
-      ],
+      profile: "slow-4g-mid-phone",
+      genre: "Jazz",
+      style: "Modal",
+      format: null,
+      sort: "year-desc",
+      q: "miles",
     });
-    // But the REQUEST carries only what the Worker honours. Forwarding the
-    // rest made the request look filtered while the payload was not, and put
-    // identical unfiltered payloads under distinct TanStack query keys — a
-    // client-cache cell measuring a miss it manufactured itself.
-    expect(plpApiPath(c)).toBe("/api/plp?n=240&page=3&cache=cold");
-    expect(plpApiPath(c)).not.toContain("genre");
-    expect(plpApiPath(c)).not.toContain("sort");
-    expect(plpApiPath(c)).not.toContain("q=");
-    // The address bar keeps them, deliberately — the two must not agree here.
+    expect(plpApiPath(c)).toBe(
+      "/api/plp?n=240&page=3&genre=Jazz&style=Modal&sort=year-desc&q=miles&cache=cold",
+    );
+    // `profile` is the chrome's knob: in the condition, in every href and
+    // push, in sameCondition — and NEVER in the data-plane path or the
+    // client-cache key, or two visits differing only by profile would hold
+    // two copies of one identical tray and a revisit would measure a miss.
+    expect(plpApiPath(c)).not.toContain("profile");
+    expect(plpHistoryUrl(c, PER_PAGE)).toContain("profile=slow-4g-mid-phone");
     expect(plpHistoryUrl(c, PER_PAGE)).toContain("genre=Jazz");
-    expect(PLP_FACET_PARAMS).toEqual(["genre", "style", "format", "sort", "q"]);
+    expect(PLP_FACET_PARAMS).toEqual(["genre", "style", "format"]);
+    expect(PLP_SORTS).toEqual(["year-desc", "year-asc", "price-asc", "price-desc", "title"]);
+    // Empty values are ABSENT — what an untouched GET form submits.
+    const empty = readPlpCondition(new URLSearchParams("sort=&q=&genre=&style=&format="));
+    expect(empty).toEqual(condition({ cache: "default" }));
   });
 
-  it("plp-params-not-yet-honoured: workers/edge handlePlp still reads none of the five", async () => {
-    // A self-retiring tripwire, ported from htmx's arm (which had one and
-    // this one did not — the asymmetry that let the two builds disagree
-    // about what the plane does). It reads the Worker's own source, so the
-    // day someone wires the params through, THIS fails and points at the
-    // three things that must follow: restore the rail and the two forms in
-    // `packages/reference/render/plp.mjs`, restore `components/facets.css`,
-    // and put `condition.filters` back into `plpApiPath`.
-    const { readFileSync } = await import("node:fs");
-    const src = readFileSync(
-      new URL("../../../workers/edge/src/index.js", import.meta.url),
-      "utf8",
+  it("the data plane honours the five: the real Worker returns a FILTERED tray for the forwarded request", async () => {
+    // The `plp-params-not-yet-honoured` tripwire lived here until 2026-09-04
+    // — it read the Worker's source and failed the day a param was wired
+    // through without the UI coming back. Both halves landed together; this
+    // is its honest inverse, proven by request rather than by grep.
+    const all = await servedTray("fixture", condition({ n: 240 }));
+    const { genre } = restoredConditions((await loadReference()).lib.loadSnapshot("fixture").summaries)[0]!.over;
+    const filtered = await servedTray("fixture", condition({ n: 240, genre }));
+    expect(filtered.total).toBeLessThan(all.total);
+    expect(filtered.total).toBeGreaterThan(0);
+    for (const item of filtered.items) expect(item.genres).toContain(genre);
+    expect(filtered.applied.genre).toBe(genre);
+    const sorted = await servedTray("fixture", condition({ n: 240, sort: "year-asc" }));
+    expect(sorted.items.map((s) => s.id)).not.toEqual(all.items.map((s) => s.id));
+    expect(sorted.applied.sort).toBe("year-asc");
+    // And junk is a 400 from the plane, which loadPlp turns into the route's 404.
+    const res = await (edgeWorker as { fetch: (r: Request, e: unknown) => Promise<Response> }).fetch(
+      new Request(`https://pm-edge${plpApiPath(condition({ genre: "Junk" }))}`),
+      stubEnv(SNAPSHOT_DIRS.fixture),
     );
-    const handler = src.slice(src.indexOf("async function handlePlp"));
-    const body = handler.slice(0, handler.indexOf("\nasync function "));
-    expect(body, "handlePlp not found — this guard is checking nothing").toContain("searchParams");
-    for (const param of PLP_FACET_PARAMS) {
-      expect(
-        body,
-        `workers/edge handlePlp now reads ?${param}= — wire it through and retire this expectation, ` +
-          "restoring the facet rail, the search and sort forms, and facets.css with it",
-      ).not.toContain(`"${param}"`);
+    expect(res.status).toBe(400);
+    expect(res.headers.get("x-pm-cache-state")).toBe("none");
+  });
+
+  it("normalizePlpQ and plpHistoryUrl are the reference's own rules, re-typed — pinned equal over a table", async () => {
+    // Two re-typings a paradigm may not import (ADR-0004 §2). Without this
+    // leg a raw "  miles   davis " in the island's condition would never
+    // equal the tray's applied "miles davis" and `settled` would stay false
+    // for the life of the page — the grid moving, the address bar not.
+    const { normalizeQ } = await loadReferenceQuery();
+    for (const raw of [null, undefined, "", "   ", "miles", "  Miles   Davis  ", "a".repeat(70), " x ".repeat(30), "tab\tsep", "nbsp\u00a0here"]) {
+      expect(normalizePlpQ(raw), JSON.stringify(raw)).toBe(normalizeQ(raw));
     }
+    // And the ROUTE applies it: conditionFromSearchParams must hand the island
+    // the normalized form, not the raw query. Pinning the function was not
+    // pinning its use \u2014 the 2026-09-18 sabotage table swapped the call for a
+    // bare `=== "" ? null : raw` and this leg stayed green.
+    for (const raw of ["  Miles   Davis  ", "a".repeat(70), "   ", "tab\tsep", "nbsp\u00a0here"]) {
+      expect(conditionFromSearchParams({ q: raw }).q, JSON.stringify(raw)).toBe(normalizeQ(raw));
+    }
+    const { conditionHref } = await loadReferenceHref();
+    const cases: PlpCondition[] = [
+      condition({ cache: "default" }),
+      condition(),
+      condition({ page: 2 }),
+      condition({ n: 240, page: 4, cache: "default" }),
+      condition({ genre: "Folk, World, & Country", style: '12"', q: "a b&c", cache: "default" }),
+      condition({ page: 3, genre: "Jazz", sort: "title", run: "bench-1", profile: "slow-4g-mid-phone" }),
+      condition({ run: "<script>", profile: "x".repeat(70), cache: "default" }),
+    ];
+    for (const c of cases) {
+      // The reference takes the same flat shape (undefined/"" and null both mean absent).
+      expect(plpHistoryUrl(c, PER_PAGE), JSON.stringify(c)).toBe(conditionHref(c));
+    }
+  });
+
+  it("appliedMatches is what settles a cache arm: the tray's applied query against the requested condition", async () => {
+    const { genre } = restoredConditions((await loadReference()).lib.loadSnapshot("fixture").summaries)[0]!.over;
+    const cond = condition({ genre, q: "quiet" });
+    const tray = await servedTray("fixture", cond);
+    expect(appliedMatches(tray, cond)).toBe(true);
+    // The previous page's tray under keepPreviousData: NOT settled, even though page matches.
+    const previous = await servedTray("fixture", condition({ q: "quiet" }));
+    expect(previous.page).toBe(cond.page);
+    expect(appliedMatches(previous, cond)).toBe(false);
+    // n is compared through perPage.
+    expect(appliedMatches(tray, { ...cond, n: 240 })).toBe(false);
   });
 
   it("defaults collapse to the bare edge-cached condition", () => {
     const c = readPlpCondition(new URLSearchParams(""));
-    expect(c).toEqual({ n: PER_PAGE, page: 1, cache: "default", run: "", filters: [] });
+    expect(c).toEqual({
+      n: PER_PAGE,
+      page: 1,
+      cache: "default",
+      run: "",
+      profile: "",
+      genre: null,
+      style: null,
+      format: null,
+      sort: null,
+      q: null,
+    });
     expect(plpApiPath(c)).toBe("/api/plp?n=24&page=1");
-    // The "Edge cache — KV" preset IS the bare URL: no query at all.
-    expect(plpHistoryUrl(c, PER_PAGE)).toBe("?");
+    // The "Edge cache — KV" preset IS the bare URL (no query); the bare
+    // condition's own spelling is `?page=1` — the ONE href rule's rule that
+    // no link is ever a bare `?`.
+    expect(plpHistoryUrl(c, PER_PAGE)).toBe("?page=1");
   });
 
   it("a client-side page change keeps the whole condition in the address bar", () => {
@@ -1281,24 +1545,34 @@ describe("the served condition is the URL's condition", () => {
     expect(clampPlpPage("7")).toBe(7);
   });
 
+  it("clampPlpPage is the reference's own clampPage, re-typed — pinned equal over a table, the overflow included", async () => {
+    // The fourth rule a paradigm cannot import (with the n clamp, the q
+    // normalizer and the href rule). `parseInt` of 309+ digits is Infinity:
+    // the first draft let it through, so the island held page Infinity while
+    // the Worker read `page=Infinity` as page 1 and `settled` could never be
+    // true (verify-slice, 2026-09-18). Both sides now cap at MAX_SAFE_INTEGER.
+    const { clampPage } = (await loadReferenceQuery()) as unknown as {
+      clampPage: (raw: string | null | undefined) => number;
+    };
+    for (const raw of [null, undefined, "", "0", "-3", "abc", "7", "1e15", "24.9", "99999999999999999999", "9".repeat(400)]) {
+      expect(clampPlpPage(raw), JSON.stringify(raw)).toBe(clampPage(raw));
+      expect(Number.isSafeInteger(clampPlpPage(raw)), JSON.stringify(raw)).toBe(true);
+    }
+    expect(clampPlpPage("9".repeat(400))).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
   it("Next's own searchParams shape reaches the condition — arrays, undefined and all", () => {
     // Next hands a route an already-parsed object, not a query string, and all
     // three PLP routes go through this one function. Without it the conversion
     // was three copies of an inline expression that nothing could test.
     expect(
       conditionFromSearchParams({ n: "240", cache: "cold", page: "3", genre: "Jazz" }),
-    ).toEqual({ n: 240, page: 3, cache: "cold", run: "", filters: [["genre", "Jazz"]] });
+    ).toEqual(condition({ n: 240, page: 3, genre: "Jazz" }));
     // A repeated param takes the FIRST value, matching URLSearchParams.get, so
     // `?n=24&n=240` resolves the same way in the route and in the beacon tag.
     expect(conditionFromSearchParams({ n: ["24", "240"] }).n).toBe(24);
     // Absent and empty are the default condition, not a crash.
-    expect(conditionFromSearchParams({})).toEqual({
-      n: PER_PAGE,
-      page: 1,
-      cache: "default",
-      run: "",
-      filters: [],
-    });
+    expect(conditionFromSearchParams({})).toEqual(condition({ cache: "default" }));
     expect(conditionFromSearchParams({ n: undefined, genre: undefined }).n).toBe(PER_PAGE);
   });
 
@@ -1407,7 +1681,7 @@ describe("the served condition is the URL's condition", () => {
     // Prime the un-nonced key (a "visitor").
     await worker.fetch(new Request("https://pm-edge/api/plp?n=24&page=1"), env);
     const keys = [...primed.keys()];
-    expect(keys).toEqual(["v1:/api/plp?n=24&page=1"]);
+    expect(keys).toEqual(["v2:/api/plp?n=24&page=1"]);
     // A nonced request must MISS that entry and mint its own.
     const nonced = conditionFromSearchParams({ run: "bench-xyz.1" });
     const res = await worker.fetch(
@@ -1418,8 +1692,8 @@ describe("the served condition is the URL's condition", () => {
       "miss",
     );
     expect([...primed.keys()].sort()).toEqual([
-      "v1:/api/plp?n=24&page=1",
-      "v1:/api/plp?n=24&page=1&run=bench-xyz.1",
+      "v2:/api/plp?n=24&page=1",
+      "v2:/api/plp?n=24&page=1&run=bench-xyz.1",
     ]);
   });
 
@@ -1445,18 +1719,20 @@ describe("the served condition is the URL's condition", () => {
       condition({ page: 2 }),
       condition({ cache: "default" }),
       condition({ run: "x" }),
-      condition({ filters: [["genre", "Jazz"]] }),
+      condition({ profile: "slow-4g-mid-phone" }),
+      condition({ genre: "Jazz" }),
+      condition({ style: "Modal" }),
+      condition({ format: '12"' }),
+      condition({ sort: "title" }),
+      condition({ q: "miles" }),
     ]) {
       expect(sameCondition(base, other), JSON.stringify(other)).toBe(false);
     }
-    // Filter ORDER is part of it: two different orders are two different
-    // request URLs and therefore two different KV keys.
+    // Named fields, so two spellings of one filter set are ONE condition —
+    // and one KV key, since plpApiPath spells them in a fixed order.
     expect(
-      sameCondition(
-        condition({ filters: [["genre", "Jazz"], ["style", "Modal"]] }),
-        condition({ filters: [["style", "Modal"], ["genre", "Jazz"]] }),
-      ),
-    ).toBe(false);
+      plpApiPath(readPlpCondition(new URLSearchParams("style=Modal&genre=Jazz"))),
+    ).toBe(plpApiPath(readPlpCondition(new URLSearchParams("genre=Jazz&style=Modal"))));
   });
 
   it("the published client-cache window is ADR-0005 §4's five minutes", () => {

@@ -1,0 +1,612 @@
+snapshot-parameterized builds run with PM_SNAPSHOT=fixture
+• turbo 2.10.4
+
+   • Packages in scope: @pm/astro, @pm/bench-runner, @pm/blog, @pm/cost-calculator, @pm/data-contract, @pm/drift-gate, @pm/edge, @pm/front, @pm/htmx, @pm/measurement, @pm/origin-suite, @pm/placeholder-ssr, @pm/placeholder-static, @pm/qwik, @pm/react-next, @pm/reference, @pm/remix3, @pm/repo-checks, @pm/snapshot-capture, @pm/snapshot-fixture, @pm/switcher, @pm/tokens, @pm/vanilla
+   • Running build in 23 packages
+   • Remote caching disabled
+
+@pm/measurement:build: cache hit, replaying logs 070f815340494221
+@pm/measurement:build: $ esbuild src/client.ts --bundle --minify --format=iife --outfile=dist/measure.js
+@pm/measurement:build: 
+@pm/measurement:build:   dist/measure.js  6.2kb
+@pm/measurement:build: 
+@pm/measurement:build: ⚡ Done in 8ms
+@pm/placeholder-static:build: cache miss, executing 82757e8ca3993d6a
+@pm/blog:build: cache hit, replaying logs 5110a165b114eaf0
+@pm/placeholder-ssr:build: cache miss, executing 1c5fd9bd16fe4414
+@pm/blog:build: $ node build.mjs
+@pm/blog:build: blog: dist assembled
+@pm/snapshot-capture:build: cache miss, executing b7a136f1350f90a4
+@pm/vanilla:build: cache miss, executing b65d9a715656b59b
+@pm/front:build: cache miss, executing 5db10a855aa4016e
+@pm/bench-runner:build: cache miss, executing f76a8c1c9e142079
+@pm/astro:build: cache miss, executing 9fa07a109c245f14
+@pm/qwik:build: cache miss, executing b3fae6a1edce6758
+@pm/react-next:build: cache miss, executing bf6cc74f1f610b5d
+@pm/remix3:build: cache miss, executing 819f7af12155cda6
+@pm/front:build: $ node build.mjs
+@pm/vanilla:build: $ node build.mjs
+@pm/react-next:build: $ node scripts/copy-tokens.mjs && opennextjs-cloudflare build
+@pm/snapshot-capture:build: $ esbuild src/cli.ts --bundle --platform=node --format=esm --external:sharp --outfile=dist/cli.mjs
+@pm/qwik:build: $ node scripts/prepare-build.mjs && pnpm run build.client && pnpm run build.server
+@pm/placeholder-ssr:build: $ node build.mjs
+@pm/bench-runner:build: $ esbuild src/cli.ts src/chrome-constant.ts --bundle --platform=node --format=esm --external:playwright --outdir=dist --out-extension:.js=.mjs
+@pm/astro:build: $ node scripts/prepare-build.mjs && astro build
+@pm/placeholder-static:build: $ node build.mjs
+@pm/remix3:build: $ node build.mjs
+@pm/react-next:build: react-next: @pm/tokens copied into public/assets/pm
+@pm/qwik:build: qwik: @pm/tokens copied into public/assets/pm; dist/.assetsignore written
+@pm/placeholder-ssr:build: placeholder-ssr: dist assembled
+@pm/astro:build: astro: @pm/tokens copied into public/assets/pm; editorial + pdp baked from the fixture snapshot
+@pm/placeholder-static:build: placeholder-static: dist assembled
+@pm/htmx:build: cache miss, executing 26c5bab95274fff9
+@pm/remix3:build: remix3: assets assembled (prebuilt client runtime + tokens + exhibit css + cart)
+@pm/front:build: front: stamped dist/_pm/build.json and dist/how-it-was-built/index.html (fec4a29, dirty)
+@pm/front:build: front: dist assembled (home + methodology + how-it-was-built + /pm fonts + /_pm instrumentation + lab bundle)
+@pm/vanilla:build: vanilla: editorial + 240 PDPs + checkout + 3 a11y pages rendered from the fixture snapshot
+@pm/qwik:build: $ vite build
+@pm/htmx:build: $ node build.mjs
+@pm/snapshot-capture:build: 
+@pm/snapshot-capture:build:   dist/cli.mjs  578.5kb
+@pm/snapshot-capture:build: 
+@pm/snapshot-capture:build: ⚡ Done in 20ms
+@pm/htmx:build: htmx: assets assembled (tokens + vendored htmx runtime + cart and PLP enhancements)
+@pm/astro:build: 19:51:07 [types] Generated 18ms
+@pm/astro:build: 19:51:07 [build] output: "static"
+@pm/astro:build: 19:51:07 [build] mode: "static"
+@pm/astro:build: 19:51:07 [build] directory: /Users/roblark/Work/project-matrix/variants/astro/dist/astro/
+@pm/astro:build: 19:51:07 [build] Collecting build info...
+@pm/astro:build: 19:51:07 [build] ✓ Completed in 26ms.
+@pm/bench-runner:build: 
+@pm/bench-runner:build:   dist/cli.mjs              602.5kb
+@pm/bench-runner:build:   dist/chrome-constant.mjs  563.1kb
+@pm/bench-runner:build: 
+@pm/bench-runner:build: ⚡ Done in 21ms
+@pm/cost-calculator:build: cache miss, executing 007bfb6c9d114a15
+@pm/astro:build: 19:51:07 [build] Building static entrypoints...
+@pm/astro:build: 19:51:07 [vite] ✓ built in 75ms
+@pm/astro:build: 19:51:07 [vite] ✓ built in 17ms
+@pm/astro:build: 19:51:07 [build] Rearranging server assets...
+@pm/astro:build: 
+@pm/astro:build:  generating static routes 
+@pm/astro:build: 19:51:07   ├─ /editorial/index.html (+6ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000001-dummy-duo-quiet-variations-no-001/index.html (+2ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000002-test-tone-unit-modal-excursions-no-002/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000003-stand-in-septet-midnight-fragments-no-003/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000004-prototype-big-band-golden-variations-no-004/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000005-prototype-big-band-analog-variations-no-005/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000006-specimen-combo-electric-fragments-no-006/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000007-scaffold-collective-blue-impressions-no-007/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000008-dummy-duo-blue-impressions-no-008/index.html (+3ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000009-sample-ensemble-analog-excursions-no-009/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000010-synthetic-quartet-cool-sketches-no-010/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000011-fixture-quintet-blue-variations-no-011/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000012-fixture-quintet-electric-dialogues-no-012/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000013-sample-ensemble-cool-variations-no-013/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000014-scaffold-collective-quiet-excursions-no-014/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000015-sample-ensemble-electric-impressions-no-015/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000016-fixture-quintet-modal-excursions-no-016/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000017-stand-in-septet-cool-dialogues-no-017/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000018-interim-orchestra-golden-impressions-no-018/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000019-fixture-quintet-midnight-sketches-no-019/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000020-synthetic-quartet-electric-excursions-no-020/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000021-sample-ensemble-quiet-sessions-no-021/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000022-mock-sextet-blue-excursions-no-022/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000023-test-tone-unit-golden-excursions-no-023/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000024-fixture-quintet-quiet-sketches-no-024/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000025-synthetic-quartet-modal-variations-no-025/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000026-placeholder-trio-modal-variations-no-026/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000027-prototype-big-band-midnight-dialogues-no-027/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000028-synthetic-quartet-electric-sessions-no-028/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000029-placeholder-trio-analog-impressions-no-029/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000030-specimen-combo-electric-impressions-no-030/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000031-interim-orchestra-analog-fragments-no-031/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000032-stand-in-septet-electric-excursions-no-032/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000033-fixture-quintet-electric-studies-no-033/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000034-placeholder-trio-midnight-dialogues-no-034/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000035-synthetic-quartet-electric-studies-no-035/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000036-synthetic-quartet-golden-studies-no-036/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000037-scaffold-collective-midnight-dialogues-no-037/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000038-prototype-big-band-modal-studies-no-038/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000039-interim-orchestra-cool-variations-no-039/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000040-scaffold-collective-analog-sessions-no-040/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000041-fixture-quintet-quiet-impressions-no-041/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000042-synthetic-quartet-blue-impressions-no-042/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000043-mock-sextet-analog-sessions-no-043/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000044-synthetic-quartet-blue-excursions-no-044/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000045-specimen-combo-golden-excursions-no-045/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000046-fixture-quintet-golden-variations-no-046/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000047-sample-ensemble-midnight-impressions-no-047/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000048-fixture-quintet-midnight-excursions-no-048/index.html (+5ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000049-stand-in-septet-analog-excursions-no-049/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000050-placeholder-trio-electric-studies-no-050/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000051-synthetic-quartet-blue-sessions-no-051/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000052-synthetic-quartet-modal-sessions-no-052/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000053-fixture-quintet-analog-sketches-no-053/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000054-mock-sextet-blue-impressions-no-054/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000055-scaffold-collective-midnight-sketches-no-055/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000056-specimen-combo-cool-sessions-no-056/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000057-scaffold-collective-blue-dialogues-no-057/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000058-placeholder-trio-cool-sketches-no-058/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000059-specimen-combo-analog-fragments-no-059/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000060-stand-in-septet-analog-impressions-no-060/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000061-prototype-big-band-golden-sketches-no-061/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000062-dummy-duo-analog-dialogues-no-062/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000063-prototype-big-band-analog-impressions-no-063/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000064-specimen-combo-analog-variations-no-064/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000065-specimen-combo-cool-dialogues-no-065/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000066-mock-sextet-midnight-excursions-no-066/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000067-scaffold-collective-midnight-sketches-no-067/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000068-stand-in-septet-modal-studies-no-068/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000069-scaffold-collective-golden-impressions-no-069/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000070-fixture-quintet-electric-impressions-no-070/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000071-placeholder-trio-modal-dialogues-no-071/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000072-scaffold-collective-quiet-variations-no-072/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000073-stand-in-septet-modal-fragments-no-073/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000074-mock-sextet-cool-dialogues-no-074/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000075-placeholder-trio-modal-excursions-no-075/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000076-sample-ensemble-cool-excursions-no-076/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000077-prototype-big-band-quiet-sketches-no-077/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000078-specimen-combo-analog-sketches-no-078/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000079-prototype-big-band-quiet-dialogues-no-079/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000080-sample-ensemble-cool-excursions-no-080/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000081-specimen-combo-golden-sketches-no-081/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000082-prototype-big-band-modal-dialogues-no-082/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000083-stand-in-septet-midnight-excursions-no-083/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000084-sample-ensemble-golden-impressions-no-084/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000085-interim-orchestra-analog-excursions-no-085/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000086-sample-ensemble-golden-fragments-no-086/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000087-sample-ensemble-quiet-variations-no-087/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000088-stand-in-septet-quiet-variations-no-088/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000089-interim-orchestra-analog-fragments-no-089/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000090-interim-orchestra-cool-impressions-no-090/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000091-mock-sextet-electric-variations-no-091/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000092-mock-sextet-analog-sketches-no-092/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000093-placeholder-trio-modal-variations-no-093/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000094-fixture-quintet-electric-variations-no-094/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000095-synthetic-quartet-midnight-sessions-no-095/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000096-prototype-big-band-analog-sessions-no-096/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000097-interim-orchestra-cool-dialogues-no-097/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000098-mock-sextet-electric-impressions-no-098/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000099-synthetic-quartet-modal-dialogues-no-099/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000100-scaffold-collective-analog-impressions-no-100/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000101-dummy-duo-modal-excursions-no-101/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000102-dummy-duo-quiet-dialogues-no-102/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000103-dummy-duo-modal-impressions-no-103/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000104-sample-ensemble-midnight-variations-no-104/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000105-sample-ensemble-golden-impressions-no-105/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000106-scaffold-collective-cool-sketches-no-106/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000107-interim-orchestra-blue-variations-no-107/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000108-stand-in-septet-quiet-sketches-no-108/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000109-placeholder-trio-electric-sessions-no-109/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000110-sample-ensemble-cool-sketches-no-110/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000111-synthetic-quartet-quiet-sketches-no-111/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000112-synthetic-quartet-quiet-variations-no-112/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000113-specimen-combo-quiet-variations-no-113/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000114-stand-in-septet-cool-sessions-no-114/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000115-dummy-duo-modal-impressions-no-115/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000116-specimen-combo-midnight-excursions-no-116/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000117-placeholder-trio-midnight-variations-no-117/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000118-dummy-duo-midnight-excursions-no-118/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000119-mock-sextet-modal-dialogues-no-119/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000120-synthetic-quartet-cool-variations-no-120/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000121-test-tone-unit-midnight-fragments-no-121/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000122-stand-in-septet-modal-impressions-no-122/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000123-test-tone-unit-midnight-variations-no-123/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000124-prototype-big-band-modal-sketches-no-124/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000125-stand-in-septet-analog-impressions-no-125/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000126-dummy-duo-analog-variations-no-126/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000127-interim-orchestra-analog-sketches-no-127/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000128-placeholder-trio-analog-variations-no-128/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000129-specimen-combo-midnight-studies-no-129/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000130-sample-ensemble-quiet-sketches-no-130/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000131-prototype-big-band-modal-impressions-no-131/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000132-mock-sextet-electric-variations-no-132/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000133-specimen-combo-modal-studies-no-133/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000134-synthetic-quartet-modal-sessions-no-134/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000135-placeholder-trio-cool-sketches-no-135/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000136-sample-ensemble-analog-sessions-no-136/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000137-prototype-big-band-modal-impressions-no-137/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000138-specimen-combo-blue-fragments-no-138/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000139-sample-ensemble-modal-dialogues-no-139/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000140-dummy-duo-cool-impressions-no-140/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000141-synthetic-quartet-quiet-impressions-no-141/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000142-sample-ensemble-cool-dialogues-no-142/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000143-scaffold-collective-midnight-sketches-no-143/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000144-stand-in-septet-modal-studies-no-144/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000145-test-tone-unit-quiet-impressions-no-145/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000146-scaffold-collective-midnight-variations-no-146/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000147-prototype-big-band-blue-studies-no-147/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000148-sample-ensemble-electric-variations-no-148/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000149-mock-sextet-cool-studies-no-149/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000150-placeholder-trio-midnight-studies-no-150/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000151-test-tone-unit-golden-dialogues-no-151/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000152-stand-in-septet-modal-fragments-no-152/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000153-fixture-quintet-quiet-sketches-no-153/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000154-stand-in-septet-analog-excursions-no-154/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000155-interim-orchestra-midnight-sessions-no-155/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000156-mock-sextet-blue-impressions-no-156/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000157-synthetic-quartet-golden-studies-no-157/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000158-placeholder-trio-quiet-impressions-no-158/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000159-fixture-quintet-electric-sketches-no-159/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000160-dummy-duo-analog-impressions-no-160/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000161-dummy-duo-midnight-variations-no-161/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000162-fixture-quintet-electric-sessions-no-162/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000163-sample-ensemble-quiet-excursions-no-163/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000164-sample-ensemble-modal-excursions-no-164/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000165-prototype-big-band-midnight-variations-no-165/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000166-dummy-duo-blue-impressions-no-166/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000167-prototype-big-band-analog-dialogues-no-167/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000168-specimen-combo-cool-excursions-no-168/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000169-sample-ensemble-quiet-sketches-no-169/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000170-sample-ensemble-quiet-fragments-no-170/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000171-scaffold-collective-modal-dialogues-no-171/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000172-synthetic-quartet-electric-variations-no-172/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000173-stand-in-septet-quiet-excursions-no-173/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000174-interim-orchestra-golden-impressions-no-174/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000175-fixture-quintet-electric-sketches-no-175/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000176-sample-ensemble-cool-dialogues-no-176/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000177-sample-ensemble-analog-studies-no-177/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000178-mock-sextet-modal-variations-no-178/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000179-prototype-big-band-blue-impressions-no-179/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000180-placeholder-trio-electric-fragments-no-180/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000181-fixture-quintet-blue-impressions-no-181/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000182-test-tone-unit-cool-sessions-no-182/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000183-test-tone-unit-golden-excursions-no-183/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000184-mock-sextet-midnight-studies-no-184/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000185-specimen-combo-blue-sessions-no-185/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000186-mock-sextet-blue-studies-no-186/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000187-mock-sextet-electric-sessions-no-187/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000188-test-tone-unit-modal-variations-no-188/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000189-fixture-quintet-modal-studies-no-189/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000190-sample-ensemble-golden-excursions-no-190/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000191-sample-ensemble-cool-variations-no-191/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000192-scaffold-collective-modal-variations-no-192/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000193-mock-sextet-golden-sessions-no-193/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000194-fixture-quintet-golden-sketches-no-194/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000195-fixture-quintet-modal-fragments-no-195/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000196-dummy-duo-modal-variations-no-196/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000197-prototype-big-band-blue-excursions-no-197/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000198-test-tone-unit-electric-excursions-no-198/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000199-specimen-combo-analog-dialogues-no-199/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000200-specimen-combo-electric-sketches-no-200/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000201-mock-sextet-quiet-variations-no-201/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000202-mock-sextet-golden-impressions-no-202/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000203-prototype-big-band-blue-impressions-no-203/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000204-mock-sextet-electric-dialogues-no-204/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000205-fixture-quintet-modal-impressions-no-205/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000206-test-tone-unit-golden-sessions-no-206/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000207-mock-sextet-midnight-impressions-no-207/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000208-stand-in-septet-blue-studies-no-208/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000209-interim-orchestra-blue-sketches-no-209/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000210-specimen-combo-midnight-impressions-no-210/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000211-placeholder-trio-blue-sessions-no-211/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000212-placeholder-trio-midnight-studies-no-212/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000213-synthetic-quartet-blue-impressions-no-213/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000214-interim-orchestra-golden-excursions-no-214/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000215-dummy-duo-electric-variations-no-215/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000216-mock-sextet-blue-dialogues-no-216/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000217-fixture-quintet-analog-variations-no-217/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000218-scaffold-collective-midnight-studies-no-218/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000219-synthetic-quartet-midnight-variations-no-219/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000220-sample-ensemble-blue-sessions-no-220/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000221-test-tone-unit-quiet-variations-no-221/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000222-prototype-big-band-quiet-sessions-no-222/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000223-prototype-big-band-analog-studies-no-223/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000224-prototype-big-band-golden-dialogues-no-224/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000225-test-tone-unit-blue-fragments-no-225/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000226-fixture-quintet-modal-studies-no-226/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000227-prototype-big-band-analog-impressions-no-227/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000228-mock-sextet-cool-studies-no-228/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000229-placeholder-trio-cool-excursions-no-229/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000230-mock-sextet-quiet-excursions-no-230/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000231-fixture-quintet-cool-fragments-no-231/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000232-sample-ensemble-modal-studies-no-232/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000233-mock-sextet-cool-variations-no-233/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000234-interim-orchestra-analog-fragments-no-234/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000235-test-tone-unit-quiet-studies-no-235/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000236-dummy-duo-analog-sessions-no-236/index.html (+1ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000237-mock-sextet-blue-impressions-no-237/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000238-fixture-quintet-analog-sketches-no-238/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000239-interim-orchestra-analog-dialogues-no-239/index.html (+0ms) 
+@pm/astro:build: 19:51:07   ├─ /pdp/9000240-placeholder-trio-analog-variations-no-240/index.html (+0ms) 
+@pm/astro:build: 19:51:07 ✓ Completed in 151ms.
+@pm/astro:build: 
+@pm/astro:build: 19:51:07 [build] ✓ Completed in 274ms.
+@pm/astro:build: 19:51:07 [build] 241 page(s) built in 342ms
+@pm/astro:build: 19:51:07 [build] Complete!
+@pm/cost-calculator:build: $ esbuild src/cli.ts --bundle --platform=node --format=esm --outfile=dist/cli.mjs
+@pm/cost-calculator:build: 
+@pm/cost-calculator:build:   dist/cli.mjs  577.3kb
+@pm/cost-calculator:build: 
+@pm/cost-calculator:build: ⚡ Done in 11ms
+@pm/qwik:build: vite v7.3.1 building client environment for production...
+@pm/qwik:build: transforming...
+@pm/qwik:build: ✓ 84 modules transformed.
+@pm/react-next:build: 
+@pm/react-next:build: ┌─────────────────────────────┐
+@pm/react-next:build: │ OpenNext — Cloudflare build │
+@pm/react-next:build: └─────────────────────────────┘
+@pm/react-next:build: 
+@pm/qwik:build: rendering chunks...
+@pm/qwik:build: computing gzip size...
+@pm/qwik:build: dist/qwik/assets/uAO7J94u-bundle-graph.json   1.43 kB │ gzip:  0.85 kB
+@pm/qwik:build: dist/qwik/q-manifest.json                    39.42 kB │ gzip:  4.73 kB
+@pm/qwik:build: dist/qwik/build/q-B7NkQB6Y.js                 0.10 kB │ gzip:  0.12 kB
+@pm/qwik:build: dist/qwik/build/q-v7_SqrbM.js                 0.15 kB │ gzip:  0.14 kB
+@pm/qwik:build: dist/qwik/build/q-4RHGkV_2.js                 0.17 kB │ gzip:  0.15 kB
+@pm/qwik:build: dist/qwik/build/q-D39zLMCS.js                 0.24 kB │ gzip:  0.20 kB
+@pm/qwik:build: dist/qwik/build/q-C0cdVZix.js                 0.34 kB │ gzip:  0.26 kB
+@pm/qwik:build: dist/qwik/build/q-Dh4g_993.js                 0.40 kB │ gzip:  0.28 kB
+@pm/qwik:build: dist/qwik/build/q-BsnTxM-c.js                 0.81 kB │ gzip:  0.48 kB
+@pm/qwik:build: dist/qwik/build/q-r74RsLBo.js                 0.96 kB │ gzip:  0.55 kB
+@pm/qwik:build: dist/qwik/build/q-E-X4ebEc.js                 1.01 kB │ gzip:  0.58 kB
+@pm/qwik:build: dist/qwik/build/q-d-1RjsWA.js                 1.31 kB │ gzip:  0.72 kB
+@pm/qwik:build: dist/qwik/build/q-B3MPtVkv.js                 1.31 kB │ gzip:  0.69 kB
+@pm/qwik:build: dist/qwik/build/q-BYhTsuRv.js                 1.57 kB │ gzip:  0.90 kB
+@pm/qwik:build: dist/qwik/build/q-W1Y30LoU.js                 1.63 kB │ gzip:  0.77 kB
+@pm/qwik:build: dist/qwik/build/q-CELQbJEC.js                 1.64 kB │ gzip:  0.88 kB
+@pm/qwik:build: dist/qwik/build/q-AObrK6Yu.js                 1.70 kB │ gzip:  0.78 kB
+@pm/qwik:build: dist/qwik/build/q-D0hZ56rD.js                 2.02 kB │ gzip:  0.99 kB
+@pm/qwik:build: dist/qwik/build/q-C6NREL-z.js                 2.08 kB │ gzip:  0.98 kB
+@pm/qwik:build: dist/qwik/build/q-9BW66KIQ.js                 2.24 kB │ gzip:  1.09 kB
+@pm/qwik:build: dist/qwik/build/q-naDMFAHy.js                 3.10 kB │ gzip:  1.68 kB
+@pm/qwik:build: dist/qwik/build/q-xF93od1i.js                 3.13 kB │ gzip:  1.29 kB
+@pm/qwik:build: dist/qwik/build/q-hlQTHS0s.js                 3.73 kB │ gzip:  2.01 kB
+@pm/qwik:build: dist/qwik/build/q-D09ZKff_.js                 5.62 kB │ gzip:  2.10 kB
+@pm/qwik:build: dist/qwik/build/q-CsS_zbnN.js                 7.02 kB │ gzip:  2.86 kB
+@pm/qwik:build: dist/qwik/build/q-45zyfnk0.js                 8.00 kB │ gzip:  3.35 kB
+@pm/qwik:build: dist/qwik/build/q-BWzGeRoa.js                 9.32 kB │ gzip:  4.33 kB
+@pm/qwik:build: dist/qwik/build/q-C1k4ntc-.js                50.92 kB │ gzip: 20.62 kB
+@pm/qwik:build: ✓ built in 328ms
+@pm/react-next:build: Monorepo detected at /Users/roblark/Work/project-matrix
+@pm/react-next:build: App directory: /Users/roblark/Work/project-matrix/variants/react-next
+@pm/react-next:build: Next.js version : 16.2.10
+@pm/react-next:build: @opennextjs/cloudflare version: 1.20.1
+@pm/react-next:build: @opennextjs/aws version: 4.0.2
+@pm/react-next:build: workerd compatibility_date: 2026-06-01
+@pm/react-next:build: 
+@pm/react-next:build: ┌─────────────────────────────────┐
+@pm/react-next:build: │ OpenNext — Building Next.js app │
+@pm/react-next:build: └─────────────────────────────────┘
+@pm/react-next:build: 
+@pm/qwik:build: $ vite build -c adapters/cloudflare-workers/vite.config.ts
+@pm/qwik:build: vite v7.3.1 building ssr environment for production...
+@pm/qwik:build: transforming...
+@pm/qwik:build: ✓ 48 modules transformed.
+@pm/qwik:build: rendering chunks...
+@pm/qwik:build: server/entry.ssr.js                0.08 kB
+@pm/qwik:build: server/@qwik-city-plan.js         20.57 kB
+@pm/qwik:build: server/entry.cloudflare-pages.js  23.30 kB
+@pm/qwik:build: server/q-DZBeQTVi.js              23.37 kB
+@pm/qwik:build: server/q-CXmAofzP.js              79.46 kB
+@pm/qwik:build: ✓ built in 311ms
+@pm/qwik:build: 
+@pm/qwik:build: Starting Qwik City SSG...
+@pm/qwik:build: 
+@pm/qwik:build: SSG results
+@pm/qwik:build: - Duration: 1.6 ms
+@pm/qwik:build: 
+@pm/qwik:build: [plugin vite-plugin-qwik-city-cloudflare-pages] 
+@pm/qwik:build: ==============================================
+@pm/qwik:build: Note: Make sure that you are serving the built files with proper cache headers.
+@pm/qwik:build: See https://qwik.dev/docs/deployments/#cache-headers for more information.
+@pm/qwik:build: ==============================================
+@pm/react-next:build: ▲ Next.js 16.2.10 (Turbopack)
+@pm/react-next:build: 
+@pm/react-next:build:   Creating an optimized production build ...
+@pm/react-next:build: ✓ Compiled successfully in 1283ms
+@pm/react-next:build:   Running TypeScript ...
+@pm/react-next:build:   Finished TypeScript in 2.0s ...
+@pm/react-next:build:   Collecting page data using 9 workers ...
+@pm/react-next:build:   Generating static pages using 9 workers (0/3) ...
+@pm/react-next:build: ✓ Generating static pages using 9 workers (3/3) in 169ms
+@pm/react-next:build:   Finalizing page optimization ...
+@pm/react-next:build: 
+@pm/react-next:build: Route (app)
+@pm/react-next:build: ┌ ○ /_not-found
+@pm/react-next:build: ├ ƒ /editorial
+@pm/react-next:build: ├ ƒ /pdp/[slug]
+@pm/react-next:build: ├ ƒ /plp/apollo
+@pm/react-next:build: ├ ƒ /plp/plain
+@pm/react-next:build: └ ƒ /plp/tanstack
+@pm/react-next:build: 
+@pm/react-next:build: 
+@pm/react-next:build: ○  (Static)   prerendered as static content
+@pm/react-next:build: ƒ  (Dynamic)  server-rendered on demand
+@pm/react-next:build: 
+@pm/react-next:build: 
+@pm/react-next:build: ┌──────────────────────────────┐
+@pm/react-next:build: │ OpenNext — Generating bundle │
+@pm/react-next:build: └──────────────────────────────┘
+@pm/react-next:build: 
+@pm/react-next:build: Bundling middleware function...
+@pm/react-next:build: Bundling static assets...
+@pm/react-next:build: Bundling cache assets...
+@pm/react-next:build: Building server function: default...
+@pm/react-next:build: Applying code patches: 1.483s
+@pm/react-next:build: # copyPackageTemplateFiles
+@pm/react-next:build: [35m⚙️ Bundling the OpenNext server...
+@pm/react-next:build: [0m
+@pm/react-next:build: [35mWorker saved in `.open-next/worker.js` 🚀
+@pm/react-next:build: [0m
+@pm/react-next:build: OpenNext build complete.
+
+ Tasks:    14 successful, 14 total
+Cached:    2 cached, 14 total
+  Time:    11.196s 
+
+front: stamped dist/_pm/build.json and dist/how-it-was-built/index.html (fec4a29, dirty)
+seeding 61 snapshot objects (crate "synthesized-placeholder-fixture") into local R2
+snapshot seeded
+
+ ⛅️ wrangler 4.110.0
+────────────────────
+Resource location: local 
+
+Use --remote if you want to access the remote instance.
+
+Migrations to be applied:
+┌───────────────────────────────┐
+│ name                          │
+├───────────────────────────────┤
+│ 0001_init.sql                 │
+├───────────────────────────────┤
+│ 0002_scheduled_publishing.sql │
+└───────────────────────────────┘
+? About to apply 2 migration(s)
+Your database may not be available to serve requests during the migration, continue?
+🤖 Using fallback value in non-interactive context: yes
+🌀 Executing on local database pm-blog (61f77cf8-8924-4e15-bf1c-508442436016) from .wrangler/state/v3/d1:
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+🚣 13 commands executed successfully.
+┌───────────────────────────────┬────────┐
+│ name                          │ status │
+├───────────────────────────────┼────────┤
+│ 0001_init.sql                 │ ✅     │
+├───────────────────────────────┼────────┤
+│ 0002_scheduled_publishing.sql │ 🕒️    │
+└───────────────────────────────┴────────┘
+🌀 Executing on local database pm-blog (61f77cf8-8924-4e15-bf1c-508442436016) from .wrangler/state/v3/d1:
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+🚣 3 commands executed successfully.
+┌───────────────────────────────┬────────┐
+│ name                          │ status │
+├───────────────────────────────┼────────┤
+│ 0001_init.sql                 │ ✅     │
+├───────────────────────────────┼────────┤
+│ 0002_scheduled_publishing.sql │ ✅     │
+└───────────────────────────────┴────────┘
+started edge (logs: tools/origin-suite/.dev-logs/edge.log)
+started placeholder-static (logs: tools/origin-suite/.dev-logs/placeholder-static.log)
+started placeholder-ssr (logs: tools/origin-suite/.dev-logs/placeholder-ssr.log)
+started vanilla (logs: tools/origin-suite/.dev-logs/vanilla.log)
+started react-next (logs: tools/origin-suite/.dev-logs/react-next.log)
+started astro (logs: tools/origin-suite/.dev-logs/astro.log)
+started qwik (logs: tools/origin-suite/.dev-logs/qwik.log)
+started htmx (logs: tools/origin-suite/.dev-logs/htmx.log)
+started remix3 (logs: tools/origin-suite/.dev-logs/remix3.log)
+started blog (logs: tools/origin-suite/.dev-logs/blog.log)
+started front (logs: tools/origin-suite/.dev-logs/front.log)
+waiting for the composed origin at http://127.0.0.1:8787
+composed origin ready
+running the suite
+
+ RUN  v4.1.10 /Users/roblark/Work/project-matrix/tools/origin-suite
+
+stdout | suite/plp.test.ts
+[snapshot-resolution] origin serves crate "synthesized-placeholder-fixture" — asserting the committed artifacts under tools/snapshot-fixture/snapshot
+
+ ❯ suite/plp.test.ts (14 tests | 4 failed) 763ms
+     × react-next: a facet click's URL serves the filtered grid — count, cards and selected facet all agree with the tray 80ms
+     × react-next: a search URL and a sort URL each serve what the tray says 24ms
+     × react-next: a junk filter is a branded 404 — "No such filter" — not the data-plane-down page 13ms
+     × react-next: an empty result is honest — "Showing 0 of 0", no pagination landmark, no error 29ms
+stdout | suite/plp.browser.test.ts
+[snapshot-resolution] origin serves crate "synthesized-placeholder-fixture" — asserting the committed artifacts under tools/snapshot-fixture/snapshot
+
+ ❯ suite/plp.browser.test.ts (7 tests | 2 failed) 17066ms
+     × a search and a sort each swap in place and state what the tray states 196ms
+     × a search and a sort each swap in place and state what the tray states 15202ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  suite/plp.browser.test.ts > htmx: the controls are real, JS on > a search and a sort each swap in place and state what the tray states
+AssertionError: expected '  Golden  ' to be 'Golden' // Object.is equality
+
+Expected: "Golden"
+Received: "  Golden  "
+
+ ❯ suite/plp.browser.test.ts:121:57
+    119|       );
+    120|       expect(await statedTotal(page)).toBe(await trayTotal({ q: word }…
+    121|       expect(new URL(page.url()).searchParams.get("q")).toBe(word);
+       |                                                         ^
+    122|       // The sort: newest first; the first card is the tray's first it…
+    123|       await page.selectOption("#plp-sort", "year-desc");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  suite/plp.browser.test.ts > react-next: the controls are real, JS on > a search and a sort each swap in place and state what the tray states
+TimeoutError: page.waitForFunction: Timeout 15000ms exceeded.
+ ❯ suite/plp.browser.test.ts:115:18
+    113|       await page.fill("#plp-q", `  ${word}  `);
+    114|       await page.locator(".pm-toolbar__search button").click();
+    115|       await page.waitForFunction(
+       |                  ^
+    116|         (w) => (document.querySelector("#plp-q") as HTMLInputElement |…
+    117|         word,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  suite/plp.test.ts > both arms serve the filtered grid, by value > react-next: a facet click's URL serves the filtered grid — count, cards and selected facet all agree with the tray
+Error: no toolbar count line in the page
+ ❯ statedTotal suite/plp.test.ts:50:17
+     48|     /<p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">…
+     49|   );
+     50|   if (!m) throw new Error("no toolbar count line in the page");
+       |                 ^
+     51|   return Number(m[1]);
+     52| }
+ ❯ suite/plp.test.ts:141:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  suite/plp.test.ts > both arms serve the filtered grid, by value > react-next: a search URL and a sort URL each serve what the tray says
+Error: no toolbar count line in the page
+ ❯ statedTotal suite/plp.test.ts:50:17
+     48|     /<p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">…
+     49|   );
+     50|   if (!m) throw new Error("no toolbar count line in the page");
+       |                 ^
+     51|   return Number(m[1]);
+     52| }
+ ❯ suite/plp.test.ts:157:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  suite/plp.test.ts > both arms serve the filtered grid, by value > react-next: a junk filter is a branded 404 — "No such filter" — not the data-plane-down page
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ suite/plp.test.ts:175:64
+    173|       expect(body).not.toContain("didn&#x27;t answer");
+    174|       // Still a shell page: the chrome slot is present, so the instru…
+    175|       expect((body.match(/data-pm-chrome="1"/g) ?? []).length).toBe(1);
+       |                                                                ^
+    176|     });
+    177|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  suite/plp.test.ts > both arms serve the filtered grid, by value > react-next: an empty result is honest — "Showing 0 of 0", no pagination landmark, no error
+AssertionError: expected '<!DOCTYPE html><html lang="en"><head>…' to contain 'Showing <span class="pm-toolbar__n">0…'
+
+- Expected
++ Received
+
+- Showing <span class="pm-toolbar__n">0</span> of <span class="pm-toolbar__n">0</span> releases
++ <!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" as="script" fetchPriority="low" href="/react-next/_next/static/chunks/06bx98uumli71.js"/><script src="/react-next/_next/static/chunks/2ijfe9bmghwc5.js" async=""></script><script src="/react-next/_next/static/chunks/20q769xt4j3v6.js" async=""></script><script src="/react-next/_next/static/chunks/turbopack-084090w3afeq8.js" async=""></script><script src="/react-next/_next/static/chunks/1g4e0eyqrzdu8.js" async=""></script><script src="/react-next/_next/static/chunks/2t482khrpt87u.js" async=""></script><script src="/react-next/_next/static/chunks/3p8uaczlvlv_-.js" async=""></script><link rel="preload" href="/react-next/assets/pm/css/fonts.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/tokens.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/surfaces/shell.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/masthead.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/footer.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/button.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/release-card.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/facets.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/toolbar.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/components/pagination.css" as="style"/><link rel="preload" href="/react-next/assets/pm/css/surfaces/plp.css" as="style"/><title>Records — Long Decay Records</title><link rel="icon" href="/react-next/favicon.ico?favicon.2vob68tjqpejf.ico" sizes="256x256" type="image/x-icon"/><link rel="preload" href="/react-next/assets/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin=""/><link rel="preload" href="/react-next/assets/pm/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin=""/><link rel="stylesheet" href="/react-next/assets/pm/css/fonts.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/tokens.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/surfaces/shell.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/masthead.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/footer.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/button.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/release-card.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/facets.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/toolbar.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/components/pagination.css"/><link rel="stylesheet" href="/react-next/assets/pm/css/surfaces/plp.css"/><script src="/react-next/_next/static/chunks/0cz1d0mv5g_q7.js" noModule=""></script><link rel="preload" href="/_pm/fonts/PMInstrumentMono.var.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/_pm/chrome.css"></head><body><div hidden=""><!--$--><!--/$--></div><a class="pm-skip pm-button" href="#main">Skip to content</a><div id="pm-chrome-slot"><aside id="pm-chrome" data-pm-chrome="1" data-pm-variant="react-next" data-pm-surface="plp" data-pm-environment="n=24|cache=cold" data-pm-cache-state="cold" data-pm-location="SJC" aria-label="Project Matrix instrument"><div class="pm-chrome__bar"><span class="pm-chrome__mark" aria-hidden="true">PM</span><nav class="pm-chrome__switch" aria-label="Variant switcher" data-pm-switcher><span class="pm-chrome__key">strategy</span><span class="pm-chrome__cell pm-chrome__cell--current" aria-current="page">No caching (cold)</span><a class="pm-chrome__cell" href="/react-next/plp/tanstack/?cache=cold&amp;q=zzzz-no-such-record-zzzz">Client cache — TanStack Query</a><a class="pm-chrome__cell" href="/htmx/plp/?cache=cold&amp;q=zzzz-no-such-record-zzzz">Server-rendered — loaders + PE</a><a class="pm-chrome__cell" href="/react-next/plp/plain/?q=zzzz-no-such-record-zzzz">Edge cache — KV</a></nav><span class="pm-chrome__mini"><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">LCP</span><span class="pm-chrome__vital-value" data-pm-hud-live="LCP">–</span></span><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">CLS</span><span class="pm-chrome__vital-value" data-pm-hud-live="CLS">–</span></span></span><details class="pm-chrome__instrument"><summary class="pm-chrome__summary">Instrument<span class="pm-chrome__sr"> — lab readings and your visit</span></summary><div class="pm-chrome__panel" data-pm-hud><section class="pm-chrome__section"><h3 class="pm-chrome__h">This surface</h3><p>The catalogue grid under the data axis: where the data layer lives — nowhere, the browser, the server, or the edge — is the variable. The switcher is the scenario table. <span class="pm-chrome__note">Served by 2 of 2 planned variants today.</span></p></section><section class="pm-chrome__section"><h3 class="pm-chrome__h">The reading</h3><p class="pm-chrome__row"><span class="pm-chrome__key">lab profile</span><a class="pm-chrome__cell" href="/react-next/plp/plain/?cache=cold&amp;q=zzzz-no-such-record-zzzz&amp;profile=fast-wifi-laptop">Fast WiFi · laptop</a><span class="pm-chrome__cell pm-chrome__cell--current" aria-current="true">Average broadband · desktop</span><a class="pm-chrome__cell" href="/react-next/plp/plain/?cache=cold&amp;q=zzzz-no-such-record-zzzz&amp;profile=slow-4g-mid-phone">Slow 4G · mid-range phone</a><span class="pm-chrome__note">selects the displayed snapshot — never re-throttles this page</span></p><div class="pm-chrome__scroll" role="region" aria-label="Published lab readings" tabindex="0"><table class="pm-chrome__table"><caption class="pm-chrome__sr">Published lab readings under the selected profile: each cell is the median of the batch's runs, followed by that metric's min–max band across those runs — where two bands overlap the difference is inside the noise. Values are the WARM (steady-state edge) column regardless of this page's own cache knob; the linked receipt carries the cold column beside it. An em-dash is a cell with no published run — or, where a row says so, a metric this surface withholds because it does not measure the same thing in every column. Lab compares; the live readout below is your reality check.</caption><thead><tr><td></td><th scope="col" class="pm-chrome__th">No caching (cold)</th><th scope="col" class="pm-chrome__th">Client cache — TanStack Query</th><th scope="col" class="pm-chrome__th">Server-rendered — loaders + PE</th><th scope="col" class="pm-chrome__th">Edge cache — KV</th></tr></thead><tbody><tr><th scope="row" class="pm-chrome__th">initial JS</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr><tr><th scope="row" class="pm-chrome__th">TTFB</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr><tr><th scope="row" class="pm-chrome__th">FCP</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr><tr><th scope="row" class="pm-chrome__th">LCP</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr><tr><th scope="row" class="pm-chrome__th">CLS</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr><tr><th scope="row" class="pm-chrome__th">INP (scripted)</th><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td><td class="pm-chrome__td pm-chrome__none">—</td></tr></tbody></table></div><p data-pm-hud-lab>No published runs yet. When a number lands here it carries its receipt — profile, date, commit, location — or it doesn't land at all.</p></section><section class="pm-chrome__section"><h3 class="pm-chrome__h">Fit</h3><p data-pm-hud-fit>No verdict — nothing is published for this page yet. <span class="pm-chrome__note">A fit line reads one surface under one condition — never a global ranking.</span></p></section><section class="pm-chrome__section"><h3 class="pm-chrome__h">Your visit</h3><p class="pm-chrome__vitals"><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">TTFB</span><span class="pm-chrome__vital-value" data-pm-hud-live="TTFB">–</span></span><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">FCP</span><span class="pm-chrome__vital-value" data-pm-hud-live="FCP">–</span></span><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">LCP</span><span class="pm-chrome__vital-value" data-pm-hud-live="LCP">–</span></span><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">CLS</span><span class="pm-chrome__vital-value" data-pm-hud-live="CLS">–</span></span><span class="pm-chrome__vital"><span class="pm-chrome__vital-name">INP</span><span class="pm-chrome__vital-value" data-pm-hud-live="INP">–</span></span></p><p class="pm-chrome__note">These numbers are your visit — your device, your network — measured by the same pinned ruler every page gets. TTFB and first paint land right away; layout-shift and interaction metrics settle as you use or leave the page.</p><noscript><p class="pm-chrome__note">JavaScript is off, so the live readout stays blank — the switcher and everything else here works without it.</p></noscript><p class="pm-chrome__vow">When a published number and yours disagree, trust yours — then <a href="https://github.com/Robert-Lark/project-matrix/issues" rel="noopener">send me the URL</a>.</p></section><section class="pm-chrome__section"><h3 class="pm-chrome__h">The condition</h3><dl class="pm-chrome__cond"><div class="pm-chrome__cond-item"><dt>variant</dt><dd>react-next</dd></div><div class="pm-chrome__cond-item"><dt>surface</dt><dd>plp</dd></div><div class="pm-chrome__cond-item"><dt>n</dt><dd>24</dd></div><div class="pm-chrome__cond-item"><dt>cache</dt><dd>cold</dd></div><div class="pm-chrome__cond-item"><dt>profile</dt><dd>—</dd></div><div class="pm-chrome__cond-item"><dt>served from</dt><dd>SJC</dd></div><div class="pm-chrome__cond-item"><dt>snapshot</dt><dd><a href="/api/snapshot">manifest</a></dd></div></dl><p class="pm-chrome__note">The URL is the whole measurement condition — share it and you share the experiment.</p></section><section class="pm-chrome__section"><h3 class="pm-chrome__h">Controls</h3><p class="pm-chrome__row"><span class="pm-chrome__key">data volume</span><span class="pm-chrome__cell pm-chrome__cell--current" aria-current="true">n=24</span><a class="pm-chrome__cell" href="/react-next/plp/plain/?cache=cold&amp;q=zzzz-no-such-record-zzzz&amp;n=240">n=240</a></p><p class="pm-chrome__row"><span class="pm-chrome__key">fenced</span><a class="pm-chrome__cell pm-chrome__cell--fenced" href="/react-next/plp/apollo/?cache=cold">Misapplication exhibit — Apollo on REST</a><span class="pm-chrome__note">measured with the same harness, excluded from every benchmark number</span></p><p class="pm-chrome__row"><span class="pm-chrome__key">last interaction</span><span data-pm-hud-interaction>—</span><span class="pm-chrome__note">per-interaction byte readout — not built yet</span></p><p class="pm-chrome__row"><span class="pm-chrome__key">replay</span><span data-pm-hud-replay>—</span><span class="pm-chrome__note">the published sequence, runnable in-page — not built yet</span></p></section></div></details></div></aside><script src="/_pm/measure.js" defer></script></div><div class="pm-page"><header class="pm-masthead"><a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a><nav class="pm-masthead__nav" aria-label="Store"><a class="pm-masthead__link" href="/react-next/plp/plain/" aria-current="page">Records</a><a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a></nav><a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count="" aria-hidden="true"></span></a></header><main id="main"><div class="pm-plp"><header class="pm-plp__head"><h1 class="pm-page__title">Records</h1><div class="pm-toolbar"><p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">0</span> of<!-- --> <span class="pm-toolbar__n">0</span> releases</p><form class="pm-toolbar__search" action="" method="get"><input type="hidden" name="cache" value="cold"/><div><label class="pm-toolbar__label" for="plp-q">Search the crate</label><input class="pm-toolbar__input" id="plp-q" type="search" autoComplete="off" name="q" value="zzzz-no-such-record-zzzz"/></div><button class="pm-button pm-button--secondary" type="submit">Search</button></form><form class="pm-toolbar__sort" action="" method="get"><input type="hidden" name="cache" value="cold"/><input type="hidden" name="q" value="zzzz-no-such-record-zzzz"/><div><label class="pm-toolbar__label" for="plp-sort">Sort</label><select class="pm-toolbar__select" id="plp-sort" name="sort"><option value="" selected="">Catalogue order</option><option value="year-desc">Year — newest first</option><option value="year-asc">Year — oldest first</option><option value="price-asc">Price — low to high</option><option value="price-desc">Price — high to low</option><option value="title">Title — A to Z</option></select></div><button class="pm-button pm-button--secondary" type="submit">Apply</button></form></div></header><div class="pm-plp__body"><nav class="pm-facets" aria-label="Filters"><section class="pm-facets__group"><h3 class="pm-facets__title">Genre</h3><ul class="pm-facets__list" role="list"></ul></section><section class="pm-facets__group"><h3 class="pm-facets__title">Style</h3><ul class="pm-facets__list" role="list"></ul></section><section class="pm-facets__group"><h3 class="pm-facets__title">Format</h3><ul class="pm-facets__list" role="list"></ul></section></nav><div class="pm-plp__results"><ul class="pm-grid" role="list"></ul></div></div></div></main><p class="pm-status" role="status" data-pm-status=""></p><footer class="pm-footer"><p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p><nav class="pm-footer__nav" aria-label="About this site"><a href="/">What is this?</a><a href="/vanilla/a11y/">Accessibility, shown</a><a href="/how-it-was-built/">How it was built</a><a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a></nav></footer></div><!--$--><!--/$--><script src="/react-next/_next/static/chunks/06bx98uumli71.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[24106,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"default\"]\n3:I[5377,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"default\"]\n4:I[54621,[\"/react-next/_next/static/chunks/2t482khrpt87u.js\"],\"default\"]\n5:I[738,[\"/react-next/_next/static/chunks/3p8uaczlvlv_-.js\"],\"CartCount\"]\ne:I[55690,[],\"default\",1]\nf:I[2386,[\"/react-next/_next/static/chunks/3p8uaczlvlv_-.js\"],\"CartStatus\"]\n11:I[66029,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"OutletBoundary\"]\n12:\"$Sreact.suspense\"\n15:I[66029,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"ViewportBoundary\"]\n17:I[66029,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"MetadataBoundary\"]\n19:I[12628,[\"/react-next/_next/static/chunks/1g4e0eyqrzdu8.js\"],\"IconMark\"]\n:HL[\"/react-next/assets/pm/fonts/FamiljenGrotesk.var.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/react-next/assets/pm/fonts/PMCrateSymbols.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/react-next/assets/pm/css/fonts.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/tokens.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/surfaces/shell.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/masthead.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/footer.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/button.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/release-card.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/facets.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/toolbar.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/components/pagination.css\",\"style\"]\n:HL[\"/react-next/assets/pm/css/surfaces/plp.css\",\"style\"]\n0:{\"P\":null,\"c\":[\"\",\"plp\",\"plain\",\"?cache=cold\u0026q=zzzz-no-such-record-zzzz\"],\"q\":\"?cache=cold\u0026q=zzzz-no-such-record-zzzz\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"(plp)\",{\"children\":[\"plp\",{\"children\":[\"plain\",{\"children\":[\"__PAGE__?{\\\"cache\\\":\\\"cold\\\",\\\"q\\\":\\\"zzzz-no-such-record-zzzz\\\"}\",{}]}]}]},\"$undefined\",\"$undefined\",16]}],[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[[\"$\",\"head\",null,{\"children\":[[\"$\",\"link\",null,{\"rel\":\"preload\",\"href\":\"/react-next/assets/pm/fonts/FamiljenGrotesk.var.woff2\",\"as\":\"font\",\"type\":\"font/woff2\",\"crossOrigin\":\"\"}],[\"$\",\"link\",null,{\"rel\":\"preload\",\"href\":\"/react-next/assets/pm/fonts/PMCrateSymbols.woff2\",\"as\":\"font\",\"type\":\"font/woff2\",\"crossOrigin\":\"\"}],[[\"$\",\"link\",\"fonts.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/fonts.css\"}],[\"$\",\"link\",\"tokens.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/tokens.css\"}],[\"$\",\"link\",\"surfaces/shell.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/surfaces/shell.css\"}],[\"$\",\"link\",\"compone"])</script><script>self.__next_f.push([1,"nts/masthead.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/masthead.css\"}],[\"$\",\"link\",\"components/footer.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/footer.css\"}],[\"$\",\"link\",\"components/button.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/button.css\"}],[\"$\",\"link\",\"components/release-card.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/release-card.css\"}],[\"$\",\"link\",\"components/facets.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/facets.css\"}],[\"$\",\"link\",\"components/toolbar.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/toolbar.css\"}],[\"$\",\"link\",\"components/pagination.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/components/pagination.css\"}],[\"$\",\"link\",\"surfaces/plp.css\",{\"rel\":\"stylesheet\",\"href\":\"/react-next/assets/pm/css/surfaces/plp.css\"}]]]}],[\"$\",\"body\",null,{\"children\":[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$4\",\"errorStyles\":[],\"errorScripts\":[[\"$\",\"script\",\"script-0\",{\"src\":\"/react-next/_next/static/chunks/2t482khrpt87u.js\",\"async\":true}]],\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"a\",null,{\"className\":\"pm-skip pm-button\",\"href\":\"#main\",\"children\":\"Skip to content\"}],[\"$\",\"div\",null,{\"id\":\"pm-chrome-slot\",\"suppressHydrationWarning\":true,\"dangerouslySetInnerHTML\":{\"__html\":\"\"}}],[\"$\",\"div\",null,{\"className\":\"pm-page\",\"children\":[[\"$\",\"header\",null,{\"className\":\"pm-masthead\",\"children\":[[\"$\",\"a\",null,{\"className\":\"pm-masthead__brand\",\"href\":\"/\",\"children\":[\"Long Decay\",[\"$\",\"span\",null,{\"children\":\" Records\"}]]}],[\"$\",\"nav\",null,{\"className\":\"pm-masthead__nav\",\"aria-label\":\"Store\",\"children\":[[\"$\",\"a\",null,{\"className\":\"pm-masthead__link\",\"href\":\"/react-next/plp/plain/\",\"aria-current\":\"page\",\"children\":\"Records\"}],[\"$\",\"a\",null,{\"className\":\"pm-masthead__link\",\"href\":\"/vanilla/editorial/\",\"aria-current\":\"$undefined\",\"children\":\"Editorial\"}]]}],[\"$\",\"$L5\",null,{\"checkoutHref\":\"/vanilla/checkout/\"}]]}],[\"$\",\"main\",null,{\"id\":\"main\",\"children\":\"$L6\"}],\"$L7\",\"$L8\"]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]]}]]}],{\"children\":[\"$L9\",{\"children\":[\"$La\",{\"children\":[\"$Lb\",{},null,false,null]},null,false,\"$@c\"]},null,false,\"$@c\"]},null,false,null]},null,false,\"$@c\"],\"$Ld\",false]],\"m\":\"$undefined\",\"G\":[\"$e\",[]],\"S\":false,\"h\":null,\"s\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"TcyYZYzIbdFjI_r7eqewE\"}\n6:[\"$\",\"div\",null,{\"className\":\"pm-plp\",\"children\":[[\"$\",\"h1\",null,{\"children\":\"No such filter\"}],[\"$\",\"p\",null,{\"children\":[\"Nothing in the crate is filed under that value. The filters on the\",\" \",[\"$\",\"a\",null,{\"href\":\"/react-next/plp/plain/\",\"children\":\"catalogue\"}],\" list what there is.\"]}]]}]\n7:[\"$\",\"$Lf\",null,{}]\n8:[\"$\",\"footer\",null,{\"className\":\"pm-footer\",\"children\":[[\"$\",\"p\",null,{\"className\":\"pm-footer__fiction\",\"children\":\"A working store on frozen Discogs data — nothing ships, checkout is simulated.\"}],[\"$\",\"nav\",null,{\"className\":\"pm-footer__nav\",\"aria-label\":\"About this site\",\"children\":[[\"$\",\"a\",null,{\"href\":\"/\",\"children\":\"What is this?\"}],[\"$\",\"a\",null,{\"href\":\"/vanilla/a11y/\",\"children\":\"Accessibility, shown\"}],[\"$\",\"a\",null,{\"href\":\"/how-it-was-built/\",\"children\":\"How it was built\"}],[\"$\",\"a\",null,{\"href\":\"https://github.com/Robert-Lark/project-matrix\",\"rel\":\"noopener\",\"children\":\"GitHub\"}]]}]]}]\n9:[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}]\na:[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"u"])</script><script>self.__next_f.push([1,"nauthorized\":\"$undefined\"}]]}]\nb:[\"$\",\"$1\",\"c\",{\"children\":[\"$L10\",[[\"$\",\"script\",\"script-0\",{\"src\":\"/react-next/_next/static/chunks/3p8uaczlvlv_-.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L11\",null,{\"children\":[\"$\",\"$12\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@13\"}]}]]}]\n14:[]\nc:\"$W14\"\nd:[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$L15\",null,{\"children\":\"$L16\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$L17\",null,{\"children\":[\"$\",\"$12\",null,{\"name\":\"Next.Metadata\",\"children\":\"$L18\"}]}]}],null]}]\n16:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\n13:null\n18:[[\"$\",\"title\",\"0\",{\"children\":\"Records — Long Decay Records\"}],[\"$\",\"link\",\"1\",{\"rel\":\"icon\",\"href\":\"/react-next/favicon.ico?favicon.2vob68tjqpejf.ico\",\"sizes\":\"256x256\",\"type\":\"image/x-icon\"}],[\"$\",\"$L19\",\"2\",{}]]\n1a:I[61662,[\"/react-next/_next/static/chunks/3p8uaczlvlv_-.js\"],\"PlpPlain\"]\n10:[[\"$\",\"a\",null,{\"className\":\"pm-skip pm-button\",\"href\":\"#main\",\"children\":\"Skip to content\"}],[\"$\",\"div\",null,{\"id\":\"pm-chrome-slot\",\"suppressHydrationWarning\":true,\"dangerouslySetInnerHTML\":{\"__html\":\"\"}}],[\"$\",\"div\",null,{\"className\":\"pm-page\",\"children\":[[\"$\",\"header\",null,{\"className\":\"pm-masthead\",\"children\":[[\"$\",\"a\",null,{\"className\":\"pm-masthead__brand\",\"href\":\"/\",\"children\":[\"Long Decay\",[\"$\",\"span\",null,{\"children\":\" Records\"}]]}],[\"$\",\"nav\",null,{\"className\":\"pm-masthead__nav\",\"aria-label\":\"Store\",\"children\":[[\"$\",\"a\",null,{\"className\":\"pm-masthead__link\",\"href\":\"/react-next/plp/plain/\",\"aria-current\":\"page\",\"children\":\"Records\"}],[\"$\",\"a\",null,{\"className\":\"pm-masthead__link\",\"href\":\"/vanilla/editorial/\",\"aria-current\":\"$undefined\",\"children\":\"Editorial\"}]]}],[\"$\",\"$L5\",null,{\"checkoutHref\":\"/vanilla/checkout/\"}]]}],[\"$\",\"main\",null,{\"id\":\"main\",\"children\":[\"$\",\"$L1a\",null,{\"initial\":{\"items\":[],\"page\":1,\"perPage\":24,\"total\":0,\"totalPages\":0,\"facets\":{\"genres\":[],\"styles\":[],\"formats\":[]},\"applied\":{\"genre\":null,\"style\":null,\"format\":null,\"sort\":null,\"q\":\"zzzz-no-such-record-zzzz\"}},\"condition\":{\"n\":24,\"page\":1,\"cache\":\"cold\",\"run\":\"\",\"profile\":\"\",\"genre\":null,\"style\":null,\"format\":null,\"sort\":null,\"q\":\"zzzz-no-such-record-zzzz\"}}]}],[\"$\",\"$Lf\",null,{}],[\"$\",\"footer\",null,{\"className\":\"pm-footer\",\"children\":[[\"$\",\"p\",null,{\"className\":\"pm-footer__fiction\",\"children\":\"A working store on frozen Discogs data — nothing ships, checkout is simulated.\"}],[\"$\",\"nav\",null,{\"className\":\"pm-footer__nav\",\"aria-label\":\"About this site\",\"children\":[[\"$\",\"a\",null,{\"href\":\"/\",\"children\":\"What is this?\"}],[\"$\",\"a\",null,{\"href\":\"/vanilla/a11y/\",\"children\":\"Accessibility, shown\"}],[\"$\",\"a\",null,{\"href\":\"/how-it-was-built/\",\"children\":\"How it was built\"}],[\"$\",\"a\",null,{\"href\":\"https://github.com/Robert-Lark/project-matrix\",\"rel\":\"noopener\",\"children\":\"GitHub\"}]]}]]}]]}]]\n"])</script></body></html>
+
+ ❯ suite/plp.test.ts:182:20
+    180|       expect(res.status).toBe(200);
+    181|       const body = await res.text();
+    182|       expect(body).toContain('Showing <span class="pm-toolbar__n">0</s…
+       |                    ^
+    183|       expect(body).not.toContain('class="pm-pagination"');
+    184|       expect(body).not.toContain("pm-release-card");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  2 failed | 20 passed (22)
+      Tests  6 failed | 567 passed (573)
+   Start at  19:51:26
+   Duration  143.25s (transform 1.98s, setup 0ms, import 7.27s, tests 374.81s, environment 2ms)
+
+exit 1

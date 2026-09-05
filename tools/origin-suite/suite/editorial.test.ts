@@ -1257,8 +1257,8 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
   it("the htmx EDITORIAL page carries zero hx- bytes, whatever the registry says", async () => {
     // This used to assert `PERMITTED_NOISE["htmx"]` was undefined, and that
     // was the right assertion right up until a surface put `hx-*` on a page.
-    // The PLP build did (`variants/htmx/src/render.mjs`, three attributes on
-    // one `<nav class="pm-pagination">`), and the note this replaced had
+    // The PLP build did (`variants/htmx/src/render.mjs`: `hx-target`/`hx-swap`
+    // on the `.pm-plp` root, `hx-boost` on its navigation containers), and the note this replaced had
     // predicted exactly that: "if a later surface (the PLP build …) puts
     // `hx-*` on a page, THAT build registers `^hx-` under
     // behaviorAttrPatterns deliberately." It did. The registration is the
