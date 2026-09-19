@@ -28,6 +28,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { PlpPage, ReleaseDetail } from "@pm/data-contract";
+import { HOME_TAGS, SMOKE_TAG } from "@pm/measurement";
 import { loadServedSnapshot } from "./snapshot";
 
 const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/, "");
@@ -318,6 +319,43 @@ describe("beacon collector (ADR-0001 §8)", () => {
 
   it("GET is not a state change (405)", async () => {
     expect((await get("/api/beacon")).status).toBe(405);
+  });
+
+  // The ROSTER (security floor, 2026-09-18): `variant` is the Analytics
+  // Engine index — the sampling key — and any string used to become one.
+  // Off-roster values are a 400 naming the tag, and the suite's own
+  // reserved value above is ON the roster by name (the accept leg proves
+  // that side). Real roster values are NOT posted here: on the deployed
+  // smoke every accepted point is a real, undeletable RUM point, and this
+  // file must never write one under a live variant's name.
+  it("rejects a variant or surface off the roster, naming the tag (RUM-dashboard pollution)", async () => {
+    for (const [tag, value] of [
+      ["variant", "not-a-variant"],
+      ["surface", "not-a-surface"],
+      ["variant", "unknown"], // the measurement client's own fallback literal
+      ["surface", "unknown"],
+      ["variant", "Vanilla"], // exact match: a case variant is not the prefix
+    ] as const) {
+      const res = await get("/api/beacon", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...fullEvent, tags: { ...fullEvent.tags, [tag]: value } }),
+      });
+      expect(res.status, `${tag}=${value} must 400`).toBe(400);
+      expect(await res.text()).toContain(tag);
+    }
+  });
+
+  it("the suite's reserved tag value is the roster's SMOKE_TAG — one spelling, importable", () => {
+    expect(fullEvent.tags.variant).toBe(SMOKE_TAG);
+    expect(fullEvent.tags.surface).toBe(SMOKE_TAG);
+  });
+
+  it("the home HUD's served tag pair is the roster's HOME_TAGS — the singleton's beacons stay accepted", async () => {
+    const body = await (await get("/")).text();
+    expect(body).toContain(
+      `data-pm-variant="${HOME_TAGS.variant}" data-pm-surface="${HOME_TAGS.surface}"`,
+    );
   });
 });
 

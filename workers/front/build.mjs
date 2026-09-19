@@ -45,6 +45,7 @@ import { fileURLToPath } from "node:url";
 import { buildSync } from "esbuild";
 import { FIT } from "./lab/fit.mjs";
 import { stampBuild } from "./stamp-build.mjs";
+import { headersFileText } from "./src/security-floor.js";
 // The real @pm/tokens sources + the head-colour/escape helpers, shared with
 // how-built-page.mjs (the how-it-was-built page is composed at stamp time).
 import { buttonCss, esc, token, tokensCss, tokensRoot, uriHex } from "./tokens-source.mjs";
@@ -58,6 +59,14 @@ mkdirSync(join(dist, "_pm", "lab", "receipts"), { recursive: true });
 mkdirSync(join(dist, "pm", "css"), { recursive: true });
 mkdirSync(join(dist, "pm", "fonts"), { recursive: true });
 mkdirSync(join(dist, "methodology"), { recursive: true });
+
+// The security-header floor for the assets-first paths (src/security-floor.js
+// — ONE definition with the Worker's own floor). Workers Static Assets parse
+// a `_headers` file at the assets root and never serve it; it applies ONLY to
+// asset responses (Cloudflare docs, fetched 2026-09-18), which is exactly the
+// set the script never sees: /, /methodology/, /how-it-was-built/, /_pm/*,
+// /pm/*. Written first, so no later step can assemble a dist without it.
+writeFileSync(join(dist, "_headers"), headersFileText());
 
 // ── Shared substitution plumbing ────────────────────────────────────────
 const manifest = JSON.parse(
@@ -1297,5 +1306,5 @@ cpSync(
 stampBuild();
 
 console.log(
-  "front: dist assembled (home + methodology + how-it-was-built + /pm fonts + /_pm instrumentation + lab bundle)",
+  "front: dist assembled (home + methodology + how-it-was-built + /pm fonts + /_pm instrumentation + lab bundle + _headers)",
 );

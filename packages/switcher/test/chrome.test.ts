@@ -7,7 +7,7 @@
  * of attributes.
  */
 import { describe, expect, it } from "vitest";
-import { PLP_N, PROFILE_IDS, plpWarmable } from "@pm/measurement";
+import { PLP_N, PROFILE_IDS, SURFACE_NAMES, plpWarmable } from "@pm/measurement";
 import { renderChrome } from "../src/chrome";
 import { SURFACE_CONTROLS, type SurfaceControls } from "../src/config";
 
@@ -623,5 +623,13 @@ describe("the PLP n knob IS the warm set (ADR-0005 addendum, 2026-09-04)", () =>
       expect(plpWarmable(new URLSearchParams({ n: String(n) })), `n=${n}`).toBe(true);
     }
     expect(plpWarmable(new URLSearchParams({ n: "48" }))).toBe(false);
+  });
+});
+
+describe("the registry's key set IS the beacon surface roster (security floor, 2026-09-18)", () => {
+  it("SURFACE_CONTROLS has exactly SURFACE_NAMES as keys — a surface registered here is one the collector accepts", () => {
+    // The compile-time pin is `satisfies Record<SurfaceName, …>` in config.ts;
+    // this is the same fact where a test run can see it.
+    expect(Object.keys(SURFACE_CONTROLS).sort()).toEqual([...SURFACE_NAMES].sort());
   });
 });

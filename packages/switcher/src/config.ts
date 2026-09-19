@@ -44,7 +44,7 @@
  * reads "In build" goes red; singletons flip theirs by hand.
  */
 
-import { PLP_N } from "@pm/measurement";
+import { PLP_N, type SurfaceName } from "@pm/measurement";
 
 export interface StrategyPreset {
   /** Honest label (CONTEXT.md vocabulary — never "cache mode"/"library"). */
@@ -98,7 +98,15 @@ export interface SurfaceControls {
   readonly labBundle?: boolean;
 }
 
-export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
+// The registry's KEY SET is the beacon roster's `SURFACE_NAMES`
+// (@pm/measurement, security floor 2026-09-18): the edge collector refuses a
+// `surface` tag off that list, and the chrome's tag is the path segment that
+// indexes this object — so the two must be ONE set. `satisfies` holds them
+// equal at compile time (a key added here without the roster, or a roster
+// name with no entry here, fails typecheck); the exported type stays
+// `Record<string, …>` because the chrome indexes it with a client-controlled
+// segment behind Object.hasOwn.
+const CONTROLS = {
   sample: {
     variants: ["placeholder-static", "placeholder-ssr"],
     proves:
@@ -214,7 +222,9 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
     proves:
       "The decision record as content — ADRs, build log, reviews. The process is the evidence.",
   },
-};
+} satisfies Record<SurfaceName, SurfaceControls>;
+
+export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = CONTROLS;
 
 /**
  * Every path the registry FENCES — the ONE derivation the bench runner's

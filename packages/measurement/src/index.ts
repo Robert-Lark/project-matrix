@@ -19,12 +19,20 @@ export {
   type TestProfile,
 } from "./profiles";
 export {
+  BEACON_SURFACES,
   BEACON_TAG_KEYS,
+  BEACON_VARIANTS,
+  HOME_TAGS,
   PLP_N,
+  SMOKE_TAG,
+  SURFACE_NAMES,
+  VARIANT_PREFIXES,
   clampN,
   knobTags,
   plpWarmable,
   type BeaconTagKey,
   type BeaconTags,
   type BeaconEvent,
+  type SurfaceName,
+  type VariantPrefix,
 } from "./beacon";
