@@ -984,3 +984,54 @@ a pre-2026-08-28 receipt's `interactionSettled` remains unearned until then** �
 an exposure this unit did not create and does not widen; it is what main
 publishes today. If the re-run is declined, the gate cannot land and this
 paragraph is the record of why.
+
+## Addendum — the transport floor's bytes, named (2026-09-18, `security-floor`)
+
+**U. Three response headers ride every measured response, identically, and
+the byte discipline names them — including the fact that the ruler cannot
+see them.** ADR-0004's addendum of the same date puts a security-header
+floor on every response the composed origin serves
+(`x-content-type-options: nosniff` · `referrer-policy:
+strict-origin-when-cross-origin` · `x-frame-options: DENY`). Their size on
+the wire: **106 bytes uncompressed per response on HTTP/1.1** (the three
+`name: value\r\n` lines; derived from the module by `workers/front/test`,
+and measured on the local plane on 2026-09-18 as `/vanilla/editorial/`'s
+header block growing 202 → 308 B). On the deployed plane's HTTP/2, HPACK's
+static table (RFC 7541 Appendix A, 61 entries) holds none of the three, so
+the first response on a connection carries them as Huffman literals and
+every later response one dynamic-table index byte each; on HTTP/3, QPACK's
+static table (RFC 9204 Appendix A) already indexes `x-content-type-options:
+nosniff` (61) and `x-frame-options: deny` (97) — our `DENY` spelling misses
+the value match and costs a literal value once per connection. Those
+compressed figures are read off the RFC tables, not measured: the plane
+deploys on merge, and the runner cannot see header frames.
+
+**The ruler cannot see them either — this is the fact the first draft of
+this addendum had backwards.** Resource Timing's `transferSize` is the
+runner's byte authority (addendum O), and the spec defines it as "the size
+(in octets) of the fetched resource … includes the response header fields
+plus the response payload body" — then replaces the header component with a
+constant: the algorithm returns the encoded body size plus 300 octets, and
+"the constant number added to `transferSize` replaces exposing the total
+byte size of the HTTP headers, as that might expose the presence of certain
+cookies" (w3c.org/TR/resource-timing, fetched 2026-09-18). Chromium — the
+browser the runner drives — implements exactly that: `static const size_t
+kHeaderSize = 300;` and `return encoded_body_size + kHeaderSize;`
+(`third_party/blink/renderer/core/timing/performance_resource_timing.{h,cc}`,
+fetched the same day). So add or remove any number of response-header bytes
+on the plane and **no published byte cell moves by a byte**: the floor is
+real on the wire and invisible to every KB cell, before and after this
+unit. It is named here so the discipline is complete, not because it is
+measured into a number. Constancy still holds and still matters for the
+timing cells (a header the transport carries is a header every variant
+carries, byte-identical by construction — one module, applied at the seam,
+`set` not `append`), and the chrome constant (addenda L, N, P) is a
+with-versus-without delta measured on one plane and is unmoved. §6's
+known-path rule is unaffected: headers are not instrumentation and are not
+stripped — they are the transport, held constant like the rest of it
+(ADR-0004 §3). **Flagged, not fixed here:** addendum O's phrase
+"headers-included `transferSize`" and the runner's fallback comments that
+repeat it (`tools/bench-runner/src/collect.ts`) rest on the same reading of
+the spec this paragraph corrects; the fallback's arithmetic is unaffected
+(it never subtracts a header size), the words are — a measurement-pass
+line, verified by the skeptic lens on 2026-09-18.

@@ -363,3 +363,63 @@ One sentence for the layout comment, should it be redrawn: *`reference/`
 (golden-master SPEC — consumed at build time by tooling and singleton hosts,
 and by the data-plane Worker for the PLP query semantics; never in a
 paradigm's shipped bundle).*
+
+## Addendum — §3's held-constant transport includes a security-header floor; the CSP is a separate decision (2026-09-18, `security-floor`)
+
+§3 chose one origin so that "the entire transport stack (TLS, HTTP/2/3,
+connection reuse) [is] identical for every variant — transport becomes a
+fairness control instead of per-origin handshake noise". Response headers the
+front Worker adds are transport in exactly that sense, and the 2026-08-29
+audit (priority 4) found the plane shipping none of the floor the blog
+already had (ADR-0009 §5): `/`, `/vanilla/editorial/`, every tray and every
+image answered with no `X-Content-Type-Options`, no referrer policy and no
+frame policy, while `/blog/*` carried all three plus a CSP. Nothing in docs/
+recorded the store's absence as a decision. Decided:
+
+- **Three headers on every response the composed origin serves, identically
+  for every variant:** `x-content-type-options: nosniff`, `referrer-policy:
+  strict-origin-when-cross-origin` (the blog's value, so one policy governs
+  the domain), `x-frame-options: DENY` (nothing legitimately embeds the
+  store). The floor is applied at the SEAM — the front Worker's exported
+  `fetch` wraps every response its router returns, the Worker's own 404 and
+  502 included — and written as `_headers` for the assets-first paths the
+  script never sees, both from one module
+  (`workers/front/src/security-floor.js`). `set`, never `append`: an upstream
+  cannot weaken the floor, and a variant cannot carry a different one, so it
+  can never become a per-variant variable. Its bytes are named in ADR-0001
+  addendum U and cancel in every comparison by construction.
+- **`X-Frame-Options: DENY` rather than `Content-Security-Policy:
+  frame-ancestors 'none'`.** The modern spelling is a CSP directive, and a
+  CSP header carrying one directive is a half-CSP by another name — the exact
+  thing the next bullet refuses to ship silently. The legacy header is
+  honoured by every browser the profiles model and is what a header scanner
+  looks for. Given up: `frame-ancestors` can allow-list specific embedders;
+  nothing embeds the store, so nothing is given up today. When a CSP lands,
+  `frame-ancestors 'none'` joins it and the legacy header stays for the
+  clients that only read it. HTTP/3's QPACK static table spells the value
+  `deny`; ours is `DENY` (the conventional, case-insensitive spelling), which
+  costs one literal value per h3 connection — recorded, not material.
+- **No Content-Security-Policy on store pages — by decision, not omission.**
+  Qwik and Astro emit inline scripts on every editorial page, so a
+  `script-src` needs either `'unsafe-inline'` (which buys nothing against
+  injected markup — the one attack a CSP is for) or a per-response nonce,
+  and a nonce in the served HTML changes bytes on every request: the drift
+  gate's normalized-DOM equivalence, the variant master-identity guards and
+  the published KB cells would each need a nonce rule. That is a design pass
+  with its own guards and its own record, not a header added to a commit
+  about headers. Recorded here so the absence is a decision a reviewer can
+  read; the origin suite pins the absence on store pages, assets and the data
+  plane so a partial CSP cannot arrive by accident. The blog's own CSP stands
+  (ADR-0009 §5) and rides through the front's floor unchanged. Revisit
+  trigger: the first XSS-shaped finding on a store surface, or
+  `domain-cutover` — a zone lets a Cloudflare Transform Rule add the header
+  without touching served bytes, which changes the tradeoff.
+
+Considered and rejected: **adding the headers in each variant** (five copies
+of one constant, and the first place a paradigm could differ on the
+transport — the dead-control falsehood one layer down); **a Cloudflare
+Transform Rule** (needs the zone `domain-cutover` does not yet have, and puts
+the floor where the repo's own suite cannot see it); **`frame-ancestors`
+alone** (above). **Given up by this addendum:** nothing a visitor can see;
+106 bytes of headers per HTTP/1.1 response and a few per h2/h3 response,
+identical everywhere.

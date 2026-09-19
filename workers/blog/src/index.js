@@ -13,7 +13,7 @@ import {
   listRevisions, mediaLookup, publishDue, publishPost, savePost,
   schedulePost, seriesNeighbors, unpublishPost, updateMediaAlt,
 } from "./db.js";
-import { imageDimensions } from "./dimensions.js";
+import { sniffImage } from "./dimensions.js";
 import { adminPage, json, notFound, publicPage, seeOther } from "./html.js";
 import { newId, newToken } from "./ids.js";
 import { renderMarkdown } from "./render.js";
@@ -31,7 +31,10 @@ function log(level, event, fields) {
 
 // Every type here is one dimensions.js can sniff — an un-sniffed format
 // would silently break the zero-CLS-by-construction rule. AVIF joined once
-// the ISOBMFF ispe walk landed (dimensions.js).
+// the ISOBMFF ispe walk landed (dimensions.js). Keyed by the type the
+// SNIFFER reports (security floor, 2026-09-18): the client's `file.type` is
+// never consulted — an upload whose bytes the sniffer cannot read is a 400,
+// whatever type it declared.
 const MEDIA_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -225,34 +228,44 @@ async function handleAdminApi(request, env, url, sub, session) {
     if (!file || typeof file === "string") {
       return json({ error: "no file" }, { status: 400 });
     }
-    const ext = MEDIA_TYPES[file.type];
-    if (!ext) return json({ error: "unsupported type" }, { status: 415 });
     if (file.size > MEDIA_MAX_BYTES) {
       return json({ error: "too large" }, { status: 413 });
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const dims = imageDimensions(bytes) ?? {};
+    // The stored type, extension and dimensions all come from the BYTES
+    // (security floor, 2026-09-18). Before this, `file.type` — client-
+    // controlled — chose the extension and the served content-type, and a
+    // `null` sniff still uploaded with null dimensions, forfeiting the
+    // zero-CLS-by-construction rule the comment above claims. A declared
+    // `image/png` over text is a 400 here; PNG bytes declared `image/jpeg`
+    // are stored as the PNG they are. XSS stays dead either way: no SVG in
+    // the whitelist, nosniff on /blog/media/*.
+    const image = sniffImage(bytes);
+    if (!image || !Object.hasOwn(MEDIA_TYPES, image.type)) {
+      return json({ error: "unreadable image" }, { status: 400 });
+    }
+    const ext = MEDIA_TYPES[image.type];
     const id = newId();
     const key = `${id}.${ext}`;
     await env.MEDIA.put(key, bytes, {
-      httpMetadata: { contentType: file.type },
+      httpMetadata: { contentType: image.type },
     });
+    const alt = String(form.get("alt") ?? "");
     await env.DB.prepare(
       `INSERT INTO media (id, key, filename, mime, size, width, height, alt, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
-        id, key, file.name ?? "", file.type, file.size,
-        dims.width ?? null, dims.height ?? null,
-        String(form.get("alt") ?? ""), new Date().toISOString(),
+        id, key, file.name ?? "", image.type, file.size,
+        image.width, image.height,
+        alt, new Date().toISOString(),
       )
       .run();
-    const alt = String(form.get("alt") ?? "");
     return json({
       id,
       url: `/blog/media/${key}`,
-      width: dims.width ?? null,
-      height: dims.height ?? null,
+      width: image.width,
+      height: image.height,
       markdown: `![${alt}](/blog/media/${key})`,
     });
   }

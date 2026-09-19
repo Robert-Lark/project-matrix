@@ -2,7 +2,7 @@
 // zip writer + export front-matter.
 import { describe, expect, it } from "vitest";
 import { postFrontMatter, validSlug } from "../src/db.js";
-import { imageDimensions } from "../src/dimensions.js";
+import { imageDimensions, sniffImage } from "../src/dimensions.js";
 import { crc32, zipStore } from "../src/zip.js";
 
 describe("validSlug", () => {
@@ -60,6 +60,118 @@ describe("imageDimensions", () => {
 
   it("returns null for unknown bytes", () => {
     expect(imageDimensions(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]))).toBeNull();
+  });
+});
+
+// The upload path keys the stored type off the sniffed bytes, never off the
+// client's `file.type` (security floor, 2026-09-18). These legs hold the
+// sniffer to the FORMAT half of that contract: the type it names is the type
+// the magic bytes are, and bytes it cannot read are null — a 400 upstream.
+describe("sniffImage: the type comes from the bytes", () => {
+  const png = Uint8Array.from(atob(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  ), (c) => c.charCodeAt(0));
+
+  it("names PNG bytes image/png with their IHDR dimensions", () => {
+    expect(sniffImage(png)).toEqual({ type: "image/png", width: 1, height: 1 });
+  });
+
+  it("names GIF bytes image/gif", () => {
+    const gif = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x05, 0x00, 0x03, 0x00, 0, 0, 0]);
+    expect(sniffImage(gif)).toEqual({ type: "image/gif", width: 5, height: 3 });
+  });
+
+  it("names JPEG bytes image/jpeg", () => {
+    const jpeg = new Uint8Array([
+      0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x02, 0x00, 0x03, 0x01, 0xff, 0xd9,
+    ]);
+    expect(sniffImage(jpeg)).toEqual({ type: "image/jpeg", width: 3, height: 2 });
+  });
+
+  it("names a RIFF/WEBP VP8 header image/webp", () => {
+    const webp = new Uint8Array(30);
+    const dv = new DataView(webp.buffer);
+    dv.setUint32(0, 0x52494646); // RIFF
+    dv.setUint32(4, 22, true); // riff size (ignored by the sniffer)
+    dv.setUint32(8, 0x57454250); // WEBP
+    dv.setUint32(12, 0x56503820); // "VP8 "
+    dv.setUint16(26, 7, true); // width 7
+    dv.setUint16(28, 4, true); // height 4
+    expect(sniffImage(webp)).toEqual({ type: "image/webp", width: 7, height: 4 });
+  });
+
+  it("text bytes are null whatever the client declared — the 400 upstream", () => {
+    const text = new TextEncoder().encode("hello, this is a text file pretending to be image/png\n");
+    expect(sniffImage(text)).toBeNull();
+  });
+
+  it("a PNG signature with a truncated IHDR is null, not a guess", () => {
+    expect(sniffImage(png.slice(0, 20))).toBeNull();
+  });
+
+  it("an unknown RIFF fourcc is null (RIFF alone is not WEBP)", () => {
+    const riff = new Uint8Array(30);
+    const dv = new DataView(riff.buffer);
+    dv.setUint32(0, 0x52494646);
+    dv.setUint32(8, 0x57415645); // WAVE
+    expect(sniffImage(riff)).toBeNull();
+  });
+
+  it("imageDimensions is the same sniff without the type", () => {
+    expect(imageDimensions(png)).toEqual({ width: 1, height: 1 });
+  });
+
+  // verify-slice, skeptic lens (2026-09-18): the sniff must read the WHOLE
+  // signature and refuse an empty box, or "the type comes from the bytes"
+  // is true of three bytes.
+  it("a text file that merely starts with 'GIF' is not a GIF", () => {
+    const text = new TextEncoder().encode("GIF is a format I like, honestly — this is prose\n");
+    expect(sniffImage(text)).toBeNull();
+  });
+
+  it("GIF87a is accepted like GIF89a", () => {
+    const gif87 = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61, 0x05, 0x00, 0x03, 0x00, 0, 0, 0]);
+    expect(sniffImage(gif87)).toEqual({ type: "image/gif", width: 5, height: 3 });
+  });
+
+  const pngWith = (chunk, w, h) =>
+    new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // the full 8-byte signature
+      0, 0, 0, 13, ...chunk, // length 13 + chunk type
+      (w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255,
+      (h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255,
+      8, 6, 0, 0, 0,
+    ]);
+  const IHDR = [0x49, 0x48, 0x44, 0x52];
+
+  it("a 0 × 0 PNG is not an image (a zero dimension is refused for every format)", () => {
+    expect(sniffImage(pngWith(IHDR, 0, 0))).toBeNull();
+    expect(sniffImage(pngWith(IHDR, 3, 0))).toBeNull();
+    expect(sniffImage(pngWith(IHDR, 3, 2))).toEqual({ type: "image/png", width: 3, height: 2 });
+  });
+
+  it("a PNG signature whose first chunk is not IHDR is refused", () => {
+    expect(sniffImage(pngWith([0x41, 0x42, 0x43, 0x44], 3, 2))).toBeNull();
+  });
+
+  it("the WHOLE 8-byte PNG signature is read — \\x89PNG with wrong bytes 4–7 is refused even with IHDR present", () => {
+    const wrongTail = pngWith(IHDR, 3, 2);
+    wrongTail.set([0x0d, 0x0a, 0x0d, 0x0a], 4); // CR LF CR LF instead of CR LF SUB LF
+    expect(sniffImage(wrongTail)).toBeNull();
+  });
+
+  it("a JPEG with a 0xFF fill byte before its SOF marker is still a JPEG (ITU T.81 B.1.1.2)", () => {
+    const padded = new Uint8Array([
+      0xff, 0xd8, 0xff, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x02, 0x00, 0x03, 0x01, 0xff, 0xd9,
+    ]);
+    expect(sniffImage(padded)).toEqual({ type: "image/jpeg", width: 3, height: 2 });
+  });
+
+  it("a JPEG whose SOF says height 0 is refused", () => {
+    const zero = new Uint8Array([
+      0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x00, 0x00, 0x03, 0x01, 0xff, 0xd9,
+    ]);
+    expect(sniffImage(zero)).toBeNull();
   });
 });
 
@@ -215,5 +327,17 @@ describe("postFrontMatter", () => {
     expect(fm).not.toContain("dek:");
     expect(fm).not.toContain("series:");
     expect(fm.endsWith("---\n\n")).toBe(true);
+  });
+});
+
+describe("sniffImage: AVIF is named from its brand, not its extension", () => {
+  it("an ISOBMFF with the avif brand is image/avif with the primary ispe", () => {
+    const avif = avifFile({ props: [ispe(300, 200)], assoc: [[1, [1]]] });
+    expect(sniffImage(avif)).toEqual({ type: "image/avif", width: 300, height: 200 });
+  });
+
+  it("an ISOBMFF that is not an AVIF brand is null", () => {
+    const notAvif = avifFile({ brand: "isom", props: [ispe(300, 200)], assoc: [[1, [1]]] });
+    expect(sniffImage(notAvif)).toBeNull();
   });
 });

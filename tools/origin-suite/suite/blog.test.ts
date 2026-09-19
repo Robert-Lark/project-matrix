@@ -248,6 +248,36 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
     expect(served.headers.get("cache-control")).toContain("immutable");
   });
 
+  it("refuses a file the byte sniffer cannot read, whatever type the client declared (400)", async () => {
+    // Security floor, 2026-09-18 (audit task 3): a text file declared
+    // image/png used to upload with NULL dimensions — a zero-CLS hole.
+    const text = new TextEncoder().encode("this is a text file wearing an image/png label\n");
+    const form = new FormData();
+    form.append("file", new File([text], "notes.png", { type: "image/png" }), "notes.png");
+    form.append("alt", "not an image");
+    const res = await authed("/blog/admin/api/media", { method: "POST", body: form });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe("unreadable image");
+  });
+
+  it("stores the type the BYTES are, not the type the client declared", async () => {
+    // PNG bytes declared image/jpeg: the extension, the R2 content-type and
+    // the media row all say PNG — `file.type` is never consulted.
+    const png = Uint8Array.from(atob(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    ), (c) => c.charCodeAt(0));
+    const form = new FormData();
+    form.append("file", new File([png], "dot.jpg", { type: "image/jpeg" }), "dot.jpg");
+    form.append("alt", "a dot, mislabelled");
+    const res = await authed("/blog/admin/api/media", { method: "POST", body: form });
+    expect(res.status).toBe(200);
+    const media = (await res.json()) as { url: string; width: number; height: number };
+    expect(media.url).toMatch(/\.png$/);
+    expect(media.width).toBe(1);
+    expect(media.height).toBe(1);
+    expect((await get(media.url)).headers.get("content-type")).toBe("image/png");
+  });
+
   it("the media library lists the upload; alt edits re-render referencing posts", async () => {
     // Browse: the upload is in the library with its sniffed dimensions.
     const list = await authed("/blog/admin/api/media");
@@ -501,5 +531,63 @@ describe.skipIf(!CREDENTIAL || !BLOG_DEV)("blog plane: scheduled publishing (loc
   it("cleans up: the scheduled post is deleted", async () => {
     const res = await authed(`/blog/admin/api/posts/${postId}`, { method: "DELETE" });
     expect(res.status).toBe(200);
+  });
+});
+
+// The lockout under a PARALLEL burst (security floor, 2026-09-18; audit
+// task 4). The increment used to be read-modify-write, so a burst that read
+// the same count could write the same count + 1 and under-count. What this
+// leg proves: under twenty parallel wrong credentials on the composed plane
+// the bucket locks, every attempt is refused and no cookie is minted. What
+// it does NOT prove — recorded from the sabotage table, not assumed: it
+// does not distinguish the atomic statement from the read-modify-write it
+// replaced; on local D1 the burst was serialised enough for the racy code
+// to reach the threshold too (three runs of three). The discriminating
+// proof is workers/blog/test/auth.test.js (one statement; twenty interleaved
+// increments count twenty). Local only: the burst writes twenty failures
+// into the plane's D1 and locks a bucket for thirty minutes — on the deployed
+// plane that is a production write and a real IP locked out, and the smoke
+// never writes to production. The bucket rides in `cf-connecting-ip`, which
+// local dev passes through verbatim (Cloudflare overwrites it at the edge),
+// so no other leg's `local` bucket is touched.
+describe.skipIf(!BLOG_DEV)("blog plane: the login lockout survives a parallel burst (local)", () => {
+  // Fresh buckets per run: a held plane's D1 persists between runs of this
+  // file, and a bucket a previous run locked would answer 429 to the control
+  // leg below. The bucket is the header's verbatim value (auth.js
+  // clientBucket), so two random hosts in the IPv6 documentation prefix
+  // (RFC 3849) make a collision negligible — a Date.now()-derived TEST-NET
+  // host was a 1-in-126 dice roll against a 30-minute lock (verify-slice).
+  const run = crypto.randomUUID().replaceAll("-", "");
+  const BUCKET_IP = `2001:db8:${run.slice(0, 4)}:${run.slice(4, 8)}::a`;
+  const OTHER_IP = `2001:db8:${run.slice(0, 4)}:${run.slice(4, 8)}::b`;
+  const attempt = () =>
+    get("/blog/admin/login", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "cf-connecting-ip": BUCKET_IP },
+      body: new URLSearchParams({ credential: "not-the-credential" }),
+    });
+
+  it("twenty parallel wrong credentials: every one refused, no session minted, and the bucket is LOCKED afterwards", async () => {
+    const burst = await Promise.all(Array.from({ length: 20 }, attempt));
+    for (const res of burst) {
+      expect([403, 429]).toContain(res.status);
+      expect(res.headers.get("set-cookie")).toBeNull();
+    }
+    // The twenty-first attempt meets the lockout. (Not a discriminator: the
+    // read-modify-write code reached the threshold on local D1 too — see the
+    // describe's header.)
+    const after = await attempt();
+    expect(after.status).toBe(429);
+  });
+
+  it("the burst locked ITS bucket only — a neighbouring bucket's first wrong attempt is a 403, not a 429", async () => {
+    const res = await get("/blog/admin/login", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "cf-connecting-ip": OTHER_IP },
+      body: new URLSearchParams({ credential: "not-the-credential" }),
+    });
+    expect(res.status).toBe(403);
   });
 });

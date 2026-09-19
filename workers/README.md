@@ -47,6 +47,24 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
   `workers_dev: false` and is reachable solely through service bindings). A
   WAF/zone-level rule is the right home once a custom hostname exists.
 
+  **The security-header floor (2026-09-18; decision map `security-floor`).**
+  Every response the composed origin serves carries `x-content-type-options:
+  nosniff`, `referrer-policy: strict-origin-when-cross-origin` and
+  `x-frame-options: DENY`, identically for every variant — the floor is part
+  of the held-constant transport, never a per-variant variable, and its bytes
+  cancel in every comparison. One definition (`workers/front/src/
+  security-floor.js`), two mechanisms: the front script wraps every response
+  it proxies or answers, and `build.mjs` writes `dist/_headers` for the
+  assets-first paths the script never sees (`/`, `/methodology/`,
+  `/how-it-was-built/`, `/_pm/*`, `/pm/*`). A Content-Security-Policy is a
+  SEPARATE, recorded decision (not shipped): qwik and astro emit inline
+  scripts, so it needs nonces or `'unsafe-inline'`, and nonces touch the
+  byte-identity guards. The blog keeps its own, stronger set (ADR-0009). The
+  beacon collector also refuses any `variant`/`surface` off the roster in
+  `@pm/measurement` (the dispatched prefixes, the registered surfaces,
+  `singleton`/`home`, `ci-smoke`) — the RUM-pollution half a rate limit
+  cannot address.
+
 ## Local dev
 
 `pnpm dev` at the repo root starts every Worker — **one `wrangler dev` process

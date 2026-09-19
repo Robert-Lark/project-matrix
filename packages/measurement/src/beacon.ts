@@ -82,3 +82,73 @@ export function knobTags(search: string): {
     cacheState: cache === "cold" ? "cold" : plpWarmable(params) ? "default" : "none",
   };
 }
+
+/**
+ * The beacon ROSTER (security floor, 2026-09-18 — 2026-08-29 audit priority
+ * 4, task 2). `variant` is the Analytics Engine INDEX (the sampling key) and
+ * `surface` the first blob every dashboard groups by. The collector checked
+ * both for presence and byte length only, so any string became a sampling
+ * key — RUM-dashboard pollution, one curl at a time. Published numbers were
+ * never at risk (they come from committed lab bundles, never from RUM),
+ * which is why this is a roster and not a signature.
+ *
+ * ONE roster, no copies:
+ *  - `VARIANT_PREFIXES` is the set the front Worker DISPATCHES (ADR-0004
+ *    §3): it builds its prefix → service-binding map from this list, so a
+ *    variant the front serves is a variant the collector accepts, by
+ *    construction. The chrome's `variant` tag IS that prefix (the front
+ *    passes `url.pathname.split("/")[1]` to renderChrome).
+ *  - `SURFACE_NAMES` is the switcher registry's key set (`@pm/switcher`
+ *    SURFACE_CONTROLS — pinned to this list by `satisfies` at compile time
+ *    and by a runtime test). The chrome's `surface` tag is the path's second
+ *    segment, and every page a variant serves with a chrome slot sits under
+ *    one of these names (read off a held plane, 2026-09-18).
+ *  - The home surface's IN-PAGE HUD (ADR-0007 §5) tags itself
+ *    `singleton` / `home`; the origin suite pins the served markup to
+ *    `HOME_TAGS`. The suite's own beacon traffic — REAL, undeletable AE
+ *    points on the post-deploy smoke — carries the reserved `ci-smoke` on
+ *    both tags so a dashboard can exclude it by name.
+ * The measurement client's `"unknown"` fallback (client.ts) is deliberately
+ * NOT on the roster: a page whose chrome lost its data attributes is exactly
+ * the point that must not become a sampling key.
+ */
+export const VARIANT_PREFIXES = [
+  "placeholder-static",
+  "placeholder-ssr",
+  "vanilla",
+  "react-next",
+  "astro",
+  "qwik",
+  "htmx",
+  "remix3",
+] as const;
+export type VariantPrefix = (typeof VARIANT_PREFIXES)[number];
+
+export const SURFACE_NAMES = [
+  "sample",
+  "editorial",
+  "pdp",
+  "plp",
+  "checkout",
+  "a11y",
+  "how-it-was-built",
+] as const;
+export type SurfaceName = (typeof SURFACE_NAMES)[number];
+
+/** The home singleton's own tag pair (workers/front/home/index.html). */
+export const HOME_TAGS = { variant: "singleton", surface: "home" } as const;
+
+/** Reserved for the origin suite and the post-deploy smoke; excluded from
+ *  any field analysis by name (workers/README.md). */
+export const SMOKE_TAG = "ci-smoke";
+
+export const BEACON_VARIANTS: ReadonlySet<string> = new Set<string>([
+  ...VARIANT_PREFIXES,
+  HOME_TAGS.variant,
+  SMOKE_TAG,
+]);
+export const BEACON_SURFACES: ReadonlySet<string> = new Set<string>([
+  ...SURFACE_NAMES,
+  HOME_TAGS.surface,
+  SMOKE_TAG,
+]);

@@ -7,7 +7,8 @@
   "scripts": {
     "build": "node build.mjs",
     "dev": "node stamp-build.mjs && wrangler dev --port 8787 --inspector-port 9230",
-    "deploy": "node build.mjs && wrangler deploy"
+    "deploy": "node build.mjs && wrangler deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@pm/measurement": "workspace:*",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }
 }

@@ -42,7 +42,7 @@ async function assertPortsFree() {
       probe.once("error", () =>
         reject(
           new Error(
-            `port ${port} is already bound — a stale wrangler/workerd tree is running; kill it (pkill -f "wrangler dev"; pkill workerd) and re-run`,
+            `port ${port} is already bound — a stale wrangler/workerd tree is running; list it with pgrep -fl 'wrangler|workerd|run-local' and kill by PID (kill -TERM, then -KILL); note pkill -f "wrangler dev" matches NOTHING — the process is spelled "wrangler.js dev"`,
           ),
         ),
       );

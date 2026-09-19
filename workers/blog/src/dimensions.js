@@ -124,25 +124,47 @@ function avifDimensions(bytes, view) {
   return rotated ? { width: height, height: width } : { width, height };
 }
 
-export function imageDimensions(bytes) {
+/**
+ * Sniff the FORMAT and the dimensions from the bytes: `{ type, width,
+ * height }` for the five formats the blog accepts, `null` for anything the
+ * sniffer cannot read. The upload path keys the stored type off THIS and
+ * never off the client's `file.type` (security floor, 2026-09-18 — 2026-08-29
+ * audit priority 4, task 3): a client can declare any type it likes, and a
+ * `null` here is a 400 at upload, not a media row with null dimensions —
+ * which silently forfeited the zero-CLS rule this file exists to keep.
+ */
+export function sniffImage(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (bytes.length >= 24 && view.getUint32(0) === 0x89504e47) {
-    // PNG: IHDR is always the first chunk.
-    return { width: view.getUint32(16), height: view.getUint32(20) };
+  // A sniff that names a type must have read the WHOLE signature and a real
+  // box (verify-slice, skeptic lens, 2026-09-18): the three-byte "GIF" test
+  // this replaced named a text file starting "GIF…" image/gif with a
+  // 21057 × 8260 box — the zero-CLS rule forfeited in the other direction —
+  // and a 0 × 0 IHDR passed as an image. Every branch now returns through
+  // `sized`, which refuses a zero dimension.
+  if (
+    bytes.length >= 24 &&
+    view.getUint32(0) === 0x89504e47 && // \x89PNG
+    view.getUint32(4) === 0x0d0a1a0a && // \r\n\x1a\n — the full 8-byte signature
+    view.getUint32(12) === 0x49484452 // "IHDR" — always the first chunk
+  ) {
+    return sized("image/png", view.getUint32(16), view.getUint32(20));
   }
-  if (bytes.length >= 10 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+  if (bytes.length >= 10 && (ascii(bytes, 0, 6) === "GIF87a" || ascii(bytes, 0, 6) === "GIF89a")) {
     // GIF: logical screen descriptor, little-endian.
-    return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
+    return sized("image/gif", view.getUint16(6, true), view.getUint16(8, true));
   }
   if (bytes.length >= 4 && view.getUint16(0) === 0xffd8) {
-    // JPEG: walk markers to the first SOF.
+    // JPEG: walk markers to the first SOF. ITU T.81 B.1.1.2 allows any
+    // number of 0xFF fill bytes before a marker — skip them, or a legal file
+    // an encoder padded is a 400 here that used to upload (skeptic lens).
     let at = 2;
     while (at + 9 < bytes.length) {
       if (bytes[at] !== 0xff) return null;
+      while (bytes[at + 1] === 0xff && at + 10 < bytes.length) at += 1;
       const marker = bytes[at + 1];
       const size = view.getUint16(at + 2);
       if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
-        return { height: view.getUint16(at + 5), width: view.getUint16(at + 7) };
+        return sized("image/jpeg", view.getUint16(at + 7), view.getUint16(at + 5));
       }
       at += 2 + size;
     }
@@ -156,30 +178,43 @@ export function imageDimensions(bytes) {
     const format = view.getUint32(12); // fourcc
     if (format === 0x56503820) {
       // "VP8 " lossy: dimensions after the 3-byte frame tag + sync code.
-      return {
-        width: view.getUint16(26, true) & 0x3fff,
-        height: view.getUint16(28, true) & 0x3fff,
-      };
+      return sized("image/webp", view.getUint16(26, true) & 0x3fff, view.getUint16(28, true) & 0x3fff);
     }
     if (format === 0x5650384c) {
       // "VP8L" lossless: 14-bit packed, minus-one coded.
       const b = view.getUint32(21, true);
-      return { width: (b & 0x3fff) + 1, height: ((b >> 14) & 0x3fff) + 1 };
+      return sized("image/webp", (b & 0x3fff) + 1, ((b >> 14) & 0x3fff) + 1);
     }
     if (format === 0x56503858) {
       // "VP8X" extended: 24-bit little-endian, minus-one coded.
       const w = bytes[24] | (bytes[25] << 8) | (bytes[26] << 16);
       const h = bytes[27] | (bytes[28] << 8) | (bytes[29] << 16);
-      return { width: w + 1, height: h + 1 };
+      return sized("image/webp", w + 1, h + 1);
     }
   }
   if (bytes.length >= 16 && view.getUint32(4) === 0x66747970) {
     // "ftyp" at offset 4 — an ISOBMFF container; AVIF if the brands say so.
     try {
-      return avifDimensions(bytes, view);
+      const dims = avifDimensions(bytes, view);
+      return dims ? sized("image/avif", dims.width, dims.height) : null;
     } catch {
       return null; // truncated/malformed boxes must refuse, never throw
     }
   }
   return null;
+}
+
+/** A named sniff with a real box, or null: a zero dimension is not an image. */
+function sized(type, width, height) {
+  return width > 0 && height > 0 ? { type, width, height } : null;
+}
+
+function ascii(bytes, start, length) {
+  return String.fromCharCode(...bytes.subarray(start, start + length));
+}
+
+/** Dimensions alone — the sniff without the type. */
+export function imageDimensions(bytes) {
+  const image = sniffImage(bytes);
+  return image ? { width: image.width, height: image.height } : null;
 }

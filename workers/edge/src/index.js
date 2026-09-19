@@ -57,7 +57,13 @@
 //
 // No Discogs credential exists anywhere here (ADR-0002 §1): the Worker only
 // ever reads the frozen snapshot.
-import { BEACON_TAG_KEYS, clampN, plpWarmable } from "@pm/measurement";
+import {
+  BEACON_SURFACES,
+  BEACON_TAG_KEYS,
+  BEACON_VARIANTS,
+  clampN,
+  plpWarmable,
+} from "@pm/measurement";
 // The PLP query semantics are the reference package's OWN pure module — the
 // spec's function serves the data, so the Worker cannot disagree with the
 // master about what a filtered page contains (ADR-0004 §2 addendum,
@@ -351,6 +357,20 @@ async function handleBeacon(request, env) {
   );
   if (missing.length > 0) {
     return json({ error: `missing required tags: ${missing.join(", ")}` }, 400);
+  }
+  // The ROSTER (security floor, 2026-09-18; @pm/measurement). `variant` is
+  // the AE index — the sampling key — and `surface` the first blob every
+  // dashboard groups by. Until this check any string that fit in 96 bytes
+  // became a sampling key (2026-08-29 audit, priority 4 task 2: RUM-dashboard
+  // pollution — published numbers were never at risk, they come from
+  // committed lab bundles). Exact match, refused BEFORE the byte bound so the
+  // message names the tag. Rate limiting stays deferred to domain-cutover
+  // (workers/README.md); this is the part a rate limit cannot do.
+  if (!BEACON_VARIANTS.has(tags.variant)) {
+    return json({ error: "unknown variant: not on the roster" }, 400);
+  }
+  if (!BEACON_SURFACES.has(tags.surface)) {
+    return json({ error: "unknown surface: not on the roster" }, 400);
   }
   // Analytics Engine throws TypeError synchronously on shape violations
   // (verified against workerd source: 1 index ≤ 96 bytes, ≤ 20 blobs,

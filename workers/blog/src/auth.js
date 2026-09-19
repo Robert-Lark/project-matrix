@@ -20,7 +20,14 @@ function plusMs(ms) {
   return new Date(Date.now() + ms).toISOString();
 }
 
-function timingSafeEqualHex(a, b) {
+// The ONE constant-time compare, for the credential hash AND the CSRF token
+// (security floor, 2026-09-18 — until then the token was compared with
+// `===`). `crypto.subtle.timingSafeEqual` is the Workers runtime's own
+// (workerd-only: Node's SubtleCrypto has no such method, so the unit test
+// installs one with the same contract). It THROWS on a length mismatch, so
+// the length check first is load-bearing, not tidiness: a wrong-length token
+// must be `false`, never a 500.
+function constantTimeEqual(a, b) {
   const enc = new TextEncoder();
   const bufA = enc.encode(a);
   const bufB = enc.encode(b);
@@ -41,24 +48,40 @@ export async function checkLockout(env, request) {
   return Boolean(row?.locked_until && row.locked_until > nowIso());
 }
 
-async function recordFailure(env, request) {
-  const bucket = clientBucket(request);
+// One statement, so the increment is atomic (security floor, 2026-09-18).
+// The previous shape was read-modify-write — SELECT the count, add one in
+// JS, UPSERT it back — so a parallel burst of wrong credentials read the
+// same count and wrote the same count + 1: twenty attempts could land as
+// one, and the documented 5-per-10-minutes lockout never fired. Harmless
+// against a 256-bit credential, but the guard was not sabotage-proof by the
+// repo's own standard. SQLite's upsert sees the EXISTING row as
+// `login_attempts.*`, so the window test, the increment and the lockout
+// threshold are all expressed against the row the statement is updating:
+//   in window  → count + 1, window kept
+//   window old → 1, window restarts now
+//   new count ≥ MAX_FAILURES → locked_until = now + LOCKOUT, else NULL.
+// Proven on real SQLite (node:sqlite) in test/auth.test.js — its one-statement
+// and twenty-interleaved-increments legs are the guard that bites (both fail
+// under read-modify-write). The origin suite's 20-parallel burst exercises
+// the lockout end-to-end on the plane's D1 but does NOT distinguish the two
+// statement shapes there: local D1 serialised the burst enough for the racy
+// code to reach the threshold too (sabotage 2026-09-18, three runs).
+export async function recordFailure(env, request) {
+  const now = nowIso();
   const windowFloor = new Date(Date.now() - WINDOW_MS).toISOString();
-  const row = await env.DB.prepare(
-    "SELECT count, window_start FROM login_attempts WHERE bucket = ?",
-  )
-    .bind(bucket)
-    .first();
-  const inWindow = row && row.window_start > windowFloor;
-  const count = inWindow ? row.count + 1 : 1;
-  const lockedUntil = count >= MAX_FAILURES ? plusMs(LOCKOUT_MS) : null;
   await env.DB.prepare(
     `INSERT INTO login_attempts (bucket, count, window_start, locked_until)
-     VALUES (?1, ?2, ?3, ?4)
-     ON CONFLICT (bucket) DO UPDATE
-       SET count = ?2, window_start = ?3, locked_until = ?4`,
+     VALUES (?1, 1, ?2, NULL)
+     ON CONFLICT (bucket) DO UPDATE SET
+       count = CASE WHEN login_attempts.window_start > ?3
+                    THEN login_attempts.count + 1 ELSE 1 END,
+       window_start = CASE WHEN login_attempts.window_start > ?3
+                           THEN login_attempts.window_start ELSE ?2 END,
+       locked_until = CASE WHEN (CASE WHEN login_attempts.window_start > ?3
+                                      THEN login_attempts.count + 1 ELSE 1 END) >= ?4
+                           THEN ?5 ELSE NULL END`,
   )
-    .bind(bucket, count, inWindow ? row.window_start : nowIso(), lockedUntil)
+    .bind(clientBucket(request), now, windowFloor, MAX_FAILURES, plusMs(LOCKOUT_MS))
     .run();
 }
 
@@ -74,7 +97,7 @@ async function clearFailures(env, request) {
 export async function login(env, request, credential) {
   if (await checkLockout(env, request)) return { locked: true };
   const submitted = await sha256Hex(credential ?? "");
-  if (!timingSafeEqualHex(submitted, env.ADMIN_CREDENTIAL_HASH ?? "")) {
+  if (!constantTimeEqual(submitted, env.ADMIN_CREDENTIAL_HASH ?? "")) {
     await recordFailure(env, request);
     return { ok: false };
   }
@@ -151,7 +174,9 @@ export async function logoutAll(env) {
 // Mutations require the per-session CSRF token in a custom header (setting
 // it cross-origin forces a preflight that will fail), and any browser-sent
 // Sec-Fetch-Site must be same-origin. Login/logout forms carry the token as
-// a field instead — same bar, no JS required.
+// a field instead — same bar, no JS required. The token is compared through
+// the same constant-time helper the credential uses (security floor,
+// 2026-09-18): one compare discipline for every secret the wall holds.
 export function csrfOk(request, session, formToken = null) {
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
@@ -159,5 +184,5 @@ export function csrfOk(request, session, formToken = null) {
   }
   const presented =
     request.headers.get("x-pm-blog-csrf") ?? formToken ?? "";
-  return presented.length > 0 && presented === session.csrf_token;
+  return presented.length > 0 && constantTimeEqual(presented, session.csrf_token);
 }
