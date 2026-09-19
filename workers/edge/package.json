@@ -8,13 +8,15 @@
     "dev": "wrangler dev --port 8790 --inspector-port 9233",
     "deploy": "wrangler deploy",
     "seed:local": "node seed-local.mjs",
-    "seed:remote": "node seed-local.mjs --remote"
+    "seed:remote": "node seed-local.mjs --remote",
+    "test": "vitest run"
   },
   "dependencies": {
     "@pm/measurement": "workspace:*",
     "@pm/snapshot-fixture": "workspace:*"
   },
   "devDependencies": {
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }
 }

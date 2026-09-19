@@ -8,7 +8,9 @@
 //                  and writes through, so one priming request warms any URL.
 // Tray responses carry x-pm-cache-state: bypass | miss | hit; 4xx data
 // responses carry `none` (they never traverse the warm tier — negative
-// results are not cached). Images are deliberately OUTSIDE the warm tier:
+// results are not cached), and so does the one 200 that IS a negative
+// result: a PLP page past the last real one (see `handlePlp`). Images are
+// deliberately OUTSIDE the warm tier:
 // the cache axis is the tray API's measurement variable; image bytes are
 // immutable R2 reads (see workers/README.md).
 //
@@ -17,6 +19,17 @@
 // never from raw client query strings. That makes the key bijective with the
 // payload (no encoding aliasing, no junk-param key minting, bounded length;
 // all three were demonstrated failure modes of raw-query keys).
+//
+// A key is WRITTEN only for a condition that names a real page. `page` has a
+// floor (1) but no ceiling — it cannot have one before the snapshot is read,
+// and reading R2 before the KV lookup would put ~400 ms of origin on every
+// warm hit — so the ceiling is applied on the way OUT instead: a page past
+// `totalPages` is served (the honest empty page every arm renders as "0")
+// but never stored. Before this, `for p in $(seq 1 1000000); do curl
+// "?page=$p"; done` minted one immortal ~10 KB entry per integer, on the
+// project whose thesis is pricing infrastructure honestly (2026-08-29 audit).
+// The residual cost of a junk page is one KV read-miss plus one R2 read per
+// request — bounded per request, zero storage.
 //
 // No Discogs credential exists anywhere here (ADR-0002 §1): the Worker only
 // ever reads the frozen snapshot.
@@ -57,8 +70,15 @@ function runKnob(url) {
  * Serve a data endpoint through the warm tier under an explicit canonical
  * key. `compute` builds the payload from R2; null means not-found (never
  * cached, no cache-state — the caller owns the 4xx).
+ *
+ * `cacheable(payload)` decides, AFTER compute, whether this condition may be
+ * written through. It is a predicate on the payload rather than on the URL
+ * because the one fact it needs — is this a real page — exists only once R2
+ * has been read; the lookup above it stays a single KV read, and an
+ * uncacheable condition can never HIT because it is never written. Such a
+ * response carries `x-pm-cache-state: none`: it is not a warm-tier resource.
  */
-async function serveData(url, env, key, compute) {
+async function serveData(url, env, key, compute, { cacheable = () => true } = {}) {
   const bypass = url.searchParams.get("cache") === "cold";
 
   if (!bypass) {
@@ -76,17 +96,18 @@ async function serveData(url, env, key, compute) {
   const payload = await compute();
   if (payload === null) return null;
   const body = JSON.stringify(payload);
+  const store = !bypass && cacheable(payload);
   // Write-through: one priming request warms this URL. A `?run=`-keyed
   // entry exists only to isolate one harness run (suite/bench), so it
   // expires instead of accreting in deployed KV forever; visitor-facing
   // (un-nonced) entries keep the frozen-data infinite TTL.
-  if (!bypass) {
+  if (store) {
     await env.WARM.put(key, body, runKnob(url) ? { expirationTtl: 3600 } : undefined);
   }
   return new Response(body, {
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "x-pm-cache-state": bypass ? "bypass" : "miss",
+      "x-pm-cache-state": bypass ? "bypass" : store ? "miss" : "none",
     },
   });
 }
@@ -126,19 +147,28 @@ async function handlePlp(url, env) {
   const run = runKnob(url);
   const key = `v1:/api/plp?n=${n}&page=${page}${run ? `&run=${run}` : ""}`;
 
-  return serveData(url, env, key, async () => {
-    const summaries = await readSnapshot(env, SNAPSHOT_KEYS.summaries);
-    const total = summaries.length;
-    const start = (page - 1) * n;
-    return {
-      items: summaries.slice(start, start + n),
-      page,
-      perPage: n,
-      total,
-      totalPages: Math.ceil(total / n),
-      facets: computeFacets(summaries),
-    };
-  });
+  return serveData(
+    url,
+    env,
+    key,
+    async () => {
+      const summaries = await readSnapshot(env, SNAPSHOT_KEYS.summaries);
+      const total = summaries.length;
+      const start = (page - 1) * n;
+      return {
+        items: summaries.slice(start, start + n),
+        page,
+        perPage: n,
+        total,
+        totalPages: Math.ceil(total / n),
+        facets: computeFacets(summaries),
+      };
+    },
+    // The `?page=` ceiling (file header): a page past the last real one is
+    // served — every arm renders it as the honest "0" — but never stored, so
+    // the key space is bounded by the crate, not by the integers.
+    { cacheable: (p) => p.page <= p.totalPages },
+  );
 }
 
 async function handlePdp(url, env, rawId) {

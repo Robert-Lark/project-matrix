@@ -171,12 +171,20 @@ describe("the ?n= data-volume knob (ADR-0002 §5, ADR-0004 §5)", () => {
     }
   });
 
-  it("pages beyond the crate are valid and empty", async () => {
-    const page = PlpPage.parse(
-      await (await get(`/api/plp?n=240&page=99&run=${RUN_NONCE}`)).json(),
-    );
+  it("pages beyond the crate are valid and empty — and never become a warm-tier resource", async () => {
+    // The `?page=` KV ceiling (2026-08-29 audit, step 0): the honest empty
+    // page every arm renders as "0" is still served, but it is not written
+    // through — a curl loop over the integers used to mint one immortal
+    // entry per page number. `none` is the state of a response that is not
+    // a warm-tier resource; asked twice, it must never come back as a hit.
+    const path = `/api/plp?n=240&page=99&run=${RUN_NONCE}`;
+    const first = await get(path);
+    const page = PlpPage.parse(await first.json());
     expect(page.items).toHaveLength(0);
     expect(page.page).toBe(99);
+    expect(first.headers.get("x-pm-cache-state")).toBe("none");
+    const second = await get(path);
+    expect(second.headers.get("x-pm-cache-state")).toBe("none");
   });
 });
 
