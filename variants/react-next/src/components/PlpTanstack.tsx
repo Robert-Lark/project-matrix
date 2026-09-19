@@ -8,14 +8,16 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import type { PlpPage } from "@pm/data-contract";
-import { PER_PAGE, PlpArticle } from "../lib/plp";
+import { PlpArticle } from "../lib/plp";
 import {
   useNavigateOnError,
   usePopstateCondition,
   usePushWhenSettled,
 } from "./usePlpNavigation";
 import {
+  PER_PAGE,
   PLP_STALE_TIME_MS,
+  appliedMatches,
   plpApiPath,
   plpCacheKey,
   plpHistoryUrl,
@@ -126,15 +128,11 @@ export function PlpTanstackInner({
     },
   });
 
-  const goToPage = useCallback(
-    (page: number) => {
-      setCurrent({ ...current, page });
-      // The push happens when the DATA lands, not here — see
-      // usePushWhenSettled. Pushing on click made the URL and the
-      // `aria-current` marker disagree for the whole in-flight window.
-    },
-    [current],
-  );
+  // One seam for every control (page, facet, sort, search): the next
+  // CONDITION becomes the query key; the push happens when the DATA lands,
+  // not here — see usePushWhenSettled. Pushing on click made the URL and the
+  // `aria-current` marker disagree for the whole in-flight window.
+  const goTo = useCallback((next: PlpCondition) => setCurrent(next), []);
 
   // `data` is present from the first render (seeded key) and on every later
   // cache hit; `initial` is the floor for the one frame a brand-new key has
@@ -145,12 +143,17 @@ export function PlpTanstackInner({
   // and the address bar describe different pages.
   usePopstateCondition(setCurrent);
   // The address bar moves when the CONTENT does — the cold arm's behaviour.
-  usePushWhenSettled(current, plpHistoryUrl(current, PER_PAGE), displayed.page === current.page);
+  // "Settled" is read off the PAYLOAD's applied query (ADR-0005 addendum
+  // Q2), not off `page` alone: a facet click keeps the page at 1, so a
+  // page-only comparison would have pushed the new URL while the previous
+  // grid was still on screen.
+  usePushWhenSettled(current, plpHistoryUrl(current, PER_PAGE), appliedMatches(displayed, current));
   // A failed page change falls back to the real navigation, instead of
   // painting the served page's grid under the new page's URL.
   useNavigateOnError(query.isError, plpHistoryUrl(current, PER_PAGE), current);
 
-  return <PlpArticle payload={displayed} n={current.n} onSelectPage={goToPage} />;
+  const carry = { cache: current.cache, run: current.run, profile: current.profile };
+  return <PlpArticle payload={displayed} carry={carry} onNavigate={goTo} />;
 }
 
 export function PlpTanstack({

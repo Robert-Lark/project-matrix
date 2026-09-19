@@ -20,20 +20,58 @@
 // payload (no encoding aliasing, no junk-param key minting, bounded length;
 // all three were demonstrated failure modes of raw-query keys).
 //
-// A key is WRITTEN only for a condition that names a real page. `page` has a
-// floor (1) but no ceiling — it cannot have one before the snapshot is read,
-// and reading R2 before the KV lookup would put ~400 ms of origin on every
-// warm hit — so the ceiling is applied on the way OUT instead: a page past
-// `totalPages` is served (the honest empty page every arm renders as "0")
-// but never stored. Before this, `for p in $(seq 1 1000000); do curl
-// "?page=$p"; done` minted one immortal ~10 KB entry per integer, on the
-// project whose thesis is pricing infrastructure honestly (2026-08-29 audit).
-// The residual cost of a junk page is one KV read-miss plus one R2 read per
-// request — bounded per request, zero storage.
+// THE KEY-CARDINALITY POLICY (ADR-0005 §5 + its 2026-09-04 addendum). A key
+// is WRITTEN only for a condition the warm tier can hold a FINITE number of:
+//   cacheable ⇔ `q` absent  ∧  n ∈ {24, 240}  ∧  page ≤ totalPages
+// Everything else is still SERVED — from R2, marked `x-pm-cache-state: none`
+// ("not a warm-tier resource") — and never stored.
+//  - `q` is free text: no finite key space exists, so search is computed per
+//    request (one R2 read + CPU, bounded per request, nothing accretes).
+//  - `n` is warmed only at the two published knob values (PLP_N.default /
+//    PLP_N.max — SURFACE_CONTROLS.plp.nKnob): every n in 1..240 is a real
+//    served condition, but warming all 240 multiplies the key space ~120×
+//    for conditions the instrument never names (the ceiling, computed from
+//    the real crate with kv-ceiling.mjs, 2026-09-04, re-run 2026-09-18 —
+//    the table of record is the ADR-0005 addendum: 4,548,342 keys / ~19.7 GB
+//    / $22.74 of writes at $5/M / $9.87 per month at $0.50/GB-mo with n free,
+//    vs 37,182 keys / 0.162 GB / $0.19 / $0.08 per month with n at the knobs).
+//  - `page` has a floor (1) and a numeric cap (Number.MAX_SAFE_INTEGER —
+//    `parseInt` of 309+ digits is Infinity, which JSON writes as null) but no
+//    ceiling in the sense that matters: it cannot know `totalPages` before
+//    the snapshot is read, and reading R2 before the KV lookup would put
+//    ~400 ms of origin on every warm hit — so the ceiling is applied on the way OUT:
+//    a page past `totalPages` (of the FILTERED set) is served as the honest
+//    empty page every arm renders as "0", and never stored. Before this,
+//    `for p in $(seq 1 1000000); do curl "?page=$p"; done` minted one
+//    immortal ~10 KB entry per integer (2026-08-29 audit). An empty result
+//    (a filter combination matching nothing) has totalPages 0, so its page 1
+//    is past the end too: no key for a negative result.
+//  - Facet values are validated against the snapshot's REAL facet sets, exact
+//    match: junk is a 400 (`none`), never a key. `sort` against PLP_SORTS.
+//    Validation needs the snapshot, so it runs AFTER the lookup — a junk key
+//    can never hit because it is never written — but a value too long to be
+//    real is refused BEFORE the lookup so the key can never approach KV's
+//    512-byte limit (longest real facet value: 37 characters).
+// The residual cost of a junk or uncacheable request is one KV read-miss
+// ($0.50/M) plus one R2 read per request — bounded per request, zero storage.
 //
 // No Discogs credential exists anywhere here (ADR-0002 §1): the Worker only
 // ever reads the frozen snapshot.
-import { BEACON_TAG_KEYS, clampN } from "@pm/measurement";
+import { BEACON_TAG_KEYS, clampN, plpWarmable } from "@pm/measurement";
+// The PLP query semantics are the reference package's OWN pure module — the
+// spec's function serves the data, so the Worker cannot disagree with the
+// master about what a filtered page contains (ADR-0004 §2 addendum,
+// 2026-09-04). Import-free and platform-neutral by construction; wrangler
+// bundles it like any module.
+import {
+  PLP_FACET_PARAMS,
+  PLP_SORTS,
+  PLP_TRAY_VERSION,
+  applyPlpQuery,
+  clampPage,
+  facetValueSets,
+  normalizeQ,
+} from "@pm/reference/render/plp-query.mjs";
 
 const SNAPSHOT_KEYS = {
   manifest: "snapshot/manifest.json",
@@ -78,10 +116,13 @@ function runKnob(url) {
  * uncacheable condition can never HIT because it is never written. Such a
  * response carries `x-pm-cache-state: none`: it is not a warm-tier resource.
  */
-async function serveData(url, env, key, compute, { cacheable = () => true } = {}) {
+async function serveData(url, env, key, compute, { cacheable = () => true, tiered = true } = {}) {
   const bypass = url.searchParams.get("cache") === "cold";
 
-  if (!bypass) {
+  // `tiered: false` — the condition is known UNCACHEABLE before compute (a
+  // search, an unwarmed n): skip the lookup too, since nothing could be
+  // there, and save the read.
+  if (!bypass && tiered) {
     const warm = await env.WARM.get(key);
     if (warm !== null) {
       return new Response(warm, {
@@ -96,7 +137,7 @@ async function serveData(url, env, key, compute, { cacheable = () => true } = {}
   const payload = await compute();
   if (payload === null) return null;
   const body = JSON.stringify(payload);
-  const store = !bypass && cacheable(payload);
+  const store = !bypass && tiered && cacheable(payload);
   // Write-through: one priming request warms this URL. A `?run=`-keyed
   // entry exists only to isolate one harness run (suite/bench), so it
   // expires instead of accreting in deployed KV forever; visitor-facing
@@ -118,57 +159,133 @@ async function readSnapshot(env, key) {
   return obj.json();
 }
 
-/** Facet buckets computed from what is actually stored — never precomputed. */
-function computeFacets(summaries) {
-  const count = (getValues) => {
-    const buckets = new Map();
-    for (const s of summaries) {
-      for (const v of getValues(s)) buckets.set(v, (buckets.get(v) ?? 0) + 1);
+/** A request the data plane refuses: the caller answers 400 with
+ *  `x-pm-cache-state: none` (never cached, no key minted). */
+class BadRequest extends Error {}
+
+/** The one facet value length the plane will even look up. Longest real
+ *  value in either snapshot: 37 characters (`jq` over summaries.json,
+ *  2026-09-04). Bounding the ENCODED length keeps the KV key far below the
+ *  512-byte limit whatever alphabet the junk arrives in. */
+const FACET_VALUE_ENCODED_MAX = 96;
+
+/** The length a value contributes to the KEY — measured with the key's own
+ *  encoder. `plpKey` spells the key with `URLSearchParams`, whose
+ *  application/x-www-form-urlencoded serializer percent-encodes `! ' ( ) ~`
+ *  (3 bytes each) where `encodeURIComponent` leaves them as 1: the first
+ *  draft bounded with the latter, so 96 `!`s passed the bound and two of
+ *  them handed `WARM.get` a 613-byte key — KV refuses keys over 512 bytes on
+ *  GET as well as PUT, so a junk URL answered 500 where the policy promises
+ *  400 (verify-slice, 2026-09-18). `v=` is the two-character prefix. */
+const formEncodedLength = (value) => new URLSearchParams({ v: value }).toString().length - 2;
+
+/** KV's key limit (developers.cloudflare.com/kv/platform/limits/: "512
+ *  bytes", fetched 2026-09-04). The per-value bound above keeps every real
+ *  key far below it; this is the belt over those braces — the KEY is what
+ *  KV measures, so the key is what is refused, whatever alphabet, sort,
+ *  page or nonce the junk arrives in. */
+const KV_KEY_MAX_BYTES = 512;
+
+/**
+ * The served PLP condition, parsed and clamped from the URL. Empty values are
+ * ABSENT, not junk: `?sort=` and `?q=` are what a GET form submits for an
+ * untouched select and an empty search box. Facet VALUES are validated later,
+ * against the snapshot (`validateFacets`); here only their length is.
+ */
+function plpQuery(url) {
+  const n = clampN(url.searchParams.get("n"));
+  const page = clampPage(url.searchParams.get("page"));
+  const query = { n, page, genre: null, style: null, format: null, sort: null, q: null };
+  for (const param of PLP_FACET_PARAMS) {
+    const raw = url.searchParams.get(param);
+    if (raw === null || raw === "") continue;
+    if (formEncodedLength(raw) > FACET_VALUE_ENCODED_MAX) {
+      throw new BadRequest(`unknown ${param}`);
     }
-    return [...buckets.entries()]
-      .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
-      .map(([value, n]) => ({ value, count: n }));
-  };
-  return {
-    genres: count((s) => s.genres),
-    styles: count((s) => s.styles),
-    // Format descriptors ride in the summary's format string ("Vinyl, LP,
-    // Album, Reissue"); the LEADING carrier token is not a facet — dropped
-    // positionally, never by a hardcoded carrier name.
-    formats: count((s) => s.format.split(", ").slice(1)),
-  };
+    query[param] = raw;
+  }
+  const sort = url.searchParams.get("sort");
+  if (sort !== null && sort !== "") {
+    if (!PLP_SORTS.includes(sort)) throw new BadRequest("unknown sort");
+    query.sort = sort;
+  }
+  query.q = normalizeQ(url.searchParams.get("q"));
+  return query;
+}
+
+/** Exact-match validation against what the snapshot actually holds. */
+function validateFacets(query, summaries) {
+  const sets = facetValueSets(summaries);
+  for (const param of PLP_FACET_PARAMS) {
+    if (query[param] !== null && !sets[param].has(query[param])) {
+      throw new BadRequest(`unknown ${param}`);
+    }
+  }
+}
+
+/** The canonical warm key: fixed param order, defaults omitted,
+ *  `URLSearchParams` spelling — one condition, one key. `q` never appears
+ *  because a search is never stored. The prefix is the TRAY's shape version
+ *  (plp-query.mjs PLP_TRAY_VERSION): a shape change under a kept prefix
+ *  would serve pre-deploy entries the renderers cannot read — un-nonced
+ *  entries never expire, so a prefix bump is the only mechanism that
+ *  retires them. */
+function plpKey(query, run) {
+  const params = new URLSearchParams();
+  params.set("n", String(query.n));
+  params.set("page", String(query.page));
+  for (const param of PLP_FACET_PARAMS) {
+    if (query[param] !== null) params.set(param, query[param]);
+  }
+  if (query.sort !== null) params.set("sort", query.sort);
+  if (run) params.set("run", run);
+  return `v${PLP_TRAY_VERSION}:/api/plp?${params.toString()}`;
 }
 
 async function handlePlp(url, env) {
-  // clampN is the shared canonical knob (ADR-0002 §5) — the same clamp the
-  // chrome's environment tag applies, so tag and served condition agree.
-  const n = clampN(url.searchParams.get("n"));
-  const page = Math.max(parseInt(url.searchParams.get("page") ?? "", 10) || 1, 1);
+  let query;
+  try {
+    query = plpQuery(url);
+  } catch (err) {
+    if (err instanceof BadRequest) {
+      return json({ error: err.message }, 400, { "x-pm-cache-state": "none" });
+    }
+    throw err;
+  }
   const run = runKnob(url);
-  const key = `v1:/api/plp?n=${n}&page=${page}${run ? `&run=${run}` : ""}`;
+  const key = plpKey(query, run);
+  // Refused BEFORE any lookup: a key KV would reject (>512 bytes) must be
+  // the policy's 400 `none`, never the runtime's 414 surfacing as a 500.
+  if (new TextEncoder().encode(key).length > KV_KEY_MAX_BYTES) {
+    return json({ error: "unknown filter" }, 400, { "x-pm-cache-state": "none" });
+  }
 
-  return serveData(
-    url,
-    env,
-    key,
-    async () => {
-      const summaries = await readSnapshot(env, SNAPSHOT_KEYS.summaries);
-      const total = summaries.length;
-      const start = (page - 1) * n;
-      return {
-        items: summaries.slice(start, start + n),
-        page,
-        perPage: n,
-        total,
-        totalPages: Math.ceil(total / n),
-        facets: computeFacets(summaries),
-      };
-    },
-    // The `?page=` ceiling (file header): a page past the last real one is
-    // served — every arm renders it as the honest "0" — but never stored, so
-    // the key space is bounded by the crate, not by the integers.
-    { cacheable: (p) => p.page <= p.totalPages },
-  );
+  try {
+    return await serveData(
+      url,
+      env,
+      key,
+      async () => {
+        const summaries = await readSnapshot(env, SNAPSHOT_KEYS.summaries);
+        validateFacets(query, summaries);
+        return applyPlpQuery(summaries, query);
+      },
+      {
+        // The policy in the file header. A search and an unwarmed n are
+        // known uncacheable from the URL alone — `plpWarmable` is the SAME
+        // derivation the chrome's cacheState tag uses (@pm/measurement), so
+        // what the tier does and what RUM says it did cannot disagree. A
+        // page past the end is known only after compute.
+        tiered: plpWarmable(url.searchParams),
+        cacheable: (p) => p.page <= p.totalPages,
+      },
+    );
+  } catch (err) {
+    if (err instanceof BadRequest) {
+      return json({ error: err.message }, 400, { "x-pm-cache-state": "none" });
+    }
+    throw err;
+  }
 }
 
 async function handlePdp(url, env, rawId) {

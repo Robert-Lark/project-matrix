@@ -1,20 +1,42 @@
 /*
- * Component module — PLP toolbar. The result line, rendered from the tray:
- * total and page window, a condition stated plainly and never a bug.
+ * Component module — PLP toolbar. The result line (rendered from the tray:
+ * total and page window — a condition stated plainly, never a bug) + search
+ * and sort as GET forms: real navigation JS-off (the loaders+PE story is
+ * native here; client paradigms enhance).
  *
  * Canonical markup:
  *   <div class="pm-toolbar">
- *     <p class="pm-toolbar__count"><span class="pm-toolbar__n">24</span> of
- *        <span class="pm-toolbar__n">500</span> releases</p>
+ *     <p class="pm-toolbar__count">Showing <span class="pm-toolbar__n">1–24</span>
+ *        of <span class="pm-toolbar__n">500</span> releases</p>
+ *     <form class="pm-toolbar__search" method="get" action="">
+ *       …<input type="hidden"> per non-default knob, canonical order…
+ *       <div>
+ *         <label class="pm-toolbar__label" for="plp-q">Search the crate</label>
+ *         <input class="pm-toolbar__input" id="plp-q" name="q" type="search" [value="…"]>
+ *       </div>
+ *       <button class="pm-button pm-button--secondary" type="submit">Search</button>
+ *     </form>
+ *     <form class="pm-toolbar__sort" method="get" action="">
+ *       …hidden knobs…
+ *       <div>
+ *         <label class="pm-toolbar__label" for="plp-sort">Sort</label>
+ *         <select class="pm-toolbar__select" id="plp-sort" name="sort">…[selected]…</select>
+ *       </div>
+ *       <button class="pm-button pm-button--secondary" type="submit">Apply</button>
+ *     </form>
  *   </div>
  *
- * The search and sort GET forms lived here and are OUT with the facet rail
- * (see the plp.mjs docblock): the edge Worker reads neither `q` nor `sort`,
- * so both forms navigated to a filtered URL and got the unfiltered grid.
- * Their rules — `__search`, `__sort`, `__label`, `__input`, `__select` and
- * the focus ring on the last two — are removed with them rather than left
- * dead in a sheet a MEASURED page downloads. They return with ADR-0005 §5's
- * params, and the markup skeleton above is what to restore them against.
+ * Both forms carry the OTHER applied knobs as hidden inputs, because a GET
+ * form replaces the whole query string: without them a search from
+ * `?genre=Jazz&cache=cold` would silently drop the filter and the column.
+ * The order of the hidden inputs is the canonical param order
+ * (packages/reference/render/plp.mjs), so a JS-off submit and a JS-on push
+ * spell one condition the same way.
+ *
+ * The forms were OUT between 2026-08-29 and 2026-09-04 with the facet rail:
+ * the edge Worker read neither `q` nor `sort`, so both navigated to a
+ * filtered URL and got the unfiltered grid. They return with ADR-0005 §5's
+ * params, honoured.
  */
 
 .pm-toolbar {
@@ -37,4 +59,38 @@
   font-variant-numeric: var(--numeric-metric);
   color: var(--color-text);
   font-weight: var(--weight-medium);
+}
+
+.pm-toolbar__search,
+.pm-toolbar__sort {
+  display: flex;
+  align-items: end;
+  gap: var(--space-inline);
+}
+
+.pm-toolbar__label {
+  display: block;
+  font: var(--weight-medium) var(--text-caption) / 1.3 var(--font-ui);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-block-end: var(--space-stack-xs);
+}
+
+.pm-toolbar__input,
+.pm-toolbar__select {
+  min-height: var(--target-min);
+  padding: var(--space-inset-xs) var(--space-inset-sm);
+  font: var(--text-body) / 1.3 var(--font-ui);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.pm-toolbar__input:focus-visible,
+.pm-toolbar__select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-color: var(--color-focus);
 }

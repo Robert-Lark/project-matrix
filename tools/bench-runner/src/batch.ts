@@ -181,6 +181,32 @@ export function assertBenchableTarget(path: string): void {
   }
 }
 
+/** The PLP's warm tier holds only the two published knob values (ADR-0005
+ *  addendum, 2026-09-04: `PLP_N.warmed`, one derivation with the edge
+ *  Worker and the chrome's cacheState tag). A PLP batch at any other n
+ *  would find its warm column served from R2 on every run — warm ≈ cold,
+ *  the edge cell reading "the serving tier flip does nothing" — with
+ *  nothing in a react-next receipt able to say why (its tray fetch is
+ *  server-side, so `docCacheState` is null). Refused up front, the way
+ *  assertBenchableTarget refuses a fenced target: a typo must not mint a
+ *  receipt that no field can falsify. A target is "the PLP's" by its
+ *  DECODED second segment, the fence's own rule — `/api/plp` included, since
+ *  the tray driven as a document reads the same tier. Exported so the
+ *  refusal has a test of its own (test/batch.test.ts): the data-plane unit's
+ *  sabotage table removed it and nothing pre-merge noticed. */
+export function assertWarmablePlpBatch(n: number, targets: readonly { path: string }[]): void {
+  if (
+    !(PLP_N.warmed as readonly number[]).includes(n) &&
+    targets.some((t) => resolvedPathSegments(t.path)[2] === "plp")
+  ) {
+    throw new Error(
+      `n=${n}: the PLP warm tier holds only n ∈ {${PLP_N.warmed.join(", ")}} ` +
+        `(ADR-0005 addendum 2026-09-04) — a PLP batch at any other n measures R2 under a ` +
+        `column labelled warm. Pick a knob value.`,
+    );
+  }
+}
+
 export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
   // Canonicalize every target path ONCE, at the entry (the one-derivation
   // rule on resolvedPathSegments): downstream, target.path feeds
@@ -213,6 +239,7 @@ export async function runBatch(rawSpec: BatchSpec): Promise<ReceiptT> {
     }
   }
   const n = clampN(String(spec.n ?? PLP_N.default));
+  assertWarmablePlpBatch(n, spec.targets);
   const nonce = spec.runNonce ?? `bench-${Date.now().toString(36)}`;
   const origin = spec.origin.replace(/\/$/, "");
   const cpu = spec.cpuSource ?? UNAVAILABLE_CPU_SOURCE;

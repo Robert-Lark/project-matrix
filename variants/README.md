@@ -54,7 +54,7 @@ Current occupants:
   editorial's one interaction is client cart state, which hypermedia does
   not own, so that page idiomatically carries zero `hx-*` attributes (the
   honest hypermedia statement ISSUE E names). The PLP build is where `hx-*`
-  earned its keep: three attributes on one `<nav class="pm-pagination">`,
+  earned its keep: three attribute names on the swap root and its four navigation containers (PLP data plane, 2026-09-04; one `<nav class="pm-pagination">` before that),
   and the registration is the case the old note predicted in so many words.
   `attrPatterns` and `classPatterns` stay empty and that is the load-bearing
   part — the entry admits this paradigm's behavior attributes, never

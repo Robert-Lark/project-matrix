@@ -19,8 +19,12 @@ The Cloudflare Workers that compose the canonical plane (ADR-0004 §2):
 - `edge` — the data plane (issue #4): the frozen-snapshot R2 origin behind
   `GET /api/plp` + `GET /api/pdp/:id` (Zod-contract trays), `/assets/img/*`
   image serving, the KV warm tier (`?cache=` bypass; `x-pm-cache-state`
-  marker; `?run=` is the documented harness isolation knob folded into the
-  warm key), the `POST /api/beacon` Analytics Engine collector (tag
+  marker — `bypass | miss | hit`, or `none` for a response that is not a
+  warm-tier resource: a 4xx, a PLP page past the end, a search, an unwarmed
+  `n`; `?run=` is the documented harness isolation knob folded into the
+  warm key; the PLP's five ADR-0005 §5 params and the key-cardinality policy
+  that bounds them are in `src/index.js`'s header and the ADR-0005 addendum
+  of 2026-09-04), the `POST /api/beacon` Analytics Engine collector (tag
   contract imported from `@pm/measurement`; suite traffic uses the reserved
   `ci-smoke` tag values, excluded from any field analysis by convention),
   and `GET /api/snapshot` — the served snapshot's dated `SnapshotManifest`

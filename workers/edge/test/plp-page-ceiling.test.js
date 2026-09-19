@@ -105,7 +105,7 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(miss.headers.get("x-pm-cache-state")).toBe("miss");
     expect((await miss.json()).items.length).toBeGreaterThan(0);
     expect(puts).toHaveLength(1);
-    expect(puts[0].key).toBe(`v1:/api/plp?n=24&page=${lastPage}`);
+    expect(puts[0].key).toBe(`v2:/api/plp?n=24&page=${lastPage}`);
     // Visitor-facing (un-nonced): the frozen-data infinite TTL, unchanged.
     expect(puts[0].options).toBeUndefined();
     const hit = await get(env, `/api/plp?page=${lastPage}`);
@@ -120,7 +120,7 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(real.headers.get("x-pm-cache-state")).toBe("miss");
     const past = await get(env, `/api/plp?n=240&page=${pagesAt240 + 1}`);
     expect(past.headers.get("x-pm-cache-state")).toBe("none");
-    expect(puts.map((p) => p.key)).toEqual([`v1:/api/plp?n=240&page=${pagesAt240}`]);
+    expect(puts.map((p) => p.key)).toEqual([`v2:/api/plp?n=240&page=${pagesAt240}`]);
   });
 
   it("cold bypass past the end is still `bypass` — the visitor asked for R2 and got it", async () => {
@@ -136,7 +136,32 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     const res = await get(env, "/api/plp?page=1e15");
     expect((await res.json()).page).toBe(1);
     expect(res.headers.get("x-pm-cache-state")).toBe("miss");
-    expect(puts.map((p) => p.key)).toEqual(["v1:/api/plp?n=24&page=1"]);
+    expect(puts.map((p) => p.key)).toEqual(["v2:/api/plp?n=24&page=1"]);
+  });
+
+  it("a page of 400 digits is still a finite, contract-valid empty page — never `page: null`", async () => {
+    // `parseInt` of 309+ digits is Infinity, which JSON writes as null: the
+    // first draft served a tray the PlpPage contract rejects, the htmx arm
+    // answered a false "data plane didn't answer" 503, and react-next held
+    // page Infinity against a Worker that read `page=Infinity` as page 1
+    // (verify-slice, 2026-09-18). Capped at MAX_SAFE_INTEGER: past the end,
+    // empty, `none`, never stored — the ceiling's own semantics.
+    const { env, puts } = stubEnv();
+    const res = await get(env, `/api/plp?page=${"9".repeat(400)}`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Number.isSafeInteger(body.page), `page serialized as ${body.page}`).toBe(true);
+    expect(body.page).toBe(Number.MAX_SAFE_INTEGER);
+    expect(body.items).toEqual([]);
+    expect(body.total).toBe(summaries.length);
+    expect(res.headers.get("x-pm-cache-state")).toBe("none");
+    expect(puts).toEqual([]);
+    // The spelling react-next would have sent before its clamp was fixed is
+    // junk to the Worker, not a silent page 1 under a URL that says otherwise:
+    // parseInt("Infinity") is NaN, so it IS page 1 — pinned so the two
+    // clamps' agreement (react-next identity guard) is what keeps that
+    // shape from ever being requested.
+    expect((await (await get(env, "/api/plp?page=Infinity")).json()).page).toBe(1);
   });
 
   it("junk and sub-floor pages collapse to page 1 — one key, not one per spelling", async () => {

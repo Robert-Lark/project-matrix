@@ -123,10 +123,19 @@ export default {
       // into a fragment or error-logging its designed slotlessness would
       // both be wrong — so partials pass through byte-identical (the
       // q-data.json precedent from slice D). Deliberately variant-scoped,
-      // not a plane-wide "/frames/" convention: no other variant serves HTML
-      // partials today; the PLP build (htmx loaders+PE) should generalize
-      // this deliberately when it does.
+      // not a plane-wide "/frames/" convention.
       if (variant === "remix3" && url.pathname.startsWith("/remix3/editorial/frames/")) {
+        return upstream;
+      }
+      // The generalization that exemption asked for (PLP data plane,
+      // 2026-09-04): any variant may serve HTML that is not a page, and the
+      // response DECLARES it. The htmx PLP's boosted swaps (ADR-0005 §1) set
+      // `x-pm-partial: 1` on every fragment response; until this line landed
+      // the composed origin logged `chrome-slot-count` as an ERROR on every
+      // page-flip against a Worker behaving correctly (PLP handoff §6.1).
+      // Header, not `HX-Request`: htmx's history-restore re-fetch also
+      // carries HX-Request and legitimately wants the WHOLE document.
+      if (upstream.headers.get("x-pm-partial")) {
         return upstream;
       }
 

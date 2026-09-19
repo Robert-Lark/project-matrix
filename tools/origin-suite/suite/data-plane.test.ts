@@ -196,7 +196,10 @@ describe("KV warm tier: harness-driven cache state (ADR-0002 §8)", () => {
   const CACHE_NONCE = `${RUN_NONCE}-cache`;
 
   it("bypass → miss → hit across three requests, marker header carried", async () => {
-    const path = `/api/plp?n=48&run=${CACHE_NONCE}`;
+    // n=240, a WARMED knob value: since the PLP data plane's key policy
+    // (ADR-0005 addendum, 2026-09-04) the tier holds only n ∈ {24, 240};
+    // this leg ran at n=48 before, which would now be `none` on every step.
+    const path = `/api/plp?n=240&run=${CACHE_NONCE}`;
     const bypass = await get(`${path}&cache=cold`);
     expect(bypass.headers.get("x-pm-cache-state")).toBe("bypass");
 

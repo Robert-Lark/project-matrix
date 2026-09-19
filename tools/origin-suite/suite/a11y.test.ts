@@ -189,7 +189,10 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
       expect(await res.text(), `/${variant}/editorial/ footer`).toContain('href="/vanilla/a11y/"');
     }
     expect(await (await get("/vanilla/checkout/")).text()).toContain('href="/vanilla/a11y/"');
-    expect(await (await get("/react-next/plp/plain/")).text()).toContain('href="/vanilla/a11y/"');
+    // cache=cold: this PAGE proxies the tray server-side, forwarding the page
+    // URL's knobs, so an un-nonced request here planted the canonical PLP
+    // key on the deployed plane (warm-tier guard, widened 2026-09-04).
+    expect(await (await get("/react-next/plp/plain/?cache=cold")).text()).toContain('href="/vanilla/a11y/"');
     // A PDP, actually FETCHED (F-A9): the PDP is the surface behind most of
     // the footer links on the plane — one page per release, in four variants —
     // and vanilla's PDP footer is a THIRD independent re-typed copy of the

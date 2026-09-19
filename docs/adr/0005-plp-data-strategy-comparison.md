@@ -243,3 +243,174 @@ per-interaction byte cell publishes a verdict, the PLP build either splits
 the facet payload and re-measures, or the cell shows **both** numbers
 (tray-as-shipped and facets-excluded) so the payload-design share of the gap
 is visible instead of credited to the paradigm.
+
+## Addendum — §5 implemented: the two open questions, the key-cardinality policy, and what the data plane serves (2026-09-04)
+
+§5 named the contract — five canonical params, validated against the real
+facet values, junk a 400, no junk KV keys — and left two questions and one
+bound open. The PLP data-plane unit (the 2026-08-29 audit's priority 3;
+`docs/prototypes/plp-data-plane-prompt.md`) closes them. Every file:line here
+was read from source that day; the numbers are tool-derived and say where.
+
+**Q1 — facet counts under a filter RECOUNT over the filtered set, with the
+selected group's own filter lifted.** For each group (genre, style, format)
+the buckets are counted over the items that pass every applied filter EXCEPT
+that group's own. In the group you filtered by, every value compatible with
+the other filters stays listed with the count you would get by *switching*
+to it; in the other groups a count is what you get by *adding* that facet.
+A bucket with zero items is not listed — with one exception, found by the
+2026-09-18 verify-slice pass: the selected value is always listed, so the
+rail always offers the toggle-off. On an empty intersection
+(`genre=Jazz&style=Minimal` with no such record — 637 of the crate's 855
+genre × style pairs are empty) the recount leaves the selected value no
+bucket, and every renderer drew a rail with no marked facet and no link that
+removed either filter. The query module now appends the selected value at
+its honest count, 0 — the one zero a rail may show. Unfiltered, this is the
+whole-crate count, so the committed master (the default condition) did not
+change under the rule. *Rejected:* whole-crate counts under a filter — cheaper to explain
+and byte-stable across conditions, but a count that does not predict the
+click ("Ambient 37" → 3 results) is the served-falsehood class the
+2026-08-29 cut removed. *Given up:* the tray's facet payload now varies by
+condition, so a byte cell measuring a facet toggle carries a variable facet
+share — the first addendum's finding 8 already requires that share to be
+shown separately before any byte verdict publishes. The display rule stays
+the spec layer's: all genres, top 12 styles, top 8 formats, each group
+titled with its cut, and the selected value always listed (appended after
+the cut when it ranks outside it).
+
+**Q2 — `PlpPage` grows `applied`**: `{ genre, style, format, sort, q }`,
+each `string | null`, always present (`packages/data-contract/src/schema.ts`
+`PlpApplied`). Every renderer derives EVERYTHING it shows — grid, count,
+selected facet, chosen sort, search value — from the payload; the URL
+contributes only the three knobs a tray cannot know (`cache`, `run`,
+`profile`). The reason is live on the two client-cache arms: under
+`keepPreviousData`/`previousData` the previous tray is on screen while a new
+condition is in flight, and controls rendered from the request would show one
+condition's selection over another condition's grid — a toggle-off link that
+does not toggle off. With `applied` in the tray, "settled" (the moment the
+address bar may move) is `appliedMatches(payload, condition)`, not
+`payload.page === condition.page`. *Rejected:* deriving the selected state
+from the URL — right for the server render, wrong for every in-flight
+window. *Cost:* ~90 bytes per tray, one more `@type` in the Apollo
+exhibit's document. **The tray's shape is versioned by the KV key prefix**
+(`plp-query.mjs PLP_TRAY_VERSION`, now `v2:`): visitor-facing entries have no
+TTL, so without the bump the default condition's pre-deploy entry would have
+served a tray without `applied` to every visitor after the deploy — caught by
+the design critique before a line shipped.
+
+**One implementation, not two.** The query semantics — filter, ASCII-case-
+insensitive substring search over title or artist, five sorts with nulls
+last and committed-order tie-breaks, the recount, the slice — are ONE pure
+module, `packages/reference/render/plp-query.mjs`, imported by the reference
+renderer (the markup contract of record) AND by the edge Worker (the data
+plane). The Worker had re-typed the reference's facet comparator and nothing
+compared the two; filtering and sorting would have been a second and third
+copy. `@pm/edge` therefore declares `@pm/reference` — the third consumer,
+scoped in the ADR-0004 §2 addendum of the same date: the Worker is the data
+plane, not a paradigm, its bundle is never a measured client bundle, and the
+module is import-free by construction. The two arms still re-type the
+MARKUP (ADR-0003 §1) and are held to the reference's `renderPlpBlock` for
+every condition by `tools/repo-checks/test/plp-arms-agree.test.ts`; the
+three rules a paradigm cannot import (the n clamp, the q normalizer, the
+href rule) are re-typed in react-next and pinned equal over tables of inputs.
+
+**The key-cardinality policy (the §5 bound, made a mechanism).** A KV key is
+WRITTEN only for a condition the tier can hold a finite number of:
+
+> cacheable ⇔ `q` absent ∧ n ∈ {24, 240} ∧ page ≤ totalPages (of the filtered set)
+
+Everything else is served from R2 and marked `x-pm-cache-state: none` ("not
+a warm-tier resource"; `?cache=cold` is still `bypass`). The URL-derivable
+half (`q`, `n`) is ONE derivation — `plpWarmable` in `@pm/measurement`,
+consumed by the Worker (which then skips KV in both directions) and by the
+chrome's `cacheState` tag (which would otherwise stamp a search as `default`,
+a KV-tier column, while every such request read R2). The page half needs
+the snapshot and lives in the Worker alone: the lookup runs first, so the
+hit path stays one KV read, and a page past the end is served as the honest
+empty "0" every arm renders and never stored. Empty values are absent, never
+400 (`?sort=` and `?q=` are what a GET form submits for an untouched
+control). Facet values are validated exact-match against the snapshot's
+real sets after the lookup (a junk key can never hit because it is never
+written); a value too long to be real (encoded > 96 bytes; the longest real
+value is 37 characters) is refused before the lookup so the key stays far
+below KV's 512-byte limit. `sort` is validated against the five names.
+
+- **Why `q` is never cached:** free text has no finite key space. A search
+  costs one R2 read plus Worker CPU per request, bounded per request, and
+  nothing accretes. *Rejected:* TTL-caching search — $5/M writes for junk
+  searches against $0.36/M R2 class-B reads uncached, to buy warm hits on
+  repeated searches nobody on a demo site repeats within an hour.
+- **Why `n` is warmed at the two knob values only:** every n in 1..240 is a
+  real served condition (`clampN`, unchanged), but the instrument names only
+  `SURFACE_CONTROLS.plp.nKnob = [24, 240]`, and warming all 240 multiplies
+  the key space ~120× for conditions nothing publishes. The bench runner
+  refuses a PLP batch at any other n (`tools/bench-runner/src/batch.ts`), so
+  a typo cannot mint a receipt whose warm column read R2.
+- **The ceiling, measured** (`docs/prototypes/plp-data-plane/kv-ceiling.mjs`; it
+  builds every cacheable payload with the real query module and counts its
+  bytes; the rejected policy's bytes are estimated from one page per sort):
+
+  | policy | keys | storage | writes, full enumeration | storage / month |
+  |---|---|---|---|---|
+  | adopted — n ∈ {24, 240}, real crate | **37,182** | **0.162 GB** (avg 4,345 B/value; longest key 128 B) | **$0.19** | **$0.08** |
+  | rejected — n free in 1..240, real crate | 4,548,342 | ~19.7 GB | $22.74 | $9.87 |
+  | adopted, fixture | 4,140 | 0.036 GB | $0.02 | $0.02 |
+  | before this unit (unfiltered, no page cap) | unbounded | unbounded | — | — |
+
+  Prices fetched 2026-09-04 from `developers.cloudflare.com/kv/platform/pricing/`
+  ("$5.00/million" writes, "$0.50/million" reads, "$0.50/ GB-month" storage;
+  free tier "1,000 / day" writes, "1 GB") and `/kv/platform/limits/` (key
+  "512 bytes"); R2 from `/r2/pricing/` ("$0.36 / million requests" class B).
+  List prices, before any included allotment.
+- **The residual, honestly.** A junk or uncacheable request costs one Worker
+  invocation, one R2 read, and — for a junk facet value — one KV read-miss:
+  bounded per request, zero storage. The `run` nonce is a DIFFERENT class:
+  any well-formed nonce on a cacheable condition is one KV write plus one
+  ~4 KB entry for an hour (the TTL), so 1M distinct nonces in an hour cost
+  ~$5 and ~4 GB-hours — time-bounded, not zero, and the same holds for
+  `/api/pdp/<id>?run=`. Not narrowed: the harness mints `bench-…`/`suite-…`
+  nonces and a prefix rule would not stop anyone who read this paragraph.
+  **Unverified:** whether the `pm-warm` namespace is on the Free plan (1,000
+  writes/day) — on Free this is an outage vector, not a cost line. Flagged
+  for the account owner.
+- **What is given up:** a page past the end and an empty intersection are
+  served `none` (the page half of the policy lives in the Worker alone) but
+  RUM-tagged `default` by the chrome's URL-derivable `plpWarmable` — both are
+  hand-typed conditions no cell reads; a mechanism (the page surfacing the
+  tray's `x-pm-cache-state` for the beacon) is ADR-0001 §8 territory for the
+  measurement pass (verify-slice, skeptic lens, 2026-09-18). A hand-typed `?n=48` is never warm; RUM for such a
+  page is tagged `cacheState: none`; a nonced batch at an unwarmed n is
+  refused. The beacon's `environment` tag stays `n|cache` — a 3-card
+  filtered page pools with the unfiltered condition in Analytics Engine
+  (an ADR-0001 §8 amendment, not this unit's).
+
+**The served surface.** The facet rail, the search form and the sort select
+are back in the master and both arms, working. One href rule for every
+in-surface link, both forms' hidden inputs and every client-side history
+write (`plp.mjs conditionHref`; re-typed in htmx and react-next): knobs in
+the order page, n, cache, run, profile, genre, style, format, sort, q, each
+omitted at its default, the bare condition spelled `?page=1`, in
+`URLSearchParams`' form-submit encoding (`+` for a space) so a JS-off form
+and a JS-on push spell one condition alike. This closes the first PLP build's
+handoff §6.2(ii): a page-flip from `?cache=cold` stays cold. The two known
+spellings that still differ are recorded rather than hidden — a boosted htmx
+form submit encodes with `encodeURIComponent` (`%20`), and a native submit of
+an untouched select spells `sort=`; both parse to the same condition. The
+strategy presets now carry the visitor's whole condition (only `cache` moves
+with the preset) and the n knob drops `page`. A facet or sort value the
+snapshot does not hold is a branded **404 "No such filter"** on both arms —
+the plane answered, with a 400 — never the "data plane didn't answer" 503.
+An empty result renders "Showing 0 of 0 releases" and no pagination
+landmark. The default sort is labelled **"Catalogue order"**: the committed
+order is id-ascending (snapshot-capture normalize.ts), and the pre-cut master
+had called it "Popularity", which it is not.
+
+**Consequences for the cells.** No PLP number publishes here (the batches
+belong to the measurement pass, after its route-level fence). Three things
+the pass inherits from this unit: `plpWarmable` and `PLP_N.warmed` are the
+tier's contract; the warm column's priming visit loads the page only
+(`batch.ts` `interactionId: "none"`), so a measured facet/sort/page
+interaction on the edge arm is a MISS that also pays the awaited KV put —
+prime with the target's own interaction before the first PLP interaction
+cell; and the `x-pm-partial` pass-through means every htmx page-flip is now a
+correct, chrome-less fragment on the composed origin.

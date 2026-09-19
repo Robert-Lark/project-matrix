@@ -52,14 +52,16 @@ const MASTERS = committedMasters();
  * owes the rule. A registry, not a skip: every entry is a real debt, the list
  * is frozen at what existed before this guard, and a NEW unstyled class fails.
  *
- * All three predate the guard (verified against `origin/main`) and sit on
- * surfaces that are not built yet, so no visitor meets them. They are the
- * `pm-pdp__scroll` class of defect — markup contract ahead of the stylesheet —
- * and belong to whichever build lands the surface.
+ * All three original entries predated the guard (verified against
+ * `origin/main`) and sat on surfaces that were not built yet, so no visitor
+ * met them. They are the `pm-pdp__scroll` class of defect — markup contract
+ * ahead of the stylesheet — and belong to whichever build lands the surface.
+ * The PLP's two (`pm-plp__head`, `pm-plp__results`) were retired by the PLP
+ * data-plane unit (2026-09-04), which landed the rules in `surfaces/plp.css`
+ * in the same commit — the "OWED registry is exactly the known debt" leg
+ * below is what forces the two to move together.
  */
 const OWED: Record<string, string> = {
-  "pm-plp__head": "plp — unbuilt surface; the PLP build owes the rule",
-  "pm-plp__results": "plp — unbuilt surface; the PLP build owes the rule",
   "pm-checkout__form": "checkout — unbuilt surface; the checkout build owes the rule",
 };
 

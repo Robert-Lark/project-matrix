@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { PlpPage } from "@pm/data-contract";
-import { PER_PAGE, PlpArticle } from "../lib/plp";
-import { plpApiPath, plpHistoryUrl, type PlpCondition } from "../lib/plp-condition";
+import { PlpArticle } from "../lib/plp";
+import { PER_PAGE, plpApiPath, plpHistoryUrl, type PlpCondition } from "../lib/plp-condition";
 import { navigateOrReload, usePopstateCondition } from "./usePlpNavigation";
 
 /**
@@ -101,9 +101,12 @@ export function PlpPlain({
    */
   const latest = useRef(0);
 
-  const goToPage = useCallback(
-    (page: number) => {
-      const next: PlpCondition = { ...state.condition, page };
+  // One seam for every control — a page, a facet, a sort, a search: the
+  // article hands back the whole next CONDITION (the same one its anchor's
+  // href spells), and this arm fetches it. Filters are forwarded to the data
+  // plane again (plpApiPath), which honours them since 2026-09-04.
+  const goTo = useCallback(
+    (next: PlpCondition) => {
       const href = plpHistoryUrl(next, PER_PAGE);
       const ticket = ++latest.current;
       void paginate(next, href, () => ticket === latest.current, {
@@ -113,7 +116,7 @@ export function PlpPlain({
         navigate: navigateOrReload,
       });
     },
-    [state.condition],
+    [],
   );
 
   // Back/Forward. This arm has no cache, so a restore is a fetch like any
@@ -134,7 +137,9 @@ export function PlpPlain({
     }, []),
   );
 
-  return (
-    <PlpArticle payload={state.payload} n={state.condition.n} onSelectPage={goToPage} />
-  );
+  // `carry`: the three knobs the tray cannot know, from the condition the
+  // page was served under. Everything else the article renders is the
+  // payload's — including `n` (`perPage`) and the selected filters.
+  const carry = { cache: state.condition.cache, run: state.condition.run, profile: state.condition.profile };
+  return <PlpArticle payload={state.payload} carry={carry} onNavigate={goTo} />;
 }

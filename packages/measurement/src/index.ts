@@ -23,6 +23,7 @@ export {
   PLP_N,
   clampN,
   knobTags,
+  plpWarmable,
   type BeaconTagKey,
   type BeaconTags,
   type BeaconEvent,

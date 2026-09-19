@@ -44,6 +44,8 @@
  * reads "In build" goes red; singletons flip theirs by hand.
  */
 
+import { PLP_N } from "@pm/measurement";
+
 export interface StrategyPreset {
   /** Honest label (CONTEXT.md vocabulary — never "cache mode"/"library"). */
   readonly label: string;
@@ -167,7 +169,14 @@ export const SURFACE_CONTROLS: Readonly<Record<string, SurfaceControls>> = {
       { label: "Edge cache — KV", path: "/react-next/plp/plain/", query: "" },
       { label: "Misapplication exhibit — Apollo on REST", path: "/react-next/plp/apollo/", query: "?cache=cold", fenced: true },
     ],
-    nKnob: [24, 240],
+    // ONE derivation with the warm tier (ADR-0005 addendum, 2026-09-04): the
+    // knob offers exactly the n values the edge Worker warms and the bench
+    // runner admits (`plpWarmable`, `assertWarmablePlpBatch`). A literal here
+    // was a second copy of that set with nothing pinning the two — a later
+    // `[24, 120, 240]` would have put an "Edge cache — KV" preset on the
+    // instrument that the tier never serves warm (verify-slice, seams lens,
+    // 2026-09-18). A unit that WANTS an unwarmed knob has to say so here.
+    nKnob: PLP_N.warmed,
   },
   checkout: {
     // vanilla is LIVE as of the checkout-vanilla build — `/vanilla/checkout/`

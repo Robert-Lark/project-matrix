@@ -341,5 +341,25 @@ stands; what "not consumed" protects is now stated precisely:
   a paradigm to render a compared surface from the spec, and the variant's
   DIFF-TO-STARTER says so.
 
+- **The third consumer, and the one exception to "never shipped"
+  (2026-09-04).** `@pm/edge` declares `@pm/reference` for exactly one module:
+  `render/plp-query.mjs`, the PLP's query semantics (filter, search, sort,
+  facet recount, slice) — a pure, import-free file the reference renderer
+  uses to draw the master and the edge Worker uses to serve the tray
+  (ADR-0005 addendum, same date). It IS bundled: wrangler compiles it into
+  the deployed data-plane Worker. That is deliberate and does not touch what
+  §2 protects. The Worker is the data plane, not a paradigm — its bundle is
+  server-side, never a measured client bundle, and every variant reaches it
+  over one HTTP seam; nothing from `packages/reference` reaches a page a
+  visitor downloads. What it buys is the end of a re-typed comparator: the
+  Worker had its own copy of the reference's facet ordering and nothing
+  compared the two, and the five params would have added filtering and
+  sorting to that copy. The spec's own function serves the data, so the
+  master and the served page cannot disagree about what a filtered condition
+  contains. The `no exports map` repo-check still holds (deep import by
+  path); the two arms still re-type the markup.
+
 One sentence for the layout comment, should it be redrawn: *`reference/`
-(golden-master SPEC — consumed at build time only, never shipped).*
+(golden-master SPEC — consumed at build time by tooling and singleton hosts,
+and by the data-plane Worker for the PLP query semantics; never in a
+paradigm's shipped bundle).*

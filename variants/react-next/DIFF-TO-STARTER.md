@@ -354,7 +354,12 @@ is deprecated, repo archived 2025-09-29).
     around.** With multiple root layouts, Next 16.2 composes the not-found
     boundary only into the RSC payload (hydration renders it client-side);
     the served 404 HTML is the bare error shell. The cross-paradigm URL
-    contract is the STATUS (404, never a canonical 301), which holds.
+    contract is the STATUS (404, never a canonical 301), which holds. The
+    PLP's junk-filter 404 (`?genre=Junk` → the plane's 400 → `notFound()`,
+    2026-09-04) ships the same shell — read off the served body 2026-09-18
+    and pinned by the origin suite's junk-filter leg (`plp.test.ts`): status
+    and sentence on both arms, `__next_error__` here, the chrome count only
+    on htmx.
     Vanilla's 404 is an equally unbranded asset-layer 404, and the plane
     already serves slot-less HTML 404s (qwik-city's own). Both escapes were
     rejected because they change the EDITORIAL serving path mid-benchmark:

@@ -44,9 +44,15 @@ export async function loadDetail(id: number): Promise<ReleaseDetail | null> {
  *  data plane exactly as the visitor's URL asked, which is what makes the
  *  "Edge cache — KV" preset byte-identical code to the cold one with only the
  *  serving tier flipped (ADR-0005 §1, the purest single-variable cell). */
-export async function loadPlp(condition: PlpCondition): Promise<PlpPage> {
+export async function loadPlp(condition: PlpCondition): Promise<PlpPage | null> {
   const path = plpApiPath(condition);
   const res = await edgeFetch(path);
+  // A 400 is a facet or sort value the snapshot does not hold (ADR-0005 §5:
+  // junk is a 400, never a key). The plane ANSWERED, so the route turns null
+  // into a 404 — never the error boundary's "the catalogue didn't answer",
+  // which would report a hand-typed `?genre=jazz` as an outage (the
+  // loadDetail precedent: 404 → null, everything else throws).
+  if (res.status === 400) return null;
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   return res.json();
 }

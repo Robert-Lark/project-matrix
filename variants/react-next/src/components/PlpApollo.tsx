@@ -5,14 +5,16 @@ import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 import { ApolloProvider, useQuery } from "@apollo/client/react";
 import { RestLink } from "apollo-link-rest";
 import type { PlpPage } from "@pm/data-contract";
-import { PER_PAGE, PlpArticle } from "../lib/plp";
+import { PlpArticle } from "../lib/plp";
 import {
   useNavigateOnError,
   usePopstateCondition,
   usePushWhenSettled,
 } from "./usePlpNavigation";
 import {
+  PER_PAGE,
   PLP_STALE_TIME_MS,
+  appliedMatches,
   plpApiPath,
   plpHistoryUrl,
   type PlpCondition,
@@ -104,6 +106,13 @@ const PLP_QUERY = gql`
           count
         }
       }
+      applied @type(name: "PlpApplied") {
+        genre
+        style
+        format
+        sort
+        q
+      }
     }
   }
 `;
@@ -146,6 +155,9 @@ function withTypenames(payload: PlpPage): Record<string, unknown> {
         styles: payload.facets.styles.map(bucket),
         formats: payload.facets.formats.map(bucket),
       },
+      // The applied query (ADR-0005 addendum Q2) — one more type the
+      // normalizing cache must be told about, one more line of the exhibit.
+      applied: { __typename: "PlpApplied", ...payload.applied },
     },
   };
 }
@@ -215,15 +227,9 @@ export function PlpApolloInner({
     plpApolloQueryOptions(current),
   );
 
-  const goToPage = useCallback(
-    (page: number) => {
-      setCurrent({ ...current, page });
-      // The push happens when the DATA lands, not here — see
-      // usePushWhenSettled. Pushing on click made the URL and the
-      // `aria-current` marker disagree for the whole in-flight window.
-    },
-    [current],
-  );
+  // One seam for every control; the push happens when the DATA lands, not
+  // here — see usePushWhenSettled.
+  const goTo = useCallback((next: PlpCondition) => setCurrent(next), []);
 
   // The same three duties the lead owes (see usePlpNavigation): restore on
   // Back/Forward, fall back to a real navigation on failure rather than
@@ -246,9 +252,10 @@ export function PlpApolloInner({
   // The address bar moves when the CONTENT does — the cold arm's behaviour,
   // and the third duty of usePlpNavigation. Declared here because it needs
   // `payload`, which is what is actually on screen.
-  usePushWhenSettled(current, plpHistoryUrl(current, PER_PAGE), payload.page === current.page);
+  usePushWhenSettled(current, plpHistoryUrl(current, PER_PAGE), appliedMatches(payload, current));
 
-  return <PlpArticle payload={payload} n={current.n} onSelectPage={goToPage} />;
+  const carry = { cache: current.cache, run: current.run, profile: current.profile };
+  return <PlpArticle payload={payload} carry={carry} onNavigate={goTo} />;
 }
 
 export function PlpApollo({

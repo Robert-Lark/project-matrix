@@ -36,18 +36,15 @@
  *     published cold/warm columns depend on, the partial-swap branch, and
  *     the branded-503 boundary.
  *
- * DISCLOSED LIMITS, both real:
- *  - The `/api/plp` payload is assembled here from the committed trays
- *    rather than fetched from `workers/edge`, which is a different
- *    workspace this one does not declare (and must not: ADR-0004 §2's
- *    isolation is the zero-bias asset). If the edge Worker's facet
- *    comparator ever diverged from the reference's, these legs would still
- *    pass and the deployed page would drift. That seam belongs to a PLP
- *    drift leg in the origin suite — which DOES NOT EXIST YET: nothing in
- *    `tools/origin-suite/suite/` has ever requested a `/{variant}/plp/`
- *    page, so today the deployed surface is checked by nothing at all. It
- *    is a precondition of promoting this variant in `SURFACE_CONTROLS`
- *    (ADR-0008 addendum A §4c), named in this unit's handoff.
+ * DISCLOSED LIMITS:
+ *  - The `/api/plp` payload is assembled here by `applyPlpQuery` — the
+ *    reference package's OWN query module, which the edge Worker imports
+ *    and serves from (2026-09-04). Until then the payload was RE-TYPED here
+ *    and the limit read: "if the edge Worker's facet comparator ever
+ *    diverged from the reference's, these legs would still pass". There is
+ *    no second comparator to diverge now, and one leg below drives the
+ *    real Worker in-process to prove its plumbing returns exactly what the
+ *    helper builds. The deployed seam is the origin suite's `plp.test.ts`.
  *  - Nothing here drives a browser, so htmx's own swap behaviour is
  *    unproven: what is proven is that the markup carries the documented
  *    attributes, that the anchors keep working with the attributes removed
@@ -62,6 +59,12 @@ import { describe, expect, it } from "vitest";
 import { parseHTML } from "linkedom";
 import { NO_NOISE, PAGE_NORMALIZE, PERMITTED_NOISE, firstDomDivergence } from "@pm/drift-gate";
 import { renderEditorialPage, renderPlpFragment, renderPlpPage } from "../src/render.mjs";
+// The spec's query module and the REAL edge Worker, by relative path: neither
+// is a dependency this variant declares or may declare (ADR-0004 §2 — a
+// paradigm never ships the spec), and a guard reaching them by path is the
+// react-next identity guard's precedent for exactly this seam.
+import { applyPlpQuery } from "../../../packages/reference/render/plp-query.mjs";
+import edgeWorker from "../../../workers/edge/src/index.js";
 
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
 
@@ -82,40 +85,80 @@ async function reference() {
 }
 
 /**
- * The edge Worker's `/api/plp` payload, assembled from a committed snapshot.
- *
- * This mirrors `handlePlp` (workers/edge/src/index.js:121-142) — the same
- * slice, the same totals, and the same count-desc / CODE-UNIT tie-break
- * facet comparator (`computeFacets`, :101-119). It is an INPUT to the
- * identity comparison, not a second source of truth: if this assembly
- * disagreed with the reference renderer about facet order or page slicing,
- * the byte comparison below would fail, which is exactly what a wrong input
- * should do.
+ * The edge Worker's `/api/plp` payload for a condition — built by the SAME
+ * function the Worker serves from (`applyPlpQuery`, the reference's query
+ * module), so it is the served tray by construction, not a re-typing of it.
+ * `query` takes the five ADR-0005 §5 params plus `n`/`page`; `q` must be
+ * the normalized form (the Worker normalizes before calling this).
  */
-function plpPayload(snapshot, { n = 24, page = 1 } = {}) {
-  const summaries = snapshot.summaries;
-  const count = (getValues) => {
-    const buckets = new Map();
-    for (const s of summaries) {
-      for (const v of getValues(s)) buckets.set(v, (buckets.get(v) ?? 0) + 1);
-    }
-    return [...buckets.entries()]
-      .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
-      .map(([value, c]) => ({ value, count: c }));
-  };
-  const start = (page - 1) * n;
-  return {
-    items: summaries.slice(start, start + n),
+function plpPayload(snapshot, { n = 24, page = 1, ...query } = {}) {
+  return applyPlpQuery(snapshot.summaries, {
+    n,
     page,
-    perPage: n,
-    total: summaries.length,
-    totalPages: Math.ceil(summaries.length / n),
-    facets: {
-      genres: count((s) => s.genres),
-      styles: count((s) => s.styles),
-      formats: count((s) => s.format.split(", ").slice(1)),
+    genre: null,
+    style: null,
+    format: null,
+    sort: null,
+    q: null,
+    ...query,
+  });
+}
+
+/** The real edge Worker over a committed snapshot, in-process with stub
+ *  bindings — the react-next guard's `stubEnv`/`servedTray` shape. */
+async function servedTray(snapshot, params = {}) {
+  const warm = new Map();
+  const env = {
+    SNAPSHOT: {
+      get: (key) =>
+        Promise.resolve(
+          key === "snapshot/summaries.json"
+            ? { json: () => Promise.resolve(snapshot.summaries) }
+            : null,
+        ),
+    },
+    WARM: {
+      get: (key) => Promise.resolve(warm.get(key) ?? null),
+      put: (key, value) => {
+        warm.set(key, value);
+        return Promise.resolve();
+      },
     },
   };
+  const search = new URLSearchParams(
+    Object.entries(params).map(([k, v]) => [k, String(v)]),
+  ).toString();
+  const res = await edgeWorker.fetch(
+    new Request(`https://pm-edge/api/plp${search ? `?${search}` : ""}`),
+    env,
+  );
+  return { status: res.status, tray: res.status === 200 ? await res.json() : null };
+}
+
+/** The conditions the master could not express until 2026-09-04, each of
+ *  which now exercises one restored control: a genre, a style OUTSIDE its
+ *  group's top-12 cut (the "selected facet is always listed" rule), a
+ *  search, a sort, and a deep page carrying every URL knob. Values are
+ *  found in the snapshot rather than typed. */
+function restoredConditions(snapshot) {
+  const summaries = snapshot.summaries;
+  const genre = summaries[0].genres[0];
+  const styleCounts = new Map();
+  for (const s of summaries) for (const v of s.styles) styleCounts.set(v, (styleCounts.get(v) ?? 0) + 1);
+  const ranked = [...styleCounts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+  const rareStyle = ranked.length > 12 ? ranked[ranked.length - 1][0] : ranked[ranked.length - 1][0];
+  const word = summaries[3].title.split(" ").find((w) => /^[A-Za-z]{3,}$/.test(w));
+  return [
+    { label: "genre", query: { genre }, carry: {} },
+    { label: "rare style", query: { style: rareStyle }, carry: {} },
+    { label: "search", query: { q: word }, carry: {} },
+    { label: "sort", query: { sort: "price-desc" }, carry: {} },
+    {
+      label: "deep page + every knob",
+      query: { page: 2, genre, sort: "title" },
+      carry: { cache: "cold", run: "bench-abc", profile: "slow-4g-mid-phone" },
+    },
+  ];
 }
 
 /** The ADR-0008 delivery freedoms the byte-strict legs tolerate — the head
@@ -222,6 +265,45 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
     });
   }
 
+  for (const name of SNAPSHOTS) {
+    it(`${name}: and at every RESTORED condition — a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
+      const { lib, plp } = await reference();
+      const snapshot = lib.loadSnapshot(name);
+      for (const { label, query, carry } of restoredConditions(snapshot)) {
+        const master = stripDelivery(plp.renderPlp(snapshot, { origin: "", n: 24, ...query, ...carry }));
+        const variant = stripHx(stripDelivery(renderPlpPage(plpPayload(snapshot, { n: 24, ...query }), carry)));
+        // Non-vacuity per condition: the control's state is actually rendered.
+        if (query.genre) expect(master, `${label}: no selected facet`).toContain(`aria-current="true"`);
+        if (query.q) expect(master, `${label}: the search box is empty`).toContain(`value="${query.q}"`);
+        if (query.sort) expect(master, `${label}: the sort is not selected`).toContain(`<option value="${query.sort}" selected>`);
+        if (carry.cache) expect(master, `${label}: hrefs dropped cache`).toContain("cache=cold&amp;run=bench-abc&amp;profile=slow-4g-mid-phone");
+        expect(variant, `${name}/${label}`).toBe(master);
+      }
+    });
+  }
+
+  it("the helper IS the served tray: the real edge Worker, driven in-process, returns exactly what plpPayload builds", async () => {
+    // Closes the limit the first PLP build disclosed ("if the edge Worker's
+    // facet comparator ever diverged from the reference's, these legs would
+    // still pass"): the Worker now imports the reference's query module, and
+    // this proves its PLUMBING — parsing, clamping, validation — hands that
+    // module the same query the helper does.
+    const { lib } = await reference();
+    const snapshot = lib.loadSnapshot("fixture");
+    for (const { label, query } of restoredConditions(snapshot)) {
+      const { status, tray } = await servedTray(snapshot, { n: 24, ...query });
+      expect(status, label).toBe(200);
+      expect(tray, label).toEqual(plpPayload(snapshot, { n: 24, ...query }));
+    }
+    // And the served tray FILTERS — the fact the retired tripwire guarded
+    // against pretending: fewer releases, every one carrying the facet.
+    const { genre } = restoredConditions(snapshot)[0].query;
+    const { tray } = await servedTray(snapshot, { genre, n: 240 });
+    expect(tray.total).toBeLessThan(snapshot.summaries.length);
+    expect(tray.total).toBeGreaterThan(0);
+    for (const item of tray.items) expect(item.genres).toContain(genre);
+  });
+
   it("the master really pins 24 cards, and n=240 really serves more (the knob is not inert)", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
@@ -238,8 +320,10 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
     // Cascade order is a rendering property, not an ADR-0008 freedom.
     expect(master.length, "the master links no stylesheets").toBeGreaterThan(5);
     expect(variant).toEqual(master);
-    // The surface's own sheets, not editorial's.
+    // The surface's own sheets, not editorial's — and the rail's sheet is
+    // back with the rail (2026-09-04).
     expect(variant).toContain("css/surfaces/plp.css");
+    expect(variant).toContain("css/components/facets.css");
     expect(variant).not.toContain("css/surfaces/editorial.css");
   });
 });
@@ -253,7 +337,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
     expect(HTMX_NOISE.dropElementSelectors).toBeUndefined();
   });
 
-  it("the page carries exactly three hx-* attributes, each covered by a registered pattern", async () => {
+  it("the page carries exactly three hx-* attribute NAMES, each covered by a registered pattern", async () => {
     const { lib } = await reference();
     const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
     const names = hxAttributeNames(html);
@@ -274,18 +358,31 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
     }
   });
 
-  it("they all ride ONE element — the pagination nav — and no anchor is touched", async () => {
+  it("hx-target/hx-swap ride the root; hx-boost rides the FOUR navigation containers and never the root or a card", async () => {
     const { lib } = await reference();
     const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
-    // Every hx- attribute sits inside the single <nav class="pm-pagination">
-    // open tag. If one leaked onto an anchor, the JS-off claim would stop
-    // being a property of the markup.
-    const navTag = html.match(/<nav class="pm-pagination"[^>]*>/);
-    expect(navTag).not.toBeNull();
-    expect(hxAttributeNames(navTag[0])).toEqual(["hx-boost", "hx-swap", "hx-target"]);
-    expect(hxAttributeNames(html.replace(navTag[0], ""))).toEqual([]);
+    // The root carries the swap contract only — `hx-boost` on the root would
+    // boost every descendant same-origin anchor, INCLUDING the 24 card links
+    // to /vanilla/pdp/…, and a click on a record title would swap the whole
+    // PDP document into the grid (design critique, kill finding).
+    const root = html.match(/<div class="pm-plp"[^>]*>/)[0];
+    expect(hxAttributeNames(root)).toEqual(["hx-swap", "hx-target"]);
+    expect(root).toContain('hx-target=".pm-plp"');
+    expect(root).toContain('hx-swap="outerHTML"');
+    // Exactly four boosted containers: the rail, both forms, the pagination.
+    const boosted = [...html.matchAll(/<(nav|form) class="([^"]+)"[^>]*\shx-boost="true"/g)].map((m) => m[2]);
+    expect(boosted.sort()).toEqual(["pm-facets", "pm-pagination", "pm-toolbar__search", "pm-toolbar__sort"]);
+    // And nothing else carries any hx-* — not the grid, not a card, not an anchor.
+    const stripped = html
+      .replace(root, "")
+      .replace(/<(nav|form) class="[^"]+"[^>]*\shx-boost="true"[^>]*>/g, "");
+    expect(hxAttributeNames(stripped)).toEqual([]);
+    expect(html.match(/<ul class="pm-grid"[^>]*>/)[0]).not.toContain("hx-");
+    expect(html).not.toMatch(/<a class="pm-release-card__link"[^>]*hx-/);
+    expect(html).not.toMatch(/<a class="pm-facets__facet"[^>]*hx-/);
     // The links themselves are ordinary navigation with JavaScript off.
     expect(html).toContain('<a class="pm-pagination__link" href="?page=2">2</a>');
+    expect(html).toMatch(/<a class="pm-facets__facet" href="\?genre=[^"]+">/);
   });
 
   it("normalized DOM equals the master UNDER the registration", async () => {
@@ -395,7 +492,11 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
    * `plp.mjs` starts threading the condition through, this fails and the
    * variant is updated in the same change.
    */
-  it("pagination hrefs are the master's shape exactly — including the knobs it drops", async () => {
+  it("pagination hrefs are the master's shape exactly — and they CARRY cache, run and profile now", async () => {
+    // This leg used to pin the opposite: the master's hrefs dropped the
+    // three knobs and this arm reproduced the drop so the fix could not
+    // land on one side only. The fix landed in the reference (2026-09-04,
+    // `conditionHref`), so both sides carry them and this pins THAT.
     const { lib, plp } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const hrefs = (html) =>
@@ -403,14 +504,20 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
     const master = hrefs(plp.renderPlp(snapshot, { origin: "", n: 24 }));
     expect(master).toEqual(["?page=2", "?page=3", "?page=4", "?page=5", "?page=2"]);
     expect(hrefs(renderPlpPage(plpPayload(snapshot, { n: 24 })))).toEqual(master);
-    // The knobs a flip drops today, named so the failure message explains
-    // itself when the reference is fixed.
-    for (const knob of ["cache", "run", "profile"]) {
-      expect(
-        master.join(" ").includes(knob),
-        `${knob} now rides the master's pagination hrefs — thread it through here too`,
-      ).toBe(false);
-    }
+
+    const carry = { cache: "cold", run: "bench-7", profile: "slow-4g-mid-phone" };
+    const carried = hrefs(plp.renderPlp(snapshot, { origin: "", n: 24, page: 3, ...carry }));
+    // Every knob, canonical order, on every flip — from this arm's own
+    // preset a click on "2" used to land on the WARM tier under a chrome
+    // still reading cold. (`n` is omitted at its default, so it is absent here.)
+    // The "1" link omits `page` (default) but carries the rest; only the
+    // BARE condition is spelled `?page=1`.
+    expect(carried[0]).toBe("?cache=cold&amp;run=bench-7&amp;profile=slow-4g-mid-phone");
+    expect(carried).toContain("?page=4&amp;cache=cold&amp;run=bench-7&amp;profile=slow-4g-mid-phone");
+    expect(hrefs(renderPlpPage(plpPayload(snapshot, { n: 24, page: 3 }), carry))).toEqual(carried);
+    // A malformed carry value is dropped, not emitted (bounded, opaque).
+    const junk = hrefs(renderPlpPage(plpPayload(snapshot, { n: 24 }), { run: "<script>", profile: "x".repeat(70) }));
+    expect(junk[0]).toBe("?page=2");
   });
 
   it("Next is gated on a real next page — and the contract now says so too", async () => {
@@ -453,15 +560,16 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
     const snapshot = lib.loadSnapshot("fixture");
     const fragment = renderPlpFragment(plpPayload(snapshot, { n: 24, page: 2 }));
     expect(
-      fragment.startsWith('<div class="pm-plp">'),
+      fragment.startsWith('<div class="pm-plp" hx-target=".pm-plp"'),
       `the fragment must BE the swap target, but it starts: ${fragment.slice(0, 80)}`,
     ).toBe(true);
     expect(fragment).not.toContain("<!doctype");
     expect(fragment).not.toContain("pm-masthead");
     expect(fragment).not.toContain("pm-footer");
-    // It must carry the mechanism itself, or the swapped-in pagination
+    // It must carry the mechanism itself, or the swapped-in controls
     // would be inert and the second page-flip would be a full navigation.
     expect(hxAttributeNames(fragment)).toEqual(["hx-boost", "hx-swap", "hx-target"]);
+    expect(fragment.startsWith('<div class="pm-plp" hx-target=".pm-plp" hx-swap="outerHTML">')).toBe(true);
     // And it is exactly the block the full page carries, not a variant of it.
     const page = renderPlpPage(plpPayload(snapshot, { n: 24, page: 2 }));
     expect(page).toContain(fragment.trimEnd());
@@ -527,7 +635,7 @@ describe("the Worker serves /htmx/plp/", () => {
       body.startsWith("<!doctype html>"),
       `a plain navigation must get the whole document, but it starts: ${body.slice(0, 80)}`,
     ).toBe(true);
-    expect(body).toContain('<div class="pm-plp">');
+    expect(body).toContain('<div class="pm-plp" hx-target=".pm-plp" hx-swap="outerHTML">');
   });
 
   it("answers an htmx-originated request with the partial ONLY", async () => {
@@ -539,7 +647,7 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(
-      body.startsWith('<div class="pm-plp">'),
+      body.startsWith('<div class="pm-plp" hx-target=".pm-plp"'),
       `an HX-Request must get the partial ONLY, but it starts: ${body.slice(0, 80)}`,
     ).toBe(true);
     expect(body).not.toContain("<!doctype");
@@ -614,10 +722,13 @@ describe("the Worker serves /htmx/plp/", () => {
    * directions. `run` is the batch's cache-isolation nonce; dropped, the
    * warm column inherits every previous run's KV state.
    */
-  it("forwards the measurement knobs to the data plane, all four", async () => {
+  it("forwards the measurement knobs AND the five data-plane params, all nine", async () => {
     const { lib } = await reference();
     const { env, seen } = recordingEdge(plpPayload(lib.loadSnapshot("fixture")));
-    await workerFetch(env, "/htmx/plp/?n=240&page=3&cache=cold&run=suite-1");
+    await workerFetch(
+      env,
+      "/htmx/plp/?n=240&page=3&cache=cold&run=suite-1&genre=Jazz&style=Modal&format=LP&sort=title&q=miles",
+    );
     expect(seen.length).toBe(1);
     expect(seen[0].pathname).toBe("/api/plp");
     const q = seen[0].searchParams;
@@ -625,6 +736,12 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(q.get("run")).toBe("suite-1");
     expect(q.get("n")).toBe("240");
     expect(q.get("page")).toBe("3");
+    // ADR-0005 §5's five, honoured by the data plane since 2026-09-04.
+    expect(q.get("genre")).toBe("Jazz");
+    expect(q.get("style")).toBe("Modal");
+    expect(q.get("format")).toBe("LP");
+    expect(q.get("sort")).toBe("title");
+    expect(q.get("q")).toBe("miles");
   });
 
   /**
@@ -668,14 +785,57 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(res.headers.get("x-pm-cache-state")).toBeNull();
   });
 
-  it("forwards nothing else — a knob the data plane does not implement is not invented", async () => {
+  it("forwards nothing else — junk is not invented, and `profile` (the chrome's knob) never reaches the data plane", async () => {
     const { lib } = await reference();
     const { env, seen } = recordingEdge(plpPayload(lib.loadSnapshot("fixture")));
-    await workerFetch(env, "/htmx/plp/?genre=Jazz&sort=title&q=miles&nonsense=1");
-    // The five ADR-0005 §5 facet params do not exist in workers/edge yet.
-    // Forwarding their names would not filter anything; it would only make
-    // the request look like it had.
-    expect([...seen[0].searchParams.keys()]).toEqual([]);
+    await workerFetch(env, "/htmx/plp/?genre=Jazz&nonsense=1&profile=slow-4g-mid-phone&x=y");
+    expect([...seen[0].searchParams.keys()]).toEqual(["genre"]);
+  });
+
+  it("the URL's cache, run and profile reach the rendered hrefs — through the Worker, not only the renderer", async () => {
+    const { lib } = await reference();
+    const snapshot = lib.loadSnapshot("fixture");
+    const genre = snapshot.summaries[0].genres[0];
+    const { env } = recordingEdge(plpPayload(snapshot, { genre }));
+    const body = await (
+      await workerFetch(env, `/htmx/plp/?cache=cold&run=r1&profile=slow-4g-mid-phone&genre=${encodeURIComponent(genre)}`)
+    ).text();
+    // A page-flip keeps the column, the nonce, the profile AND the filter.
+    expect(body).toContain(
+      `href="?page=2&amp;cache=cold&amp;run=r1&amp;profile=slow-4g-mid-phone&amp;genre=${encodeURIComponent(genre).replace(/%20/g, "+")}"`,
+    );
+    // The selected facet toggles OFF and keeps the rest.
+    expect(body).toContain(`aria-current="true"`);
+    expect(body).toContain('href="?cache=cold&amp;run=r1&amp;profile=slow-4g-mid-phone" aria-current="true"');
+  });
+
+  /**
+   * A tray 400 is a facet or sort value the snapshot does not hold — the
+   * plane ANSWERED. Until 2026-09-04 every non-2xx fell into the branded 503,
+   * so a hand-typed `?genre=jazz` told the visitor the data plane was down
+   * (false) — and the two arms disagreed for one URL, since react-next
+   * rendered its error boundary instead (design critique).
+   */
+  it("a tray 400 is a branded 404 — 'No such filter' — never the data-plane-down 503", async () => {
+    const env = {
+      EDGE: {
+        fetch: () =>
+          Promise.resolve(
+            Response.json({ error: "unknown genre" }, { status: 400, headers: { "x-pm-cache-state": "none" } }),
+          ),
+      },
+    };
+    const res = await workerFetch(env, "/htmx/plp/?genre=jazz");
+    expect(res.status).toBe(404);
+    expect(res.headers.get("x-pm-cache-state")).toBe("none");
+    const body = await res.text();
+    expect(body).toContain("<h1>No such filter</h1>");
+    expect(body).not.toContain("didn&#39;t answer");
+    expect(body).toContain('<div id="pm-chrome-slot"></div>');
+    expect(body).toContain('href="/react-next/plp/plain/" aria-current="page"');
+    // A 500 is still the data plane not answering.
+    const down = { EDGE: { fetch: () => Promise.resolve(new Response("nope", { status: 500 })) } };
+    expect((await workerFetch(down, "/htmx/plp/?genre=jazz")).status).toBe(503);
   });
 
   it("a dead data plane answers the branded shell, never an escaped exception", async () => {
@@ -742,6 +902,9 @@ describe("the Worker serves /htmx/plp/", () => {
       ["facets missing a bucket", { ...good, facets: { genres: [], styles: [] } }],
       ["facets absent", { ...good, facets: undefined }],
       ["totalPages NaN", { ...good, totalPages: Number.NaN }],
+      // A pre-`v2:` tray — the shape before `applied` — must be a 503 at the
+      // boundary, not a TypeError inside the template.
+      ["applied absent", { ...good, applied: undefined }],
     ];
     for (const [label, payload] of broken) {
       const { env } = recordingEdge(payload);
@@ -781,6 +944,8 @@ describe("the Worker serves /htmx/plp/", () => {
       "facets missing formats": { ...good, facets: { genres: [], styles: [] } },
       "a facet bucket not an array": { ...good, facets: { ...good.facets, genres: {} } },
       "facets is a string": { ...good, facets: "genres" },
+      "applied absent": { ...good, applied: undefined },
+      "applied missing q": { ...good, applied: { genre: null, style: null, format: null, sort: null } },
       "null payload": null,
       "not an object": "items",
     };
@@ -1053,51 +1218,55 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
 
 describe("the served surface is honest about what it can do", () => {
   /**
-   * Recorded as a KNOWN GAP rather than asserted away. The master renders
-   * four navigation affordances — facet links, a search form, a sort
-   * select, and pagination — and `workers/edge` implements exactly one of
-   * them. This leg pins that the markup ships all four (so the gap cannot
-   * be quietly forgotten) while the Worker test above pins that only the
-   * implemented knob is forwarded. When the edge grows the ADR-0005 §5
-   * params, this leg is where the change announces itself.
+   * Until 2026-09-04 this block was the `plp-params-not-yet-honoured`
+   * TRIPWIRE: it pinned that the rail, the search form, the sort select and
+   * `components/facets.css` were ABSENT, and read `workers/edge/src/index.js`
+   * from disk to fail the day a param was wired through without the UI
+   * coming back. The params are wired and the UI is back, so the tripwire
+   * has done its job and is retired — replaced by the honest inverse,
+   * proven by REQUEST rather than by grep: every restored control is served,
+   * and the data plane it navigates to actually filters.
    */
-  it("ships ONLY the navigation affordance the data plane honours", async () => {
+  it("ships every navigation affordance, and the data plane honours each one", async () => {
     const { lib } = await reference();
-    const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
-    // Pagination stays: `page` is the one navigation param handlePlp reads,
-    // so it is the one control that answers the question it asks.
-    expect(html).toContain('<a class="pm-pagination__link" href="?page=2">2</a>');
-    // The other three are CUT, in the master and therefore in every arm.
-    // This leg used to assert they were present and merely unhonoured; that
-    // was the served falsehood — a facet click got the unfiltered grid back
-    // under a count that still said "of 240", with no error state.
-    for (const gone of [
+    const snapshot = lib.loadSnapshot("fixture");
+    const html = renderPlpPage(plpPayload(snapshot));
+    for (const present of [
       '<form class="pm-toolbar__search"',
       '<form class="pm-toolbar__sort"',
       'class="pm-toolbar__select"',
       'class="pm-facets__facet"',
-      'class="pm-facets"',
+      '<nav class="pm-facets" aria-label="Filters"',
       "components/facets.css",
+      '<a class="pm-pagination__link" href="?page=2">2</a>',
     ]) {
-      expect(
-        html.includes(gone),
-        `${gone} is back in the served PLP — restore it only in the commit that lands the Worker params`,
-      ).toBe(false);
+      expect(html, `${present} is missing from the served PLP`).toContain(present);
     }
-    // The edge Worker source is the evidence, read rather than remembered.
-    // This is the tripwire that fires the day someone wires a param through:
-    // it fails, and its message names what must come back with it.
-    const edge = readFileSync(join(repoRoot, "workers", "edge", "src", "index.js"), "utf8");
-    const handlePlp = edge.slice(edge.indexOf("async function handlePlp"), edge.indexOf("async function handlePdp"));
-    for (const param of ["genre", "style", "format", "sort", "q"]) {
-      expect(
-        handlePlp.includes(`"${param}"`),
-        `workers/edge handlePlp now reads ?${param}= — wire it through PLP_KNOBS, then restore the ` +
-          "facet rail, the search and sort forms and components/facets.css in packages/reference/render/plp.mjs " +
-          "and both arms, and retire this expectation",
-      ).toBe(false);
-    }
-    expect(handlePlp).toContain('searchParams.get("n")');
-    expect(handlePlp).toContain('searchParams.get("page")');
+    // Each control's param, honoured by the real Worker: a different tray
+    // comes back, and it is the filtered/sorted/searched one.
+    const { genre } = restoredConditions(snapshot)[0].query;
+    const base = (await servedTray(snapshot, { n: 240 })).tray;
+    const byGenre = (await servedTray(snapshot, { n: 240, genre })).tray;
+    expect(byGenre.total).toBeLessThan(base.total);
+    expect(byGenre.applied.genre).toBe(genre);
+    const sorted = (await servedTray(snapshot, { n: 240, sort: "year-asc" })).tray;
+    expect(sorted.items.map((s) => s.id)).not.toEqual(base.items.map((s) => s.id));
+    expect(sorted.applied.sort).toBe("year-asc");
+    const word = restoredConditions(snapshot)[2].query.q;
+    const searched = (await servedTray(snapshot, { n: 240, q: word })).tray;
+    expect(searched.total).toBeLessThan(base.total);
+    expect(searched.total).toBeGreaterThan(0);
+    // And junk is a 400 from the plane — which the Worker turns into the 404 above.
+    expect((await servedTray(snapshot, { genre: "Junk" })).status).toBe(400);
+  });
+
+  it("the default sort is labelled for what it is — committed order — never 'Popularity'", async () => {
+    // snapshot-capture normalize.ts: rows are id-ascending, "the one
+    // neutral, deterministic order that is not a presentation choice". The
+    // pre-2026-08-29 master called that option "Popularity", which it is not.
+    const { lib } = await reference();
+    const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
+    expect(html).toContain('<option value="" selected>Catalogue order</option>');
+    expect(html).not.toContain("Popularity");
   });
 });
