@@ -19,6 +19,7 @@ import {
   A11Y_PAGES,
   renderA11yPage,
   renderCheckoutPage,
+  renderCheckoutPlacedPage,
   renderEditorialPage,
   renderPdpPage,
 } from "./render.mjs";
@@ -98,6 +99,15 @@ mkdirSync(join(dist, "checkout"), { recursive: true });
 writeFileSync(
   join(dist, "checkout", "index.html"),
   renderCheckoutPage({ depth: 1 }),
+);
+// Where a JS-off "Place order" lands (checkout-measure-prep): the Worker
+// answers the native POST with a 303 to this page (src/index.js), so it has
+// to exist in dist as a plain GET-able document. One directory deeper than
+// the form, so depth 2.
+mkdirSync(join(dist, "checkout", "placed"), { recursive: true });
+writeFileSync(
+  join(dist, "checkout", "placed", "index.html"),
+  renderCheckoutPlacedPage({ depth: 2 }),
 );
 
 // The a11y section (a11y-section build): three static pages, data-free like

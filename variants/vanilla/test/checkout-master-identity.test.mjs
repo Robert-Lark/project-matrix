@@ -39,7 +39,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, it } from "node:test";
-import { renderCheckoutPage } from "../render.mjs";
+import { renderCheckoutPage, renderCheckoutPlacedPage } from "../render.mjs";
 
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
 
@@ -167,5 +167,82 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
     const label = html.match(/Express — \$([\d,]+\.\d{2}), /);
     assert.ok(label, "the express option label does not state a price");
     assert.equal(Number(declared[1]), Number(label[1].replace(/,/g, "")));
+  });
+});
+
+/**
+ * The order-placed page (checkout-measure-prep, 2026-09-24): where a JS-off
+ * "Place order" lands. Same guard, same strip, one page deeper — and two
+ * claims of its own: the master's `noindex` travels, and the Worker route
+ * that makes the page reachable at all names exactly the paths the build
+ * writes.
+ */
+describe("vanilla's order-placed page equals its master textually (pre-merge)", () => {
+  it("renderCheckoutPlacedPage matches renderCheckoutPlaced after the delivery strip", () => {
+    const master = stripDelivery(reference.renderCheckoutPlaced({}));
+    const variant = stripDelivery(renderCheckoutPlacedPage({ depth: 2 }));
+    assert.notEqual(variant, "");
+    assert.ok(variant.includes("pm-checkout--placed"), "no placed root in the variant render");
+    assert.ok(variant.includes("Order placed"), "the page does not say the order was placed");
+    // No form, no control: a confirmation collects nothing. (A `<p>` with a
+    // link is the only call to action.)
+    assert.equal(variant.match(/<form|<input|<select|<textarea|<button/g), null);
+    if (variant !== master) console.error(firstDivergence(master, variant));
+    assert.ok(variant === master, "the vanilla order-placed page has drifted from the master (see above)");
+  });
+
+  it("links exactly the master's stylesheets, in order", () => {
+    const master = sheets(reference.renderCheckoutPlaced({}));
+    const variant = sheets(renderCheckoutPlacedPage({ depth: 2 }));
+    assert.ok(master.length > 5, "the master links no stylesheets");
+    assert.ok(master.includes("css/surfaces/checkout.css"), "the placed page is a checkout page");
+    assert.deepEqual(variant, master);
+  });
+
+  it("carries the master's noindex — and the form page carries none", () => {
+    const ROBOTS = '<meta name="robots" content="noindex">';
+    assert.ok(reference.renderCheckoutPlaced({}).includes(ROBOTS), "the master is not noindex");
+    assert.ok(renderCheckoutPlacedPage({ depth: 2 }).includes(ROBOTS), "the variant dropped noindex");
+    assert.ok(!reference.renderCheckout({}).includes(ROBOTS), "the form page must stay indexable");
+    assert.ok(!renderCheckoutPage({ depth: 1 }).includes(ROBOTS), "the form page must stay indexable");
+  });
+
+  it("the composition adds exactly the chrome slot and this variant's one script, at depth 2", () => {
+    const html = renderCheckoutPlacedPage({ depth: 2 });
+    assert.equal(html.match(/<div id="pm-chrome-slot"><\/div>/g)?.length, 1);
+    assert.match(html, /Skip to content<\/a>\n {2}<div id="pm-chrome-slot"><\/div>\n {2}<div class="pm-page">/);
+    const scripts = [...html.matchAll(/<script[^>]*>/g)].map((m) => m[0]);
+    assert.deepEqual(scripts, ['<script src="../../assets/checkout.js" defer>']);
+    const master = reference.renderCheckoutPlaced({});
+    assert.ok(!master.includes("pm-chrome-slot"), "the master must never carry a slot");
+    assert.ok(!/<script/i.test(master), "the master must never carry a script");
+  });
+
+  it("the Worker's POST route names the path the served form posts to, and the page the build writes", () => {
+    // The behaviour (POST → 303 → 200) is the origin suite's to prove
+    // (checkout.test.ts, security-floor.test.ts) — and it HAS to be: the
+    // first draft of this route matched the form page's own URL, this pin
+    // passed, and the plane answered 405 because a path with an asset behind
+    // it never reaches the script. What this leg can honestly hold is the
+    // literals against each other: the form's relative `action` resolves,
+    // from the page the build writes it at, to exactly the path the route
+    // matches; the route's target is exactly the page the build writes.
+    const worker = readFileSync(join(import.meta.dirname, "..", "src", "index.js"), "utf8");
+    const route = worker.match(/const PLACE_ORDER_PATH = "([^"]+)";/)?.[1];
+    const target = worker.match(/const PLACED_PATH = "([^"]+)";/)?.[1];
+    assert.ok(route && target, "the route's two path constants are not declared as literals");
+    assert.match(worker, /request\.method === "POST"/);
+    assert.match(worker, /status: 303/);
+    const action = renderCheckoutPage({ depth: 1 }).match(/<form class="pm-checkout__form" method="post" action="([^"]*)">/)?.[1];
+    assert.ok(action, "the served form has no action");
+    assert.equal(new URL(action, "http://plane/vanilla/checkout/").pathname, route);
+    assert.equal(target, "/vanilla/checkout/placed/");
+    // The route's path must NOT be a page: an asset behind it would swallow
+    // the POST before the script ran (the mechanism above).
+    assert.ok(!route.endsWith("/placed/") && route !== "/vanilla/checkout/", "the route matches a path dist serves");
+    const build = readFileSync(join(import.meta.dirname, "..", "build.mjs"), "utf8");
+    assert.ok(build.includes('join(dist, "checkout", "placed", "index.html")'), "build.mjs does not write checkout/placed/");
+    assert.ok(build.includes("renderCheckoutPlacedPage({ depth: 2 })"), "build.mjs renders the placed page at the wrong depth");
+    assert.ok(!build.includes('"place-order"'), "build.mjs writes a page at the POST endpoint");
   });
 });

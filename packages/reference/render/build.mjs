@@ -24,7 +24,7 @@ import { loadSnapshot, pdpMasterIds } from "./lib.mjs";
 import { renderEditorial } from "./editorial.mjs";
 import { renderPdp } from "./pdp.mjs";
 import { renderPlp } from "./plp.mjs";
-import { renderCheckout } from "./checkout.mjs";
+import { renderCheckout, renderCheckoutPlaced } from "./checkout.mjs";
 import { renderA11yIndex, renderA11yElementDemos, renderA11yModeDemos } from "./a11y.mjs";
 import { renderHowBuilt } from "./how-built.mjs";
 
@@ -76,6 +76,10 @@ export const SURFACE_PAGES = {
   ),
   "plp/index.html": (s, o) => renderPlp(s, o),
   "checkout/index.html": (s, o) => renderCheckout(o),
+  // The JS-off landing of "Place order" (checkout-measure-prep): a second
+  // master of the checkout surface, nested like the PDP's degenerate ones —
+  // one surface, two rendered pages, SURFACE_CONTROLS keys off surfaces.
+  "checkout/placed/index.html": (s, o) => renderCheckoutPlaced(o),
   "a11y/index.html": (s, o) => renderA11yIndex(o),
   "a11y/element-demos/index.html": (s, o) => renderA11yElementDemos(o),
   "a11y/mode-demos/index.html": (s, o) => renderA11yModeDemos(o),

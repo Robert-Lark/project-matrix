@@ -519,6 +519,8 @@ describe("the new surface masters are healthy (surface-design session)", () => {
     "pdp/one-image",
     "plp",
     "checkout",
+    // The JS-off "Place order" landing (checkout-measure-prep, 2026-09-24).
+    "checkout/placed",
     "a11y",
     "a11y/element-demos",
     "a11y/mode-demos",
@@ -1235,6 +1237,63 @@ describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03
         const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
         const masterPage = await openTracked(context, masterUrl(surface));
         // The committed master has no chrome slot — part of the contract.
+        expect(await neutralizeChrome(masterPage)).toBe(0);
+        const referenceShot = await captureTracked(masterPage);
+        await masterPage.close();
+
+        const page = await openTracked(context, servedUrl(surface));
+        expect(await neutralizeChrome(page)).toBe(1);
+        const shot = await captureTracked(page);
+        assertPixelsEqual(`pixels-${profileId}-vanilla-${key(surface)}`, referenceShot, shot);
+        await page.close();
+        await context.close();
+      }, 120_000);
+    }
+  }
+});
+
+describe("checkout: vanilla vs the committed masters (checkout-measure-prep, 2026-09-24)", () => {
+  // The surface is DATA-FREE — `renderCheckout` takes no snapshot, so as with
+  // the a11y section there is no re-render from the served snapshot: the
+  // committed fixture masters ARE the masters for every plane. Two pages: the
+  // form, and where a JS-off "Place order" lands. Until this block the served
+  // checkout had no gate leg of any kind (the decision map's owed item (3)):
+  // the masters-health block above proved the master self-consistent and the
+  // pre-merge identity guard held the variant's TEMPLATE to the master's, but
+  // nothing compared the page a visitor is served — chrome injected, sheets
+  // and fonts from the variant's own copied tree — to the spec. The a11y
+  // block's shape, verbatim: NO_NOISE (vanilla is the control), pixels under
+  // all three profiles once the injected chrome is neutralised. No images on
+  // either page, so no settleImages.
+  const CHECKOUT = ["checkout", "checkout/placed"] as const;
+  const servedUrl = (surface: string) => `${ORIGIN}/vanilla/${surface}/`;
+  const masterUrl = (surface: string) => `${statics.origin}/packages/reference/surfaces/${surface}/`;
+  const key = (surface: string) => surface.replaceAll("/", "-");
+
+  for (const surface of CHECKOUT) {
+    it(`${surface}: the served page equals the committed master by normalized DOM — under NO_NOISE`, async () => {
+      const context = await browser.newContext({ javaScriptEnabled: false });
+      const masterPage = await openTracked(context, masterUrl(surface));
+      const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
+      await masterPage.close();
+      expect(masterDom).not.toBe("");
+      expect(masterDom.split("\n")[0]).toBe('<html lang="en">');
+      expect(masterDom).toContain("pm-checkout");
+
+      const page = await openTracked(context, servedUrl(surface));
+      // Non-vacuity: the chrome IS on this page; the normalizer excludes it.
+      expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
+      const dom = await extractNormalizedDom(page, NO_NOISE);
+      expect(dom).not.toContain("pm-chrome");
+      assertDomEqual(`dom-vanilla-${key(surface)}`, masterDom, dom);
+      await page.close();
+      await context.close();
+    }, 90_000);
+
+    for (const profileId of PROFILE_IDS) {
+      it(`${surface}: pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
+        const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
+        const masterPage = await openTracked(context, masterUrl(surface));
         expect(await neutralizeChrome(masterPage)).toBe(0);
         const referenceShot = await captureTracked(masterPage);
         await masterPage.close();

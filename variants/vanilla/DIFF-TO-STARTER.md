@@ -12,8 +12,9 @@ diff** — small enough to read:
   `fixture` default, `crate` on the deploy job); copies `@pm/tokens`
   css/fonts into the variant's own assets (ADR-0003 §2 delivery) and the
   cart enhancement into `assets/cart.js`.
-- `src/index.js` — the one-line `env.ASSETS.fetch(request)` forwarder every
-  static variant ships (spike hardening 1).
+- `src/index.js` — the `env.ASSETS.fetch(request)` forwarder every static
+  variant ships (spike hardening 1), plus this variant's ONE route: the
+  checkout form's native POST → 303 → `checkout/placed/` (decision 8).
 - `src/cart.js` — the one client enhancement: add-to-cart against the cart
   storage contract (`packages/reference/render/shell.mjs` `CART_CONTRACT`).
 - `wrangler.jsonc` — assets Worker, `workers_dev: false` (reachable only
@@ -80,4 +81,32 @@ committed `pnpm-lock.yaml`).
    `pdp.js` and `checkout.js` record; the uniqueness clause is checked. The
    mode toggles write ONLY their own `aria-pressed`: the emulation is CSS on
    the adjacent stage keyed on that attribute (ADR-0003 §5), which is what
-   keeps the on-page caveat true.
+   keeps the on-page caveat true. Since 2026-09-24 the four copies are held
+   identical after comment stripping by a repo check
+   (`tools/repo-checks/test/cart-trio-identical.test.ts`) — the drift risk
+   the no-module-graph justification never covered.
+8. **A JS-off "Place order" is answered by the static site, not by the assets
+   binding's 405** (checkout-measure-prep, 2026-09-24). The checkout form is
+   a real `method="post"`, so with JavaScript off the browser submits it
+   natively, and the assets binding answers every non-GET with a zero-length
+   405 — measured on the held plane before the change. The paradigm's honest
+   answer is the classic static-site shape: the form posts to a RELATIVE
+   `place-order/` (the master's contract, so each variant answers its own),
+   the Worker matches exactly `POST /vanilla/checkout/place-order/` and
+   returns a 303 to `/vanilla/checkout/placed/`, a second page of the surface
+   baked into dist like every other (re-typed from its master,
+   `packages/reference/surfaces/checkout/placed/`). Why not the form's own
+   URL: on a static-assets Worker a request whose path has an asset behind it
+   is answered by the assets layer before the script runs — the first draft
+   matched `POST /vanilla/checkout/`, its pre-merge pin passed, and the plane
+   kept answering 405 because the script was never invoked. A path with no
+   asset is the one request that reaches the script, so every page GET stays
+   assets-first and the measured page pays no script invocation. The body is
+   never read — by the master's rule 1 it carries only `shipping=…`, and not
+   reading it is the stronger form of the plaque's promise, so the page states
+   what the request carried rather than what was chosen. Rejected:
+   `assets.run_worker_first` on the page path (a script invocation on every
+   GET of the measured page, to answer a POST); a `_redirects` file
+   (method-blind); a 200 on the POST URL (a refresh would re-post). A POST to
+   the form page still meets the binding's 405; a GET of the endpoint is not a
+   page and meets its 404; the origin suite pins all three.

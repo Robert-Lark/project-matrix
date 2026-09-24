@@ -6,6 +6,8 @@ export {
   type TargetSpec,
 } from "./batch";
 export {
+  CHECKOUT_FILL,
+  CHECKOUT_FORMATTED_CARD,
   INTERACTIONS,
   SETTLE_CAP_MS,
   applyProfile,

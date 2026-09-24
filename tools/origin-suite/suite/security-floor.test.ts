@@ -73,6 +73,9 @@ const PAGE_PATHS = [
   ...SURFACE_CONTROLS["sample"]!.variants.map((v) => `/${v}/sample/`),
   ...SURFACE_CONTROLS["pdp"]!.variants.map((v) => `/${v}/pdp/${snap.pdpDetail.slug}/`),
   "/vanilla/checkout/",
+  // Where a JS-off "Place order" lands (checkout-measure-prep): a second
+  // page of the surface, served assets-first by the vanilla Worker.
+  "/vanilla/checkout/placed/",
   "/vanilla/a11y/",
   `/react-next/plp/plain/?cache=cold&run=${NONCE}`,
   `/htmx/plp/?cache=cold&run=${NONCE}`,
@@ -119,6 +122,23 @@ describe("the security-header floor rides every response class", () => {
   it("the front's own 404 for an unknown prefix carries it", async () => {
     const res = await get("/nope/");
     expect(res.status).toBe(404);
+    expect(floorOf(res)).toEqual(FLOOR);
+  });
+
+  it("a variant's own redirect carries it — the JS-off Place order's 303 (a new response class, 2026-09-24)", async () => {
+    // Until checkout-measure-prep this request was the assets binding's
+    // zero-length 405; now it is the vanilla Worker's 303 to the placed page.
+    // A redirect is a response the front wraps like any other (the floor
+    // module keeps a redirect's location — workers/front/test pins it), and
+    // this is the first redirect a VARIANT script emits, so it gets its leg.
+    const res = await get("/vanilla/checkout/place-order/", {
+      method: "POST",
+      redirect: "manual",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "shipping=standard",
+    });
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("/vanilla/checkout/placed/");
     expect(floorOf(res)).toEqual(FLOOR);
   });
 

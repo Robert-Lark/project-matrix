@@ -34,6 +34,9 @@ const MASTERS = [
   "pdp/one-image",
   "plp",
   "checkout",
+  // The JS-off "Place order" landing (checkout-measure-prep, 2026-09-24):
+  // a second master of the checkout surface, nested like the PDP's.
+  "checkout/placed",
   "a11y",
   "a11y/element-demos",
   "a11y/mode-demos",

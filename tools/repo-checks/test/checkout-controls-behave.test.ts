@@ -7,11 +7,12 @@
  * it". For the PDP the expensive half is `pdp-controls.browser.test.ts` in the
  * origin suite — which needs a live plane, and therefore cannot gate a merge.
  *
- * Checkout has no browser leg at all yet (recorded as owed in this unit's
- * build log, alongside the missing cart leg). So rather than ship the cheap
- * half alone on a surface whose whole point is interaction, this file runs the
- * REAL `checkout.js` against the REAL served master in linkedom, before merge,
- * with no plane and no ports. It is in the 31, so it blocks a merge.
+ * Checkout's browser leg is `tools/origin-suite/suite/checkout.browser.test.ts`
+ * (checkout-measure-prep, 2026-09-24; until then the surface had none, which
+ * is why this file exists). A plane leg cannot gate a merge, so this file runs
+ * the REAL `checkout.js` against the REAL served master in linkedom, before
+ * merge, with no plane and no ports. It is in turbo's task list, so it blocks
+ * a merge; the browser leg is the half it cannot be.
  *
  * What it CANNOT do, stated rather than implied — this is a DOM emulation, not
  * a browser, and three gaps matter:

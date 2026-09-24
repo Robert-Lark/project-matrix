@@ -7682,3 +7682,237 @@ forward unchanged from unit 5: whether `pm-warm` is on the Free plan; the
 PDP `not-found.tsx` and `lib/plp-error.tsx` docblocks; the bench runner's
 uncapped CDP `send()`; the two post-deploy smokes that failed on one qwik
 stepper assertion.
+
+### The form that could not place an order, and the summary that moved the form (2026-09-24)
+
+The 2026-08-29 audit put this seventh and gave it a hard ordering: before
+any checkout batch is minted. Not because the page was broken — it served,
+its guards bit, its two served falsehoods had been fixed — but because the
+instrument could not see it. The cart suite parameterises over the
+EDITORIAL surface (`cart.browser.test.ts:100`), the PDP's controls have their
+own browser leg, and checkout had neither; the drift gate compared no served
+checkout page to its master; the bench registry held five ids, none of them
+checkout's. The checkout-vanilla node had recorded all of it as owed, plus a
+phone-profile layout shift its own comment contradicted, a JS-off "Place
+order" that ended on a zero-length 405, three byte-identical cart trios with
+nothing holding them identical, a near-verbatim copy of the PDP guard, and an
+OWED registry entry waiting for a rule. Six tasks. Two of them changed what
+the unit thought it knew before the verification pass, and the pass changed
+two more. The decisions are ADR-0008 addendum D, ADR-0001 addendum V and
+ADR-0004's forwarder addendum; this is the account.
+
+**Read off a held plane before a line was written.** `POST /vanilla/checkout/`
+with the body a JS-off browser sends: 405, zero body bytes, the security
+floor present. `/vanilla/checkout/placed/`: 404. The empty order summary:
+234 px on both profiles, a 12 rem content-box floor with 90 px of blank
+below the total. A three-item cart on the phone profile grew it to 259 px
+and moved the form's top from 708.6 to 733.8 px — layout-shift **0.0214**;
+six items, 165 px. On the desktop only the summary's own total row moved:
+0.0011. The first probe read 0 for all of it, because it read the
+observer's list before the observer had delivered; two animation frames and
+`takeRecords()` later it read what the geometry said, and that lesson is in
+the suite leg. At 320 px nothing overflowed (`scrollWidth` 320).
+
+**The leg — JS on, JS off, and the gate.** `checkout.browser.test.ts` drives
+every LIVE checkout variant (the registry, `["vanilla"]` today) in Chromium
+at the composed origin, every in-page wait on a DOM state the enhancement
+produces — the formatted value, the focused summary, the announcement, the
+line count — never a timer (the htmx settle-race lesson). The cart contract
+on this surface, priced by the reference's OWN `formatPrice` imported by
+file URL and moved by the price the served LABEL states; the controls (real
+keystrokes format the card; an invalid submit renders ten resolving links
+and MOVES FOCUS in a real focus model; fix-and-resubmit announces without
+leaving the page; the chrome survives under a 4× CPU throttle); the geometry
+(below); and the JS-off path (native validation holds an empty submit —
+counted as zero POSTs, not read off a URL — and a filled form's native POST
+lands on the placed page through the 303 and re-GETs on reload).
+`checkout.test.ts` is the HTTP half; `drift.browser.test.ts` gains the
+served form page and the placed page against their masters by normalized
+DOM and pixels under all three profiles — the first drift-gate leg the
+served checkout has had; `security-floor.test.ts` gains the placed page and
+the 303 as a new response class; `bench-checkout.browser.test.ts` drives
+the three ids through `measureVisit` and pins each one's FIRST input.
+Forty-seven legs, 622 → 669 (11 · 13 · 11 · +2 · +10), counted from
+single-file runs because vitest's non-TTY reporter writes no per-file line
+for a passing file.
+
+**The ids, the fetch the first draft denied, and the gate the lens found.**
+`grep -c "checkout-" collect.ts` was 0; it is 3, with the definitions ADR-0001
+addendum V records. Two things were measured before the comments were
+written and one was found after. Playwright's `fill` (CDP `insertText`)
+registers no event-timing interaction — ten fills, 0 entries with an
+`interactionId`. **Both submit ids fetch**: the bench leg's first draft
+asserted zero bytes and the plane recorded 1,512 — `PMWarnGlyph.U26A0.woff2`,
+1,212 bytes of font for the ⚠ every field error and the summary title draw,
+fetched on the first error render; 1,512 is body plus Resource Timing's
+300-octet header constant (addendum U), identical bytes from every
+variant's own tokens tree, glyph mass not paradigm difference. And the
+correctness lens read the ruler: the pinned `web-vitals` observes `event`
+entries at its default 40 ms `durationThreshold` plus the `first-input`
+entry, always, so on a fast paradigm INP IS the visit's first input. The
+first draft of `checkout-type-card` clicked the field before typing and its
+cell was that click (24 ms, no handler); it focuses programmatically now and
+the first input is the `keydown` (8 ms), pinned by a leg that drives the
+entry under a `first-input` observer. `checkout-fix-and-submit` was
+redesigned the same way — a programmatic invalid submit so the one real
+click would be the successful one — and rejected within the hour: **CLS
+0.099**, the summary's render being a shift no input precedes (the fills'
+clean-ups are excluded by their own trusted `change` events, per the Layout
+Instability spec's list; the skeptic lens corrected the first attribution).
+It keeps two real clicks and says what that means under the gate. The fit
+template publishes ONE interaction per surface (addendum T), so the
+measurement pass picks the id — `checkout-submit-invalid`, the §7 contract
+interaction, is the recommendation — and its declaration follows: constant
+for a submit id, none for the keystrokes. Six samples after the redesign,
+one run each and not published: INP 16 / 48 / 40 ms on the desktop profile,
+8 / 64 / 48 on the phone (type-card / submit-invalid / fix-and-submit), CLS 0
+in all six.
+
+**The geometry: a floor became a cell** (ADR-0008 addendum D). The region is
+a three-row grid whose middle track is FIXED at three lines, DERIVED in the
+sheet — `calc(3 * var(--cart-thumb) + 2 * var(--space-stack-sm))`, 9.25 rem
+at a 16 px root; the first draft wrote the literal and called it derived,
+and the conformance lens said so — with the empty copy and the list sharing
+that cell by `grid-area`, the served list `:empty` and hidden, and the
+total's price slot reserving `10ch` because a widening right-aligned span
+moves its own start edge and the metric counts it (sabotage row G3 proves
+the leg sees exactly that). After: layout-shift 0 on both profiles with one,
+three and six items. The cost, so it is a decision: the empty state is 25 px
+taller everywhere, and the desktop summary shows three lines before
+scrolling where it showed five and a half. The measured page is the empty
+cart and never shifted, so no published number moved.
+
+**Where the JS-off order lands, and the routing rule that rewrote it**
+(addendum D; ADR-0004's forwarder addendum). A 303 to `checkout/placed/`, a
+second committed master of the surface, `noindex`, no form, stating what the
+request carried: only the shipping radios have a `name`, so the body is
+`shipping=…` and the Worker never reads it. The first draft matched `POST
+/vanilla/checkout/`; its pre-merge pin passed and the plane kept answering
+405, because a static-assets Worker answers a path that has an asset behind
+it before the script runs — Cloudflare's routing page, fetched, says so for
+"the incoming request" and nothing about methods; the seams lens then read
+the router and asset workers Cloudflare ships inside miniflare and found the
+asset check path-only and ahead of the GET/HEAD check, which this session
+re-read in the bundle. So the form posts to a RELATIVE `place-order/`, a
+path with nothing in dist behind it, the one request that reaches the
+script; every page GET stays assets-first. Rejected: `run_worker_first` on
+the page path (a script invocation on every GET of the measured page),
+`_redirects` (method-blind), a 200 on the POST URL (re-posts on refresh).
+The deployed plane's answer is the smoke's `checkout.test.ts` legs to give.
+
+**The trio, held identical, and one guard where there were two.**
+`cart-trio-identical.test.ts` extracts `read`/`count`/`renderCount` — and,
+after the skeptic lens, the `const KEY` each closes over — from every vanilla
+script that carries them (four; a11y.js is the badge-only fourth), files
+against each other and never against the contract module. `codeOnly` moved
+to `test/lib`, shared on purpose: a lexer with one right answer is not an
+oracle. `pdp-controls-wired.test.ts` runs ONE block over a `{ surface,
+masters, enhancements, minControls }` table for the PDP and the checkout,
+and holds the placed master to "renders no control" as a checked claim. One
+limit found by sabotage and pre-existing: its state leg is string inclusion
+and cannot tell a read of `aria-pressed` from a write; the behaviour half is
+the browser leg. `.pm-checkout__form { min-inline-size: 0 }` retires the
+last OWED entry — a rule that acts in the phone layout's bare `1fr` track
+(Grid §6.6, fetched twice by two lenses) and is a no-op in the desktop
+`minmax(0, …)` track, with no observable effect at any viewport from 320 px
+up today; the sheet says all of that. The registry is empty and kept.
+
+**Verification.** In the standing order, on the final tree.
+
+**`pnpm run check`:** 36 of 36 — the same 36; the new test files join
+existing tasks, and `@pm/bench-runner#test` is uncached now.
+
+**The origin suite, alone, and what "alone" was worth today.** The machine
+carried Spotlight indexing, a VM and another session's `wrangler dev`
+throughout, load average 8–17. The pre-verify-slice tree ran green twice —
+fixture **666/666** in 144 s on the second attempt, crate **666/666** in
+144.6 s on the fifth — and the runs that failed are recorded as they
+happened (`docs/prototypes/checkout-measure-prep/suite-runs-2026-09-24.md`):
+wrangler 4.110's front dev server died with its internal error twice, a
+pre-flight met a socket still closing, a stall hit the ten-minute cap, and
+one 665/666 lost the pre-existing bench leg's INP beacon to load, the flake
+class issue #16 carries. The skeptic lens then refused those runs as
+verification of the reviewed tree, correctly: every file the pass changed
+was newer than both. The run that stands is the last one below.
+
+**The sabotage tables** (`docs/prototypes/checkout-measure-prep/sabotage-2026-09-24.md`,
+every row and verdict). Round 1: 39 rows — 36 caught, 2 controls passed as
+designed, 1 missed. Round 2, over the verify-slice fixes: 8 rows — 6
+caught, 1 control, 1 missed. Round 3, over the skeptic's key leg: 1 caught,
+1 control. Both misses were the rows' fault and each was re-run in a form
+that caught (W2 half-replaced an attribute the guard's `includes` still
+found; S2 put `display: none` before the block's own `display: flex`). And
+the runner failed twice, both times exposed only by a CONTROL row: its
+first pass reported every row CAUGHT with exit 126 — the login shell had
+handed `node` to a version-manager shim and nothing had run — and its
+backups were kept from the first run that touched a file, so round 2's
+restores rewound three files to their round-1 state and the control broke
+on a "fixed" tree. A table that reads "caught" on a guard that never ran is
+the vacuous pass in its purest form; the sabotage file records both.
+
+**verify-slice.** Four lenses, sequential, launched after round 1 so no lens
+read a sabotaged file; the first two lenses' fixes were folded while the
+last two read, and both said so in their headers and re-read every citation
+at write time. 22 raw findings, 20 distinct, 13 refuted by the lenses
+themselves, none refuted here, every one folded, every code fix given a
+round-2 or round-3 row. In order of weight:
+
+- The ruler's 40 ms gate, and two ids measuring the wrong interaction
+  (correctness) — the type-card redesign above; the recovery's programmatic
+  priming built, measured at CLS 0.099, and rejected.
+- The record told the measurement pass to declare `interactionFetch` for all
+  three ids; the fit template is per surface with one id (conformance) —
+  rewritten everywhere to "the pass picks one; its declaration follows".
+- The green runs predated the fixes (skeptic) — the final pair below.
+- The trio guard skipped the one free variable, `KEY` (skeptic) — a copy
+  writing `pm:cart:v2` would have merged green; compared now (row K1).
+- Five places cited Cloudflare's routing page for a claim about POST that
+  the page does not make (correctness) — narrowed to what it says; the
+  seams lens supplied the platform's own source.
+- ADR-0004 still said "one-line forwarder" (conformance) — its addendum.
+- "Derived, not chosen" was a literal (conformance) — the `calc` above; the
+  six-item leg reads the track off the computed grid (row S1).
+- The form rule's docblock named the wrong Grid track (correctness and
+  conformance, both fetching §6.6) — corrected, rule unchanged.
+- The six-item leg read "before" after `load` with the fetch unheld;
+  `boundingBox()` equality had no null guard; the JS-off negative trusted a
+  URL after a timer (correctness, conformance) — held, guarded (row S2b),
+  counted.
+- `@pm/bench-runner#test` was turbo-cached while its new test reads two
+  other workspaces by path (seams) — `cache: false`.
+- ADR-0001 addendum V promised a byte guard the smoke skips (skeptic) — "on
+  the local plane only", and the deployed transfer stated as unmeasured.
+- The shipped probe drove the rejected design and six quoted samples had no
+  reproducing step (skeptic) — three explicit modes, a reproducer beside
+  it, the bench leg printing its desktop samples.
+- Four comments the slice made false, a drifted line reference, and two
+  wording over-claims ("10ch covers every total"; "three 44 px lines")
+  (correctness, conformance) — fixed; the sheet now states its bounds.
+- The tree in motion (seams) — for eleven minutes code, record and guard
+  disagreed about `checkout-type-card`, because the runner's stale backup
+  had rewound the code; fixed at the runner and in the tree.
+
+**The suite once more, on the final tree — the run that stands.** Fixture
+**669 of 669** in 144.0 s; crate **669 of 669** in 144.2 s — after the lens
+fixes, the record rewrites and the master regeneration, with `pnpm run
+check` 36 of 36 immediately before them and nothing edited between. One
+edit followed them, and it is a comment: `bench-checkout.browser.test.ts`
+had said the suite log carries the bench samples it prints, and the final
+log showed vitest's non-TTY reporter carries no console output at all — the
+reproducer script beside the record is the reproducing step, and the
+comment says so now. No leftover process after either teardown; the front
+log carries the recorded eight `chrome-slot-count` 404 shapes and nothing of
+this unit's.
+
+**What this leaves.** The checkout fit template and `labBundle` — the
+measurement pass's, with the recommendation and the two declarations
+written down for it. The scrollable line list carries no `tabindex` (Chrome
+makes a child-less scroller keyboard-focusable by default — announced for
+130, shipped in 132 per the Chrome blog post fetched that day; Safari does
+not); a markup-contract change, not this unit's. The placed page's beacon
+residual, named in the node. wrangler 4.110 dying under load; environment,
+recorded. For Rob, carried forward unchanged: whether `pm-warm` is on the
+Free plan; the PDP `not-found.tsx` and `lib/plp-error.tsx` docblocks; the
+bench runner's uncapped CDP `send()`; the two post-deploy smokes that failed
+on one qwik stepper assertion; the deployed plane's compressed header bytes;
+addendum O's `transferSize` wording; unit 10's Rob-gated items.

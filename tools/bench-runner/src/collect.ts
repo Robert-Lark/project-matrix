@@ -146,7 +146,140 @@ export const INTERACTIONS: Readonly<
     }
     await button.click();
   },
+  /** Checkout's three ids (ADR-0008 Consequences names them; owner: this
+   *  file — checkout-measure-prep, 2026-09-24; definitions in ADR-0001
+   *  addendum V). What every one of them is designed around is the RULER's
+   *  gate: the chrome's pinned web-vitals build observes `event` entries at
+   *  its default `durationThreshold` of 40 ms plus the `first-input` entry,
+   *  always. So an interaction under 40 ms is invisible to INP unless it is
+   *  the visit's FIRST input — and on a fast paradigm the cell IS that first
+   *  input. Each entry therefore makes its first input the interaction its
+   *  name promises, and nothing before it is an input at all.
+   *
+   *  `checkout-type-card`: the card field's own hint promises "Formats as you
+   *  type — that formatting is part of what this page measures". The field
+   *  is focused PROGRAMMATICALLY (no pointer event, so no first input), then
+   *  sixteen REAL keystrokes go in, one interaction each; the first keystroke
+   *  is the visit's first input and any later one that reaches 40 ms also
+   *  counts. The first draft clicked the field first, and the cell was that
+   *  click — 24 ms of an interaction that runs no handler, every keystroke
+   *  under the gate (measured on the held plane before this comment). Every
+   *  checkout variant re-implements the formatter; the keystroke is the
+   *  like-for-like unit. Settles on the formatted value, the handler's own
+   *  output. Fetches nothing: the empty cart asks for no catalogue. */
+  "checkout-type-card": async (page) => {
+    const card = page.locator("#card");
+    await card.focus();
+    await card.pressSequentially(CHECKOUT_FILL.card);
+    await page.waitForFunction(
+      (want) => (document.getElementById("card") as HTMLInputElement | null)?.value === want,
+      CHECKOUT_FORMATTED_CARD,
+    );
+  },
+  /** Checkout's contract interaction (ADR-0008 §7): "Place order" on the
+   *  pristine form. The enhancement checks ten rules, writes `aria-invalid`
+   *  and an error paragraph per field, renders the error summary with ten
+   *  links at the top of the form and MOVES FOCUS to it — identical DOM +
+   *  focus work in every paradigm, which is what makes the INP cell
+   *  like-for-like. One click, one interaction, the visit's first input.
+   *  Settles on the focus move, the last thing the handler does.
+   *
+   *  **This interaction FETCHES, and the receipt must say so.** Every error
+   *  paragraph and the summary's title draw U+26A0 (⚠) as a non-colour cue
+   *  (field.css, error-summary.css), and Familjen Grotesk does not carry it:
+   *  fonts.css serves a one-glyph face, `PMWarnGlyph.U26A0.woff2`, scoped by
+   *  `unicode-range` so the browser asks for it on the FIRST error render
+   *  and never before. Measured on the held plane 2026-09-24: 1,212 B body,
+   *  1,512 B `transferSize` (the spec's 300-octet header constant, ADR-0001
+   *  addendum U). Every variant serves the identical file from its own
+   *  copied tokens tree, so this cell's bytes are GLYPH MASS — invariant by
+   *  construction, the `pdp-gallery-switch` shape. The fit template is keyed
+   *  by SURFACE and publishes ONE interaction (ADR-0001 addendum T): if this
+   *  is the one checkout publishes — the recommendation, since it is the §7
+   *  contract interaction — its declaration is `interactionFetch: { kind:
+   *  "constant" }`. The INP half is the paradigm difference. */
+  "checkout-submit-invalid": async (page) => {
+    await page.getByRole("button", { name: "Place order" }).click();
+    await page.waitForFunction(() => {
+      const summary = document.querySelector(".pm-error-summary");
+      return summary !== null && document.activeElement === summary;
+    });
+  },
+  /** The recovery: the invalid submit, every field corrected, then the
+   *  submit that succeeds. Two REAL clicks, and what the cell measures under
+   *  the ruler's gate is stated rather than implied: the first click (the
+   *  invalid submit) is the visit's first input and always counts; the second
+   *  (the successful submit — ten fields re-checked, ten error states
+   *  cleared, the summary removed, the order announced) counts only when it
+   *  reaches 40 ms. So on a fast paradigm this cell reads the same click
+   *  `checkout-submit-invalid` does, and it separates from that id only
+   *  where the recovery's handler is slow enough to be seen — which is the
+   *  condition this surface's spotlight names (INP under main-thread load).
+   *  The fills between the clicks are Playwright's `fill` (CDP
+   *  `Input.insertText`): `input` events, no key events, no event-timing
+   *  interaction (ten fills, 0 entries with an `interactionId`, measured).
+   *
+   *  A programmatic prefix was tried and REJECTED on measurement: making the
+   *  invalid submit with `form.requestSubmit()` so the one real click would be
+   *  the successful submit produced CLS 0.099. The shift is the summary's
+   *  render — a layout shift no input precedes, so the metric counts it,
+   *  where a real click excludes it under the 500 ms recent-input rule. (The
+   *  fills' blur clean-ups are NOT the reason: each fill's trusted `change`
+   *  event is itself an excluding input — Layout Instability's list names
+   *  `change` — so they never count either way.) The instrument must never
+   *  manufacture the CLS it reports (ADR-0008 §1), so the priming is a real
+   *  click. Settles on the
+   *  announcement the email hint promises. Fetches the same one-glyph ⚠ face
+   *  `checkout-submit-invalid` does, on the first click; the runner's byte
+   *  boundary brackets the whole entry, so the visit records the 1,512 B
+   *  (bench-checkout.browser pins it). */
+  "checkout-fix-and-submit": async (page) => {
+    const submit = page.getByRole("button", { name: "Place order" });
+    await submit.click();
+    await page.waitForFunction(() => {
+      const summary = document.querySelector(".pm-error-summary");
+      return summary !== null && document.activeElement === summary;
+    });
+    for (const [id, value] of Object.entries(CHECKOUT_FILL)) {
+      await page.locator(`#${id}`).fill(value);
+    }
+    await submit.click();
+    await page.waitForFunction(
+      () => (document.querySelector("[data-pm-status]")?.textContent ?? "").startsWith("Order placed"),
+    );
+  },
 };
+
+/**
+ * What the checkout entries type. Every value is a deliberately fake
+ * fixture — 4242 4242 4242 4242 is the public test PAN every payment sandbox
+ * documents — and by the master's own rule no field but the shipping radio
+ * carries a `name`, so none of it could leave the page even if the form
+ * submitted (packages/reference/render/checkout.mjs rule 1). The ten keys are
+ * the ten ids `checkout.js` RULES validates; the linkedom behaviour test
+ * (tools/repo-checks checkout-controls-behave) fills the same ten.
+ */
+export const CHECKOUT_FILL: Readonly<
+  Record<
+    "email" | "name" | "address1" | "city" | "postal" | "region" | "card" | "cardname" | "expiry" | "cvc",
+    string
+  >
+> = {
+  email: "visitor@example.com",
+  name: "Test Visitor",
+  address1: "1 Example Street",
+  city: "Portland",
+  postal: "97201",
+  region: "OR",
+  card: "4242424242424242",
+  cardname: "Test Visitor",
+  expiry: "1226",
+  cvc: "123",
+};
+/** The formatter's output for CHECKOUT_FILL.card — the settle marker for
+ *  `checkout-type-card`, spelled here so the wait is on the handler's own
+ *  result rather than on a keystroke count. */
+export const CHECKOUT_FORMATTED_CARD = "4242 4242 4242 4242";
 
 export interface ApplyResult {
   mechanism: string;
