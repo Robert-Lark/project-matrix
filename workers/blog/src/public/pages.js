@@ -7,8 +7,26 @@
 import { esc } from "../html.js";
 import { excerptText } from "../render.js";
 
+/** @typedef {import("../db.js").PostRow} PostRow */
+/** @typedef {import("../db.js").MediaRow} MediaRow */
+/** @typedef {import("../db.js").SeriesNeighbor} SeriesNeighbor */
+/** @typedef {import("../db.js").BrowseRow} BrowseRow */
+/** @typedef {{ prev: SeriesNeighbor | null, next: SeriesNeighbor | null }} Neighbors */
+
 const MASTHEAD = "Rob Lark";
 
+/**
+ * @param {{
+ *   title: string | null,
+ *   description?: string,
+ *   origin: string,
+ *   path: string,
+ *   body: string,
+ *   noindex?: boolean,
+ *   ogImage?: string | null,
+ *   scripts?: string[],
+ * }} page
+ */
 export function layout({
   title,
   description = "",
@@ -60,6 +78,7 @@ ${body}
 `;
 }
 
+/** @param {string} iso */
 function dateHuman(iso) {
   return new Date(iso).toLocaleDateString("en-US", {
     year: "numeric",
@@ -68,6 +87,7 @@ function dateHuman(iso) {
   });
 }
 
+/** @param {string} iso */
 function dateShort(iso) {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
@@ -75,26 +95,36 @@ function dateShort(iso) {
   });
 }
 
+/** @param {PostRow} post @returns {string} */
 export function displayDate(post) {
   return post.original_date || post.published_at || post.updated_at;
 }
 
+/** @param {PostRow} post */
 function entryTitle(post) {
   return post.title || excerptText(post.body_html, 90) || post.slug;
 }
 
+/** @type {Readonly<Record<string, string>>} */
 const KIND_LABEL = { essay: "Essay", photo: "Photographs", note: "Note", link: "Link" };
 
+/** @param {PostRow} post */
 function accentStyle(post) {
   return post.accent ? ` style="--accent:${esc(post.accent)}"` : "";
 }
 
+/**
+ * @param {PostRow[]} posts
+ * @param {{ origin: string, heading?: string | null, path?: string, browse?: { tags: BrowseRow[], series: BrowseRow[] } | null }} view
+ */
 export function contentsPage(posts, { origin, heading = null, path = "/blog/", browse = null }) {
+  /** @type {Map<string, PostRow[]>} */
   const byYear = new Map();
   for (const post of posts) {
     const year = String(displayDate(post)).slice(0, 4);
-    if (!byYear.has(year)) byYear.set(year, []);
-    byYear.get(year).push(post);
+    const group = byYear.get(year) ?? [];
+    group.push(post);
+    byYear.set(year, group);
   }
 
   const shelf = [...byYear.entries()]
@@ -142,7 +172,9 @@ ${browseBlock}`;
   });
 }
 
+/** @param {PostRow} post @param {{ neighbors?: Neighbors, cover?: MediaRow | null }} [view] */
 export function postArticle(post, { neighbors = { prev: null, next: null }, cover = null } = {}) {
+  /** @type {string[]} */
   const tags = JSON.parse(post.tags || "[]");
   const when = displayDate(post);
   const eyebrow = `<p class="post-eyebrow"><span class="post-kind">${esc(KIND_LABEL[post.kind] ?? post.kind)}</span><time datetime="${esc(when)}">${esc(dateHuman(when))}</time>${post.series ? `<a class="eyebrow-series" href="/blog/series/${esc(encodeURIComponent(post.series))}">${esc(post.series)}${post.series_part ? ` · ${esc(String(post.series_part))}` : ""}</a>` : ""}</p>`;
@@ -201,12 +233,14 @@ ${tagList}
 // "data-footnote-ref" loads a ~2 KB script that finds no [data-footnote-ref]
 // elements and no-ops — never a correctness or security cost, just an
 // avoided-when-cheap fetch.
+/** @param {PostRow} post @returns {string[]} */
 function postScripts(post) {
   return post.body_html.includes("data-footnote-ref")
     ? ["/blog/static/notes.js"]
     : [];
 }
 
+/** @param {PostRow} post @param {{ origin: string, neighbors: Neighbors, cover?: MediaRow | null }} view */
 export function postPage(post, { origin, neighbors, cover = null }) {
   return layout({
     title: post.title || excerptText(post.body_html, 60),
@@ -219,6 +253,7 @@ export function postPage(post, { origin, neighbors, cover = null }) {
   });
 }
 
+/** @param {PostRow} post @param {{ origin: string, cover?: MediaRow | null }} view */
 export function previewPage(post, { origin, cover = null }) {
   return layout({
     title: post.title || "Draft preview",
@@ -231,20 +266,24 @@ export function previewPage(post, { origin, cover = null }) {
   });
 }
 
+/** @param {string | null} iso */
 function rfc822(iso) {
-  return new Date(iso).toUTCString();
+  return new Date(iso ?? "").toUTCString();
 }
 
+/** @param {string} html @param {string} origin */
 function absolutize(html, origin) {
   return html
     .replaceAll('src="/blog/', `src="${origin}/blog/`)
     .replaceAll('href="/blog/', `href="${origin}/blog/`);
 }
 
+/** @param {string} text */
 function cdata(text) {
   return `<![CDATA[${text.replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
 }
 
+/** @param {PostRow[]} posts @param {string} origin */
 export function feedXml(posts, origin) {
   const items = posts
     .map((post) => {

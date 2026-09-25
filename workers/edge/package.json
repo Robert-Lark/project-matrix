@@ -9,6 +9,8 @@
     "deploy": "wrangler deploy",
     "seed:local": "node seed-local.mjs",
     "seed:remote": "node seed-local.mjs --remote",
+    "cf-typegen": "wrangler types cloudflare-env.d.ts",
+    "typecheck": "wrangler types cloudflare-env.d.ts && tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
@@ -17,6 +19,7 @@
     "@pm/snapshot-fixture": "workspace:*"
   },
   "devDependencies": {
+    "typescript": "^6.0.3",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   }

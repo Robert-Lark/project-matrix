@@ -41,6 +41,25 @@ import langToml from "@shikijs/langs/toml";
 
 const THEMES = { light: "everforest-light", dark: "everforest-dark" };
 
+// Checked as JS (tsconfig.json `checkJs`). The syntax trees are unified's
+// (mdast in, hast out); the two typedefs below name exactly the node
+// fields these plugins touch, structurally — the blog declares the unified
+// packages it imports and nothing else (pnpm isolation), so the `hast` and
+// `mdast` type packages are not on its path to name by import.
+/**
+ * @typedef {object} TreeNode
+ * @property {string} type
+ * @property {string} [name] directive name
+ * @property {string} [tagName]
+ * @property {string} [value]
+ * @property {Record<string, unknown>} [attributes] directive attributes
+ * @property {Record<string, unknown>} [properties]
+ * @property {TreeNode[]} [children]
+ * @property {{ hName?: string, hProperties?: Record<string, unknown> }} [data]
+ */
+/** @typedef {import("shiki/core").HighlighterCore} HighlighterCore */
+
+/** @type {Promise<HighlighterCore> | undefined} */
 let highlighterPromise;
 function getHighlighter() {
   // A rejected init must not be cached, or one transient failure would
@@ -65,8 +84,9 @@ function getHighlighter() {
 // directives degrade to a classed div/span so old posts never break when a
 // directive is retired.
 function directiveBlocks() {
+  /** @param {TreeNode} tree */
   return (tree) => {
-    visit(tree, (node) => {
+    visit(tree, (/** @type {TreeNode} */ node) => {
       if (
         node.type !== "containerDirective" &&
         node.type !== "leafDirective" &&
@@ -101,13 +121,14 @@ function directiveBlocks() {
           // otherwise collapses the grid to a single overflowing child.
           // Anything ELSE in that paragraph (caption words, links) survives
           // as its own trailing paragraph — never silently dropped.
-          node.children = node.children.flatMap((child) => {
+          node.children = (node.children ?? []).flatMap((child) => {
             if (child.type !== "paragraph") return [child];
-            const images = child.children.filter((c) => c.type === "image");
+            const inline = child.children ?? [];
+            const images = inline.filter((c) => c.type === "image");
             if (images.length < 2) return [child];
-            const rest = child.children.filter(
+            const rest = inline.filter(
               (c) => c.type !== "image" &&
-                !(c.type === "text" && c.value.trim() === "") &&
+                !(c.type === "text" && (c.value ?? "").trim() === "") &&
                 c.type !== "break",
             );
             return [
@@ -141,14 +162,14 @@ schema.protocols = {
   src: [...(schema.protocols?.src ?? []), "data"],
 };
 schema.tagNames = [
-  ...schema.tagNames,
+  ...(schema.tagNames ?? []),
   "aside", "figure", "figcaption", "mark", "kbd", "cite",
 ];
 schema.attributes = {
   ...schema.attributes,
-  "*": [...(schema.attributes["*"] ?? []), "className", "data*"],
+  "*": [...(schema.attributes?.["*"] ?? []), "className", "data*"],
   img: [
-    ...(schema.attributes.img ?? []),
+    ...(schema.attributes?.img ?? []),
     "loading", "decoding", "width", "height",
   ],
 };
@@ -159,22 +180,26 @@ schema.attributes = {
 // them while hrefs keep one layer — broken anchors (observed). Collapse the
 // double prefix instead of disabling the protection.
 function rehypeCollapseClobberPrefix() {
+  /** @param {TreeNode} tree */
   return (tree) => {
-    visit(tree, "element", (node) => {
+    visit(tree, "element", (/** @type {TreeNode} */ node) => {
+      const properties = node.properties;
+      if (!properties) return;
       for (const prop of ["id", "name"]) {
-        const value = node.properties?.[prop];
+        const value = properties[prop];
         if (typeof value === "string" && value.startsWith("user-content-user-content-")) {
-          node.properties[prop] = value.slice("user-content-".length);
+          properties[prop] = value.slice("user-content-".length);
         }
       }
     });
   };
 }
 
+/** @param {TreeNode} node */
 function codeText(node) {
   let text = "";
-  visit(node, "text", (t) => {
-    text += t.value;
+  visit(node, "text", (/** @type {TreeNode} */ t) => {
+    text += t.value ?? "";
   });
   return text;
 }
@@ -186,17 +211,27 @@ function codeText(node) {
 // until it clears AA against the code background. Render-time only — the
 // result is cached in body_html.
 
+/** @typedef {[number, number, number]} Rgb */
+
+/** @param {string} hex @returns {Rgb} */
 function hexToRgb(hex) {
   const h = hex.replace("#", "");
   const full = h.length === 3 ? [...h].map((c) => c + c).join("") : h;
-  return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+  return [
+    parseInt(full.slice(0, 2), 16),
+    parseInt(full.slice(2, 4), 16),
+    parseInt(full.slice(4, 6), 16),
+  ];
 }
 
+/** @param {Rgb} rgb */
 function rgbToHex([r, g, b]) {
   return `#${[r, g, b].map((c) => Math.round(c).toString(16).padStart(2, "0")).join("")}`;
 }
 
+/** @param {Rgb} rgb */
 function luminance([r, g, b]) {
+  /** @param {number} c */
   const f = (c) => {
     const s = c / 255;
     return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
@@ -204,30 +239,36 @@ function luminance([r, g, b]) {
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
 }
 
+/** @param {Rgb} a @param {Rgb} b */
 function contrast(a, b) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
+  const la = luminance(a);
+  const lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
+/** @param {string} fgHex @param {string} bgHex @param {number} [min] */
 function clampContrast(fgHex, bgHex, min = 4.5) {
   let fg = hexToRgb(fgHex);
   const bg = hexToRgb(bgHex);
   if (contrast(fg, bg) >= min) return fgHex;
   const towardWhite = luminance(bg) < 0.5;
+  /** @param {number} c */
+  const step = (c) => (towardWhite ? Math.min(255, c + (255 - c) * 0.12 + 2) : Math.max(0, c * 0.88 - 2));
   for (let i = 0; i < 24 && contrast(fg, bg) < min; i += 1) {
-    fg = fg.map((c) => (towardWhite ? Math.min(255, c + (255 - c) * 0.12 + 2) : Math.max(0, c * 0.88 - 2)));
+    fg = [step(fg[0]), step(fg[1]), step(fg[2])];
   }
   return rgbToHex(fg);
 }
 
 const HEX_RE = /^#[0-9a-fA-F]{3,8}/;
 
+/** @param {TreeNode} pre */
 function clampShikiTree(pre) {
   const preStyle = String(pre.properties?.style ?? "");
   const lightBg = /background-color:(#[0-9a-fA-F]+)/.exec(preStyle)?.[1];
   const darkBg = /--shiki-dark-bg:(#[0-9a-fA-F]+)/.exec(preStyle)?.[1];
   if (!lightBg || !darkBg) return;
-  visit(pre, "element", (node) => {
+  visit(pre, "element", (/** @type {TreeNode} */ node) => {
     if (node.tagName !== "span" || !node.properties?.style) return;
     node.properties.style = String(node.properties.style)
       .split(";")
@@ -242,13 +283,16 @@ function clampShikiTree(pre) {
   });
 }
 
+/** @param {HighlighterCore} highlighter */
 function rehypeShiki(highlighter) {
+  /** @param {TreeNode} tree */
   return (tree) => {
-    visit(tree, "element", (node, index, parent) => {
-      if (node.tagName !== "pre" || !parent || index === undefined) return;
+    visit(tree, "element", (/** @type {TreeNode} */ node, /** @type {number | undefined} */ index, /** @type {TreeNode | undefined} */ parent) => {
+      if (node.tagName !== "pre" || !parent?.children || index === undefined) return;
       const code = node.children?.[0];
       if (!code || code.tagName !== "code") return;
-      const classes = (code.properties?.className ?? []).map(String);
+      const className = code.properties?.className;
+      const classes = (Array.isArray(className) ? className : []).map(String);
       const lang = classes
         .find((c) => c.startsWith("language-"))
         ?.slice("language-".length);
@@ -258,7 +302,8 @@ function rehypeShiki(highlighter) {
         themes: THEMES,
         defaultColor: "light",
       });
-      const rendered = hast.children[0];
+      const rendered = /** @type {TreeNode | undefined} */ (hast.children[0]);
+      if (!rendered) return;
       clampShikiTree(rendered);
       parent.children[index] = rendered;
     });
@@ -268,11 +313,15 @@ function rehypeShiki(highlighter) {
 // Uploaded images carry their true width/height (from the media table) so
 // plain markdown yields zero-CLS pages; first image loads eager/high, the
 // rest lazy. mediaLookup is injected (db.js) to keep this module pure.
+/** @typedef {import("./db.js").MediaLookup} MediaLookup */
+/** @param {{ mediaLookup?: MediaLookup | null }} [options] */
 function rehypeImages(options) {
   const lookup = options?.mediaLookup;
+  /** @param {TreeNode} tree */
   return async (tree) => {
+    /** @type {TreeNode[]} */
     const imgs = [];
-    visit(tree, "element", (node) => {
+    visit(tree, "element", (/** @type {TreeNode} */ node) => {
       if (node.tagName === "img") imgs.push(node);
     });
     const keys = [
@@ -302,9 +351,16 @@ function rehypeImages(options) {
   };
 }
 
+/** @param {string} md @param {{ mediaLookup?: MediaLookup | null }} [options] @returns {Promise<string>} */
 export async function renderMarkdown(md, { mediaLookup = null } = {}) {
   const highlighter = await getHighlighter();
-  const file = await unified()
+  // The plugin chain is typed by unified as a chain of transformer
+  // signatures over its own tree types; the four local plugins read the
+  // structural TreeNode above, so the chain is composed untyped here — the
+  // ONE `any` in this module, at the seam between unified's generics and
+  // plain functions, stated.
+  const pipeline = /** @type {any} */ (unified());
+  const file = await pipeline
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
@@ -323,8 +379,10 @@ export async function renderMarkdown(md, { mediaLookup = null } = {}) {
 // Plain-text opener for list pages and meta descriptions: first paragraph,
 // tags stripped, entities DECODED (every consumer re-escapes with esc(), so
 // this must return true plain text or ampersands render double-escaped).
+/** @type {Readonly<Record<string, string>>} */
 const NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 
+/** @param {string} text */
 function decodeEntities(text) {
   return text.replaceAll(/&(#x?[0-9a-fA-F]+|[a-z]+);/g, (whole, body) => {
     if (body.startsWith("#x") || body.startsWith("#X")) {
@@ -335,9 +393,10 @@ function decodeEntities(text) {
   });
 }
 
+/** @param {string} html @param {number} [max] */
 export function excerptText(html, max = 220) {
   const match = /<p>(.*?)<\/p>/s.exec(html);
   if (!match) return "";
-  const text = decodeEntities(match[1].replaceAll(/<[^>]+>/g, "")).trim();
+  const text = decodeEntities((match[1] ?? "").replaceAll(/<[^>]+>/g, "")).trim();
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
 }

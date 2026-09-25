@@ -452,3 +452,78 @@ re-posts). The body is never read. The post-deploy smoke's
 endpoint 303 — are what say whether the deployed plane agrees with the
 local one. ADR-0008 addendum D carries the page design; this addendum
 carries only the composition rule it bends.
+
+## Addendum — the workers plane stays plain JS, and is checked as JS: the typed-JS boundary rule (2026-09-25, `workers-hardening`)
+
+§2's layout puts three Cloudflare Workers under `workers/` and every
+package under `packages/` and `tools/` in strict TypeScript
+(`tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`). The 2026-08-29
+audit (priority 5) found the boundary undocumented and unenforced: 4,289
+lines of plain JS across the three Workers with no `@ts-check`, no JSDoc
+types and no typecheck task — the blog's auth, session, CSRF and SQL code
+among them — while `packages/reference/render/lib.mjs:10-13` records its own
+`.mjs` choice and nothing recorded this one. Decided:
+
+- **The Workers stay plain JavaScript.** Each `src/` tree is the module
+  wrangler bundles, with no compile step of the repo's own in front of it —
+  the paradigm-purity argument the plane was built on (a Worker is a
+  `fetch` handler, not a build product) and a zero-byte change to what
+  deploys. Converting the three trees to TypeScript was weighed and
+  rejected: cleaner types, but a new build story for three deployed Workers
+  for a typo class the JS route kills just as dead.
+- **Every Worker is CHECKED as JavaScript, by tsconfig, not by pragma.**
+  `workers/{edge,front,blog}/tsconfig.json` extend the base with `allowJs`
+  + `checkJs` and include `src/**/*.js` (the front's `lab/*.mjs` too, where
+  the publication gate lives). `checkJs` in the config rather than a
+  per-file `// @ts-check` is deliberate and the repo's own recurring rule: a
+  declaration that can be omitted is an opt-out, and a new file must not be
+  able to skip the check by forgetting a line. Types are JSDoc: `@param`,
+  `@returns`, `@typedef`, `@type` casts at the seams — D1 rows cast to the
+  row their SQL selects, untrusted JSON read as `Record<string, unknown>`
+  and checked field by field.
+- **Runtime and binding types come from wrangler, generated, never
+  committed.** Each Worker's `typecheck` script runs `wrangler types
+  cloudflare-env.d.ts && tsc --noEmit`; the generated file (the runtime's
+  own declarations for the Worker's `compatibility_date` plus an `Env`
+  interface read from `wrangler.jsonc` and the committed `.dev.vars`) is
+  gitignored and regenerated on every check, so a renamed binding fails
+  typecheck the same day. `@cloudflare/workers-types` is not used: the
+  generated file is the runtime the config actually names, and two sources
+  of the same globals would be the drift this addendum exists to close. The
+  blog's browser code (the editor bundle and the footnote enhancement) is
+  a second target, `tsconfig.browser.json`, checked against the DOM lib —
+  same discipline, different runtime.
+- **What crosses the boundary carries its type with it.** A TypeScript
+  package a Worker imports (`@pm/measurement`, `@pm/switcher`) is typed by
+  its source, resolved through the declared dependency. A plain `.mjs`
+  a Worker imports is checked WITH it: `packages/reference/render/plp-query.mjs`
+  (the PLP query semantics the edge Worker serves, §2's third consumer)
+  gained JSDoc typedefs for the tray and the query, so the Worker's calls
+  are checked against the spec's own signatures — and a plain `.mjs` a TS
+  consumer imports keeps a sibling `.d.mts` (`workers/front/lab/fit.d.mts`,
+  the existing precedent), now held to the module it describes: the front's
+  typecheck found that declaration missing `interactionId`, a field the
+  template set and the build read since 2026-08-28, and `fit.mjs` is
+  `@type`-annotated against it so the two cannot drift again.
+- **The typecheck is a turbo task like any other**, so `pnpm run check`
+  grows by the three tasks plus the front's build, which its typecheck
+  depends on: the front imports `generated/lab-bundles.js`, the module its
+  build writes (the `@pm/astro#typecheck` precedent, same ts(2307) on a
+  fresh checkout). Derived, never typed: 40 tasks with this unit
+  (`turbo run lint typecheck test --dry=json | jq
+  '[.tasks[]|select(.command!="<NONEXISTENT>")]|length'`).
+
+What the check found in the code it covers, so the cost of the rule is
+priced against something: the edge Worker's PLP handler could return a null
+response where the type said `Response` (a throw now, at the one impossible
+branch); the blog's `savePost` accepted a number into a TEXT column through
+a hand-made PUT (dropped with the file's own warning shape now); and the
+fit declaration drift above. Given up: ~1 s per Worker per check for
+`wrangler types`, and JSDoc where a `.ts` file would have said less.
+
+Considered and rejected: **per-file `// @ts-check`** (an opt-out by
+omission); **committing the generated `cloudflare-env.d.ts`** (the
+react-next precedent — 14 k generated lines per Worker to review, and a
+file that goes stale silently on the next wrangler pin); **`@cloudflare/
+workers-types`** (a second declaration of the same runtime beside the
+generated one); **converting to TypeScript** (above).

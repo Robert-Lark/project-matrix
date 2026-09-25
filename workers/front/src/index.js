@@ -39,6 +39,16 @@ import { withSecurityFloor } from "./security-floor.js";
 // lenses); generating it removes the class instead of guarding it.
 import { LAB_BUNDLES } from "../generated/lab-bundles.js";
 
+// Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25):
+// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts — the
+// ten service bindings), the chrome's contract is @pm/switcher's, and the
+// generated bundle module is JSON, so its literal types are the served
+// artifact's; the switcher's SurfaceLabBundle is what they MEAN, stated
+// once here at the consumer.
+/** @typedef {import("@pm/switcher").SurfaceLabBundle} SurfaceLabBundle */
+/** @type {Readonly<Record<string, Readonly<Record<string, SurfaceLabBundle>>>>} */
+const LAB = /** @type {any} */ (LAB_BUNDLES);
+
 /** The per-surface, per-profile published bundle for this request, or
  *  undefined (the chrome renders its designed empty states). Profile
  *  resolution mirrors the chrome's own reading-section selector EXACTLY
@@ -46,9 +56,10 @@ import { LAB_BUNDLES } from "../generated/lab-bundles.js";
  *  numbers under another profile's selected cell. Object.hasOwn throughout:
  *  surface and profile are client-controlled (the repo's recurring
  *  prototype-key class). */
+/** @param {string} surface @param {string} search @returns {SurfaceLabBundle | undefined} */
 function labFor(surface, search) {
-  if (!Object.hasOwn(LAB_BUNDLES, surface)) return undefined;
-  const bundles = LAB_BUNDLES[surface];
+  const bundles = Object.hasOwn(LAB, surface) ? LAB[surface] : undefined;
+  if (!bundles) return undefined;
   const requested = new URLSearchParams(search).get("profile") ?? "";
   const resolved = (getProfile(requested) ?? PROFILES["avg-broadband-desktop"]).id;
   return Object.hasOwn(bundles, resolved) ? bundles[resolved] : undefined;
@@ -75,11 +86,13 @@ const VARIANTS = Object.fromEntries(
 // Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass
 // through byte-identical like EDGE — no chrome, no HUD, no receipts. The
 // blog is outside every measurement fence.
+/** @type {Readonly<Record<string, string>>} */
 const SIBLINGS = {
   blog: "BLOG",
 };
 
 // Structured JSON logs (Workers Logs ingests console output; PRD story 42).
+/** @param {"info" | "error"} level @param {string} event @param {Record<string, unknown>} fields */
 function log(level, event, fields) {
   const line = JSON.stringify({ level, worker: "pm-front", event, ...fields });
   if (level === "error") console.error(line);
@@ -89,9 +102,14 @@ function log(level, event, fields) {
 const front = {
   // Dispatch + chrome injection. Returns the response WITHOUT the security
   // floor; the exported `fetch` below is the one place it is applied.
+  /**
+   * @param {Request<unknown, IncomingRequestCfProperties>} request
+   * @param {Env} env
+   * @returns {Promise<Response>}
+   */
   async route(request, env) {
     const url = new URL(request.url);
-    const prefix = url.pathname.split("/")[1];
+    const prefix = url.pathname.split("/")[1] ?? "";
 
     // The data plane (ADR-0002 §8): trays + beacons under /api/*, the frozen
     // self-hosted images under /assets/* — both served by the edge Worker.
@@ -111,7 +129,12 @@ const front = {
     }
 
     try {
-      const upstream = await env[bindingName].fetch(request);
+      // Every name the three tables produce IS a binding: the dispatch
+      // table is derived from the roster and pinned to wrangler.jsonc's
+      // `services` by test/floor-and-dispatch.test.js, and `Env` is
+      // generated from that same file — so the cast states what the test
+      // proves, and a prefix with no binding still 502s below.
+      const upstream = await env[/** @type {keyof Env} */ (bindingName)].fetch(request);
       log("info", "dispatch", {
         variant,
         path: url.pathname,
@@ -212,8 +235,8 @@ const front = {
       log("error", "upstream-failure", {
         variant,
         path: url.pathname,
-        message: err.message,
-        stack: err.stack,
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
       });
       return new Response("upstream unavailable\n", { status: 502 });
     }
@@ -226,6 +249,7 @@ export default {
   // so the floor is a property of the seam, not of each return statement
   // (security-floor.js). The assets-first paths never reach this function;
   // dist/_headers carries the same three headers there.
+  /** @param {Request<unknown, IncomingRequestCfProperties>} request @param {Env} env */
   async fetch(request, env) {
     return withSecurityFloor(await front.route(request, env));
   },

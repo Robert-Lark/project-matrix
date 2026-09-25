@@ -1,0 +1,13 @@
+{
+  // The blog's BROWSER code (ADR-0009 §3, §7): the CodeMirror editor bundle
+  // and the footnote enhancement run in a page, not in the Worker, so they
+  // are checked against the DOM lib rather than the workers runtime. Same
+  // discipline, second target.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src/admin/editor/**/*.js", "src/public/notes.js"]
+}

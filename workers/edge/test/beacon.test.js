@@ -157,3 +157,41 @@ describe("the collector refuses everything off the roster, and writes nothing", 
     expect(points).toHaveLength(0);
   });
 });
+
+describe("the value is a finite number, or the point is refused (workers-hardening, 2026-09-25)", () => {
+  // Before this, `doubles: [finite ? value : 0]` wrote a fabricated 0 for
+  // every shape below and answered 204 — a dashboard row that never
+  // happened. Asserted on the dataset: no point, not just a status.
+  for (const [label, value] of [
+    ["absent", undefined],
+    ["null", null],
+    ["a string", "1234"],
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+    ["an object", { v: 1 }],
+  ]) {
+    it(`a value that is ${label} is a 400 naming the field, and nothing is written`, async () => {
+      const { env, points } = stubEnv();
+      const body = { name: "LCP", tags: event({}).tags };
+      if (value !== undefined) body.value = value;
+      const res = await post(env, body);
+      expect(res.status).toBe(400);
+      expect(await res.text()).toContain("value");
+      expect(points).toHaveLength(0);
+    });
+  }
+
+  it("CONTROL: zero is a real value — a measured 0 (CLS on a still page) is written as 0", async () => {
+    const { env, points } = stubEnv();
+    const res = await post(env, { ...event({}), name: "CLS", value: 0 });
+    expect(res.status).toBe(204);
+    expect(points).toHaveLength(1);
+    expect(points[0].doubles).toEqual([0]);
+  });
+
+  it("CONTROL: a finite value is written as itself, never rounded or coerced", async () => {
+    const { env, points } = stubEnv();
+    expect((await post(env, event({}))).status).toBe(204);
+    expect(points[0].doubles).toEqual([1234.5]);
+  });
+});

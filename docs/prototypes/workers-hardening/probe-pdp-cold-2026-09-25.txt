@@ -1,0 +1,24 @@
+# probe-pdp-cold — 2026-09-25, held local crate plane (PM_SEED_DIR=tools/snapshot-capture/crate PM_HOLD=1), machine load ~4
+
+## edge Worker direct (http://127.0.0.1:8790), run 1
+plane: crate "ambient-melodic-techno-neoclassical-2006-2026" · id 627110 · release payload 1570 B
+cold  (?cache=cold, R2 read + whole-tray parse): states=bypass median 4.9 ms  min 4.4  max 7.6
+miss  (first request under a fresh ?run=): state=miss 7.1 ms
+warm  (KV hit):                                 states=hit median 1 ms  min 0.9  max 2.3
+cold − warm median: 3.8 ms
+
+## edge Worker direct, run 2 (same id, repeatability)
+plane: crate "ambient-melodic-techno-neoclassical-2006-2026" · id 627110 · release payload 1570 B
+cold  (?cache=cold, R2 read + whole-tray parse): states=bypass median 4.7 ms  min 4.3  max 5.6
+miss  (first request under a fresh ?run=): state=miss 5.6 ms
+warm  (KV hit):                                 states=hit median 1.1 ms  min 1  max 2
+cold − warm median: 3.6 ms
+
+## through the front (http://127.0.0.1:8787), one hop more
+plane: crate "ambient-melodic-techno-neoclassical-2006-2026" · id 627110 · release payload 1570 B
+cold  (?cache=cold, R2 read + whole-tray parse): states=bypass median 5.9 ms  min 5.5  max 8.5
+miss  (first request under a fresh ?run=): state=miss 7.7 ms
+warm  (KV hit):                                 states=hit median 2.3 ms  min 1.9  max 2.6
+cold − warm median: 3.6 ms
+
+Tray sizes (wc -c): crate details.json 967,527 B; fixture details.json 345,236 B.

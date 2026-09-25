@@ -321,6 +321,25 @@ describe("beacon collector (ADR-0001 §8)", () => {
     expect((await get("/api/beacon")).status).toBe(405);
   });
 
+  // A missing or non-numeric value used to be written as a fabricated 0
+  // (workers-hardening, 2026-09-25); the in-process leg in workers/edge/test
+  // asserts nothing reaches the dataset — this is the HTTP half on the plane.
+  it("rejects an event whose value is missing or not a finite number, naming the field", async () => {
+    for (const [label, body] of [
+      ["absent", { name: fullEvent.name, tags: fullEvent.tags }],
+      ["a string", { ...fullEvent, value: "1234.5" }],
+      ["null", { ...fullEvent, value: null }],
+    ] as const) {
+      const res = await get("/api/beacon", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(res.status, `value ${label} must 400`).toBe(400);
+      expect(await res.text()).toContain("value");
+    }
+  });
+
   // The ROSTER (security floor, 2026-09-18): `variant` is the Analytics
   // Engine index — the sampling key — and any string used to become one.
   // Off-roster values are a 400 naming the tag, and the suite's own

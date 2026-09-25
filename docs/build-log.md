@@ -7916,3 +7916,232 @@ Free plan; the PDP `not-found.tsx` and `lib/plp-error.tsx` docblocks; the
 bench runner's uncapped CDP `send()`; the two post-deploy smokes that failed
 on one qwik stepper assertion; the deployed plane's compressed header bytes;
 addendum O's `transferSize` wording; unit 10's Rob-gated items.
+
+### The gate that nothing re-proved, and the plane no one had typed (2026-09-25)
+
+The 2026-08-29 audit put this fifth and gave it no ordering: two structural
+gaps in the part of the repo a sceptical reviewer reads first when the claim
+is "staff-level". Every package is strict TypeScript, and the entire workers
+plane — 4,289 lines across three deployed Workers (`wc -l`), the blog's
+auth, session, CSRF and SQL code among them — was plain JS with no
+`@ts-check`, no JSDoc types, no typecheck task, and no record of why the
+boundary sat there, while `packages/reference/render/lib.mjs` documents its
+own `.mjs` choice in its header. And the anti-rigging publication gate in
+`workers/front/build.mjs` — 55 throw sites by `grep -c 'throw new Error'`
+(the audit counted 54; the tree grew one) — was enforced only by the
+one-time sabotage proofs the decision map records. Nothing re-proved a
+single refusal fired, and the file's own history holds the failure class:
+a guard was REMOVED once because "an unfireable guard advertises coverage
+it lacks". A refactor that inverted one condition shipped silently. Three
+lines came along: the beacon collector's missing-value coercion to 0, the
+blog escaper's skipped single quote, and the cold PDP read that parses the
+whole details tray per request. The decision is ADR-0004's addendum of this
+date; this is the account.
+
+**The gate first, because its refactor is the one that can lie.** The
+refusal set moved verbatim into `workers/front/lab/publish.mjs` — pure, no
+filesystem, no `node:` import; the renderer and the hash arrive as
+dependencies — leaving `build.mjs` a 603-line composer that reads files,
+hands them to the gate and writes what it admits (1,310 lines before). 47
+throws moved; the 8 that are about the HOME PAGE's composition (a malformed
+manifest field, the default profile's cells, a `%%` marker left in a
+template) stayed; 47 + 8 = 55. What says the refactor changed nothing is a
+diff, not a reading: the front dist built on the clean tree was copied
+aside before a line moved, and the dist built after is BYTE-IDENTICAL to
+it across its twenty files (`diff -r`, with `build.json` and the
+how-it-was-built page excluded because the working tree's dirty flag is
+the only thing that differs in them), and so is the generated
+`lab-bundles.js` the Worker imports.
+
+**Then the fixtures, one per refusal class, and the three ways the suite
+cannot pass over nothing.** Thirty hand-written malformed receipts would
+drift from each other and from the runner's shape, so there is one VALID
+receipt — the PDP surface, four registered variants, three runs per column,
+every field a real receipt carries — and a table of 52 rows
+(`CASES.length`), each the mutation of one field AND the regex the refusal
+must throw, on one line, beside its throw site's name. Three runs, not one,
+so a median can honestly hide a stray run (a run that captured nothing
+behind a median that agrees is the mechanism two classes are about) while
+the fixture stays the true median of its own runs. The generator writes 45
+files (36 receipts, 9 chrome constants; 1.3 MB on disk, 61 KB gzipped,
+`linguist-generated` so GitHub folds them in review) and a leg holds the
+committed files byte-identical to what it produces — a fixture edited by
+hand into something the table does not describe is a red test. The suite
+drives every row through the REAL registry, the real `FIT` and the real
+`fencedPathOf`: template refusals mutate `FIT.pdp` inline (a template is
+code); batch refusals pair a mutated second profile with the valid one; the
+chrome-constant rows run against a stand-in renderer whose fragment the
+valid constant's sha256 was minted from, so the identity gate is proven
+against a known fragment; the band rule is asserted as the outcome it is
+(`bandsOverlap: true`, no sentence, the interaction figure still on the
+bundle — addendum R's category fix). Non-vacuity: the table is not empty
+and the on-disk set equals it in both directions; every `throw new Error(`
+in the module — the count READ from its source, never typed — is named by a
+row; and the CONTROL rows that must pass: the valid fixtures admit and
+publish a sentence with bands, and the three receipts the plane actually
+publishes admit through the very call `build.mjs` makes. The first run of
+the suite caught its own table: a batch-shape row whose mutation had become
+a no-op when the base moved from two runs to three passed instead of
+throwing, which is exactly the check a row exists to make. The runner's own
+Zod schema holds the fixtures to the receipt contract in
+`tools/bench-runner` (37 legs); three rows are flagged as deliberate schema
+refusals and asserted to fail it. Stated limit: Zod strips unknown keys, so
+an INVENTED field is not caught there — the real-receipt control and the
+gate's own typedef are what hold field names.
+
+**The typecheck, and what it cost to turn on.** Before a line was annotated:
+99 errors on edge, 56 of them inside `packages/reference/render/plp-query.mjs`
+— the spec's own query module the edge Worker serves, pulled into the
+program by its import; 20 on front; 427 on blog, 132 of them in the
+CodeMirror editor bundle. `checkJs` sits in each Worker's `tsconfig.json`
+rather than as a per-file pragma, deliberately: a declaration that can be
+omitted is an opt-out, and a new file must not be able to skip the check by
+forgetting a line — a sabotage row proves a pragma-less new file with an
+implicit-any parameter fails. Runtime and binding types are wrangler's own,
+generated by each `typecheck` script (`wrangler types cloudflare-env.d.ts
+&& tsc --noEmit`) and gitignored; the react-next precedent commits its
+generated file, 13,000 lines of it, and was not followed. The blog's
+browser code is a second target under the DOM lib. The types are JSDoc at
+the seams: D1 rows cast to the row their SQL selects, the committed
+migrations column for column; every request body read as `Record<string,
+unknown>` and checked field by field; result unions where the routes used
+to check `.ok` by convention. `plp-query.mjs` gained typedefs for the tray
+and the query, so the Worker's calls are checked against the spec's own
+signatures. `pnpm run check` grows 36 → 40, derived: the three typechecks
+plus `@pm/front#build`, which the front's typecheck depends on because it
+imports the generated `lab-bundles.js` (the astro precedent, the same
+ts(2307) on a fresh checkout; verified by deleting the directory, both with
+and without the dependency).
+
+**Three findings the check made, priced against the rule.** The fit
+declaration `workers/front/lab/fit.d.mts` — the file a TypeScript consumer
+reads the templates through, whose own header names the "second copy of
+the shape" hazard — lacked `interactionId`, a field the template set and
+the build read since 2026-08-28; `fit.mjs` is held to its declaration with
+`@type` now, and a sabotage row removes the field again. The edge Worker's
+PLP handler returned `serveData`'s `Response | null` straight through where
+the route promised a `Response`; the null branch cannot happen today
+(`applyPlpQuery` always returns a page) and is a throw now rather than a
+cast, so a future compute that can return null meets a 500 instead of a
+null response. The blog's `savePost` accepted a number into a TEXT column
+through a hand-made PUT — the editor never sends one — and drops it now with
+the file's own warning shape, the model its comment already states. None
+moved a served byte.
+
+**The three lines.** The collector answers 400 `value must be a finite
+number` for an absent, null, string, NaN or infinite value and writes
+nothing; before, `doubles: [finite ? value : 0]` recorded a fabricated 0 —
+a dashboard row that never happened, and a p75 over a row of zeros is a
+lie that looks like a finding. The unit legs assert the DATASET through a
+recording stub, with a CONTROL that a measured 0 still writes as 0 (CLS on a
+still page is a real zero), and a suite leg is the HTTP half. The prompt's
+cite drifted: `grep -n 'Number('` finds only the PDP id parse; the coercion
+was the ternary. The escaper handles its fifth character (`'` → `&#39;`) as
+the repo's six others do (`grep -l '&#39;'` over the seven files: 6 before,
+7 after); every call site was in a double-quoted attribute or text (`grep
+-rnE "='[^']*\$\{"` over `workers/blog/src`: nothing), so this is defence in
+depth, not a fix for an exposure, and the record says so. The cold PDP read
+is RECORDED, not indexed, and the comment in `handlePdp` says which and why:
+an index written at seed time (`snapshot/details/{id}.json`) is one small R2
+read per cold request, but every plane has to be re-seeded before the Worker
+can read it, the deployed bucket's re-seed is a credentialed manual step
+(workers/README.md), and until it ran every cold PDP read would answer 404.
+The parse is bounded — one R2 read plus one JSON parse per `?cache=cold` or
+per first request under a `?run=` nonce — and off the published path: the
+warm column never reaches R2, and the PDP's request-time variants fetch
+their tray server-side without forwarding the knob (`measurement-pass`), so
+no published PDP cell is priced by it. Its cost is measured below rather
+than estimated.
+
+**Verification.** In the standing order, on the tree as it stood before
+the verify-slice pass; the final pair is below.
+
+**`pnpm run check`:** 40 of 40, derived — 36 on main, plus the three
+Worker typechecks and `@pm/front#build`, which the front's typecheck now
+depends on.
+
+**The origin suite, alone.** The machine carried load 3–5 and nothing of
+this session's. Fixture-1 ran 669 of 670: the one failure was the bench
+leg's INP beacon arriving null on a `body-click` run, the pre-existing
+flake class issue #16 carries and unit 7 met on its crate-3, in a file this
+unit does not touch; no crash marker, no refused connection. Re-run before
+belief: fixture-2 **670 of 670** in 143.8 s, then crate-1 **670 of 670** in
+143.8 s, zero refused connections, the front log carrying the recorded
+eight `chrome-slot-count` 404 shapes and nothing else, no leftover process
+after either teardown (`docs/prototypes/workers-hardening/suite-runs-2026-09-25.md`).
+The one new leg is the beacon value's HTTP half (669 → 670).
+
+**The sabotage table** (`docs/prototypes/workers-hardening/sabotage-2026-09-25.md`,
+every row with its exit code). Round 1, before verify-slice: 27 rows —
+22 caught, 5 controls passed as designed, 0 missed. The rows that carry the
+unit's claims: the prompt's "Done means" typo — `updated_at` renamed to
+`updatedAt` in `savePost`'s return — fails the blog typecheck; an inverted or
+removed refusal in each gate function fails its own fixture (the dirty-tree
+check inverted, the cross-tree check removed, the constant-spread
+comparison flipped, the batch-SHA check removed, the chrome-constant
+identity gate inverted, the unattested-origin refusal removed); a new
+refusal with no row fails the throw-site count; a fixture deleted, a
+fixture hand-edited and a row deleted each fail the set-equality legs; a
+row's mutation made a no-op fails its own expectation; the composer
+skipping `assertBatchIntegrity` fails the calls leg; a binding-name typo
+(`env.WARN`) fails the edge typecheck; `generated/` deleted fails `tsc` run
+bare with ts(2307) and passes through turbo because the build runs first;
+the fit-declaration drift re-created fails the front typecheck, as does a
+field the declaration lacks; a pragma-less new edge file with an
+implicit-any parameter fails; the beacon coercion restored fails the
+dataset legs; the escaper's quote dropped fails the unit leg; a
+schema-required field removed fails the runner's schema leg. One row did
+not run: the invented-field case (expected MISSED, because Zod strips
+unknown keys) tripped on its own edit anchor, and runs in round 2 with its
+expected verdict written first.
+
+**The cold read, measured rather than estimated.** On a held crate plane
+the edge Worker answered `?cache=cold` for one release in a median 4.7–4.9
+ms and a KV hit in 1.0–1.1 ms (ten of each, two runs), so the whole-tray
+read and parse — 967,527 bytes to serve 1,570 — costs about 3.6–3.8 ms per
+cold request on this machine; through the front the delta is the same
+(5.9 against 2.3). The deployed plane's R2 read has network in it that the
+local emulation does not, which the indexed alternative would pay too; the
+parse is the part an index would remove, and it is under four
+milliseconds on a request no published cell prices. Recorded in the
+handler and here; not indexed, for the reasons above. The collector on the
+same plane: 400 naming `value` for an absent, null or string value; 204
+for `0` and for `1234.5`.
+
+**verify-slice — in flight at this commit, stated rather than waited for.**
+The four lenses were launched after round 1, so no lens read a sabotaged
+file, and were still running when this commit was cut: Rob asked for the
+unit to merge ahead of the pass so unit 9 could start in another worktree.
+Nothing above is a claim about the pass. Its findings, the round-2 sabotage
+over whatever it changes, and the final fixture and crate runs on the
+finished tree land in the completing commit, which rewrites this section —
+and until then the runs recorded here verify THIS tree, not that one. The
+node in the decision map says the same, in its status line.
+
+**The ceiling this entry crossed, re-observed rather than guessed.** The
+how-it-was-built master links each build-log phase by line
+(`?plain=1#L<n>`), and `how-built-links-resolve.test.ts` pins the size at
+which GitHub's code view was OBSERVED to honour that — 512 KiB, from a
+2026-09-02 observation at 412,355 B. This entry took the file to 533,209
+B and the leg went red, as designed. So the branch was pushed and a real
+Chromium (the origin suite's Playwright build, headless) opened the code
+view at two anchors, a phase heading at L4342 and this entry's own heading
+at L7920: GitHub's header read "8132 lines (7399 loc) · 521 KB", both
+lines present reading their headings, both highlighted, no "too large"
+notice. The observation is recorded beside the first in the test and the
+ceiling raised to 640 KiB with the same headroom the first pin used; the
+script, its two observation lines verbatim and one screenshot sit in the
+unit's record directory.
+
+**What this leaves.** The `harness.quiescence` gate — the measurement
+pass's, landing with the receipts that satisfy it; when it does, it is one
+more row and one more throw site the count leg demands. The fixtures'
+1.3 MB on disk, chosen over a leaner gate-shaped fixture so the runner's
+own schema can hold them. For Rob, carried forward unchanged: whether
+`pm-warm` is on the Free plan; the PDP `not-found.tsx` and
+`lib/plp-error.tsx` docblocks; the bench runner's uncapped CDP `send()`;
+the two post-deploy smokes that failed on one qwik stepper assertion; the
+deployed plane's compressed header bytes; addendum O's `transferSize`
+wording; the checkout fit template and its `interactionFetch` declaration;
+the cart line list's missing `tabindex`; wrangler 4.110's crashes under
+load (none today); unit 10's Rob-gated items.

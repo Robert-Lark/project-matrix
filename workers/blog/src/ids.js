@@ -8,12 +8,12 @@ export function newId() {
   let ms = Date.now();
   let time = "";
   for (let i = 0; i < 9; i += 1) {
-    time = ALPHABET[ms % 32] + time;
+    time = /** @type {string} */ (ALPHABET[ms % 32]) + time;
     ms = Math.floor(ms / 32);
   }
   const rand = crypto.getRandomValues(new Uint8Array(10));
   let tail = "";
-  for (const byte of rand) tail += ALPHABET[byte % 32];
+  for (const byte of rand) tail += /** @type {string} */ (ALPHABET[byte % 32]);
   return time + tail;
 }
 
@@ -24,6 +24,7 @@ export function newToken() {
   return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
+/** @param {string} text */
 export async function sha256Hex(text) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");

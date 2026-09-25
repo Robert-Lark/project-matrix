@@ -16,6 +16,15 @@ export interface FitSpec {
   metric: string;
   /** What the surface's scripted interaction is DECLARED to cost on the wire. */
   interactionFetch: "none" | { kind: "constant"; toleranceBytes: number };
+  /**
+   * The registry id of the ONE interaction this surface's batch may be
+   * driven by (ADR-0001 addendum T). Missing from this declaration from
+   * 2026-08-28 until the workers-hardening unit checked fit.mjs against it
+   * (2026-09-25): the template set it, the build read it, and the d.mts —
+   * a second copy of the shape — said nothing. Now fit.mjs is held to this
+   * interface by `tsc --checkJs`, so the two cannot drift again.
+   */
+  interactionId: string;
   /** Whether the surface's INP row publishes, and why not when it doesn't. */
   interactionTiming: { publish: true } | { publish: false; reason: string };
   /** The EXACT variant set the sentence names. */

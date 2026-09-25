@@ -15,14 +15,17 @@ const CRC_TABLE = (() => {
   return table;
 })();
 
+/** @param {Uint8Array} bytes */
 export function crc32(bytes) {
   let crc = 0xffffffff;
-  for (let i = 0; i < bytes.length; i += 1) {
-    crc = CRC_TABLE[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+  for (const byte of bytes) {
+    // `& 0xff` keeps the index inside the 256-entry table.
+    crc = /** @type {number} */ (CRC_TABLE[(crc ^ byte) & 0xff]) ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+/** @param {Date} date */
 function dosDateTime(date) {
   // DOS timestamps have no zone; encode UTC so the export is deterministic.
   const time =
@@ -36,12 +39,18 @@ function dosDateTime(date) {
   return { time, day };
 }
 
-// entries: [{ name: string, data: string | Uint8Array, mtime?: Date }]
-// Returns the complete archive as one Uint8Array.
+/** @typedef {{ name: string, data: string | Uint8Array, mtime?: Date }} ZipEntry */
+/**
+ * Returns the complete archive as one Uint8Array.
+ * @param {readonly ZipEntry[]} entries
+ * @param {{ now?: Date }} [options]
+ */
 export function zipStore(entries, { now = new Date() } = {}) {
   if (entries.length > 0xffff) throw new Error("zip: too many entries");
   const encoder = new TextEncoder();
+  /** @type {Uint8Array[]} */
   const locals = [];
+  /** @type {Uint8Array[]} */
   const centrals = [];
   let offset = 0;
 

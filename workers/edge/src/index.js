@@ -71,13 +71,22 @@ import {
 // bundles it like any module.
 import {
   PLP_FACET_PARAMS,
-  PLP_SORTS,
   PLP_TRAY_VERSION,
   applyPlpQuery,
   clampPage,
   facetValueSets,
+  isPlpSort,
   normalizeQ,
 } from "@pm/reference/render/plp-query.mjs";
+
+// Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25):
+// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts —
+// WARM, SNAPSHOT, BEACONS), the tray shapes are the query module's own
+// typedefs, and the beacon contract is @pm/measurement's.
+/** @typedef {import("@pm/reference/render/plp-query.mjs").PlpQuery} PlpQuery */
+/** @typedef {import("@pm/reference/render/plp-query.mjs").PlpSummary} PlpSummary */
+/** @typedef {import("@pm/reference/render/plp-query.mjs").PlpPage} PlpPage */
+/** @typedef {import("@pm/measurement").BeaconTags} BeaconTags */
 
 const SNAPSHOT_KEYS = {
   manifest: "snapshot/manifest.json",
@@ -86,12 +95,14 @@ const SNAPSHOT_KEYS = {
 };
 const MAX_TAG_BYTES = 96; // AE index limit; verified against workerd source
 
+/** @param {"info" | "error"} level @param {string} event @param {Record<string, unknown>} fields */
 function log(level, event, fields) {
   const line = JSON.stringify({ level, worker: "pm-edge", event, ...fields });
   if (level === "error") console.error(line);
   else console.log(line);
 }
 
+/** @param {unknown} body @param {number} status @param {Record<string, string>} [extraHeaders] */
 function json(body, status, extraHeaders) {
   return new Response(JSON.stringify(body), {
     status,
@@ -104,6 +115,8 @@ function json(body, status, extraHeaders) {
  * part of the warm key, so a suite/bench run can mint fresh cache state
  * without touching other runs'. Malformed values are ignored (treated as the
  * junk params they are).
+ * @param {URL} url
+ * @returns {string}
  */
 function runKnob(url) {
   const run = url.searchParams.get("run") ?? "";
@@ -121,6 +134,13 @@ function runKnob(url) {
  * has been read; the lookup above it stays a single KV read, and an
  * uncacheable condition can never HIT because it is never written. Such a
  * response carries `x-pm-cache-state: none`: it is not a warm-tier resource.
+ * @template T
+ * @param {URL} url
+ * @param {Env} env
+ * @param {string} key
+ * @param {() => Promise<T | null>} compute
+ * @param {{ cacheable?: (payload: T) => boolean, tiered?: boolean }} [options]
+ * @returns {Promise<Response | null>}
  */
 async function serveData(url, env, key, compute, { cacheable = () => true, tiered = true } = {}) {
   const bypass = url.searchParams.get("cache") === "cold";
@@ -159,6 +179,10 @@ async function serveData(url, env, key, compute, { cacheable = () => true, tiere
   });
 }
 
+/** A tray from R2, parsed. The caller names the shape it expects — the
+ *  frozen snapshot is the contract's (ADR-0002), and the guards that hold
+ *  it to that contract are the capture tool's, not this Worker's.
+ *  @param {Env} env @param {string} key @returns {Promise<unknown>} */
 async function readSnapshot(env, key) {
   const obj = await env.SNAPSHOT.get(key);
   if (!obj) throw new Error(`snapshot object missing from R2: ${key}`);
@@ -183,6 +207,7 @@ const FACET_VALUE_ENCODED_MAX = 96;
  *  them handed `WARM.get` a 613-byte key — KV refuses keys over 512 bytes on
  *  GET as well as PUT, so a junk URL answered 500 where the policy promises
  *  400 (verify-slice, 2026-09-18). `v=` is the two-character prefix. */
+/** @param {string} value */
 const formEncodedLength = (value) => new URLSearchParams({ v: value }).toString().length - 2;
 
 /** KV's key limit (developers.cloudflare.com/kv/platform/limits/: "512
@@ -197,10 +222,13 @@ const KV_KEY_MAX_BYTES = 512;
  * ABSENT, not junk: `?sort=` and `?q=` are what a GET form submits for an
  * untouched select and an empty search box. Facet VALUES are validated later,
  * against the snapshot (`validateFacets`); here only their length is.
+ * @param {URL} url
+ * @returns {PlpQuery}
  */
 function plpQuery(url) {
   const n = clampN(url.searchParams.get("n"));
   const page = clampPage(url.searchParams.get("page"));
+  /** @type {PlpQuery} */
   const query = { n, page, genre: null, style: null, format: null, sort: null, q: null };
   for (const param of PLP_FACET_PARAMS) {
     const raw = url.searchParams.get(param);
@@ -212,14 +240,15 @@ function plpQuery(url) {
   }
   const sort = url.searchParams.get("sort");
   if (sort !== null && sort !== "") {
-    if (!PLP_SORTS.includes(sort)) throw new BadRequest("unknown sort");
+    if (!isPlpSort(sort)) throw new BadRequest("unknown sort");
     query.sort = sort;
   }
   query.q = normalizeQ(url.searchParams.get("q"));
   return query;
 }
 
-/** Exact-match validation against what the snapshot actually holds. */
+/** Exact-match validation against what the snapshot actually holds.
+ *  @param {PlpQuery} query @param {readonly PlpSummary[]} summaries */
 function validateFacets(query, summaries) {
   const sets = facetValueSets(summaries);
   for (const param of PLP_FACET_PARAMS) {
@@ -235,7 +264,8 @@ function validateFacets(query, summaries) {
  *  (plp-query.mjs PLP_TRAY_VERSION): a shape change under a kept prefix
  *  would serve pre-deploy entries the renderers cannot read — un-nonced
  *  entries never expire, so a prefix bump is the only mechanism that
- *  retires them. */
+ *  retires them.
+ *  @param {PlpQuery} query @param {string} run */
 function plpKey(query, run) {
   const params = new URLSearchParams();
   params.set("n", String(query.n));
@@ -248,7 +278,9 @@ function plpKey(query, run) {
   return `v${PLP_TRAY_VERSION}:/api/plp?${params.toString()}`;
 }
 
+/** @param {URL} url @param {Env} env @returns {Promise<Response>} */
 async function handlePlp(url, env) {
+  /** @type {PlpQuery} */
   let query;
   try {
     query = plpQuery(url);
@@ -267,12 +299,14 @@ async function handlePlp(url, env) {
   }
 
   try {
-    return await serveData(
+    const served = await serveData(
       url,
       env,
       key,
       async () => {
-        const summaries = await readSnapshot(env, SNAPSHOT_KEYS.summaries);
+        const summaries = /** @type {PlpSummary[]} */ (
+          await readSnapshot(env, SNAPSHOT_KEYS.summaries)
+        );
         validateFacets(query, summaries);
         return applyPlpQuery(summaries, query);
       },
@@ -283,9 +317,17 @@ async function handlePlp(url, env) {
         // what the tier does and what RUM says it did cannot disagree. A
         // page past the end is known only after compute.
         tiered: plpWarmable(url.searchParams),
+        /** @param {PlpPage} p */
         cacheable: (p) => p.page <= p.totalPages,
       },
     );
+    // `serveData` answers null only for a null compute, and `applyPlpQuery`
+    // always returns a page (an empty condition is the honest empty page,
+    // never not-found) — stated as a throw rather than a cast, so a future
+    // compute that CAN return null meets a 500 here instead of a null
+    // response (found by the typecheck, workers-hardening 2026-09-25).
+    if (served === null) throw new Error("plp: compute returned null for a condition that always has a page");
+    return served;
   } catch (err) {
     if (err instanceof BadRequest) {
       return json({ error: err.message }, 400, { "x-pm-cache-state": "none" });
@@ -294,6 +336,7 @@ async function handlePlp(url, env) {
   }
 }
 
+/** @param {URL} url @param {Env} env @param {string} rawId */
 async function handlePdp(url, env, rawId) {
   if (!/^\d{1,15}$/.test(rawId)) {
     return json({ error: "release id must be numeric" }, 400, {
@@ -304,8 +347,29 @@ async function handlePdp(url, env, rawId) {
   const run = runKnob(url);
   const key = `v1:/api/pdp/${id}${run ? `?run=${run}` : ""}`;
 
+  // KNOWN COST, recorded rather than removed (workers-hardening, 2026-09-25;
+  // 2026-08-29 audit priority 5, task 3): a cold read — `?cache=cold`, or
+  // the first request for an id under a `?run=` nonce — fetches and parses
+  // the WHOLE details tray from R2 to serve one release: 967,527 B on the
+  // crate, 345,236 B on the fixture (`wc -c` on the committed trays). The
+  // alternative is a per-release object written at seed time
+  // (`snapshot/details/{id}.json`, seed-local.mjs), which is one small R2
+  // read per cold request instead — but every plane must be re-seeded
+  // before the Worker can read it, the deployed bucket's re-seed is a
+  // credentialed manual step (workers/README.md), and until it ran every
+  // cold PDP read would answer 404. Left as it is because the cost is
+  // bounded and off the published path: the warm column never reaches R2
+  // (a KV hit returns above), the PDP's request-time variants fetch their
+  // tray server-side without forwarding `?cache=` (decision map,
+  // measurement-pass), so no published PDP cell is priced by this parse.
+  // Measured on the local plane 2026-09-25 (the decision-map node carries
+  // the numbers): the cold read's server time against a warm hit's.
   const response = await serveData(url, env, key, async () => {
-    const details = await readSnapshot(env, SNAPSHOT_KEYS.details);
+    // The detail tray: the Worker reads one field of it (`id`) and serves
+    // the element whole; its shape is the contract's (ADR-0002 §6).
+    const details = /** @type {{ id: number }[]} */ (
+      await readSnapshot(env, SNAPSHOT_KEYS.details)
+    );
     return details.find((d) => d.id === id) ?? null;
   });
   return (
@@ -314,6 +378,7 @@ async function handlePdp(url, env, rawId) {
   );
 }
 
+/** @param {Env} env */
 async function handleSnapshot(env) {
   // Provenance, not measurement (ADR-0002 §1): the dated SnapshotManifest
   // names which frozen snapshot this plane serves. The origin suite reads it
@@ -327,6 +392,7 @@ async function handleSnapshot(env) {
   });
 }
 
+/** @param {URL} url @param {Env} env */
 async function handleImage(url, env) {
   // /assets/img/x.avif → R2 key assets/img/x.avif (the contract's image
   // paths ARE the R2 keys). Deliberately not warm-tier cached: the cache
@@ -344,19 +410,40 @@ async function handleImage(url, env) {
   });
 }
 
+/** @param {Request} request @param {Env} env */
 async function handleBeacon(request, env) {
+  // Untrusted JSON: every field is checked before it is read as a type.
+  /** @type {{ name?: unknown, value?: unknown, tags?: unknown }} */
   let event;
   try {
-    event = await request.json();
+    event = /** @type {typeof event} */ (await request.json());
   } catch {
     return json({ error: "body must be JSON" }, 400);
   }
-  const tags = event?.tags ?? {};
-  const missing = BEACON_TAG_KEYS.filter(
-    (t) => typeof tags[t] !== "string" || tags[t].length === 0,
+  const rawTags = /** @type {Record<string, unknown>} */ (
+    event !== null && typeof event === "object" && event.tags !== null && typeof event.tags === "object"
+      ? event.tags
+      : {}
   );
+  const missing = BEACON_TAG_KEYS.filter((t) => {
+    const v = rawTags[t];
+    return typeof v !== "string" || v.length === 0;
+  });
   if (missing.length > 0) {
     return json({ error: `missing required tags: ${missing.join(", ")}` }, 400);
+  }
+  // Every key is a non-empty string from here on — proven by the filter.
+  const tags = /** @type {BeaconTags} */ (rawTags);
+  // The VALUE is required and must be a finite number (workers-hardening,
+  // 2026-09-25; 2026-08-29 audit priority 5, task 3). Until this check the
+  // write below coerced a missing, null, NaN or non-numeric value to 0 and
+  // recorded the point — a fabricated 0 ms LCP is a lie in a dashboard, and
+  // a dashboard's p75 over a row of zeros is a lie that looks like a
+  // finding. The measurement client always sends the metric's own number
+  // (packages/measurement/src/client.ts), so a real beacon never meets this;
+  // a hand-made one does, and gets the 400 that names the field.
+  if (typeof event.value !== "number" || !Number.isFinite(event.value)) {
+    return json({ error: "value must be a finite number" }, 400);
   }
   // The ROSTER (security floor, 2026-09-18; @pm/measurement). `variant` is
   // the AE index — the sampling key — and `surface` the first blob every
@@ -379,6 +466,7 @@ async function handleBeacon(request, env) {
   // production 500 the local no-op emulation can't catch.
   const encoder = new TextEncoder();
   const name = typeof event.name === "string" ? event.name : "";
+  /** @type {string[]} */
   const oversized = BEACON_TAG_KEYS.filter(
     (t) => encoder.encode(tags[t]).length > MAX_TAG_BYTES,
   );
@@ -407,12 +495,13 @@ async function handleBeacon(request, env) {
       tags.location,
       name,
     ],
-    doubles: [typeof event.value === "number" && Number.isFinite(event.value) ? event.value : 0],
+    doubles: [event.value],
   });
   return new Response(null, { status: 204 });
 }
 
-/** Path-first routing: a known resource with a wrong method is a 405, not a 404. */
+/** Path-first routing: a known resource with a wrong method is a 405, not a 404.
+ *  @param {Request} request @param {readonly string[]} allowed */
 function methodGate(request, allowed) {
   if (allowed.includes(request.method)) return null;
   return json(
@@ -423,6 +512,7 @@ function methodGate(request, allowed) {
 }
 
 export default {
+  /** @param {Request} request @param {Env} env */
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
@@ -432,10 +522,9 @@ export default {
 
       const pdpMatch = url.pathname.match(/^\/api\/pdp\/([^/]+)$/);
       if (pdpMatch) {
-        return (
-          methodGate(request, ["GET", "HEAD"]) ??
-          (await handlePdp(url, env, pdpMatch[1]))
-        );
+        // One capture group, so a match always carries it.
+        const rawId = /** @type {string} */ (pdpMatch[1]);
+        return methodGate(request, ["GET", "HEAD"]) ?? (await handlePdp(url, env, rawId));
       }
 
       if (url.pathname === "/api/snapshot") {
@@ -455,8 +544,8 @@ export default {
       // Generic message out; details server-side only (security.md).
       log("error", "unhandled", {
         path: url.pathname,
-        message: err.message,
-        stack: err.stack,
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
       });
       return json({ error: "internal error" }, 500);
     }

@@ -6,10 +6,14 @@
 
 import { esc } from "../html.js";
 
+/** @typedef {import("../db.js").PostRow} PostRow */
+
+/** @param {unknown} value */
 function jsonForHtml(value) {
   return JSON.stringify(value).replaceAll("<", "\\u003c");
 }
 
+/** @param {{ title: string, body: string, csrf?: string | null, script?: string | null }} page */
 function shell({ title, body, csrf = null, script = null }) {
   return `<!doctype html>
 <html lang="en">
@@ -28,6 +32,7 @@ ${script ? `  <script type="module" src="${script}"></script>` : ""}
 `;
 }
 
+/** @param {{ error?: string | null }} [options] */
 export function loginPage({ error = null } = {}) {
   return shell({
     title: "Sign in",
@@ -48,21 +53,27 @@ const KINDS = ["essay", "photo", "note", "link"];
 const HEADER_STYLES = ["standard", "display", "photo-hero", "bare"];
 const MOODS = ["default", "quiet", "loud"];
 
+/** @type {Readonly<Record<string, string>>} */
+const KIND_LABEL = { essay: "Essay", photo: "Photo", note: "Note", link: "Link" };
+/** @param {string} kind */
 function kindLabel(kind) {
-  return { essay: "Essay", photo: "Photo", note: "Note", link: "Link" }[kind] ?? kind;
+  return KIND_LABEL[kind] ?? kind;
 }
 
+/** @param {PostRow} post */
 function rowTitle(post) {
   if (post.title) return post.title;
   const opener = (post.body_md || "").trim().split("\n")[0];
   return opener ? opener.slice(0, 80) : "(untitled)";
 }
 
+/** @param {string | null | undefined} text */
 function wordCount(text) {
   const words = (text ?? "").trim().split(/\s+/).filter(Boolean).length;
   return words;
 }
 
+/** @param {string} iso */
 function relTime(iso) {
   const seconds = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (seconds < 90) return "just now";
@@ -72,11 +83,13 @@ function relTime(iso) {
   return iso.slice(0, 10);
 }
 
+/** @param {{ posts: PostRow[], csrf: string }} view */
 export function dashboard({ posts, csrf }) {
   const drafts = posts.filter((p) => p.status === "draft");
   const published = posts.filter((p) => p.status === "published");
   const current = drafts[0] ?? null;
 
+  /** @param {PostRow[]} list */
   const rows = (list) =>
     list
       .map(
@@ -139,6 +152,7 @@ ${published.length ? `    <section>\n      <h2>Published <span class="count">${p
   });
 }
 
+/** @param {{ post: PostRow, csrf: string }} view */
 export function editorPage({ post, csrf }) {
   const tags = JSON.parse(post.tags || "[]").join(", ");
   const published = post.status === "published";

@@ -1,0 +1,6 @@
+# Re-observation of GitHub's code view honouring ?plain=1#L<n> — 2026-09-25
+# docs/build-log.md at commit 4514fef on branch workers-hardening, 533,209 B by wc -c.
+# Observed by observe-ceiling.mjs (Playwright Chromium 1234, headless, 1400x1000);
+# each line below is the script's own JSON output, verbatim.
+{"url":"https://github.com/Robert-Lark/project-matrix/blob/workers-hardening/docs/build-log.md?plain=1#L4342","header":"8132 lines (7399 loc) · 521 KB","linePresent":true,"rowText":"## Phase 15 — The instrument was the thing that was wrong (2026-08-28)","highlighted":true,"tooLarge":false,"title":"project-matrix/docs/build-log.md at workers-hardening · Robert-Lark/project-matrix · GitHub"}
+{"url":"https://github.com/Robert-Lark/project-matrix/blob/workers-hardening/docs/build-log.md?plain=1#L7920","header":"8132 lines (7399 loc) · 521 KB","linePresent":true,"rowText":"### The gate that nothing re-proved, and the plane no one had typed (2026-09-25)","highlighted":true,"tooLarge":false,"title":"project-matrix/docs/build-log.md at workers-hardening · Robert-Lark/project-matrix · GitHub"}

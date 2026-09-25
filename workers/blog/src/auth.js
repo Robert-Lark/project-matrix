@@ -16,6 +16,7 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+/** @param {number} ms */
 function plusMs(ms) {
   return new Date(Date.now() + ms).toISOString();
 }
@@ -27,6 +28,7 @@ function plusMs(ms) {
 // installs one with the same contract). It THROWS on a length mismatch, so
 // the length check first is load-bearing, not tidiness: a wrong-length token
 // must be `false`, never a 500.
+/** @param {string} a @param {string} b */
 function constantTimeEqual(a, b) {
   const enc = new TextEncoder();
   const bufA = enc.encode(a);
@@ -35,16 +37,23 @@ function constantTimeEqual(a, b) {
   return crypto.subtle.timingSafeEqual(bufA, bufB);
 }
 
+/** @param {Request} request */
 function clientBucket(request) {
   return request.headers.get("cf-connecting-ip") ?? "local";
 }
 
+/** @typedef {{ id_hash: string, csrf_token: string, created_at: string, expires_at: string, last_seen: string, ua: string }} SessionRow */
+/** @typedef {{ locked: true, ok?: undefined } | { ok: false, locked?: undefined } | { ok: true, setCookie: string, locked?: undefined }} LoginResult */
+
+/** @param {Env} env @param {Request} request */
 export async function checkLockout(env, request) {
-  const row = await env.DB.prepare(
-    "SELECT locked_until FROM login_attempts WHERE bucket = ?",
-  )
-    .bind(clientBucket(request))
-    .first();
+  const row = /** @type {{ locked_until: string | null } | null} */ (
+    await env.DB.prepare(
+      "SELECT locked_until FROM login_attempts WHERE bucket = ?",
+    )
+      .bind(clientBucket(request))
+      .first()
+  );
   return Boolean(row?.locked_until && row.locked_until > nowIso());
 }
 
@@ -66,6 +75,7 @@ export async function checkLockout(env, request) {
 // the lockout end-to-end on the plane's D1 but does NOT distinguish the two
 // statement shapes there: local D1 serialised the burst enough for the racy
 // code to reach the threshold too (sabotage 2026-09-18, three runs).
+/** @param {Env} env @param {Request} request */
 export async function recordFailure(env, request) {
   const now = nowIso();
   const windowFloor = new Date(Date.now() - WINDOW_MS).toISOString();
@@ -85,6 +95,7 @@ export async function recordFailure(env, request) {
     .run();
 }
 
+/** @param {Env} env @param {Request} request */
 async function clearFailures(env, request) {
   await env.DB.prepare("DELETE FROM login_attempts WHERE bucket = ?")
     .bind(clientBucket(request))
@@ -94,6 +105,7 @@ async function clearFailures(env, request) {
 // Returns a Set-Cookie value on success, null on failure. The submitted
 // credential is hashed and compared constant-time against the secret hash —
 // the credential itself exists nowhere on the server.
+/** @param {Env} env @param {Request} request @param {string} credential @returns {Promise<LoginResult>} */
 export async function login(env, request, credential) {
   if (await checkLockout(env, request)) return { locked: true };
   const submitted = await sha256Hex(credential ?? "");
@@ -122,6 +134,7 @@ export async function login(env, request, credential) {
   };
 }
 
+/** @param {Request} request @returns {string | null} */
 function cookieToken(request) {
   const header = request.headers.get("cookie") ?? "";
   for (const part of header.split(";")) {
@@ -134,15 +147,18 @@ function cookieToken(request) {
 // Valid session row or null; rolling renewal when under 15 days remain.
 // renew:false is for high-fan-out sub-requests (editor chunk loads) that
 // should not each fire a redundant renewal UPDATE.
+/** @param {Env} env @param {Request} request @param {{ renew?: boolean }} [options] @returns {Promise<SessionRow | null>} */
 export async function getSession(env, request, { renew = true } = {}) {
   const token = cookieToken(request);
   if (!token) return null;
   const idHash = await sha256Hex(token);
-  const session = await env.DB.prepare(
-    "SELECT * FROM sessions WHERE id_hash = ? AND expires_at > ?",
-  )
-    .bind(idHash, nowIso())
-    .first();
+  const session = /** @type {SessionRow | null} */ (
+    await env.DB.prepare(
+      "SELECT * FROM sessions WHERE id_hash = ? AND expires_at > ?",
+    )
+      .bind(idHash, nowIso())
+      .first()
+  );
   if (!session) return null;
   if (renew && session.expires_at < plusMs(RENEW_BELOW_DAYS * 86_400_000)) {
     await env.DB.prepare(
@@ -154,6 +170,7 @@ export async function getSession(env, request, { renew = true } = {}) {
   return session;
 }
 
+/** @param {Env} env @param {Request} request @returns {Promise<string>} the clearing Set-Cookie value */
 export async function logout(env, request) {
   const token = cookieToken(request);
   if (token) {
@@ -166,6 +183,7 @@ export async function logout(env, request) {
 
 // The stolen-cookie response (ADR-0009 §5 "revocable"): kill EVERY session,
 // every device, including this one.
+/** @param {Env} env @returns {Promise<string>} the clearing Set-Cookie value */
 export async function logoutAll(env) {
   await env.DB.prepare("DELETE FROM sessions").run();
   return `${COOKIE}=; Path=/blog; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
@@ -177,6 +195,7 @@ export async function logoutAll(env) {
 // a field instead — same bar, no JS required. The token is compared through
 // the same constant-time helper the credential uses (security floor,
 // 2026-09-18): one compare discipline for every secret the wall holds.
+/** @param {Request} request @param {SessionRow} session @param {string | null} [formToken] */
 export function csrfOk(request, session, formToken = null) {
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
