@@ -133,6 +133,19 @@
       // Verified by deleting the file and re-running, not reasoned about.
       "dependsOn": ["topo", "build"]
     },
+    "@pm/front#typecheck": {
+      // The front Worker's typecheck (workers-hardening, 2026-09-25) reads
+      // ../generated/lab-bundles.js — the module build.mjs GENERATES from
+      // the labBundle-flagged surfaces and gitignores — so, exactly like
+      // @pm/astro#typecheck above, it genuinely depends on this package's
+      // own build having run: a fresh checkout otherwise fails with
+      // ts(2307) "Cannot find module '../generated/lab-bundles.js'" — green
+      // on any machine that has ever built, red in CI's `check` job, which
+      // never builds first. `generated/**` is a declared output of the
+      // build, so a cache HIT restores it too. Verified by deleting the
+      // directory and re-running, not reasoned about.
+      "dependsOn": ["topo", "build"]
+    },
     "@pm/astro#test": {
       // The pre-merge master-identity guard (variants/astro/test) renders the
       // editorial document for BOTH snapshots and compares each against the

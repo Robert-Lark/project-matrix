@@ -10,6 +10,8 @@
     "deploy": "wrangler deploy",
     "migrate:local": "wrangler d1 migrations apply pm-blog --local",
     "migrate:remote": "wrangler d1 migrations apply pm-blog --remote",
+    "cf-typegen": "wrangler types cloudflare-env.d.ts",
+    "typecheck": "wrangler types cloudflare-env.d.ts && tsc --noEmit && tsc --noEmit -p tsconfig.browser.json",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -24,6 +26,7 @@
     "@lezer/highlight": "^1.2.3",
     "codemirror": "^6.0.2",
     "esbuild": "^0.28.1",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   },

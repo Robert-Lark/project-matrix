@@ -6,12 +6,22 @@
 // Admin pages add connect-src (autosave fetch) and frame-src 'self' (the
 // live preview iframe), and are never indexable.
 
+// The FIVE characters, like the repo's six other escapers (reference
+// lib.mjs, switcher chrome.ts, front tokens-source.mjs, the vanilla, htmx
+// and astro renderers). Until the workers-hardening unit (2026-09-25) this
+// one skipped the single quote; every call site was in a double-quoted
+// attribute or text content (audited 2026-08-29 and again 2026-09-25 —
+// no `='${…}'` in workers/blog/src), so nothing was exploitable, and it is
+// aligned as defense in depth: the next single-quoted attribute a template
+// grows is not a security review.
+/** @param {unknown} text */
 export function esc(text) {
   return String(text)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 const PUBLIC_CSP = [
@@ -38,6 +48,7 @@ const ADMIN_CSP = [
   "frame-ancestors 'none'",
 ].join("; ");
 
+/** @param {string} csp @returns {Record<string, string>} */
 function baseHeaders(csp) {
   return {
     "content-type": "text/html; charset=utf-8",
@@ -47,6 +58,8 @@ function baseHeaders(csp) {
   };
 }
 
+/** @typedef {{ status?: number, headers?: Record<string, string> }} ResponseOptions */
+/** @param {string} body @param {ResponseOptions} [options] */
 export function publicPage(body, { status = 200, headers = {} } = {}) {
   return new Response(body, {
     status,
@@ -54,6 +67,7 @@ export function publicPage(body, { status = 200, headers = {} } = {}) {
   });
 }
 
+/** @param {string} body @param {ResponseOptions} [options] */
 export function adminPage(body, { status = 200, headers = {} } = {}) {
   return new Response(body, {
     status,
@@ -66,6 +80,7 @@ export function adminPage(body, { status = 200, headers = {} } = {}) {
   });
 }
 
+/** @param {unknown} data @param {ResponseOptions} [options] */
 export function json(data, { status = 200, headers = {} } = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -78,6 +93,7 @@ export function json(data, { status = 200, headers = {} } = {}) {
   });
 }
 
+/** @param {string} location @param {Record<string, string>} [headers] */
 export function seeOther(location, headers = {}) {
   return new Response(null, { status: 303, headers: { location, ...headers } });
 }

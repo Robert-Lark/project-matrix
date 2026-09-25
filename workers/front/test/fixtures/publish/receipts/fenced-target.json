@@ -1,0 +1,669 @@
+{
+  "kind": "pm-bench-receipt",
+  "receiptVersion": 1,
+  "date": "2026-09-20T10:00:00.000Z",
+  "commit": {"sha": "b7e2c3d4e5f60718293a4b5c6d7e8f9012345678", "dirty": false},
+  "origin": "http://127.0.0.1:8787",
+  "originCommit": {"sha": "b7e2c3d4e5f60718293a4b5c6d7e8f9012345678", "dirty": false},
+  "runLocation": {"label": "local-dev", "source": "unpinned developer machine (fixture)"},
+  "profile": {
+    "id": "avg-broadband-desktop",
+    "specVersion": 1,
+    "applied": {
+      "mechanism": "cdp Network.emulateNetworkConditions + Emulation.setCPUThrottlingRate",
+      "latencyMs": 40,
+      "downloadBytesPerSec": 1250000,
+      "uploadBytesPerSec": 750000,
+      "cpuMultiplier": 1,
+      "viewport": {"width": 1366, "height": 768, "deviceScaleFactor": 1, "mobile": false}
+    }
+  },
+  "environment": {"n": 24, "runNonce": "fixture-avg-broadband-desktop"},
+  "runsPerUrl": 3,
+  "harness": {"browser": "chromium", "browserVersion": "fixture", "settleMs": 500, "quiescence": "in-flight-tracked"},
+  "methodNotes": [
+    "fixture receipt for the publication gate's refusal tests — never minted, never published"
+  ],
+  "targets": [
+    {
+      "path": "/vanilla/pdp/fixture-release/",
+      "variant": "vanilla",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "http://127.0.0.1:8787/vanilla/pdp/fixture-release/?run=fixture-avg-broadband-desktop&cache=cold",
+          "runs": [
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2010, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2010,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57110,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2020, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2020,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57120,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 57110,
+            "initialJsBytes": 2010,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 57110, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        },
+        "warm": {
+          "effectiveUrl": "http://127.0.0.1:8787/vanilla/pdp/fixture-release/?run=fixture-avg-broadband-desktop",
+          "runs": [
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2010, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2010,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57110,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 2020, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 2020,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 57120,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 57110,
+            "initialJsBytes": 2010,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 57110, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        }
+      }
+    },
+    {
+      "path": "/remix3/pdp/fixture-release/",
+      "variant": "react-next",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "http://127.0.0.1:8787/react-next/pdp/fixture-release/?run=fixture-avg-broadband-desktop&cache=cold",
+          "runs": [
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90200, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90200,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145300,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 145200,
+            "initialJsBytes": 90100,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 145200, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        },
+        "warm": {
+          "effectiveUrl": "http://127.0.0.1:8787/react-next/pdp/fixture-release/?run=fixture-avg-broadband-desktop",
+          "runs": [
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 90200, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 90200,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 145300,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 145200,
+            "initialJsBytes": 90100,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 145200, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        }
+      }
+    },
+    {
+      "path": "/astro/pdp/fixture-release/",
+      "variant": "astro",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "http://127.0.0.1:8787/astro/pdp/fixture-release/?run=fixture-avg-broadband-desktop&cache=cold",
+          "runs": [
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5050, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5050,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60150,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 60150,
+            "initialJsBytes": 5050,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 60150, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        },
+        "warm": {
+          "effectiveUrl": "http://127.0.0.1:8787/astro/pdp/fixture-release/?run=fixture-avg-broadband-desktop",
+          "runs": [
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5050, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5050,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60150,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 5100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 5100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 60200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 60150,
+            "initialJsBytes": 5050,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 60150, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        }
+      }
+    },
+    {
+      "path": "/qwik/pdp/fixture-release/",
+      "variant": "qwik",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "http://127.0.0.1:8787/qwik/pdp/fixture-release/?run=fixture-avg-broadband-desktop&cache=cold",
+          "runs": [
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "bypass",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20200, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20200,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75300,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 75200,
+            "initialJsBytes": 20100,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 75200, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        },
+        "warm": {
+          "effectiveUrl": "http://127.0.0.1:8787/qwik/pdp/fixture-release/?run=fixture-avg-broadband-desktop",
+          "runs": [
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70,
+                "serverMs": 50,
+                "raw": {"startTime": 0, "requestStart": 70, "responseStart": 120, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 120, "FCP": 280, "LCP": 440, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20000, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20000,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75100,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 71,
+                "serverMs": 51,
+                "raw": {"startTime": 0, "requestStart": 71, "responseStart": 122, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20100, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20100,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75200,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            },
+            {
+              "docCacheState": "hit",
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 72,
+                "serverMs": 52,
+                "raw": {"startTime": 0, "requestStart": 72, "responseStart": 124, "responseEnd": 140}
+              },
+              "webVitals": {"TTFB": 124, "FCP": 288, "LCP": 448, "CLS": 0, "INP": 24},
+              "kb": {
+                "buckets": {"html": 2500, "js": 20200, "css": 15000, "fonts": 28000, "images": 9600, "data": 0, "other": 0},
+                "initialJsBytes": 20200,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22000,
+                "totalBytes": 75300,
+                "docAttribution": {"estimator": "loo-wire-normalised", "codec": "zstd", "quality": 3, "calibrationTargetBytes": 5000, "calibrationTargetSource": "encoded-body", "calibrationResidualBytes": 0, "contentEncoding": "zstd"}
+              },
+              "requests": {"counted": 15, "instrumentation": 3}
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 71,
+            "ttfbServerMs": 51,
+            "webVitals": {"TTFB": 122, "FCP": 284, "LCP": 444, "CLS": 0, "INP": 24},
+            "totalBytes": 75200,
+            "initialJsBytes": 20100,
+            "interactionBytes": 25194,
+            "requests": 15
+          },
+          "resourceProfile": {
+            "cpuMs": {"value": 12, "source": "cdp Performance.getMetrics TaskDuration (serving-path attribution)"},
+            "bytes": {"value": 75200, "source": "resource timing transferSize, instrumentation stripped"},
+            "requests": {"value": 15, "source": "resource timing entry count, instrumentation stripped"}
+          }
+        }
+      }
+    }
+  ]
+}

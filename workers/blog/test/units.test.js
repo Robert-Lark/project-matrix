@@ -3,7 +3,25 @@
 import { describe, expect, it } from "vitest";
 import { postFrontMatter, validSlug } from "../src/db.js";
 import { imageDimensions, sniffImage } from "../src/dimensions.js";
+import { esc } from "../src/html.js";
 import { crc32, zipStore } from "../src/zip.js";
+
+describe("esc: the five characters, like every other escaper in the repo (workers-hardening, 2026-09-25)", () => {
+  it("escapes & < > \" and — the one this file used to skip — the single quote", () => {
+    expect(esc(`Tom & Jerry <b>"say"</b> it's`)).toBe("Tom &amp; Jerry &lt;b&gt;&quot;say&quot;&lt;/b&gt; it&#39;s");
+  });
+
+  it("a single-quoted attribute cannot be closed by its value", () => {
+    const value = "x' onmouseover='alert(1)";
+    expect(`<a title='${esc(value)}'>`).not.toContain("onmouseover='");
+    expect(esc(value)).toBe("x&#39; onmouseover=&#39;alert(1)");
+  });
+
+  it("stringifies non-strings like the others (numbers, null)", () => {
+    expect(esc(42)).toBe("42");
+    expect(esc(null)).toBe("null");
+  });
+});
 
 describe("validSlug", () => {
   it("accepts flat kebab slugs", () => {

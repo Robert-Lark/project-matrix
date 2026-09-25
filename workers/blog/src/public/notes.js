@@ -18,7 +18,9 @@ if (refs.length) {
   pop.hidden = true;
   document.body.append(pop);
 
-  let hideTimer = null;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let hideTimer;
+  /** @type {Element | null} */
   let shownFor = null;
 
   const hide = () => {
@@ -32,6 +34,7 @@ if (refs.length) {
     hideTimer = setTimeout(hide, 180); // the grace that makes it hoverable
   };
 
+  /** @param {Element} ref */
   const show = (ref) => {
     const id = decodeURIComponent((ref.getAttribute("href") ?? "").slice(1));
     const note = document.getElementById(id);

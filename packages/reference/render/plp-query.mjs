@@ -37,6 +37,50 @@
  */
 
 /**
+ * The summary fields the query semantics READ — the slice of
+ * @pm/data-contract's ReleaseSummary this module depends on, named here
+ * because the module is import-free by design (above) and the edge Worker
+ * checks itself against these signatures (`tsc --checkJs`, workers-hardening
+ * 2026-09-25; ADR-0004 addendum). A field the contract renames fails the
+ * reference's own master-regeneration test long before it fails here.
+ * @typedef {object} PlpSummary
+ * @property {number} id
+ * @property {string} title
+ * @property {string} artist
+ * @property {number | null} year
+ * @property {{ amount: number, currency: string } | null} priceFrom
+ * @property {string[]} genres
+ * @property {string[]} styles
+ * @property {string} format
+ */
+/** @typedef {"genre" | "style" | "format"} PlpFacetParam */
+/** @typedef {"year-desc" | "year-asc" | "price-asc" | "price-desc" | "title"} PlpSort */
+/**
+ * The served condition, parsed and clamped by the caller: `null` for an
+ * unapplied knob.
+ * @typedef {object} PlpQuery
+ * @property {number} n
+ * @property {number} page
+ * @property {string | null} genre
+ * @property {string | null} style
+ * @property {string | null} format
+ * @property {PlpSort | null} sort
+ * @property {string | null} q
+ */
+/** @typedef {{ value: string, count: number }} PlpFacetBucket */
+/**
+ * `GET /api/plp`'s payload, exactly — the `PlpPage` contract.
+ * @typedef {object} PlpPage
+ * @property {PlpSummary[]} items
+ * @property {number} page
+ * @property {number} perPage
+ * @property {number} total
+ * @property {number} totalPages
+ * @property {{ genres: PlpFacetBucket[], styles: PlpFacetBucket[], formats: PlpFacetBucket[] }} facets
+ * @property {{ genre: string | null, style: string | null, format: string | null, sort: PlpSort | null, q: string | null }} applied
+ */
+
+/**
  * THE TRAY'S SHAPE VERSION — the edge Worker's KV key prefix (`v2:/api/plp…`).
  *
  * KV entries for visitor-facing conditions have NO TTL (frozen data), so a
@@ -52,10 +96,22 @@
 export const PLP_TRAY_VERSION = 2;
 
 /** ADR-0005 §5's three facet params, in canonical order. */
-export const PLP_FACET_PARAMS = Object.freeze(["genre", "style", "format"]);
+export const PLP_FACET_PARAMS = /** @type {readonly PlpFacetParam[]} */ (
+  Object.freeze(["genre", "style", "format"])
+);
 
 /** The sort orders the data plane implements. Absent = committed order. */
-export const PLP_SORTS = Object.freeze(["year-desc", "year-asc", "price-asc", "price-desc", "title"]);
+export const PLP_SORTS = /** @type {readonly PlpSort[]} */ (
+  Object.freeze(["year-desc", "year-asc", "price-asc", "price-desc", "title"])
+);
+
+/** Is this string one of PLP_SORTS? The Worker's 400 turns on it, and the
+ *  narrowing lets the query carry the sort as the type it is.
+ *  @param {string} value
+ *  @returns {value is PlpSort} */
+export function isPlpSort(value) {
+  return /** @type {readonly string[]} */ (PLP_SORTS).includes(value);
+}
 
 /** `q` is trimmed, whitespace-collapsed and capped here; the cap bounds the
  *  Worker's work per request (search is never cached — see the Worker). */
@@ -64,17 +120,20 @@ export const PLP_Q_MAX = 64;
 /** Format descriptors ride in the summary's format string ("Vinyl, LP,
  *  Album, Reissue"); the LEADING carrier token is not a facet — dropped
  *  positionally, never by a hardcoded carrier name. */
+/** @param {PlpSummary} summary @returns {string[]} */
 export function formatDescriptors(summary) {
   return summary.format.split(", ").slice(1);
 }
 
+/** @type {Readonly<Record<PlpFacetParam, (s: PlpSummary) => string[]>>} */
 const PICK = Object.freeze({
   genre: (s) => s.genres,
   style: (s) => s.styles,
   format: formatDescriptors,
 });
 
-/** ASCII-only case fold — see the header for why not `toLowerCase()`. */
+/** ASCII-only case fold — see the header for why not `toLowerCase()`.
+ *  @param {string} text */
 export function foldAscii(text) {
   return text.replace(/[A-Z]/g, (c) => c.toLowerCase());
 }
@@ -82,6 +141,7 @@ export function foldAscii(text) {
 /** The applied form of a raw `q`: whitespace collapsed, trimmed, capped at
  *  PLP_Q_MAX code units, trimmed again (the cap can expose a trailing space).
  *  `null` when nothing is left — an empty search box is not a filter. */
+/** @param {string | null | undefined} raw @returns {string | null} */
 export function normalizeQ(raw) {
   if (raw === null || raw === undefined) return null;
   const q = String(raw).replace(/\s+/g, " ").trim().slice(0, PLP_Q_MAX).trimEnd();
@@ -96,6 +156,7 @@ export function normalizeQ(raw) {
  *  page 1 — and the Worker's ceiling (`cacheable`) never stores it. The
  *  edge Worker imports this; react-next re-types it as `clampPlpPage` and
  *  pins the two equal over a table. */
+/** @param {string | null | undefined} raw */
 export function clampPage(raw) {
   const parsed = parseInt(raw ?? "", 10) || 1;
   return Math.min(Math.max(parsed, 1), Number.MAX_SAFE_INTEGER);
@@ -104,7 +165,9 @@ export function clampPage(raw) {
 /** The distinct facet values a snapshot actually holds, per param — the
  *  validation sets. A value outside them is junk (ADR-0005 §5: a 400, never a
  *  KV key). */
+/** @param {readonly PlpSummary[]} summaries @returns {Record<PlpFacetParam, Set<string>>} */
 export function facetValueSets(summaries) {
+  /** @type {Record<PlpFacetParam, Set<string>>} */
   const sets = { genre: new Set(), style: new Set(), format: new Set() };
   for (const s of summaries) {
     for (const param of PLP_FACET_PARAMS) for (const v of PICK[param](s)) sets[param].add(v);
@@ -112,8 +175,12 @@ export function facetValueSets(summaries) {
   return sets;
 }
 
-/** Facet buckets over `items`: count desc, then code-unit asc on the value. */
+/** Facet buckets over `items`: count desc, then code-unit asc on the value.
+ *  @param {readonly PlpSummary[]} items
+ *  @param {(s: PlpSummary) => string[]} pick
+ *  @returns {PlpFacetBucket[]} */
 export function facetBuckets(items, pick) {
+  /** @type {Map<string, number>} */
   const buckets = new Map();
   for (const s of items) {
     for (const v of pick(s)) buckets.set(v, (buckets.get(v) ?? 0) + 1);
@@ -124,7 +191,11 @@ export function facetBuckets(items, pick) {
 }
 
 /** Nulls last in EITHER direction: an unpriced record is not the cheapest
- *  and an undated one is not the newest. */
+ *  and an undated one is not the newest.
+ *  @template T
+ *  @param {T | null} a
+ *  @param {T | null} b
+ *  @param {(x: T, y: T) => number} compare */
 function nullsLast(a, b, compare) {
   if (a === null && b === null) return 0;
   if (a === null) return 1;
@@ -132,6 +203,7 @@ function nullsLast(a, b, compare) {
   return compare(a, b);
 }
 
+/** @type {Readonly<Record<PlpSort, (a: PlpSummary, b: PlpSummary) => number>>} */
 const COMPARE = Object.freeze({
   "year-desc": (a, b) => nullsLast(a.year, b.year, (x, y) => y - x),
   "year-asc": (a, b) => nullsLast(a.year, b.year, (x, y) => x - y),
@@ -150,10 +222,11 @@ const COMPARE = Object.freeze({
 /** Sort with an explicit committed-order tie-break; `null` keeps committed
  *  order untouched. Throws on an unknown sort — validation is the caller's
  *  (the Worker 400s before it gets here; the reference is a spec renderer). */
+/** @param {readonly PlpSummary[]} items @param {string | null | undefined} sort @returns {readonly PlpSummary[]} */
 export function sortSummaries(items, sort) {
   if (sort === null || sort === undefined) return items;
+  if (!isPlpSort(sort)) throw new Error(`unknown sort: ${sort}`);
   const compare = COMPARE[sort];
-  if (!compare) throw new Error(`unknown sort: ${sort}`);
   return items
     .map((s, index) => ({ s, index }))
     .sort((a, b) => compare(a.s, b.s) || a.index - b.index)
@@ -184,8 +257,10 @@ export function sortSummaries(items, sort) {
  * the whole-crate count, so the committed master (the default condition) is
  * unchanged by the rule.
  */
+/** @param {readonly PlpSummary[]} summaries @param {PlpQuery} query @returns {PlpPage} */
 export function applyPlpQuery(summaries, query) {
   const { n, page } = query;
+  /** @type {Record<PlpFacetParam, string | null>} */
   const filters = {
     genre: query.genre ?? null,
     style: query.style ?? null,
@@ -195,6 +270,7 @@ export function applyPlpQuery(summaries, query) {
   const q = query.q ?? null;
   const qFolded = q === null ? null : foldAscii(q);
 
+  /** @param {PlpSummary} s @param {PlpFacetParam | null} except */
   const passes = (s, except) => {
     for (const param of PLP_FACET_PARAMS) {
       if (param === except || filters[param] === null) continue;
@@ -216,7 +292,9 @@ export function applyPlpQuery(summaries, query) {
   // be missing only when `matched` is empty — every matched item carries the
   // selected value, so a non-empty result always has its bucket — and then
   // the honest count for "keep this selected" is 0.
-  for (const [param, group] of [["genre", "genres"], ["style", "styles"], ["format", "formats"]]) {
+  /** @type {[PlpFacetParam, keyof PlpPage["facets"]][]} */
+  const groups = [["genre", "genres"], ["style", "styles"], ["format", "formats"]];
+  for (const [param, group] of groups) {
     const selected = filters[param];
     if (selected !== null && !facets[group].some((b) => b.value === selected)) {
       facets[group].push({ value: selected, count: matched.length });

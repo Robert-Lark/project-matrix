@@ -23,6 +23,16 @@ import {
   contentsPage, feedXml, postPage, previewPage,
 } from "./public/pages.js";
 
+// Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25):
+// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts —
+// DB, MEDIA, ASSETS, and ADMIN_CREDENTIAL_HASH from the committed local
+// .dev.vars fixture), the rows are db.js's typedefs, and every request body
+// is read as `Record<string, unknown>` and checked field by field.
+/** @typedef {import("./db.js").PostRow} PostRow */
+/** @typedef {import("./db.js").MediaRow} MediaRow */
+/** @typedef {import("./auth.js").SessionRow} SessionRow */
+
+/** @param {"info" | "error"} level @param {string} event @param {Record<string, unknown>} fields */
 function log(level, event, fields) {
   const line = JSON.stringify({ level, worker: "pm-blog", event, ...fields });
   if (level === "error") console.error(line);
@@ -35,6 +45,7 @@ function log(level, event, fields) {
 // SNIFFER reports (security floor, 2026-09-18): the client's `file.type` is
 // never consulted — an upload whose bytes the sniffer cannot read is a 400,
 // whatever type it declared.
+/** @type {Readonly<Record<string, string>>} */
 const MEDIA_TYPES = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -45,6 +56,7 @@ const MEDIA_TYPES = {
 const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 
 // Malformed percent-encoding is a 404, not a 500.
+/** @param {string} text @returns {string | null} */
 function softDecode(text) {
   try {
     return decodeURIComponent(text);
@@ -53,6 +65,7 @@ function softDecode(text) {
   }
 }
 
+/** @param {Request} request @param {Env} env @param {URL} url @param {string} sub @returns {Promise<Response>} */
 async function handlePublic(request, env, url, sub) {
   const origin = url.origin;
   if (sub === "" || sub === "/") {
@@ -88,9 +101,11 @@ async function handlePublic(request, env, url, sub) {
   }
   if (sub.startsWith("/media/")) {
     const key = sub.slice("/media/".length);
-    const row = await env.DB.prepare("SELECT * FROM media WHERE key = ?")
-      .bind(key)
-      .first();
+    const row = /** @type {MediaRow | null} */ (
+      await env.DB.prepare("SELECT * FROM media WHERE key = ?")
+        .bind(key)
+        .first()
+    );
     if (!row) return notFound();
     const object = await env.MEDIA.get(key);
     if (!object) return notFound();
@@ -115,9 +130,11 @@ async function handlePublic(request, env, url, sub) {
   if (sub.startsWith("/preview/")) {
     const token = sub.slice("/preview/".length);
     if (token.length < 20) return notFound();
-    const post = await env.DB.prepare("SELECT * FROM posts WHERE preview_token = ?")
-      .bind(token)
-      .first();
+    const post = /** @type {PostRow | null} */ (
+      await env.DB.prepare("SELECT * FROM posts WHERE preview_token = ?")
+        .bind(token)
+        .first()
+    );
     if (!post) return notFound();
     const cover = post.cover_media_id ? await getMediaById(env, post.cover_media_id) : null;
     return publicPage(previewPage(post, { origin, cover }), {
@@ -145,14 +162,27 @@ async function handlePublic(request, env, url, sub) {
   return notFound();
 }
 
+/** The request body as an object, `{}` when it is not one — every field is
+ *  `unknown` until a route checks it.
+ *  @param {Request} request @returns {Promise<Record<string, unknown>>} */
 async function readJson(request) {
   try {
-    return await request.json();
+    const body = await request.json();
+    return body !== null && typeof body === "object" && !Array.isArray(body)
+      ? /** @type {Record<string, unknown>} */ (body)
+      : {};
   } catch {
     return {};
   }
 }
 
+/** A body field as text, or the fallback: the preview and PUT bodies are
+ *  untrusted JSON, and a number where text is expected renders as its
+ *  digits — the behaviour the routes always had, now stated.
+ *  @param {unknown} value @param {string | null} fallback */
+const textOr = (value, fallback) => (value == null ? fallback : String(value));
+
+/** @param {Request} request @param {Env} env @param {URL} url @param {string} sub @param {SessionRow} session @returns {Promise<Response>} */
 async function handleAdminApi(request, env, url, sub, session) {
   const method = request.method;
 
@@ -185,7 +215,7 @@ async function handleAdminApi(request, env, url, sub, session) {
 
   const getPostMatch = /^\/api\/posts\/([a-z0-9]+)$/.exec(sub);
   if (getPostMatch && method === "GET") {
-    const post = await getPost(env, getPostMatch[1]);
+    const post = await getPost(env, /** @type {string} */ (getPostMatch[1]));
     return post ? json(post) : json({ error: "not found" }, { status: 404 });
   }
 
@@ -198,24 +228,34 @@ async function handleAdminApi(request, env, url, sub, session) {
   // postPage template, same CSS — a full document for the preview iframe.
   if (sub === "/api/render" && method === "POST") {
     const body = await readJson(request);
+    const kind = body.kind;
+    /** @type {PostRow} */
     const draft = {
       id: "preview",
       slug: typeof body.slug === "string" && body.slug ? body.slug : "preview",
-      kind: ["essay", "photo", "note", "link"].includes(body.kind) ? body.kind : "essay",
+      kind: kind === "essay" || kind === "photo" || kind === "note" || kind === "link" ? kind : "essay",
       status: "draft",
       title: String(body.title ?? ""),
       dek: String(body.dek ?? ""),
+      body_md: String(body.body_md ?? ""),
       body_html: await renderMarkdown(String(body.body_md ?? ""), {
         mediaLookup: mediaLookup(env),
       }),
       tags: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
-      series: body.series ?? null,
-      accent: body.accent ?? null,
+      series: textOr(body.series, null),
+      series_part: typeof body.series_part === "number" ? body.series_part : null,
+      accent: textOr(body.accent, null),
       header_style: String(body.header_style || "standard"),
       mood: String(body.mood || "default"),
-      link_url: body.link_url ?? null,
+      link_url: textOr(body.link_url, null),
+      cover_media_id: null,
+      preview_token: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       published_at: new Date().toISOString(),
-      original_date: body.original_date ?? null,
+      original_date: textOr(body.original_date, null),
+      editor_state: null,
+      scheduled_at: null,
     };
     return json({
       html: postPage(draft, { origin: url.origin, neighbors: { prev: null, next: null } }),
@@ -251,12 +291,15 @@ async function handleAdminApi(request, env, url, sub, session) {
       httpMetadata: { contentType: image.type },
     });
     const alt = String(form.get("alt") ?? "");
+    // `file.name` is the client's filename; the stored type and extension
+    // come from the bytes (above).
+    const filename = typeof file.name === "string" ? file.name : "";
     await env.DB.prepare(
       `INSERT INTO media (id, key, filename, mime, size, width, height, alt, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
-        id, key, file.name ?? "", image.type, file.size,
+        id, key, filename, image.type, file.size,
         image.width, image.height,
         alt, new Date().toISOString(),
       )
@@ -275,18 +318,20 @@ async function handleAdminApi(request, env, url, sub, session) {
   const mediaMatch = /^\/api\/media\/([a-z0-9]+)$/.exec(sub);
   if (mediaMatch && method === "PATCH") {
     const body = await readJson(request);
-    const result = await updateMediaAlt(env, mediaMatch[1], body.alt);
+    const result = await updateMediaAlt(env, /** @type {string} */ (mediaMatch[1]), body.alt);
     return result.ok ? json(result) : json({ error: result.error }, { status: result.status });
   }
 
   const revMatch = /^\/api\/posts\/([a-z0-9]+)\/revisions$/.exec(sub);
   if (revMatch && method === "GET") {
-    return json(await listRevisions(env, revMatch[1]));
+    return json(await listRevisions(env, /** @type {string} */ (revMatch[1])));
   }
 
   const postMatch = /^\/api\/posts\/([a-z0-9]+)(\/[a-z-]+)?$/.exec(sub);
   if (postMatch) {
-    const [, id, action] = postMatch;
+    // The first group always matches; the second is the optional action.
+    const id = /** @type {string} */ (postMatch[1]);
+    const action = postMatch[2];
     if (action === "/restore" && method === "POST") {
       const body = await readJson(request);
       const revision = await getRevision(env, id, String(body.revision_id ?? ""));
@@ -347,6 +392,7 @@ async function handleAdminApi(request, env, url, sub, session) {
   return json({ error: "not found" }, { status: 404 });
 }
 
+/** @param {Request} request @param {Env} env @param {URL} url @param {string} sub @returns {Promise<Response>} */
 async function handleAdmin(request, env, url, sub) {
   // The login endpoint is the only admin route that works without a session.
   if (sub === "/login" && request.method === "POST") {
@@ -408,7 +454,7 @@ async function handleAdmin(request, env, url, sub) {
       return seeOther("/blog/admin");
     }
     const kind = String(form.get("kind") ?? "essay");
-    if (!["essay", "photo", "note", "link"].includes(kind)) {
+    if (kind !== "essay" && kind !== "photo" && kind !== "note" && kind !== "link") {
       return seeOther("/blog/admin");
     }
     const id = await createPost(env, kind);
@@ -417,7 +463,7 @@ async function handleAdmin(request, env, url, sub) {
 
   const edit = /^\/edit\/([a-z0-9]+)$/.exec(sub);
   if (edit) {
-    const post = await getPost(env, edit[1]);
+    const post = await getPost(env, /** @type {string} */ (edit[1]));
     if (!post) return adminPage("<p>No such post. <a href='/blog/admin'>Back</a></p>", { status: 404 });
     return adminPage(editorPage({ post, csrf: session.csrf_token }));
   }
@@ -432,12 +478,14 @@ async function handleAdmin(request, env, url, sub) {
 export default {
   // The scheduled-publishing tick (ADR-0009 addendum; crons in
   // wrangler.jsonc). publishDue owns the invariants; this stays a shim.
+  /** @param {ScheduledController} event @param {Env} env @param {ExecutionContext} ctx */
   async scheduled(event, env, ctx) {
     ctx.waitUntil(
       publishDue(env, (eventName, fields) => log("info", eventName, fields)),
     );
   },
 
+  /** @param {Request} request @param {Env} env */
   async fetch(request, env) {
     const url = new URL(request.url);
     // Exactly /blog or /blog/* — "/blogfoo" is not this plane's traffic.
@@ -472,8 +520,8 @@ export default {
       // Generic message out; details stay server-side (security.md).
       log("error", "unhandled", {
         path: url.pathname,
-        message: err.message,
-        stack: err.stack,
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
       });
       return publicPage("<h1>Something broke on our side.</h1>", { status: 500 });
     }

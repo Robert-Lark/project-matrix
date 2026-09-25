@@ -1,0 +1,6 @@
+# The publication gate's refusal fixtures are GENERATED from
+# workers/front/test/fixtures/publish/generate.mjs (one row per refusal
+# class) and held byte-identical to it by test; review the table, and let
+# GitHub collapse the files it produces.
+workers/front/test/fixtures/publish/receipts/*.json linguist-generated=true
+workers/front/test/fixtures/publish/chrome-constants/*.json linguist-generated=true

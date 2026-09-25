@@ -21,6 +21,13 @@
  * STATED. Moving it here generalises the check; making it REQUIRED is what
  * stops that generalisation from being a loosening (ADR-0001 addendum R).
  */
+/**
+ * Checked against fit.d.mts (workers-hardening, 2026-09-25): an entry that
+ * omits a declaration, or adds a field the declaration lacks, fails
+ * `tsc --checkJs` here — the build's refusals stay the runtime proof; this
+ * is the compile-time one.
+ * @type {Readonly<Record<string, import("./fit.mjs").FitSpec>>}
+ */
 export const FIT = {
   editorial: {
     /** The metric the sentence's contrast rides (the ADR-0001 §3 headline). */

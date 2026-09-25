@@ -10,6 +10,8 @@
 // → iprp/ipco (the property list), pick the primary's ispe, and apply its
 // irot: a 90°/270° rotation transposes the displayed box.
 
+/** @typedef {{ start: number, end: number }} Box */
+/** @param {DataView} view @param {number} start @param {number} end @param {string} type @returns {Box | null} */
 function findBox(view, start, end, type) {
   let at = start;
   while (at + 8 <= end) {
@@ -36,6 +38,7 @@ function findBox(view, start, end, type) {
   return null;
 }
 
+/** @param {Uint8Array} bytes @param {DataView} view @returns {{ width: number, height: number } | null} */
 function avifDimensions(bytes, view) {
   const ftyp = findBox(view, 0, bytes.length, "ftyp");
   if (!ftyp) return null;
@@ -68,6 +71,7 @@ function avifDimensions(bytes, view) {
   if (!ipco) return null;
 
   // Collect the 1-indexed property list.
+  /** @type {{ name: string, start: number, end: number }[]} */
   const properties = [];
   let at = ipco.start;
   while (at + 8 <= ipco.end) {
@@ -82,6 +86,7 @@ function avifDimensions(bytes, view) {
   }
 
   // The primary item's property indices, from ipma.
+  /** @type {number[] | null} */
   let indices = null;
   const ipma = findBox(view, iprp.start, iprp.end, "ipma");
   if (ipma && primary !== null) {
@@ -112,7 +117,7 @@ function avifDimensions(bytes, view) {
   // Fall back to "every property" only when there is no association map to
   // consult — then the first ispe is the best available answer.
   const mine = indices
-    ? indices.map((i) => properties[i - 1]).filter(Boolean)
+    ? indices.map((i) => properties[i - 1]).filter((p) => p !== undefined)
     : properties;
   const ispe = mine.find((p) => p.name === "ispe");
   if (!ispe || ispe.end - ispe.start < 12) return null;
@@ -132,6 +137,8 @@ function avifDimensions(bytes, view) {
  * audit priority 4, task 3): a client can declare any type it likes, and a
  * `null` here is a 400 at upload, not a media row with null dimensions —
  * which silently forfeited the zero-CLS rule this file exists to keep.
+ * @param {Uint8Array} bytes
+ * @returns {{ type: string, width: number, height: number } | null}
  */
 export function sniffImage(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -161,7 +168,7 @@ export function sniffImage(bytes) {
     while (at + 9 < bytes.length) {
       if (bytes[at] !== 0xff) return null;
       while (bytes[at + 1] === 0xff && at + 10 < bytes.length) at += 1;
-      const marker = bytes[at + 1];
+      const marker = view.getUint8(at + 1);
       const size = view.getUint16(at + 2);
       if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
         return sized("image/jpeg", view.getUint16(at + 7), view.getUint16(at + 5));
@@ -187,8 +194,8 @@ export function sniffImage(bytes) {
     }
     if (format === 0x56503858) {
       // "VP8X" extended: 24-bit little-endian, minus-one coded.
-      const w = bytes[24] | (bytes[25] << 8) | (bytes[26] << 16);
-      const h = bytes[27] | (bytes[28] << 8) | (bytes[29] << 16);
+      const w = view.getUint8(24) | (view.getUint8(25) << 8) | (view.getUint8(26) << 16);
+      const h = view.getUint8(27) | (view.getUint8(28) << 8) | (view.getUint8(29) << 16);
       return sized("image/webp", w + 1, h + 1);
     }
   }
@@ -204,16 +211,19 @@ export function sniffImage(bytes) {
   return null;
 }
 
-/** A named sniff with a real box, or null: a zero dimension is not an image. */
+/** A named sniff with a real box, or null: a zero dimension is not an image.
+ *  @param {string} type @param {number} width @param {number} height */
 function sized(type, width, height) {
   return width > 0 && height > 0 ? { type, width, height } : null;
 }
 
+/** @param {Uint8Array} bytes @param {number} start @param {number} length */
 function ascii(bytes, start, length) {
   return String.fromCharCode(...bytes.subarray(start, start + length));
 }
 
-/** Dimensions alone — the sniff without the type. */
+/** Dimensions alone — the sniff without the type.
+ *  @param {Uint8Array} bytes */
 export function imageDimensions(bytes) {
   const image = sniffImage(bytes);
   return image ? { width: image.width, height: image.height } : null;

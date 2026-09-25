@@ -119,7 +119,22 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     // pinned to a ceiling: when the build log crosses it, re-open one phase
     // link, record the observation beside the one above, and raise the
     // ceiling — or change the anchor form. A guess is not a receipt.
-    const OBSERVED_CEILING_BYTES = 512 * 1024;
+    //
+    // Second observation, 2026-09-25 (workers-hardening): the unit's entry
+    // took the file to 533,209 B, past the 512 KiB pinned above. A real
+    // Chromium (the origin suite's Playwright build, headless — the
+    // devtools profile was held by another session) opened the pushed
+    // branch's code view at TWO anchors,
+    // .../blob/workers-hardening/docs/build-log.md?plain=1#L4342 (a phase
+    // heading, "## Phase 15 — The instrument was the thing that was wrong")
+    // and #L7920 (the unit's own entry heading): GitHub's header read
+    // "8132 lines (7399 loc) · 521 KB", both lines present reading their
+    // headings, both highlighted, no "too large" notice. Ceiling raised to
+    // 640 KiB with the same headroom convention as the first pin (512 KiB
+    // over 412 KB observed); the next crossing re-observes again. The
+    // observing script, its two JSON observation lines and a screenshot
+    // are in the unit's record (docs/prototypes/workers-hardening/).
+    const OBSERVED_CEILING_BYTES = 640 * 1024;
     const size = statSync(join(repoRoot, "docs", "build-log.md")).size;
     expect(
       size,

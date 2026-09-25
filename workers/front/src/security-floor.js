@@ -53,7 +53,8 @@ export const SECURITY_FLOOR = Object.freeze({
 });
 
 /** A copy of `response` carrying the floor. The body streams through; a
- *  null body (204/304/HEAD) stays null. */
+ *  null body (204/304/HEAD) stays null.
+ *  @param {Response} response @returns {Response} */
 export function withSecurityFloor(response) {
   const floored = new Response(response.body, response);
   for (const [name, value] of Object.entries(SECURITY_FLOOR)) {

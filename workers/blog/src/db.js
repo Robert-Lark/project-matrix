@@ -5,12 +5,78 @@
 import { newId } from "./ids.js";
 import { renderMarkdown } from "./render.js";
 
+// Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25).
+// The row typedefs below are the committed migrations column for column
+// (0001_init.sql, 0002_scheduled_publishing.sql): D1 hands rows back
+// untyped (`Record<string, unknown>`), so every `.first()`/`.all()` is
+// cast to the row its SQL selects — the cast is the one place the schema
+// is asserted, and it sits beside the statement that reads it. The result
+// unions (`Saved | Refused`) are what the routes used to check by
+// convention alone (`result.ok ? … : result.error`): a typo in either
+// arm's field name is a typecheck failure now.
+/** @typedef {"essay" | "photo" | "note" | "link"} PostKind */
+/**
+ * @typedef {object} PostRow
+ * @property {string} id
+ * @property {string} slug
+ * @property {PostKind} kind
+ * @property {"draft" | "published"} status
+ * @property {string} title
+ * @property {string} dek
+ * @property {string} body_md
+ * @property {string} body_html
+ * @property {string | null} link_url
+ * @property {string} tags JSON array text (the editor round-trips it)
+ * @property {string | null} series
+ * @property {number | null} series_part
+ * @property {string | null} accent
+ * @property {string} header_style
+ * @property {string} mood
+ * @property {string | null} cover_media_id
+ * @property {string | null} preview_token
+ * @property {string} created_at
+ * @property {string} updated_at
+ * @property {string | null} published_at
+ * @property {string | null} original_date
+ * @property {string | null} editor_state
+ * @property {string | null} scheduled_at
+ */
+/**
+ * @typedef {object} MediaRow
+ * @property {string} id
+ * @property {string} key
+ * @property {string} filename
+ * @property {string} mime
+ * @property {number} size
+ * @property {number | null} width
+ * @property {number | null} height
+ * @property {string} alt
+ * @property {string} created_at
+ */
+/**
+ * @typedef {object} RevisionRow
+ * @property {string} id
+ * @property {string} post_id
+ * @property {"autosave" | "snapshot"} kind
+ * @property {string} title
+ * @property {string} body_md
+ * @property {string} saved_at
+ */
+/** @typedef {{ from_slug: string, to_slug: string, created_at: string }} RedirectRow */
+/** @typedef {{ id: string, slug: string, title: string, series_part: number | null }} SeriesNeighbor */
+/** A refused mutation: the route answers `status` with `error`. */
+/** @typedef {{ error: string, status: number, ok?: undefined }} Refused */
+/** @typedef {{ ok: true, rendered: boolean, updated_at: string, warnings?: Record<string, string> }} Saved */
+/** @typedef {(keys: string[]) => Promise<Map<string, { key: string, width: number | null, height: number | null, alt: string }>>} MediaLookup */
+/** @typedef {import("./zip.js").ZipEntry} ZipEntry */
+
 // Route names a slug may never shadow (ADR-0009 §6).
 const RESERVED = new Set([
   "admin", "static", "media", "tag", "series", "preview", "api", "assets",
   "feed", "feed.xml", "rss", "index",
 ]);
 
+/** @param {unknown} slug @returns {slug is string} */
 export function validSlug(slug) {
   return (
     typeof slug === "string" &&
@@ -27,18 +93,22 @@ function nowIso() {
 
 // Injected into the render pipeline so uploaded images get their stored
 // dimensions and alt text (render.js rehypeImages).
+/** @param {Env} env @returns {MediaLookup} */
 export function mediaLookup(env) {
   return async (keys) => {
     const marks = keys.map(() => "?").join(",");
-    const { results } = await env.DB.prepare(
-      `SELECT key, width, height, alt FROM media WHERE key IN (${marks})`,
-    )
-      .bind(...keys)
-      .all();
+    const { results } = /** @type {D1Result<{ key: string, width: number | null, height: number | null, alt: string }>} */ (
+      await env.DB.prepare(
+        `SELECT key, width, height, alt FROM media WHERE key IN (${marks})`,
+      )
+        .bind(...keys)
+        .all()
+    );
     return new Map(results.map((row) => [row.key, row]));
   };
 }
 
+/** @param {Env} env @param {PostKind} kind @returns {Promise<string>} */
 export async function createPost(env, kind) {
   const id = newId();
   const now = nowIso();
@@ -51,8 +121,11 @@ export async function createPost(env, kind) {
   return id;
 }
 
+/** @param {Env} env @param {string} id @returns {Promise<PostRow | null>} */
 export async function getPost(env, id) {
-  return env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first();
+  return /** @type {Promise<PostRow | null>} */ (
+    env.DB.prepare("SELECT * FROM posts WHERE id = ?").bind(id).first()
+  );
 }
 
 const SAVABLE = new Set([
@@ -75,6 +148,12 @@ const MOODS = new Set(["default", "quiet", "loud"]);
 // METADATA field is dropped with a warning — it must never block the body
 // from persisting. Rendering happens here so body_html can never drift
 // from body_md.
+/**
+ * @param {Env} env
+ * @param {string} id
+ * @param {Record<string, unknown> | null | undefined} patch the request body — untrusted JSON
+ * @returns {Promise<Saved | Refused>}
+ */
 export async function savePost(env, id, patch) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
@@ -87,51 +166,68 @@ export async function savePost(env, id, patch) {
     return { error: "edited elsewhere", status: 409 };
   }
 
+  /** @type {Record<string, unknown>} */
   const fields = {};
+  /** @type {Record<string, string>} */
   const warnings = {};
   for (const [key, value] of Object.entries(patch ?? {})) {
     if (SAVABLE.has(key)) fields[key] = value;
   }
 
-  if ("kind" in fields && !["essay", "photo", "note", "link"].includes(fields.kind)) {
+  /** A patched text field is text, or it is dropped like any other invalid
+   *  value: the typecheck found that a hand-made PUT could put a number
+   *  into a TEXT column (workers-hardening, 2026-09-25) — the editor never
+   *  sends one, and the warning model is this file's own.
+   *  @param {string} key @returns {string | null} the value when it is text */
+  const text = (key) => (typeof fields[key] === "string" ? /** @type {string} */ (fields[key]) : null);
+
+  if ("kind" in fields && !["essay", "photo", "note", "link"].includes(/** @type {string} */ (text("kind")))) {
     warnings.kind = "unknown kind — kept the old one";
     delete fields.kind;
   }
   // Art direction is curated at the wall, not just in the picker (ADR-0009
   // §4): arbitrary strings would leak into class names and CSS variables.
-  if ("header_style" in fields && !HEADER_STYLES.has(fields.header_style)) {
+  if ("header_style" in fields && !HEADER_STYLES.has(/** @type {string} */ (text("header_style")))) {
     warnings.header_style = "unknown header treatment — kept the old one";
     delete fields.header_style;
   }
-  if ("mood" in fields && !MOODS.has(fields.mood)) {
+  if ("mood" in fields && !MOODS.has(/** @type {string} */ (text("mood")))) {
     warnings.mood = "unknown mood — kept the old one";
     delete fields.mood;
   }
-  if ("accent" in fields && fields.accent !== null && !/^#[0-9a-fA-F]{6}$/.test(fields.accent)) {
+  if ("accent" in fields && fields.accent !== null && !/^#[0-9a-fA-F]{6}$/.test(text("accent") ?? "")) {
     warnings.accent = "accent must be a #rrggbb color — kept the old one";
     delete fields.accent;
   }
-  if ("link_url" in fields && fields.link_url !== null && !/^https?:\/\//.test(fields.link_url)) {
+  if ("link_url" in fields && fields.link_url !== null && !/^https?:\/\//.test(text("link_url") ?? "")) {
     warnings.link_url = "link URL must be http(s) — kept the old one";
     delete fields.link_url;
   }
   if (
     "original_date" in fields &&
     fields.original_date !== null &&
-    !/^\d{4}-\d{2}-\d{2}$/.test(fields.original_date)
+    !/^\d{4}-\d{2}-\d{2}$/.test(text("original_date") ?? "")
   ) {
     warnings.original_date = "display date must be YYYY-MM-DD — kept the old one";
     delete fields.original_date;
   }
+  for (const key of ["title", "dek", "body_md", "editor_state"]) {
+    if (key in fields && fields[key] !== null && typeof fields[key] !== "string") {
+      warnings[key] = `${key} must be text — kept the old one`;
+      delete fields[key];
+    }
+  }
 
   if ("slug" in fields && fields.slug !== post.slug) {
+    /** @type {string | null} */
     let slugProblem = null;
-    if (!validSlug(fields.slug)) slugProblem = "invalid slug — kept the old one";
+    const slug = fields.slug;
+    if (!validSlug(slug)) slugProblem = "invalid slug — kept the old one";
     else {
       const taken = await env.DB.prepare(
         "SELECT id FROM posts WHERE slug = ? AND id != ?",
       )
-        .bind(fields.slug, id)
+        .bind(slug, id)
         .first();
       if (taken) slugProblem = "slug in use — kept the old one";
     }
@@ -156,6 +252,7 @@ export async function savePost(env, id, patch) {
     }
   }
 
+  /** @type {string[] | null} */
   let tags = null;
   if ("tags" in fields) {
     tags = Array.isArray(fields.tags)
@@ -164,15 +261,18 @@ export async function savePost(env, id, patch) {
     fields.tags = JSON.stringify([...new Set(tags)]);
   }
 
-  const bodyChanged = "body_md" in fields && fields.body_md !== post.body_md;
+  const bodyMd = text("body_md");
+  const bodyChanged = bodyMd !== null && bodyMd !== post.body_md;
   if (bodyChanged) {
-    fields.body_html = await renderMarkdown(fields.body_md, {
+    fields.body_html = await renderMarkdown(bodyMd, {
       mediaLookup: mediaLookup(env),
     });
   }
 
   const contentChanged = Object.keys(fields).some(
-    (key) => CONTENT_FIELDS.has(key) && fields[key] !== post[key],
+    // CONTENT_FIELDS ⊂ SAVABLE ⊂ the posts columns, so a key that passed
+    // the whitelist above IS a PostRow key.
+    (key) => CONTENT_FIELDS.has(key) && fields[key] !== post[/** @type {keyof PostRow} */ (key)],
   );
   if (contentChanged) fields.updated_at = nowIso();
 
@@ -202,37 +302,50 @@ export async function savePost(env, id, patch) {
       .bind(id)
       .first();
     const gapFloor = new Date(Date.now() - REVISION_GAP_MS).toISOString();
-    if (!latest || latest.saved_at < gapFloor) {
-      await addRevision(env, id, "autosave", fields.title ?? post.title, fields.body_md);
+    if (!latest || /** @type {{ saved_at: string }} */ (latest).saved_at < gapFloor) {
+      await addRevision(env, id, "autosave", text("title") ?? post.title, bodyMd ?? post.body_md);
     }
   }
 
   return {
     ok: true,
     rendered: bodyChanged,
-    updated_at: fields.updated_at ?? post.updated_at,
+    updated_at: /** @type {string} */ (fields.updated_at ?? post.updated_at),
     ...(Object.keys(warnings).length ? { warnings } : {}),
   };
 }
 
+/** @param {Env} env @param {string} postId @param {number} [limit] */
 export async function listRevisions(env, postId, limit = 50) {
-  const { results } = await env.DB.prepare(
-    `SELECT id, kind, title, saved_at, length(body_md) AS size
-     FROM revisions WHERE post_id = ? ORDER BY saved_at DESC LIMIT ?`,
-  )
-    .bind(postId, limit)
-    .all();
+  const { results } = /** @type {D1Result<{ id: string, kind: string, title: string, saved_at: string, size: number }>} */ (
+    await env.DB.prepare(
+      `SELECT id, kind, title, saved_at, length(body_md) AS size
+       FROM revisions WHERE post_id = ? ORDER BY saved_at DESC LIMIT ?`,
+    )
+      .bind(postId, limit)
+      .all()
+  );
   return results;
 }
 
+/** @param {Env} env @param {string} postId @param {string} revisionId @returns {Promise<RevisionRow | null>} */
 export async function getRevision(env, postId, revisionId) {
-  return env.DB.prepare(
-    "SELECT * FROM revisions WHERE id = ? AND post_id = ?",
-  )
-    .bind(revisionId, postId)
-    .first();
+  return /** @type {Promise<RevisionRow | null>} */ (
+    env.DB.prepare(
+      "SELECT * FROM revisions WHERE id = ? AND post_id = ?",
+    )
+      .bind(revisionId, postId)
+      .first()
+  );
 }
 
+/**
+ * @param {Env} env
+ * @param {string} postId
+ * @param {"autosave" | "snapshot"} kind
+ * @param {string | null | undefined} title
+ * @param {string | null | undefined} bodyMd
+ */
 export async function addRevision(env, postId, kind, title, bodyMd) {
   await env.DB.prepare(
     `INSERT INTO revisions (id, post_id, kind, title, body_md, saved_at)
@@ -253,6 +366,12 @@ export async function addRevision(env, postId, kind, title, bodyMd) {
 // null) stamps now on a first publish but PRESERVES an existing date, so a
 // manual re-publish keeps the post's original publication date. The display
 // date is a separate author-owned field (original_date) either way.
+/**
+ * @param {Env} env
+ * @param {string} id
+ * @param {{ at?: string | null }} [options]
+ * @returns {Promise<{ ok: true } | Refused>}
+ */
 export async function publishPost(env, id, { at = null } = {}) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
@@ -273,6 +392,7 @@ export async function publishPost(env, id, { at = null } = {}) {
   return { ok: true };
 }
 
+/** @param {Env} env @param {string} id @returns {Promise<{ ok: true } | Refused>} */
 export async function unpublishPost(env, id) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
@@ -292,6 +412,12 @@ export async function unpublishPost(env, id) {
 // until the trigger publishes it through the same publishPost invariants
 // (slug gate, snapshot revision, redirect story) a manual publish gets.
 
+/**
+ * @param {Env} env
+ * @param {string} id
+ * @param {unknown} at the request body's `at` — untrusted JSON
+ * @returns {Promise<{ ok: true, scheduled_at: string } | Refused>}
+ */
 export async function schedulePost(env, id, at) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
@@ -303,7 +429,9 @@ export async function schedulePost(env, id, at) {
   if (!validSlug(post.slug) || post.slug.startsWith("draft-")) {
     return { error: "set a real slug before scheduling", status: 400 };
   }
-  const when = new Date(at ?? "");
+  // A string or a number is a date the way `new Date` reads one; anything
+  // else is the invalid date the check below refuses.
+  const when = new Date(typeof at === "string" || typeof at === "number" ? at : Number.NaN);
   if (Number.isNaN(when.getTime())) {
     return { error: "publish time must be a valid date", status: 400 };
   }
@@ -314,6 +442,7 @@ export async function schedulePost(env, id, at) {
   return { ok: true, scheduled_at: iso };
 }
 
+/** @param {Env} env @param {string} id @returns {Promise<{ ok: true } | Refused>} */
 export async function cancelSchedule(env, id) {
   const result = await env.DB.prepare(
     "UPDATE posts SET scheduled_at = NULL WHERE id = ?",
@@ -328,13 +457,20 @@ export async function cancelSchedule(env, id) {
 // went invalid after scheduling) drops the schedule rather than retrying
 // forever — the post stays a draft, no words move, and the editor shows it
 // unscheduled.
+/**
+ * @param {Env} env
+ * @param {(event: string, fields: Record<string, unknown>) => void} [log]
+ * @returns {Promise<number>} how many published
+ */
 export async function publishDue(env, log = () => {}) {
-  const { results } = await env.DB.prepare(
-    `SELECT id, scheduled_at FROM posts
-     WHERE status = 'draft' AND scheduled_at IS NOT NULL AND scheduled_at <= ?`,
-  )
-    .bind(nowIso())
-    .all();
+  const { results } = /** @type {D1Result<{ id: string, scheduled_at: string }>} */ (
+    await env.DB.prepare(
+      `SELECT id, scheduled_at FROM posts
+       WHERE status = 'draft' AND scheduled_at IS NOT NULL AND scheduled_at <= ?`,
+    )
+      .bind(nowIso())
+      .all()
+  );
   let published = 0;
   for (const row of results) {
     const result = await publishPost(env, row.id, { at: row.scheduled_at });
@@ -351,6 +487,7 @@ export async function publishDue(env, log = () => {}) {
   return published;
 }
 
+/** @param {Env} env @param {string} id @returns {Promise<{ ok: true }>} */
 export async function deletePost(env, id) {
   const post = await getPost(env, id);
   if (!post) return { ok: true };
@@ -368,80 +505,111 @@ export async function deletePost(env, id) {
 // year groups would misfile backdated posts.
 const SHELF_ORDER = "COALESCE(original_date, published_at) DESC";
 
+/**
+ * @param {Env} env
+ * @param {{ tag?: string | null, series?: string | null }} [filter]
+ * @returns {Promise<PostRow[]>}
+ */
 export async function listPublished(env, { tag = null, series = null } = {}) {
   if (tag) {
-    const { results } = await env.DB.prepare(
-      `SELECT p.* FROM posts p
-       JOIN post_tags pt ON pt.post_id = p.id AND pt.tag = ?
-       WHERE p.status = 'published' ORDER BY ${SHELF_ORDER}`,
-    )
-      .bind(tag)
-      .all();
+    const { results } = /** @type {D1Result<PostRow>} */ (
+      await env.DB.prepare(
+        `SELECT p.* FROM posts p
+         JOIN post_tags pt ON pt.post_id = p.id AND pt.tag = ?
+         WHERE p.status = 'published' ORDER BY ${SHELF_ORDER}`,
+      )
+        .bind(tag)
+        .all()
+    );
     return results;
   }
   if (series) {
-    const { results } = await env.DB.prepare(
-      `SELECT * FROM posts WHERE status = 'published' AND series = ?
-       ORDER BY COALESCE(series_part, 0) ASC, published_at ASC`,
-    )
-      .bind(series)
-      .all();
+    const { results } = /** @type {D1Result<PostRow>} */ (
+      await env.DB.prepare(
+        `SELECT * FROM posts WHERE status = 'published' AND series = ?
+         ORDER BY COALESCE(series_part, 0) ASC, published_at ASC`,
+      )
+        .bind(series)
+        .all()
+    );
     return results;
   }
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM posts WHERE status = 'published' ORDER BY ${SHELF_ORDER}`,
-  ).all();
+  const { results } = /** @type {D1Result<PostRow>} */ (
+    await env.DB.prepare(
+      `SELECT * FROM posts WHERE status = 'published' ORDER BY ${SHELF_ORDER}`,
+    ).all()
+  );
   return results;
 }
 
+/** @param {Env} env @param {string} slug @returns {Promise<PostRow | null>} */
 export async function getPublishedBySlug(env, slug) {
-  return env.DB.prepare(
-    "SELECT * FROM posts WHERE slug = ? AND status = 'published'",
-  )
-    .bind(slug)
-    .first();
+  return /** @type {Promise<PostRow | null>} */ (
+    env.DB.prepare(
+      "SELECT * FROM posts WHERE slug = ? AND status = 'published'",
+    )
+      .bind(slug)
+      .first()
+  );
 }
 
+/** @param {Env} env @param {string} slug @returns {Promise<{ to_slug: string } | null>} */
 export async function getRedirect(env, slug) {
-  return env.DB.prepare("SELECT to_slug FROM redirects WHERE from_slug = ?")
-    .bind(slug)
-    .first();
+  return /** @type {Promise<{ to_slug: string } | null>} */ (
+    env.DB.prepare("SELECT to_slug FROM redirects WHERE from_slug = ?")
+      .bind(slug)
+      .first()
+  );
 }
 
+/** @param {Env} env @param {PostRow} post @returns {Promise<{ prev: SeriesNeighbor | null, next: SeriesNeighbor | null }>} */
 export async function seriesNeighbors(env, post) {
   if (!post.series) return { prev: null, next: null };
-  const { results } = await env.DB.prepare(
-    `SELECT id, slug, title, series_part FROM posts
-     WHERE status = 'published' AND series = ?
-     ORDER BY COALESCE(series_part, 0) ASC, published_at ASC`,
-  )
-    .bind(post.series)
-    .all();
+  const { results } = /** @type {D1Result<SeriesNeighbor>} */ (
+    await env.DB.prepare(
+      `SELECT id, slug, title, series_part FROM posts
+       WHERE status = 'published' AND series = ?
+       ORDER BY COALESCE(series_part, 0) ASC, published_at ASC`,
+    )
+      .bind(post.series)
+      .all()
+  );
   const at = results.findIndex((p) => p.id === post.id);
   return {
-    prev: at > 0 ? results[at - 1] : null,
-    next: at >= 0 && at < results.length - 1 ? results[at + 1] : null,
+    prev: at > 0 ? (results[at - 1] ?? null) : null,
+    next: at >= 0 && at < results.length - 1 ? (results[at + 1] ?? null) : null,
   };
 }
 
+/** @param {Env} env @returns {Promise<PostRow[]>} */
 export async function listAdmin(env) {
-  const { results } = await env.DB.prepare(
-    "SELECT * FROM posts ORDER BY updated_at DESC",
-  ).all();
+  const { results } = /** @type {D1Result<PostRow>} */ (
+    await env.DB.prepare(
+      "SELECT * FROM posts ORDER BY updated_at DESC",
+    ).all()
+  );
   return results;
 }
 
+/** @param {Env} env @param {string} id @returns {Promise<MediaRow | null>} */
 export async function getMediaById(env, id) {
-  return env.DB.prepare("SELECT * FROM media WHERE id = ?").bind(id).first();
+  return /** @type {Promise<MediaRow | null>} */ (
+    env.DB.prepare("SELECT * FROM media WHERE id = ?").bind(id).first()
+  );
 }
 
 // The media library (editor follow-up, ADR-0009 addendum): every R2 object
 // through its media row, newest first, each carrying where it is used — one
 // posts scan in JS beats N LIKE queries at admin-library scale.
+/** @param {Env} env */
 export async function listMedia(env) {
   const [media, posts] = await Promise.all([
-    env.DB.prepare("SELECT * FROM media ORDER BY created_at DESC").all(),
-    env.DB.prepare("SELECT id, slug, title, body_md, cover_media_id FROM posts").all(),
+    /** @type {Promise<D1Result<MediaRow>>} */ (
+      env.DB.prepare("SELECT * FROM media ORDER BY created_at DESC").all()
+    ),
+    /** @type {Promise<D1Result<Pick<PostRow, "id" | "slug" | "title" | "body_md" | "cover_media_id">>>} */ (
+      env.DB.prepare("SELECT id, slug, title, body_md, cover_media_id FROM posts").all()
+    ),
   ]);
   return media.results.map((row) => ({
     ...row,
@@ -460,17 +628,25 @@ export async function listMedia(env) {
 // references the key or published pages would keep serving the stale alt.
 // body_html-only updates: updated_at stays put, so an open editor's
 // optimistic-concurrency baseline survives an alt fix elsewhere.
+/**
+ * @param {Env} env
+ * @param {string} id
+ * @param {unknown} alt the request body's `alt` — untrusted JSON
+ * @returns {Promise<{ ok: true, rerendered: number } | Refused>}
+ */
 export async function updateMediaAlt(env, id, alt) {
   const row = await getMediaById(env, id);
   if (!row) return { error: "not found", status: 404 };
   await env.DB.prepare("UPDATE media SET alt = ? WHERE id = ?")
     .bind(String(alt ?? ""), id)
     .run();
-  const { results } = await env.DB.prepare(
-    "SELECT id, body_md FROM posts WHERE body_md LIKE ?",
-  )
-    .bind(`%/blog/media/${row.key}%`)
-    .all();
+  const { results } = /** @type {D1Result<{ id: string, body_md: string }>} */ (
+    await env.DB.prepare(
+      "SELECT id, body_md FROM posts WHERE body_md LIKE ?",
+    )
+      .bind(`%/blog/media/${row.key}%`)
+      .all()
+  );
   for (const post of results) {
     const html = await renderMarkdown(post.body_md, {
       mediaLookup: mediaLookup(env),
@@ -483,18 +659,24 @@ export async function updateMediaAlt(env, id, alt) {
 }
 
 // The contents page's browse block: every published tag and series.
+/** @typedef {{ name: string, n: number }} BrowseRow */
+/** @param {Env} env @returns {Promise<{ tags: BrowseRow[], series: BrowseRow[] }>} */
 export async function listBrowse(env) {
   const [tags, series] = await Promise.all([
-    env.DB.prepare(
-      `SELECT pt.tag AS name, COUNT(*) AS n FROM post_tags pt
-       JOIN posts p ON p.id = pt.post_id AND p.status = 'published'
-       GROUP BY pt.tag ORDER BY n DESC, pt.tag ASC`,
-    ).all(),
-    env.DB.prepare(
-      `SELECT series AS name, COUNT(*) AS n FROM posts
-       WHERE status = 'published' AND series IS NOT NULL
-       GROUP BY series ORDER BY n DESC, series ASC`,
-    ).all(),
+    /** @type {Promise<D1Result<BrowseRow>>} */ (
+      env.DB.prepare(
+        `SELECT pt.tag AS name, COUNT(*) AS n FROM post_tags pt
+         JOIN posts p ON p.id = pt.post_id AND p.status = 'published'
+         GROUP BY pt.tag ORDER BY n DESC, pt.tag ASC`,
+      ).all()
+    ),
+    /** @type {Promise<D1Result<BrowseRow>>} */ (
+      env.DB.prepare(
+        `SELECT series AS name, COUNT(*) AS n FROM posts
+         WHERE status = 'published' AND series IS NOT NULL
+         GROUP BY series ORDER BY n DESC, series ASC`,
+      ).all()
+    ),
   ]);
   return { tags: tags.results, series: series.results };
 }
@@ -503,19 +685,23 @@ export async function listBrowse(env) {
 // follow-up): every post as front-matter + body_md, readable anywhere,
 // plus the media manifest and redirect map. Revisions stay the JSON
 // dump's job — the zip is the CURRENT words in the most portable shape.
+/** @param {string} key @param {unknown} value */
 function yamlLine(key, value) {
   // JSON scalars are valid YAML scalars; numbers stay bare.
   return `${key}: ${typeof value === "number" ? value : JSON.stringify(value)}`;
 }
 
+/** @param {PostRow} post */
 export function postFrontMatter(post) {
   const tags = JSON.parse(post.tags || "[]");
   const lines = [];
-  for (const key of [
+  /** @type {(keyof PostRow)[]} */
+  const keys = [
     "id", "slug", "kind", "status", "title", "dek", "series", "series_part",
     "accent", "header_style", "mood", "link_url", "cover_media_id",
     "created_at", "updated_at", "published_at", "original_date", "scheduled_at",
-  ]) {
+  ];
+  for (const key of keys) {
     const value = post[key];
     if (value !== null && value !== undefined && value !== "") {
       lines.push(yamlLine(key, value));
@@ -525,12 +711,14 @@ export function postFrontMatter(post) {
   return `---\n${lines.join("\n")}\n---\n\n`;
 }
 
+/** @param {Env} env @returns {Promise<ZipEntry[]>} */
 export async function exportMarkdownEntries(env) {
   const [posts, media, redirects] = await Promise.all([
-    env.DB.prepare("SELECT * FROM posts ORDER BY created_at ASC").all(),
-    env.DB.prepare("SELECT * FROM media ORDER BY created_at ASC").all(),
-    env.DB.prepare("SELECT * FROM redirects").all(),
+    /** @type {Promise<D1Result<PostRow>>} */ (env.DB.prepare("SELECT * FROM posts ORDER BY created_at ASC").all()),
+    /** @type {Promise<D1Result<MediaRow>>} */ (env.DB.prepare("SELECT * FROM media ORDER BY created_at ASC").all()),
+    /** @type {Promise<D1Result<RedirectRow>>} */ (env.DB.prepare("SELECT * FROM redirects").all()),
   ]);
+  /** @type {ZipEntry[]} */
   const entries = posts.results.map((post) => ({
     name: `posts/${post.slug}.md`,
     data: `${postFrontMatter(post)}${post.body_md}${post.body_md.endsWith("\n") || post.body_md === "" ? "" : "\n"}`,
@@ -547,6 +735,7 @@ export async function exportMarkdownEntries(env) {
   return entries;
 }
 
+/** @param {Env} env */
 export async function exportAll(env) {
   const [posts, revisions, media, redirects] = await Promise.all([
     env.DB.prepare("SELECT * FROM posts ORDER BY created_at ASC").all(),

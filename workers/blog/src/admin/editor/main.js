@@ -18,18 +18,42 @@ import { tags } from "@lezer/highlight";
 import { autocompletion } from "@codemirror/autocomplete";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 
-const root = document.querySelector("main.editor");
-const post = JSON.parse(document.getElementById("post-data").textContent);
-const csrf = document.querySelector('meta[name="pm-blog-csrf"]').content;
+// Checked as JS against the DOM lib (tsconfig.browser.json; ADR-0004
+// addendum, 2026-09-25). The editor page is this script's own template
+// (admin/pages.js editorPage), so an element its ids name is either there
+// or the template is broken: `el` throws by name rather than returning
+// null into a property access that throws a TypeError a line later.
+/** @typedef {import("@codemirror/autocomplete").Completion} Completion */
+/** @typedef {{ accent: string | null, updated_at: string, body_md: string, editor_state: string | null }} EditorPost */
+
+/**
+ * @template T
+ * @param {T | null} node
+ * @param {string} what
+ * @returns {T}
+ */
+const must = (node, what) => {
+  if (node === null) throw new Error(`editor: ${what} is missing from the page`);
+  return node;
+};
+/** @param {string} id @returns {HTMLElement} */
+const el = (id) => must(document.getElementById(id), `#${id}`);
+/** @param {string} id @returns {HTMLInputElement} */
+const input = (id) => /** @type {HTMLInputElement} */ (el(id));
+
+const root = must(/** @type {HTMLElement | null} */ (document.querySelector("main.editor")), "main.editor");
+/** @type {EditorPost} */
+const post = JSON.parse(el("post-data").textContent ?? "null");
+const csrf = must(/** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="pm-blog-csrf"]')), "the csrf meta").content;
 const postId = root.dataset.postId;
 
-const el = (id) => document.getElementById(id);
 const saveState = el("save-state");
 const wordCountEl = el("word-count");
-const metaForm = el("meta-form");
-const previewFrame = el("preview");
-const previewPane = document.querySelector(".pane-preview");
+const metaForm = /** @type {HTMLFormElement} */ (el("meta-form"));
+const previewFrame = /** @type {HTMLIFrameElement} */ (el("preview"));
+const previewPane = must(/** @type {HTMLElement | null} */ (document.querySelector(".pane-preview")), ".pane-preview");
 
+/** @param {string} path @param {RequestInit & { headers?: Record<string, string> }} [options] */
 const api = (path, options = {}) =>
   fetch(path, {
     ...options,
@@ -43,6 +67,7 @@ const api = (path, options = {}) =>
   });
 
 // ---------------------------------------------------------------- fields --
+/** @param {string} text */
 function slugify(text) {
   return text
     .toLowerCase()
@@ -54,10 +79,11 @@ function slugify(text) {
 }
 
 function fields() {
+  /** @type {Record<string, unknown>} */
   const data = Object.fromEntries(new FormData(metaForm));
-  data.title = el("f-title").value;
+  data.title = input("f-title").value;
   data.body_md = view.state.doc.toString();
-  data.tags = (data.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean);
+  data.tags = String(data.tags ?? "").split(",").map((t) => t.trim()).filter(Boolean);
   for (const key of ["series", "link_url", "original_date"]) {
     if (!data[key]) data[key] = null;
   }
@@ -72,11 +98,13 @@ function fields() {
 
 // ----------------------------------------------------------------- saving --
 let dirty = false;
-let idleTimer = null;
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let idleTimer;
 let accentCleared = !post.accent;
 // Optimistic concurrency baseline — the server refuses saves whose base is
 // stale (another tab / another device), so nothing silently clobbers.
 let knownUpdatedAt = post.updated_at;
+/** @type {Promise<boolean> | null} */
 let savePromise = null;
 
 function markDirty() {
@@ -89,6 +117,7 @@ function markDirty() {
   updateWordCount();
 }
 
+/** @param {{ keepalive?: boolean }} [options] */
 async function saveOnce({ keepalive = false } = {}) {
   dirty = false;
   saveState.textContent = "Saving…";
@@ -112,7 +141,7 @@ async function saveOnce({ keepalive = false } = {}) {
     return true;
   } catch (err) {
     dirty = true;
-    saveState.textContent = `Save failed — retrying (${err.message})`;
+    saveState.textContent = `Save failed — retrying (${err instanceof Error ? err.message : String(err)})`;
     return false;
   }
 }
@@ -120,6 +149,7 @@ async function saveOnce({ keepalive = false } = {}) {
 // One save at a time, and success means THE LATEST TEXT persisted: callers
 // (Publish, ⌘S) share the in-flight run, which loops while more edits
 // arrived mid-save.
+/** @param {{ keepalive?: boolean }} [options] @returns {Promise<boolean>} */
 function save(options) {
   savePromise ??= (async () => {
     try {
@@ -146,7 +176,7 @@ window.addEventListener("beforeunload", (event) => {
     try {
       localStorage.setItem(
         mirrorKey,
-        JSON.stringify({ t: Date.now(), body: view.state.doc.toString(), title: el("f-title").value }),
+        JSON.stringify({ t: Date.now(), body: view.state.doc.toString(), title: input("f-title").value }),
       );
     } catch {
       /* quota */
@@ -158,14 +188,15 @@ window.addEventListener("beforeunload", (event) => {
 
 // ----------------------------------------------------- crash-safe mirror --
 const mirrorKey = `pm-blog-mirror-${postId}`;
-let mirrorTimer = null;
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let mirrorTimer;
 function mirror() {
   clearTimeout(mirrorTimer);
   mirrorTimer = setTimeout(() => {
     try {
       localStorage.setItem(
         mirrorKey,
-        JSON.stringify({ t: Date.now(), body: view.state.doc.toString(), title: el("f-title").value }),
+        JSON.stringify({ t: Date.now(), body: view.state.doc.toString(), title: input("f-title").value }),
       );
     } catch {
       /* quota — the server autosave is still the net */
@@ -174,6 +205,7 @@ function mirror() {
 }
 
 function offerRestore() {
+  /** @type {{ t?: number, body?: string, title?: string, saved?: boolean } | null} */
   let stored;
   try {
     stored = JSON.parse(localStorage.getItem(mirrorKey) ?? "null");
@@ -181,15 +213,16 @@ function offerRestore() {
     return;
   }
   if (!stored?.body || stored.saved) return;
+  const body = stored.body;
   const serverTime = new Date(post.updated_at).getTime();
-  if (stored.t > serverTime + 3000 && stored.body !== post.body_md) {
+  if ((stored.t ?? 0) > serverTime + 3000 && body !== post.body_md) {
     const bar = el("restore-bar");
     bar.hidden = false;
     el("restore-local").addEventListener("click", () => {
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: stored.body },
+        changes: { from: 0, to: view.state.doc.length, insert: body },
       });
-      if (stored.title) el("f-title").value = stored.title;
+      if (stored.title) input("f-title").value = stored.title;
       bar.hidden = true;
       markDirty();
     });
@@ -208,6 +241,7 @@ function updateWordCount() {
 }
 
 // ---------------------------------------------------------------- upload --
+/** @param {File[]} files @param {EditorView} view */
 async function uploadFiles(files, view) {
   for (const file of files) {
     if (!file.type.startsWith("image/")) continue;
@@ -218,16 +252,17 @@ async function uploadFiles(files, view) {
     form.append("file", file, file.name);
     try {
       const res = await api("/blog/admin/api/media", { method: "POST", body: form });
-      if (!res.ok) throw new Error((await res.json()).error ?? res.status);
+      if (!res.ok) throw new Error(String((await res.json()).error ?? res.status));
       const media = await res.json();
       replaceOnce(view, placeholderText, media.markdown);
     } catch (err) {
       replaceOnce(view, placeholderText, "");
-      saveState.textContent = `Upload failed: ${err.message}`;
+      saveState.textContent = `Upload failed: ${err instanceof Error ? err.message : String(err)}`;
     }
   }
 }
 
+/** @param {EditorView} view @param {string} needle @param {string} replacement */
 function replaceOnce(view, needle, replacement) {
   const doc = view.state.doc.toString();
   const at = doc.indexOf(needle);
@@ -236,6 +271,7 @@ function replaceOnce(view, needle, replacement) {
 }
 
 // --------------------------------------------------------- slash commands --
+/** @param {EditorView} view @param {number} from @param {number} to @param {string} text @param {number} [cursorFromEnd] */
 function template(view, from, to, text, cursorFromEnd = 0) {
   view.dispatch({
     changes: { from, to, insert: text },
@@ -244,6 +280,7 @@ function template(view, from, to, text, cursorFromEnd = 0) {
   view.focus();
 }
 
+/** @type {{ label: string, detail: string, apply: (view: EditorView, completion: Completion, from: number, to: number) => void }[]} */
 const SLASH = [
   { label: "/aside", detail: "margin note", apply: (v, _c, f, t) => template(v, f, t, ":::aside\n\n:::\n", 5) },
   { label: "/pullquote", detail: "lifted line", apply: (v, _c, f, t) => template(v, f, t, ":::pullquote\n\n:::\n", 5) },
@@ -251,7 +288,7 @@ const SLASH = [
   { label: "/wide", detail: "wide block", apply: (v, _c, f, t) => template(v, f, t, ":::wide\n\n:::\n", 5) },
   { label: "/bleed", detail: "full-bleed block", apply: (v, _c, f, t) => template(v, f, t, ":::bleed\n\n:::\n", 5) },
   { label: "/code", detail: "code block", apply: (v, _c, f, t) => template(v, f, t, "```js\n\n```\n", 5) },
-  { label: "/image", detail: "upload an image", apply: (v, _c, f, t) => { template(v, f, t, ""); el("file-input").click(); } },
+  { label: "/image", detail: "upload an image", apply: (v, _c, f, t) => { template(v, f, t, ""); fileInput.click(); } },
   { label: "/footnote", detail: "reference + note", apply: (v, _c, f, t) => {
       const n = (v.state.doc.toString().match(/\[\^\d+\]:/g)?.length ?? 0) + 1;
       template(v, f, t, `[^${n}]`);
@@ -262,6 +299,7 @@ const SLASH = [
   { label: "/table", detail: "table", apply: (v, _c, f, t) => template(v, f, t, "| Col | Col |\n| --- | --- |\n|  |  |\n") },
 ];
 
+/** @param {import("@codemirror/autocomplete").CompletionContext} context @returns {import("@codemirror/autocomplete").CompletionResult | null} */
 function slashSource(context) {
   const line = context.state.doc.lineAt(context.pos);
   const before = line.text.slice(0, context.pos - line.from);
@@ -278,6 +316,7 @@ function slashSource(context) {
 }
 
 // ------------------------------------------------------- inline formatting --
+/** @param {EditorView} view @param {string} mark @param {string} [endMark] */
 function wrapSelection(view, mark, endMark = mark) {
   const range = view.state.selection.main;
   const selected = view.state.sliceDoc(range.from, range.to);
@@ -290,6 +329,7 @@ function wrapSelection(view, mark, endMark = mark) {
   return true;
 }
 
+/** @param {EditorView} view */
 function insertLink(view) {
   const range = view.state.selection.main;
   const selected = view.state.sliceDoc(range.from, range.to) || "text";
@@ -417,7 +457,7 @@ fileInput.hidden = true;
 fileInput.id = "file-input";
 document.body.append(fileInput);
 fileInput.addEventListener("change", () => {
-  uploadFiles([...fileInput.files], view);
+  uploadFiles([...(fileInput.files ?? [])], view);
   fileInput.value = "";
 });
 
@@ -437,7 +477,7 @@ offerRestore();
 
 // The settings drawer opens below the header; publish this height as a CSS
 // var so its content never tucks under the top bar (see .meta-panel).
-const editorTop = document.querySelector(".editor-top");
+const editorTop = must(/** @type {HTMLElement | null} */ (document.querySelector(".editor-top")), ".editor-top");
 const syncTopHeight = () =>
   document.documentElement.style.setProperty("--top-h", `${editorTop.offsetHeight}px`);
 syncTopHeight();
@@ -445,7 +485,8 @@ new ResizeObserver(syncTopHeight).observe(editorTop);
 
 // ---------------------------------------------------------------- preview --
 let previewOn = false;
-let previewTimer = null;
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let previewTimer;
 
 function togglePreview() {
   previewOn = !previewOn;
@@ -481,6 +522,7 @@ el("toggle-preview").addEventListener("click", togglePreview);
 const metaPanel = el("meta-panel");
 const metaBackdrop = el("meta-backdrop");
 const publishHint = el("publish-hint");
+/** @param {boolean} [force] */
 function toggleMeta(force) {
   const show = force ?? metaPanel.hidden;
   metaPanel.hidden = !show;
@@ -504,11 +546,11 @@ document.addEventListener("keydown", (event) => {
   }
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "m") {
     event.preventDefault();
-    if (!el("media-library").open) openMediaLibrary();
+    if (!mediaDialog.open) openMediaLibrary();
   }
   // The dialog owns Escape while open (native cancel) — don't also fold the
   // settings panel underneath it.
-  if (event.key === "Escape" && !metaPanel.hidden && !el("media-library").open) {
+  if (event.key === "Escape" && !metaPanel.hidden && !mediaDialog.open) {
     toggleMeta(false);
     view.focus();
   }
@@ -517,12 +559,12 @@ document.addEventListener("keydown", (event) => {
 metaForm.addEventListener("input", markDirty);
 el("f-title").addEventListener("input", markDirty);
 el("f-slug").addEventListener("input", () => {
-  el("slug-echo").textContent = el("f-slug").value;
+  el("slug-echo").textContent = input("f-slug").value;
   publishHint.hidden = true;
 });
 el("slug-from-title").addEventListener("click", () => {
-  el("f-slug").value = slugify(el("f-title").value);
-  el("slug-echo").textContent = el("f-slug").value;
+  input("f-slug").value = slugify(input("f-title").value);
+  el("slug-echo").textContent = input("f-slug").value;
   markDirty();
 });
 el("clear-accent").addEventListener("click", () => {
@@ -535,18 +577,18 @@ el("f-accent").addEventListener("input", () => {
 
 // ---------------------------------------------------------------- publish --
 el("publish").addEventListener("click", async () => {
-  if (el("f-slug").value.startsWith("draft-")) {
+  if (input("f-slug").value.startsWith("draft-")) {
     // Open settings and offer a slug derived from the title, then wait: the
     // slug is the permanent URL, so the author confirms it before publishing.
     toggleMeta(true);
-    if (el("f-title").value) {
-      el("f-slug").value = slugify(el("f-title").value);
-      el("slug-echo").textContent = el("f-slug").value;
+    if (input("f-title").value) {
+      input("f-slug").value = slugify(input("f-title").value);
+      el("slug-echo").textContent = input("f-slug").value;
       markDirty();
     }
     // The header status is transient (autosave overwrites it) and sits under
     // the drawer — put the guidance where the author is now looking.
-    publishHint.textContent = el("f-slug").value
+    publishHint.textContent = input("f-slug").value
       ? "Check this URL — it’s permanent once published. Then press Publish again."
       : "Give this post a slug (its URL), then press Publish again.";
     publishHint.hidden = false;
@@ -564,7 +606,8 @@ el("publish").addEventListener("click", async () => {
   window.location.reload();
 });
 
-el("unpublish")?.addEventListener("click", async () => {
+// Only a published post's page carries the button.
+document.getElementById("unpublish")?.addEventListener("click", async () => {
   const res = await api(`/blog/admin/api/posts/${postId}/unpublish`, { method: "POST" });
   if (res.ok) window.location.reload();
 });
@@ -583,8 +626,12 @@ el("delete-post").addEventListener("click", async () => {
 // re-uploading, fix alt after the fact. Inserts use the EMPTY-alt form so
 // the library's alt flows through mediaLookup at render time — editing alt
 // here re-fixes every referencing post's cached HTML on the server.
-const mediaDialog = el("media-library");
+const mediaDialog = /** @type {HTMLDialogElement} */ (el("media-library"));
 
+/**
+ * One library row, the shape /blog/admin/api/media serves (db.js listMedia).
+ * @param {{ id: string, key: string, filename: string, alt: string, width: number | null, height: number | null, used_in: { id: string, title: string }[] }} item
+ */
 function mediaCell(item) {
   const li = document.createElement("li");
   li.className = "media-cell";
@@ -594,7 +641,7 @@ function mediaCell(item) {
   img.alt = "";
   img.loading = "lazy";
   img.decoding = "async";
-  if (item.width) {
+  if (item.width !== null && item.height !== null) {
     img.width = item.width;
     img.height = item.height;
   }
@@ -687,7 +734,8 @@ if (!("closedBy" in HTMLDialogElement.prototype)) {
 // ------------------------------------------------------------------ schedule --
 // A scheduled post is a draft carrying its go-live instant; the Worker cron
 // publishes it through the same gates as the Publish button (db.js).
-const scheduleZone = el("schedule-zone");
+// Absent on a published post's page (the template omits the block).
+const scheduleZone = document.getElementById("schedule-zone");
 
 function renderSchedule() {
   if (!scheduleZone) return; // published posts carry no schedule block
@@ -786,7 +834,7 @@ function renderPreviewLink() {
       const res = await api(`/blog/admin/api/posts/${postId}/preview-token`, { method: "POST" });
       if (res.ok) {
         const { url } = await res.json();
-        zone.dataset.token = url.split("/preview/")[1];
+        zone.dataset.token = String(url).split("/preview/")[1] ?? "";
         renderPreviewLink();
       }
     });
