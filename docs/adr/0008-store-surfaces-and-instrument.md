@@ -168,6 +168,13 @@ so the flagship INP comparison compares like work (WCAG 3.3.1/4.1.3; panel
 kill). JS-off statements ship on-page (checkout: fields and native
 validation work; placing the order is the JavaScript moment — the
 comparison, stated).
+> **PARTLY SUPERSEDED — see addendum D (2026-09-24).** Two clauses above are
+> qualified there: "reserved min-height" is now a FIXED grid track the empty
+> copy and the list share (a minimum let a populated cart move the form on
+> the phone profile), and the JS-off "Place order" now LANDS — a native POST
+> to a relative `place-order/`, a 303, and a second committed master of the
+> surface at `checkout/placed/`. Placing the order IN the page remains the
+> JavaScript moment the comparison is about.
 
 **8. Surface structure, one tradeoff each** (contracts of record:
 `packages/reference/render/*.mjs`; compositions:
@@ -888,3 +895,84 @@ settles four things the paragraph left open:
   `variants: ["vanilla"]` in the same commit as the routes (decision map,
   2026-08-29) — home's PM‑005 row is derived from that array by the origin
   suite, alongside the matrix rows.
+
+## Addendum D — §7's JS-off moment has a landing, and its reserved geometry is a cell (2026-09-24, `checkout-measure-prep`)
+
+§7 says of checkout: *"JS-off statements ship on-page (checkout: fields and
+native validation work; placing the order is the JavaScript moment — the
+comparison, stated)."* The statement was on the page and true; what was
+also true, and stated nowhere, was that a visitor who placed the order with
+JavaScript off met a zero-length 405 — the assets binding's answer to a
+POST it will not serve. Three amendments, each measured before it was
+written.
+
+**1. The JS-off order lands on a second page of the surface.** The form
+posts natively to a RELATIVE `place-order/` — each variant answers its own
+(`/vanilla/checkout/place-order/`, later `/react-next/checkout/place-order/`)
+— and the variant's Worker answers with a **303** to `checkout/placed/`, a
+second committed master of the checkout surface nested like the PDP's
+degenerate ones: the shell, the plaque restated for what the request
+carried, the JS-off statement in the other direction, one link back to the
+records, `noindex`, no form. Rule 1 of the master (no input but the shipping
+radios carries a `name`) is what makes the design complete: the posted body
+is `shipping=standard` or `shipping=express` and nothing else, the Worker
+never reads it, and the page says exactly that rather than naming a method
+it cannot know. §7's sentence stands — placing the order IN the page is
+still the JavaScript moment the comparison is about — and the on-page JS-off
+statement now also says where the native submit goes.
+
+*Why not the form's own URL, which the first draft used.* On a Worker with
+static assets, a request whose path matches an asset is answered before the
+script runs (Cloudflare's routing page, fetched 2026-09-24: "Cloudflare will
+first attempt to serve static assets if one matches the incoming request";
+"If an appropriate static asset if not found, Cloudflare will invoke your
+Worker script" — the typo is the page's). `POST /vanilla/checkout/` has an
+`index.html` behind it, so the route sat unreached and the plane kept
+answering 405 while the pre-merge pin on the route passed. A path with no
+asset behind it is the one request that reaches the script, and every page
+GET stays assets-first. Rejected with their costs: `assets.run_worker_first`
+on the page path — a script invocation on every GET of the measured page, to
+answer a POST nobody measures; a `_redirects` file — method-blind; a 200 on
+the POST URL — a refresh re-posts.
+
+**2. "Reserved min-height" is superseded: the order summary's geometry is a
+fixed cell.** §7 said the order-summary region ships with *"designed empty
+copy and reserved min-height"*. A minimum is a floor, not a height: the
+empty region stood at 234 px against a 12 rem content-box floor, so a
+one-item cart changed nothing and a three-item cart grew it by 25 px and
+moved the form below it on the phone profile — layout-shift **0.0214**
+measured on the held plane; on the desktop the total row alone moved for
+0.0011. The region is now a three-row grid whose middle track is FIXED at
+9.25 rem (three 44 px lines plus two `--space-stack-sm` gaps — derived from
+the line's own geometry, not chosen), the empty copy and the list share
+that cell, the served list is `:empty` and hidden, past three lines the list
+scrolls inside the cell, and the total's price slot reserves `10ch` so a
+widening total moves its text and never its box. Population changes nothing
+outside the cell: layout-shift **0** on both profiles with one, three and
+six items, form and summary boxes unmoved. The cost, stated: the empty state
+is 25 px taller everywhere (234 → 259 px), and the desktop summary shows
+three lines before scrolling where it showed five and a half. The measured
+page is the EMPTY cart, so no published number moved, which is why this
+landed before the first checkout batch rather than after it.
+
+**3. The three ids are registered, and two of them fetch.** `checkout-type-
+card`, `checkout-submit-invalid` and `checkout-fix-and-submit` (Consequences
+above; owner `tools/bench-runner`) are in the registry with the definitions
+ADR-0001 addendum V records. What this ADR needs to carry is the consequence
+for §7's like-for-like claim: every field error and the error summary's
+title draw U+26A0 as the non-colour cue, Familjen Grotesk does not carry it,
+and the one-glyph face `fonts.css` serves for it is fetched on the FIRST
+error render — so the two submit ids cost 1,212 B of font (1,512 B as
+Resource Timing reports it) on every paradigm alike. Identical bytes from
+every variant's own tokens tree: glyph mass, never a paradigm difference,
+and the checkout fit template must declare it as a constant when the
+measurement pass writes one. The DOM + focus work §7 demands is unchanged.
+
+**Consequences.** `packages/reference/surfaces/checkout/placed/` is the
+second master of the surface and every later checkout variant re-implements
+it and answers `POST {variant}/checkout/place-order/` with a 303 to it; the
+drift gate holds both pages. `cart-summary.css` is the contract for the
+cell. The OWED entry for `pm-checkout__form` is retired with its rule
+(`min-inline-size: 0`, a grid-item guard the sheet itself says has no
+observable effect at any tested viewport). `variants/vanilla/DIFF-TO-STARTER.md`
+decision 8 records the route.

@@ -11,7 +11,10 @@
  *        checkout IS measured; --fenced is reserved for number-exclusions)…
  *     </aside>
  *     <div class="pm-checkout__body">
- *       <form class="pm-checkout__form" novalidate>
+ *       <form class="pm-checkout__form" method="post" action="place-order/">
+ *         (no `novalidate` in the SERVED markup — checkout.mjs; the
+ *          enhancement sets it at hydration; the relative action is the
+ *          JS-off POST's endpoint, answered by each variant's own Worker)
  *         <fieldset class="pm-checkout__section">
  *           <legend class="pm-checkout__legend">Contact</legend>
  *           …pm-field rows (autocomplete + inputmode on every control)…
@@ -28,6 +31,12 @@
  * Invalid submit renders the pm-error-summary at the top of the form and
  * moves focus to it (the registry entry `checkout-submit-invalid` performs
  * identical DOM + focus work in every paradigm).
+ *
+ * The JS-off "Place order" (checkout-measure-prep, 2026-09-24) lands on a
+ * SECOND page of this surface, `checkout/placed/` — the same shell, the
+ * plaque, the JS-off statement and a way back — reached by the native POST
+ * and a 303. Its root carries the `--placed` modifier below: one reading
+ * column at the form's own measure, no summary.
  */
 
 .pm-checkout__body {
@@ -39,8 +48,34 @@
 
 @media (max-width: 52em) {
   .pm-checkout__body { grid-template-columns: 1fr; }
-  /* Summary first on small screens: what am I buying, then the form. */
+  /* Summary first on small screens: what am I buying, then the form. Its
+     geometry is reserved (cart-summary.css), so populating it later cannot
+     move the form that follows it here. */
   .pm-checkout__body .pm-cart { order: -1; }
+}
+
+/* The form is a grid ITEM, and where this rule acts is the ≤52em layout,
+   whose track is a bare `1fr` — `minmax(auto, 1fr)` — so the item's automatic
+   minimum is its min-content width (CSS Grid 1 §6.6: content-based when the
+   item "spans at least one track in that axis whose min track sizing
+   function is auto"), and one unbreakable run in a hint or a control's
+   intrinsic width could force the column past the viewport. In the desktop
+   `minmax(0, 36rem)` track the automatic minimum is already zero ("Otherwise,
+   the automatic minimum size is zero, as usual") and this rule is a no-op —
+   the first draft of this comment named that track as the mechanism, and the
+   verification pass fetched the spec. Stated plainly: nothing overflows at
+   any viewport from 320 px up today (probed 2026-09-24, scrollWidth 320 at
+   320) — this is the guard that keeps it so on phones, and the rule the
+   `pm-checkout__form` OWED entry waited for (master-styles-resolve). */
+.pm-checkout__form {
+  min-inline-size: 0;
+}
+
+/* The order-placed page: one column at the form's measure (the same 36rem
+   the body grid gives the form), so the confirmation reads at the width the
+   form was filled at. */
+.pm-checkout--placed {
+  max-inline-size: 36rem;
 }
 
 .pm-checkout__section {

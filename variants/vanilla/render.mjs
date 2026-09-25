@@ -479,8 +479,10 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
 
    The canonical SERVED state is the EMPTY cart (ADR-0008 §7: cart is
    localStorage, so no paradigm can serve cart contents) with reserved
-   geometry — `cart-summary.css` holds `min-block-size: 12rem` so population
-   cannot shift the form beside it. Everything the enhancement writes into the
+   geometry — `cart-summary.css` gives the lines a FIXED grid track the
+   empty copy and the list share, so population moves nothing outside the
+   summary (checkout-measure-prep, 2026-09-24; the floor it replaced let a
+   three-item cart move the form). Everything the enhancement writes into the
    summary is therefore invisible to the JS-off drift gate, which is exactly
    the blind spot `pdp-controls` paid for; the guards this unit adds are the
    pre-merge half of the close.
@@ -574,7 +576,7 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
           <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser — this page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
         </aside>
         <div class="pm-checkout__body">
-          <form class="pm-checkout__form" method="post" action="">
+          <form class="pm-checkout__form" method="post" action="place-order/">
             <fieldset class="pm-checkout__section">
               <legend class="pm-checkout__legend">Contact</legend>
               ${field({ id: "email", label: "Email address", type: "email", autocomplete: "email", required: true, hint: "Used only to render the demo confirmation in this page — nothing is ever sent." })}
@@ -624,7 +626,7 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
               </div>
             </fieldset>
             <div><button class="pm-button" type="submit">Place order</button></div>
-            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, and native validation that gates the submit. Live card formatting and the error summary are what JavaScript adds; placing the order is the page's JavaScript moment, and that cost is the comparison.</p>
+            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, native validation that gates the submit, and a Place order that posts natively to a plain confirmation page. Live card formatting and the error summary are what JavaScript adds; placing the order in the page is its JavaScript moment, and that cost is the comparison.</p>
           </form>
           <section class="pm-cart" aria-label="Order summary">
             <h2 class="pm-cart__title">Order summary</h2>
@@ -633,6 +635,80 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
             <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>${namedGlyph("—", "No total yet")}</span></p>
           </section>
         </div>
+      </div>
+    </main>
+    <p class="pm-status" role="status" data-pm-status></p>
+    <footer class="pm-footer">
+      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <nav class="pm-footer__nav" aria-label="About this site">
+        <a href="/">What is this?</a>
+        <a href="/vanilla/a11y/">Accessibility, shown</a>
+        <a href="/how-it-was-built/">How it was built</a>
+        <a href="https://github.com/Robert-Lark/project-matrix" rel="noopener">GitHub</a>
+      </nav>
+    </footer>
+  </div>
+  <script src="${assetBase(depth)}checkout.js" defer></script>
+</body>
+</html>
+`;
+}
+
+/** The order-placed page's sheet list (packages/reference/render/checkout.mjs
+ *  renderCheckoutPlaced `css`, after the six `head()` ships everywhere). */
+const CHECKOUT_PLACED_CSS = [
+  "tokens.css",
+  "surfaces/shell.css",
+  "components/masthead.css",
+  "components/footer.css",
+  "components/button.css",
+  "components/plaque.css",
+  "surfaces/checkout.css",
+];
+
+/**
+ * Where a JS-off "Place order" lands (checkout-measure-prep, 2026-09-24):
+ * this variant's re-typed copy of the `checkout/placed` master. The Worker
+ * (src/index.js) answers the form's native POST with a 303 here, so the page
+ * is a plain GET-able document one directory below the form — depth 2 at
+ * `/vanilla/checkout/placed/`. Re-typed rather than imported, like the form
+ * above: checkout is a BENCHMARKED surface, and every checkout variant will
+ * land this same document (DIFF-TO-STARTER decision 1; decision 6 is for
+ * singletons only). `noindex` is the master's — a confirmation reached by
+ * posting has no standalone meaning to index.
+ *
+ * One script, the same `checkout.js`: on this page it renders the masthead
+ * badge from storage (CART_CONTRACT — every shell page does) and then finds
+ * no summary and no form, so it fetches nothing and returns.
+ */
+export function renderCheckoutPlacedPage({ depth = 2 } = {}) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  ${head("Order placed — Long Decay Records", { depth, css: CHECKOUT_PLACED_CSS, noindex: true })}
+</head>
+<body>
+  <a class="pm-skip pm-button" href="#main">Skip to content</a>
+  <div id="pm-chrome-slot"></div>
+  <div class="pm-page">
+    <header class="pm-masthead">
+      <a class="pm-masthead__brand" href="/">Long Decay<span> Records</span></a>
+      <nav class="pm-masthead__nav" aria-label="Store">
+        <a class="pm-masthead__link" href="/react-next/plp/plain/">Records</a>
+        <a class="pm-masthead__link" href="/vanilla/editorial/">Editorial</a>
+      </nav>
+      <a class="pm-masthead__cart" href="/vanilla/checkout/">Cart<span class="pm-masthead__cart-count" data-pm-cart-count aria-hidden="true"></span></a>
+    </header>
+    <main id="main">
+      <div class="pm-checkout pm-checkout--placed">
+        <h1 class="pm-page__title">Order placed</h1>
+        <aside class="pm-plaque">
+          <p class="pm-plaque__kicker">Simulated commerce</p>
+          <p class="pm-plaque__name"><strong>This was a demonstration.</strong></p>
+          <p class="pm-plaque__claim">Nothing ships, nothing was charged, and nothing was kept. The form posted the way a form does without JavaScript, and the only field it carries a name for is the shipping method — the card and address fields have none, so what you typed never left your browser.</p>
+        </aside>
+        <p class="pm-checkout__jsoff">With JavaScript on, this moment happens inside the checkout itself: the same form validates as you type and announces the order without leaving the page. This page is what the same form does with JavaScript off — a real request and a real answer.</p>
+        <p><a class="pm-button" href="/react-next/plp/plain/">Back to the records</a></p>
       </div>
     </main>
     <p class="pm-status" role="status" data-pm-status></p>

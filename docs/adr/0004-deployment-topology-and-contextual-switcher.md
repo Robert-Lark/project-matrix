@@ -423,3 +423,32 @@ the floor where the repo's own suite cannot see it); **`frame-ancestors`
 alone** (above). **Given up by this addendum:** nothing a visitor can see;
 106 bytes of headers per HTTP/1.1 response and a few per h2/h3 response,
 identical everywhere.
+
+## Addendum — the static variant's forwarder, qualified: plus at most one route for a path no asset answers (2026-09-24, `checkout-measure-prep`)
+
+The cf-composition-spike addendum above says every static variant ships a
+one-line `env.ASSETS.fetch(request)` forwarder, and the reason stands:
+serving assets through a service binding without a script is undocumented.
+The vanilla variant's script is no longer one line. The checkout form is a
+real `method="post"` form (ADR-0008 §7), and a static-assets Worker answers a
+POST to a path that has an asset behind it with the binding's zero-length
+405 before the script runs — Cloudflare's routing page, fetched 2026-09-24:
+"Cloudflare will first attempt to serve static assets if one matches the
+incoming request"; the page says nothing about methods, and that a POST is
+matched the same way is what local `wrangler dev` 4.110 does, measured. So
+the form posts to a RELATIVE `place-order/` — a path with nothing in dist
+behind it, the one request that reaches the script — and the script answers
+exactly `POST {variant}/checkout/place-order/` with a 303 to
+`{variant}/checkout/placed/`, a committed master of the surface baked into
+dist like every other page. Everything else still forwards to the binding.
+
+The qualification, for the next static variant: the default forwarder PLUS
+at most one route, for a path no asset answers, that redirects to a GET-able
+page. Not `assets.run_worker_first` on a page path (a script invocation on
+every GET of a measured page, to answer a POST nobody measures), not a
+`_redirects` file (method-blind), not a 200 on the POST URL (a refresh
+re-posts). The body is never read. The post-deploy smoke's
+`checkout.test.ts` legs — a POST to the form page 405, a POST to the
+endpoint 303 — are what say whether the deployed plane agrees with the
+local one. ADR-0008 addendum D carries the page design; this addendum
+carries only the composition rule it bends.

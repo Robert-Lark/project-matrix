@@ -339,6 +339,18 @@
     },
     "@pm/repo-checks#test": {
       "cache": false
+    },
+    "@pm/bench-runner#test": {
+      // The interactions guard (tools/bench-runner/test/interactions.test.ts,
+      // checkout-measure-prep 2026-09-24) reads docs/adr/0008 and
+      // variants/vanilla/src/checkout.js by path — neither a dependency of
+      // this package, so neither in its hash. Cached, an eleventh RULES entry
+      // or a renamed id in the ADR would replay a stale PASS for exactly the
+      // legs that hold the fill fixture and the id names to their sources.
+      // Uncached like every sibling guard that reads across workspaces
+      // (@pm/vanilla#test, @pm/edge#test, @pm/repo-checks#test): correctness
+      // over ~0.4 s (verify-slice, seams lens).
+      "cache": false
     }
   }
 }

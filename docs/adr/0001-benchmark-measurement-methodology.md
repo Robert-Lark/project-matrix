@@ -1035,3 +1035,110 @@ repeat it (`tools/bench-runner/src/collect.ts`) rest on the same reading of
 the spec this paragraph corrects; the fallback's arithmetic is unaffected
 (it never subtracts a header size), the words are — a measurement-pass
 line, verified by the skeptic lens on 2026-09-18.
+
+## Addendum — checkout's three ids: what each INP cell measures, and the fetch two of them make (2026-09-24, `checkout-measure-prep`)
+
+**V. Addendum B promised "lab INP (scripted)" for checkout with the registry
+id in the receipt; the ids now exist, and their definitions bound what a
+cell can claim.** Three entries in `tools/bench-runner/src/collect.ts`, each
+settling on a DOM state the enhancement itself produces — never on a timer
+or the address bar — and each measured on the held plane before its comment
+was written.
+
+- **`checkout-type-card`** — the card field focused PROGRAMMATICALLY, then
+  SIXTEEN real keystrokes (`pressSequentially`), settling on the formatter's
+  own output ("4242 4242 4242 4242"). Programmatic focus, not a click, and
+  the reason is the ruler's own gate (below): the first input of the visit
+  must BE a keystroke, or the cell is the click that focused the field — an
+  interaction that runs no handler. Under the gate, the cell is the first
+  keystroke's own entry, and any later keystroke that reaches 40 ms.
+  Fetches nothing.
+- **`checkout-submit-invalid`** — one click on the pristine form, settling
+  on the focus move to the error summary (§7's contract: ten rules checked,
+  `aria-invalid` and an error paragraph per field, ten links, focus). One
+  interaction; the cell is that handler.
+- **`checkout-fix-and-submit`** — the invalid submit, every field corrected
+  with Playwright's `fill`, then the submit that succeeds: two REAL clicks,
+  settling on the announcement the email hint promises. Under the gate
+  (below) the first click is the visit's first input and always counts; the
+  second — ten fields re-checked, ten error states cleared, the summary
+  removed, the order announced — counts only when it reaches 40 ms. So on a
+  fast paradigm this cell reads the same click `checkout-submit-invalid`
+  does, and separates from it only where the recovery's handler is slow
+  enough to be seen: the condition this surface's spotlight names. The fills
+  between the clicks are no input at all — `fill` (CDP `Input.insertText`)
+  dispatches `input` events and no key events, and ten fills produced 0
+  event-timing entries with an `interactionId`.
+
+  *A programmatic priming was tried and rejected on measurement.* Making the
+  invalid submit with `form.requestSubmit()` so the one real click would be
+  the successful submit produced **CLS 0.099**: the summary's render is a
+  layout shift no input precedes, so the metric counts it, where a real
+  click excludes it under the 500 ms recent-input rule. The fills' blur
+  clean-ups are not the reason — each fill's trusted `change` event is
+  itself an excluding input (the Layout Instability spec's list names
+  `change`, fetched 2026-09-24), so they never count either way; the skeptic
+  lens corrected the first draft's attribution. The instrument must never
+  manufacture the CLS it reports (ADR-0008 §1), so the priming is a real
+  click, and ADR-0005 §3's "unmeasured priming prefix" still has no
+  mechanism in this runner — the fills are the closest thing to one, and
+  only because they are not inputs.
+
+**The ruler's gate, which decided the designs above.** The pinned
+`web-vitals` (5.3.0; `packages/measurement/src/client.ts` calls `onINP` with
+no options) observes `event` entries with `durationThreshold: 40` — its
+default — plus the `first-input` entry, always. Two consequences, both
+measured on the held plane: an interaction under 40 ms is invisible to INP
+unless it is the visit's FIRST input (and under 16 ms the browser reports no
+`event` entry at all); so on a fast paradigm the cell IS the first-input
+entry, and the id's name must name that interaction. Driven the way the
+first draft drove them, `checkout-type-card`'s first input was the
+`pointerdown` that focused the field (24 ms) and every keystroke sat under
+the gate — the cell was the click. Driven as above, the first input is the
+`keydown` on the card (8 ms). For `checkout-fix-and-submit` the first input
+is the INVALID submit's click, with the successful submit counted only if it
+reaches 40 ms — stated in the entry, because the alternative manufactured
+CLS. The gate is the ruler's and stays: every
+published INP cell on this site was made under it, and changing it here
+would make checkout's cells a different metric from editorial's.
+
+**Two of the three FETCH, and the receipt says so.** Every field error and
+the summary's title draw U+26A0 (⚠) as a non-colour cue; Familjen Grotesk
+does not carry it, and `fonts.css` serves a one-glyph face scoped by
+`unicode-range`, which the browser requests on the first error render and
+never before. Measured: `PMWarnGlyph.U26A0.woff2`, 1,212 B body, **1,512 B
+`transferSize`** — the body plus the 300 octets the spec substitutes for
+headers (addendum U). It is the same file, byte for byte, from every
+variant's own copied tokens tree: glyph mass, invariant by construction,
+the `pdp-gallery-switch` shape rather than a paradigm difference. The
+checkout fit template does not exist yet — it is the measurement pass's to
+write — and when it does it must declare `interactionFetch: { kind:
+"constant" }` for the two submit ids and `"none"` for the keystroke id;
+addendum S made the declaration mandatory precisely so a surface cannot
+opt out of this check, and the origin suite's `bench-checkout.browser`
+leg derives the face's size from the served `fonts.css` and pins body + 300
+— on the LOCAL plane only: the bench legs are skipped on the post-deploy
+smoke by design (heavy pages exercising the harness), so the deployed
+plane's transfer of that face is unmeasured until the measurement pass
+mints against it and its own receipt says what the wire carried.
+
+**What was measured, and what is NOT published.** Six visits through
+`measureVisit` on the held plane, one per id per profile, INP present in
+every one — 16 / 48 / 40 ms (type-card / submit-invalid / fix-and-submit) on `avg-broadband-desktop`, 8 / 64 / 48 ms on
+`slow-4g-mid-phone` — CLS 0 in all six, interaction bytes 0 / 1,512 /
+1,512. These are drivability evidence from a loaded local machine, one run
+each, and no receipt carries them; the batch, the medians and the addendum-T
+like-for-like test (Chromium closes the entry at the first paint after the
+SYNCHRONOUS handler returns) are the measurement pass's, on the deployed
+plane. Vanilla's handlers are synchronous; whether a resumed or re-rendered
+paradigm's checkout is like-for-like is a question this addendum leaves
+where addendum T left the PDP's: to be measured per surface before a row
+publishes.
+
+**Zero-CLS on the measured page, proven where it was not.** The addendum-B
+cells are measured on the EMPTY cart, and the empty cart never shifted. What
+did shift was the populated cart on the phone profile (0.0214, ADR-0008
+addendum D), which no cell measures and no visitor should meet either. It
+reads 0 now, and `checkout.browser.test.ts` holds it there by holding the
+catalogue fetch across first paint so the shift, if it returned, would be
+observable rather than raced.

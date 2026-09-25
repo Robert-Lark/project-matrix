@@ -5,8 +5,9 @@
 // checkout genuinely does; none of it is padding added to make a number.
 //
 // The canonical SERVED state is what the drift gate sees (JS-off, ADR-0008
-// §7): a pristine form and an EMPTY order summary with reserved geometry
-// (cart-summary.css `min-block-size: 12rem`). Everything below is
+// §7): a pristine form and an EMPTY order summary with reserved geometry —
+// cart-summary.css gives the lines a FIXED grid track the empty copy and the
+// list share, so populating it moves nothing outside it. Everything below is
 // enhancement — with JS off the fields, labels, hints and the browser's own
 // constraint validation still work, which is what the page says on itself.
 //
@@ -14,8 +15,10 @@
 // CART_CONTRACT) is RE-IMPLEMENTED here rather than imported from cart.js,
 // for the reason pdp.js records: a component is a spec, not shared code
 // (ADR-0003 §1), and this paradigm's real shape is one request, one script,
-// no module graph. That makes this the THIRD vanilla `read()`; the
-// uniqueness clause is checked here exactly as it is in the other two.
+// no module graph. That makes this the THIRD vanilla `read()` (a11y.js is
+// the fourth); the uniqueness clause is checked here exactly as in the
+// others, and tools/repo-checks holds the copies identical after comment
+// stripping (cart-trio-identical.test.ts).
 /* global document, localStorage */
 (() => {
   const KEY = "pm:cart";
@@ -106,11 +109,12 @@
    *
    *  Reads each radio's CHECKEDNESS rather than selecting `:checked`, and the
    *  difference is verifiability, not correctness: both are right in a
-   *  browser, but `:checked` is only provable on a live plane, and checkout
-   *  has no browser leg in the origin suite yet (this unit's build log
-   *  records that as owed). Walking the group is exactly as honest and can
-   *  be proven in-process before merge, which is the standard this repo
-   *  holds every other claim to. */
+   *  browser, but `:checked` is only provable on a live plane, and the
+   *  pre-merge proof of this surface is linkedom (tools/repo-checks
+   *  checkout-controls-behave). Walking the group is exactly as honest and
+   *  can be proven in-process before merge; the live half is the origin
+   *  suite's checkout.browser.test.ts (2026-09-24), which drives the radio
+   *  in Chromium and watches the total move. */
   const selectedShipping = () => {
     for (const radio of document.querySelectorAll(".pm-format__input")) {
       if (radio.checked) return radio.value;
@@ -221,7 +225,7 @@
   // This line is what lets the master carry `required`/`pattern` at all: they
   // would otherwise fire BEFORE the submit handler below and the error
   // summary would never render. Order matters — this runs before the card
-  // formatter binds at :253, so the spaced value the formatter produces
+  // formatter binds below (bindFormatter), so the spaced value it produces
   // ("4111 1111 1111 1111") is never measured against `pattern="\d{13,19}"`.
   form.setAttribute("novalidate", "");
 
