@@ -86,10 +86,15 @@ const VARIANTS = Object.fromEntries(
 // Sibling planes (ADR-0009 §1): same prefix dispatch, but responses pass
 // through byte-identical like EDGE — no chrome, no HUD, no receipts. The
 // blog is outside every measurement fence.
-/** @type {Readonly<Record<string, string>>} */
+/** Typed to the bindings themselves, so a misspelt binding name here is a
+ *  typecheck failure rather than a 502 on the plane (verify-slice, skeptic
+ *  lens: the `keyof Env` cast at dispatch would have hidden it).
+ *  @type {Readonly<Record<string, keyof Env>>} */
 const SIBLINGS = {
   blog: "BLOG",
 };
+/** The data plane's binding, typed the same way. */
+const EDGE = /** @type {keyof Env} */ ("EDGE");
 
 // Structured JSON logs (Workers Logs ingests console output; PRD story 42).
 /** @param {"info" | "error"} level @param {string} event @param {Record<string, unknown>} fields */
@@ -115,7 +120,7 @@ const front = {
     // self-hosted images under /assets/* — both served by the edge Worker.
     const bindingName =
       prefix === "api" || prefix === "assets"
-        ? "EDGE"
+        ? EDGE
         : Object.hasOwn(SIBLINGS, prefix)
           ? SIBLINGS[prefix]
           : Object.hasOwn(VARIANTS, prefix) // bare lookups resolve prototype keys
@@ -129,11 +134,12 @@ const front = {
     }
 
     try {
-      // Every name the three tables produce IS a binding: the dispatch
-      // table is derived from the roster and pinned to wrangler.jsonc's
-      // `services` by test/floor-and-dispatch.test.js, and `Env` is
-      // generated from that same file — so the cast states what the test
-      // proves, and a prefix with no binding still 502s below.
+      // SIBLINGS and EDGE are typed to `Env` above; VARIANTS is DERIVED
+      // from the roster (upper-cased prefixes) and pinned to wrangler.jsonc's
+      // `services` by test/floor-and-dispatch.test.js, and `Env` is generated
+      // from that same file — so the cast covers exactly the derived half,
+      // states what the test proves, and a prefix with no binding still
+      // 502s below.
       const upstream = await env[/** @type {keyof Env} */ (bindingName)].fetch(request);
       log("info", "dispatch", {
         variant,
