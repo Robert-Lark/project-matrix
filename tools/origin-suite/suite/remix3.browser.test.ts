@@ -1,16 +1,16 @@
 /**
  * The Remix 3 frames paradigm, browser-verified through the composed origin
  * (editorial-build slice F). FINDINGS §8 named this hand-off explicitly: the
- * spike's §5 behaviors — frame reload, run() anchor interception, Navigation
- * API history — were verified interactively and `test.sh` covers only the
+ * spike's §5 behaviors, frame reload, run() anchor interception, Navigation
+ * API history, were verified interactively and `test.sh` covers only the
  * HTTP-observable side; committed automated browser coverage belongs to this
  * build's gate wiring. These are BLOCKING tests, deliberately: they assert
  * the exhibit's own machinery works (the deterministic, lockfile-pinned kind
  * of claim), not its identity to the master (that comparison is the advisory
- * drift leg — ADR-0003 first addendum).
+ * drift leg, ADR-0003 first addendum).
  *
  * JS-ON, fresh context per test, beacons intercepted (the cart suite's
- * pattern — the post-deploy smoke runs this against production, and
+ * pattern, the post-deploy smoke runs this against production, and
  * un-intercepted gotos would land synthetic RUM in the collector).
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -72,7 +72,7 @@ describe("run() anchor interception + frame reload (FINDINGS §5, automated)", (
     // The document did NOT navigate: the sentinel survived …
     expect(await sentinel(page)).toBe(1);
     // … while the address bar updated through the Navigation API to the
-    // JS-off href — the URL stays a complete, shareable receipt.
+    // JS-off href, the URL stays a complete, shareable receipt.
     expect(new URL(page.url()).search).toBe("?pick=1");
     // The injected chrome survived the swap (it sits outside the frame).
     expect(await page.locator("#pm-chrome").count()).toBe(1);
@@ -81,7 +81,7 @@ describe("run() anchor interception + frame reload (FINDINGS §5, automated)", (
     await context.close();
   }, 60_000);
 
-  it("repeated cycling works — frame content carries its own next-anchor (Turbo-style)", async () => {
+  it("repeated cycling works, frame content carries its own next-anchor (Turbo-style)", async () => {
     const context = await browser.newContext();
     const page = await openExhibit(context);
 

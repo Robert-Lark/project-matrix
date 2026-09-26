@@ -11,7 +11,7 @@
  * are separate hydration islands with no common client ancestor; vanilla
  * needed `document.querySelectorAll`, because it has no component model at
  * all. Qwik's components are one resumable tree, so the masthead badge, the
- * button, and the live region simply read and write the same store — no event
+ * button, and the live region simply read and write the same store, no event
  * bus, no DOM queries, and no cross-island wiring to keep in sync.
  *
  * The canonical SERVED state stays empty by construction (ADR-0008 §7):
@@ -36,7 +36,7 @@ interface Cart {
 
 /** The shared, resumable cart state. `count` and `message` are separate
  *  properties so Qwik's per-property subscriptions re-render only the badge
- *  or only the live region — never the shell that hosts the chrome slot. */
+ *  or only the live region, never the shell that hosts the chrome slot. */
 export interface CartStore {
   count: number;
   message: string;
@@ -72,7 +72,7 @@ function isValidCart(value: unknown): value is Cart {
 }
 
 /** Recovery rule: a missing, unparseable, or schema-failing value is the
- *  EMPTY cart — the next successful add overwrites it. */
+ *  EMPTY cart, the next successful add overwrites it. */
 export function readCart(): Cart {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(CART_KEY) ?? "");
@@ -100,17 +100,17 @@ export function cartLabel(count: number): string | null {
 }
 
 export function announce(title: string, count: number): string {
-  return `Added "${title}" to cart — ${count} in cart.`;
+  return `Added "${title}" to cart, ${count} in cart.`;
 }
 
-/** The stored count as of now — what the load-time task publishes into the
+/** The stored count as of now. What the load-time task publishes into the
  *  store so the cart survives a variant swap (ADR-0004 §5). */
 export function storedCount(): number {
   return cartCount(readCart());
 }
 
 /** Add one unit of `id`. Returns the new count, or `null` if storage failed
- *  (quota, storage off) — the contract: state unchanged, nothing announced. */
+ *  (quota, storage off), the contract: state unchanged, nothing announced. */
 export function addToCart(id: number): number | null {
   const cart = readCart();
   const existing = cart.items.find((i) => i.id === id);

@@ -3,14 +3,14 @@
 import { useState } from "react";
 
 /**
- * The live-origin demonstration's button + output (ADR-0002 §3) — the ONLY
+ * The live-origin demonstration's button + output (ADR-0002 §3), the ONLY
  * serve-time Discogs call in the project, fenced from every number, on
  * demand only. The plaque's copy is canonical markup rendered by the server
  * component; this island wires exactly the button and its output slot.
  *
  * The endpoint is deliberately allowed not to exist yet: until the edge
  * Worker's live route and its token secret are in place (Rob's to set), the
- * demonstration says so plainly in its own output slot — the same rule every
+ * demonstration says so plainly in its own output slot, the same rule every
  * unpublished number follows: state the absence, never a silent no-op. The
  * message strings are vanilla's verbatim (variants/vanilla/src/pdp.js), so
  * the demonstration reads identically whichever paradigm serves it.
@@ -31,7 +31,7 @@ export function LiveOriginButton({ id }: { id: number }) {
       if (!res.ok) {
         setMessage(
           res.status === 404
-            ? `The live route is not deployed yet — nothing to show, and nothing faked (${elapsed} ms to find that out).`
+            ? `The live route is not deployed yet. Nothing to show, and nothing faked (${elapsed} ms to find that out).`
             : `The live origin answered ${res.status} after ${elapsed} ms. That is the cost of a dynamic origin on a bad day.`,
         );
         return;
@@ -44,7 +44,7 @@ export function LiveOriginButton({ id }: { id: number }) {
       );
     } catch {
       setMessage(
-        "The live call failed. That is a real property of a dynamic origin — and why the numbers on this site never depend on one.",
+        "The live call failed. That is a real property of a dynamic origin, and why the numbers on this site never depend on one.",
       );
     } finally {
       setBusy(false);

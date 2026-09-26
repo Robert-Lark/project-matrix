@@ -4,12 +4,12 @@ date: 2026-07-06
 ticket: deployment-topology
 ---
 
-# Deployment topology — single canonical plane, one-SHA monorepo, contextual switcher
+# Deployment topology: single canonical plane, one-SHA monorepo, contextual switcher
 
 ## Context
 
 The variants are the thing being compared, so *how* they are hosted, built, and
-navigated between is itself a benchmark-critical surface — a careless choice here
+navigated between is itself a benchmark-critical surface, a careless choice here
 silently confounds every number the project publishes. Three questions had to be
 answered together: (1) where each variant is hosted, (2) the monorepo layout, and
 (3) the contextual switcher that swaps architecture on the same route, including how
@@ -21,10 +21,10 @@ The binding constraints are inherited, not new:
   variants measured in one batch, tied to commit SHAs**; instrumentation stripped
   from the KB count; dated snapshots, not live.
 - [ADR-0002](0002-data-contract-and-frozen-snapshot.md): the data plane is already
-  **Cloudflare** — R2 origin → thin Worker (`/api/*`) → KV warm tier, cache state
+  **Cloudflare**, R2 origin → thin Worker (`/api/*`) → KV warm tier, cache state
   harness-driven.
 - [ADR-0003](0003-design-system-and-zero-bias-presentation.md): **no shared
-  component runtime** — each paradigm re-implements the canonical markup in its own
+  component runtime**. Each paradigm re-implements the canonical markup in its own
   idiom; forcing a runtime into the no-JS variants (the Web Components rejection)
   would bias the exact numbers being measured.
 - The standing **real-world-fidelity** principle: a finding a working engineer could
@@ -37,7 +37,7 @@ paradigm capability.**
 ## Working knowledge, to verify at build time
 
 Unlike ADR-0002's API facts, the Cloudflare composition specifics below were **not**
-verified against primary sources in-session — they are working knowledge. Treated
+verified against primary sources in-session. They are working knowledge. Treated
 as the leading mechanism and **fenced for build-time verification** (like the Remix 3
 adapter): single-hostname composition via a front Worker with **service bindings** +
 **Workers Static Assets**; HTML chrome injection via **HTMLRewriter**; per-paradigm
@@ -55,7 +55,7 @@ runtime variant makes a cross-cloud hop to reach its data. Each paradigm uses it
 **idiomatic Cloudflare adapter, not a hand-tuned deploy** (the direct analogue of
 ADR-0003 §2's "idiomatic default, not hand-tuned"). A variant *may* additionally be
 deployed to its native host (e.g. Next → Vercel Edge) as an **explicitly fenced
-"real-world host" exhibit** — kept out of the core numbers, exactly like the
+"real-world host" exhibit**, kept out of the core numbers, exactly like the
 live-origin demonstration (ADR-0002 §3) and the Remix 3 frontier.
 
 **2. One monorepo, pinned by one SHA.** ADR-0001's "all variants measured in one
@@ -63,21 +63,21 @@ batch, tied to commit SHAs" is only clean if a single SHA pins the entire matrix
 the snapshot manifest. Layout, using the ubiquitous language:
 
 ```
-variants/   one per paradigm — vanilla, react-next, astro, qwik, htmx, remix3(fenced)
-packages/   shared, consumed — NO component runtime (ADR-0003 §1):
+variants/   one per paradigm, vanilla, react-next, astro, qwik, htmx, remix3(fenced)
+packages/   shared, consumed, NO component runtime (ADR-0003 §1):
               tokens/ (tokens.css) · reference/ (golden-master SPEC, not consumed)
               data-contract/ (Zod schema + types) · switcher/ · measurement/ (web-vitals beacon)
 workers/    edge/  R2 read + beacon tagging + live path (ADR-0002 §8); front router (§3/§7)
-tools/      bench runner, cost calculator, snapshot capture — dev/CI only, never shipped
+tools/      bench runner, cost calculator, snapshot capture, dev/CI only, never shipped
 docs/       decision-map, adr/, build-log, prototypes/
 ```
 
 Tooling is **pnpm workspaces + Turborepo**: Turbo's content-addressed cache makes the
 per-variant drift-test + benchmark-build CI incremental; pnpm's strict, non-hoisted
-`node_modules` is a **zero-bias asset** — a variant physically cannot import a
+`node_modules` is a **zero-bias asset**, a variant physically cannot import a
 sibling's dependencies by accident, so bundle contents stay honest. This
 **deviates from the org's 3-repo GitOps standard** (`{service}` / `-cd` /
-`-terraform`); the deviation is deliberate and justified — that standard serves
+`-terraform`); the deviation is deliberate and justified, that standard serves
 production Discogs services, whereas splitting variants across repos would break the
 one-SHA-one-batch reproducibility this project's credibility rests on. There is
 **no `packages/components`**: components are re-implemented per variant; `reference/`
@@ -88,31 +88,31 @@ holds the framework-free golden master as a *spec*, not consumed code.
 Worker dispatching by path prefix (service bindings; static variants via Workers
 Static Assets), and `/api/*` routed to the ADR-0002 edge Worker. Chosen over
 subdomain-per-variant because a single origin (a) holds the **entire transport stack
-(TLS, HTTP/2/3, connection reuse) identical for every variant** — transport becomes
+(TLS, HTTP/2/3, connection reuse) identical for every variant**, transport becomes
 a fairness control instead of per-origin handshake noise landing unevenly on the
 cold-load numbers; (b) makes the client **cart survive a swap for free** via shared
-same-origin `localStorage`; and (c) reduces the switcher to a trivial, honest mapping
-— rewrite the `{variant}` segment, keep the rest.
+same-origin `localStorage`; and (c) reduces the switcher to a trivial, honest mapping,
+rewrite the `{variant}` segment, keep the rest.
 
-**4. The swap is a hard navigation — forced, and honest.** There is no shared client
+**4. The swap is a hard navigation, forced, and honest.** There is no shared client
 runtime to soft-swap React for Qwik for HTMX (ADR-0003 §1), so a variant swap is a
 full document navigation. This is not a limitation: a hard navigation is the *honest*
-measurement — a real cold/warm load of the target paradigm, uncontaminated by the
+measurement, a real cold/warm load of the target paradigm, uncontaminated by the
 outgoing app's resident runtime. The switcher is therefore a **navigation control**,
 not a client-side view swap.
 
 **5. The URL is the measurement condition.** State is partitioned by kind:
 - **Path** carries identity: `variant` / `surface` / entity-id.
 - **Query** carries the environment knobs, split into two honest kinds:
-  **live request modifiers** (`n` = data volume served, `cache` = cold/warm — these
+  **live request modifiers** (`n` = data volume served, `cache` = cold/warm. These
   genuinely change what the Worker/page does on this request) and a **snapshot
-  selector** (`profile` — see §6).
-- **`localStorage`** holds the **cart only** — genuine cross-surface application
+  selector** (`profile`, see §6).
+- **`localStorage`** holds the **cart only**, genuine cross-surface application
   state, not a measurement condition (survives the swap for free, §3).
 - **Transient per-paradigm UI micro-state** (gallery index, zoom, quantity spinner,
   format toggle, scroll) **resets on swap.** Preserving it would require a shared
-  cross-paradigm serialization protocol — reintroducing the shared runtime ADR-0003
-  §1 rejected — and it is not meaningful to the render/data comparison anyway.
+  cross-paradigm serialization protocol, reintroducing the shared runtime ADR-0003
+  §1 rejected, and it is not meaningful to the render/data comparison anyway.
 
 The payoff: **a URL is a complete, shareable, reproducible receipt for one
 measurement**, directly serving ADR-0001 §9's "receipt behind every number" and
@@ -120,7 +120,7 @@ one-command-reproduce.
 
 **6. The throttle axis is a snapshot selector, never a live fake.** Network throttle
 cannot be applied to a real visitor's connection, and a synthetic in-browser delay
-does not reproduce connection setup, request parallelism, or TCP slow-start — so it
+does not reproduce connection setup, request parallelism, or TCP slow-start, so it
 is a lab artifact a skeptic rightly discounts, forbidden by real-world-fidelity for
 any published number. Instead `?profile=` **selects which dated lab snapshot** the
 HUD displays (the three ADR-0001 §4 profiles); the live page is **not** re-throttled.
@@ -142,8 +142,8 @@ inject a runtime into the vanilla/HTMX variants (the same reasoning as the ADR-0
 **function of the current surface** ("contextual"): render-switcher on the spine
 (Editorial, PDP), data-strategy switcher on PLP, device/CPU controls on Checkout,
 a11y-mode toggles on the A11y section; the HUD is constant. Its variant options are
-**sparse — only the variants a surface is actually built in** (singleton surfaces —
-Home, A11y, How-it-was-built — get no render-switcher), enforcing the sparse-matrix
+**sparse, only the variants a surface is actually built in** (singleton surfaces,
+Home, A11y, How-it-was-built, get no render-switcher), enforcing the sparse-matrix
 principle: the switcher can never offer a cell that does not exist. The drift-test
 normalizer (ADR-0003 §6) ignores the injected chrome slot, as it already does for
 paradigm-injected noise.
@@ -152,14 +152,14 @@ paradigm-injected noise.
 
 - **Per-variant idiomatic hosts (Next → Vercel, etc.).** Most faithful to how teams
   deploy, but the host/provider network becomes a confound in the latency numbers and
-  every runtime variant makes a cross-cloud hop to R2/KV — violating ADR-0001's "one
+  every runtime variant makes a cross-cloud hop to R2/KV, violating ADR-0001's "one
   variable at a time." Rejected for the core comparison; retained as the fenced
   real-world-host exhibit (§1).
 - **Multi-repo (the org 3-repo GitOps standard).** Splitting variants across repos
   breaks the one-SHA-one-batch guarantee ADR-0001 §9 requires. Rejected for this
   reproducibility-first portfolio (not a production service).
 - **Subdomain per variant.** Simplest deploy, but `localStorage` is not shared across
-  subdomains (cart needs a parent-domain cookie — more machinery, size/PII care) and
+  subdomains (cart needs a parent-domain cookie, more machinery, size/PII care) and
   each origin adds a fresh TLS handshake, injecting cold-connect noise unevenly into
   the very cold-load numbers being compared. Rejected.
 - **Umbrella Pages project, build-time subdirs.** Single origin without a router, but
@@ -167,9 +167,9 @@ paradigm-injected noise.
   toolchain) and lets one broken build block the whole matrix deploy. Rejected.
 - **Storage-heavy state (env knobs in `localStorage`).** Cleaner URLs, but the env
   condition becomes invisible and un-shareable, so a URL stops functioning as a
-  reproducible receipt — weakening the anti-rigging story. Rejected.
+  reproducible receipt, weakening the anti-rigging story. Rejected.
 - **Maximal continuity (carry UI micro-state across the swap).** Requires a shared
-  cross-paradigm state protocol — the shared runtime ADR-0003 §1 rejected — for state
+  cross-paradigm state protocol, the shared runtime ADR-0003 §1 rejected, for state
   irrelevant to the comparison. Rejected.
 - **Live in-browser throttle simulation.** A lab artifact; discounted by a skeptic.
   Rejected for numbers; survives only as a fenced demo (§6).
@@ -182,12 +182,12 @@ paradigm-injected noise.
 
 ## Consequences
 
-- **New shared infra: the front routing Worker** — composes the single origin (§3),
+- **New shared infra: the front routing Worker**: composes the single origin (§3),
   fronts the ADR-0002 edge Worker at `/api/*`, and injects the switcher/HUD chrome
   (§7). It is instrumentation applied identically to all variants (a constant, not a
   confound) and its bytes are stripped from the KB count.
 - **New downstream ticket: `cf-composition-spike`** (Research + Prototype, blocked by
-  this ticket) — verify the Cloudflare composition mechanism (service bindings /
+  this ticket), verify the Cloudflare composition mechanism (service bindings /
   Workers Static Assets / HTMLRewriter injection) and the per-paradigm CF adapters
   before scaffolding the monorepo. De-risks the working-knowledge assumptions above.
 - **`home-surface` is unblocked** (its blockers `design-system` + `deployment-topology`
@@ -200,7 +200,7 @@ paradigm-injected noise.
 - The topology, the URL-as-receipt scheme, and the edge-injected-chrome approach
   double as source content for the "How it was built" surface.
 
-## Addendum — verified by `cf-composition-spike` (2026-07-06)
+## Addendum: verified by `cf-composition-spike` (2026-07-06)
 
 The composition mechanism this ADR assumes was verified end-to-end by a local
 spike plus a primary-docs research pass (73/73 claims adversarially confirmed);
@@ -208,28 +208,28 @@ evidence and citations in
 [`prototypes/cf-composition/FINDINGS.md`](../prototypes/cf-composition/FINDINGS.md).
 **No decision above is reversed.** Refinements adopted there:
 
-- **Mechanism naming: "Workers everywhere," not Pages** — `next-on-pages` is
+- **Mechanism naming: "Workers everywhere," not Pages**: `next-on-pages` is
   deprecated/archived (Next now deploys via OpenNext `@opennextjs/cloudflare`
   on Workers) and Astro's adapter dropped Pages support. §1's canonical plane
   is unchanged.
 - **Every static variant ships a one-line `env.ASSETS.fetch(request)`
-  forwarder script** — serving assets *through a service binding without a
+  forwarder script**, serving assets *through a service binding without a
   script* is undocumented (works locally; not relied upon).
 - **Switcher slot selector uses the documented `div#pm-chrome-slot` form**
   (bare `#id` is absent from HTMLRewriter's documented selector list).
-- **Local dev = one `wrangler dev` process per Worker** — the single-process
+- **Local dev = one `wrangler dev` process per Worker**: the single-process
   multi-`-c` mode is experimental and demonstrably broken for
   assets-through-bindings.
 - **First monorepo deploy must re-run the spike's `test.sh` against the real
-  origin** — local workerd verified; production deploy is the last unverified
+  origin**, local workerd verified; production deploy is the last unverified
   hop.
 - **Remix 3 (fenced frontier) has no official Cloudflare target as of
-  3.0.0-beta.5** — hosting for that exhibit is decided in `remix3-frontier`.
+  3.0.0-beta.5**, hosting for that exhibit is decided in `remix3-frontier`.
 
-## Addendum — Remix 3 frontier hosting, decided by `remix3-frontier` (2026-07-11)
+## Addendum: Remix 3 frontier hosting, decided by `remix3-frontier` (2026-07-11)
 
 The exhibit stays **on the canonical plane via a hand-rolled Workers
-entry** — §1 holds without an exception. Decided empirically, not from
+entry**, §1 holds without an exception. Decided empirically, not from
 docs: a runnable spike
 ([`prototypes/remix3-frontier/`](../prototypes/remix3-frontier/), findings +
 citations in its
@@ -241,7 +241,7 @@ official Node template's output (modulo per-render instance ids; 42/42
 assertions across both hosts + a browser-verified frames leg). Re-verified
 same-day against primary sources (54/54 claims adversarially confirmed):
 still `3.0.0-beta.5`, still "not production ready", still no official
-deployment target beyond the Node ≥ 24.3 template — so a plain fetch
+deployment target beyond the Node ≥ 24.3 template, so a plain fetch
 handler is the idiomatic Workers shape for its fetch-native router, and
 §1's "idiomatic adapter, not hand-tuned" is not violated.
 
@@ -254,23 +254,23 @@ version can't hold.
 
 Two propagated judgments (details in FINDINGS §7): the exhibit **owes the
 ADR-0003 canonical-markup/shared-CSS contract** (fencing excludes numbers,
-not visual identity), and the **drift gate covers it in advisory mode** —
+not visual identity), and the **drift gate covers it in advisory mode**,
 drift on the remix3 Editorial surface warns but never fails CI, so a
 weekly-cadence beta can never block the benchmarked matrix's deploy.
 
-## Addendum — §7 qualified by the surface-design session (2026-07-17)
+## Addendum: §7 qualified by the surface-design session (2026-07-17)
 
 [ADR-0008](0008-store-surfaces-and-instrument.md) redesigned the chrome and
 qualified two of §7's per-surface control-set allocations; recorded here so
 this ADR cannot be read against the shipped instrument:
 
 - **A11y-mode toggles move in-page** (out of the chrome): mode emulation is
-  page presentation state, not a measurement condition — putting it in the
+  page presentation state, not a measurement condition, putting it in the
   chrome would either pollute URL-as-receipt (a query-mode knob) or separate
   the toggle from the emulation-honesty caveat that must sit beside the
   demo. The a11y section's pages own their toggles (ADR-0008 §4/§8).
 - **Checkout's "device/CPU controls" collapse to profile-foregrounding**:
-  the honest device/CPU axis IS the lab profile system (§6 — a snapshot
+  the honest device/CPU axis IS the lab profile system (§6, a snapshot
   selector, never a live throttle); a live CPU knob would fake slowness at
   a visitor. The fenced "feel the difference" demo remains the checkout
   build's option, per §6's own carve-out.
@@ -279,52 +279,52 @@ Everything else in §7 stands and is now implemented: sparse per-surface
 control-sets (with planned-cell disclosures), anchor-link core, edge
 injection into the known slot, chrome bytes on the excluded path.
 
-## Addendum — §6 clarified: what "synthetic throttle" rejects (2026-07-12)
+## Addendum: §6 clarified: what "synthetic throttle" rejects (2026-07-12)
 
 The strategy review
 ([finding 1](../reviews/2026-07-12-strategy-review.md)) showed §6's wording
 proving too much: read literally, "a synthetic … delay does not reproduce
-connection setup, request parallelism, or TCP slow-start — so it is a lab
+connection setup, request parallelism, or TCP slow-start, so it is a lab
 artifact a skeptic rightly discounts" also condemns the bench runner's own
 CDP emulation, which produces every published throttled number. The §6
 decision stands; its scope is now stated precisely:
 
 - **What §6 rejects** is *re-throttling a live visitor's page* and letting an
-  in-page synthetic delay pose as a measurement condition — a number no one
+  in-page synthetic delay pose as a measurement condition, a number no one
   can reproduce and a mechanism that misrepresents the visitor's own network.
   `?profile=` therefore remains a snapshot selector, never a live fake.
 - **What the lab does** is CDP network/CPU emulation applied identically to
   every variant at the automation layer, with the applied values and
   mechanism recorded in every receipt. That is the accepted comparison
-  mechanism — but it shares the fidelity limit §6 names (request-level, above
+  mechanism, but it shares the fidelity limit §6 names (request-level, above
   the transport stack), so it is **named as a limit, not hidden**: see
   ADR-0001's 2026-07-12 addendum §A, which binds throttle-dependent cell
   verdicts to a packet-shaped WebPageTest directional cross-check before
   publication.
 
 One sentence for the methodology page: *lab throttling is an emulation both
-of us can run; the HUD's RUM readout is your real network — we never fake
+of us can run; the HUD's RUM readout is your real network. We never fake
 slowness at you, and we never publish a throttled verdict our cross-check
 disagrees with.*
 
-## Addendum — §2's "not consumed": build-time spec consumption is allowed (2026-09-02)
+## Addendum: §2's "not consumed": build-time spec consumption is allowed (2026-09-02)
 
 §2's layout comment reads `reference/ (golden-master SPEC, not consumed)` and
 the paragraph beneath it repeats the phrase: `reference/` "holds the
 framework-free golden master as a *spec*, not consumed code". The
 how-it-was-built build (`docs/prds/how-it-was-built-build.md`, Decision 4)
-made `@pm/reference` a declared dependency of `@pm/front` — the first
-workspace to declare it — so the front Worker's build renders
+made `@pm/reference` a declared dependency of `@pm/front`, the first
+workspace to declare it, so the front Worker's build renders
 `/how-it-was-built/` with the SAME function that renders the committed
 master, and the served page cannot drift from the spec. The §2 decision
 stands; what "not consumed" protects is now stated precisely:
 
-- **What §2 forbids is a component runtime** — code a paradigm would bundle
+- **What §2 forbids is a component runtime**: code a paradigm would bundle
   and ship to a visitor, which would bias the numbers the project measures
   (ADR-0003 §1). That prohibition is unchanged, and `tools/repo-checks`
   still enforces that `@pm/reference` exposes no JS entry point and must
   never gain an `exports` map naming one.
-- **What is allowed is build-time consumption, as spec** — the `@pm/tokens`
+- **What is allowed is build-time consumption, as spec**: the `@pm/tokens`
   class (ADR-0007 §6): tooling imports the renderer at build, the output is
   static HTML, and nothing from `packages/reference` reaches a bundle. The
   drift gate and the measurement harness already reused the reference render
@@ -333,8 +333,8 @@ stands; what "not consumed" protects is now stated precisely:
   renderer into the front's cache key) rather than reached by file path.
 
 - **The second consumer, and its scope (2026-09-03).** `@pm/vanilla` declares
-  `@pm/reference` for exactly one purpose: the a11y section it hosts — a
-  singleton off the benchmarked matrix — is rendered by the reference
+  `@pm/reference` for exactly one purpose: the a11y section it hosts, a
+  singleton off the benchmarked matrix, is rendered by the reference
   renderer under the variant's own head, slot and script (ADR-0008 addendum
   C; `variants/vanilla/DIFF-TO-STARTER.md` decision 6). Every benchmarked
   surface the variant serves stays re-typed; the dependency does not license
@@ -344,11 +344,11 @@ stands; what "not consumed" protects is now stated precisely:
 - **The third consumer, and the one exception to "never shipped"
   (2026-09-04).** `@pm/edge` declares `@pm/reference` for exactly one module:
   `render/plp-query.mjs`, the PLP's query semantics (filter, search, sort,
-  facet recount, slice) — a pure, import-free file the reference renderer
+  facet recount, slice), a pure, import-free file the reference renderer
   uses to draw the master and the edge Worker uses to serve the tray
   (ADR-0005 addendum, same date). It IS bundled: wrangler compiles it into
   the deployed data-plane Worker. That is deliberate and does not touch what
-  §2 protects. The Worker is the data plane, not a paradigm — its bundle is
+  §2 protects. The Worker is the data plane, not a paradigm. Its bundle is
   server-side, never a measured client bundle, and every variant reaches it
   over one HTTP seam; nothing from `packages/reference` reaches a page a
   visitor downloads. What it buys is the end of a re-typed comparator: the
@@ -360,14 +360,14 @@ stands; what "not consumed" protects is now stated precisely:
   path); the two arms still re-type the markup.
 
 One sentence for the layout comment, should it be redrawn: *`reference/`
-(golden-master SPEC — consumed at build time by tooling and singleton hosts,
+(golden-master SPEC, consumed at build time by tooling and singleton hosts,
 and by the data-plane Worker for the PLP query semantics; never in a
 paradigm's shipped bundle).*
 
-## Addendum — §3's held-constant transport includes a security-header floor; the CSP is a separate decision (2026-09-18, `security-floor`)
+## Addendum: §3's held-constant transport includes a security-header floor; the CSP is a separate decision (2026-09-18, `security-floor`)
 
 §3 chose one origin so that "the entire transport stack (TLS, HTTP/2/3,
-connection reuse) [is] identical for every variant — transport becomes a
+connection reuse) [is] identical for every variant, transport becomes a
 fairness control instead of per-origin handshake noise". Response headers the
 front Worker adds are transport in exactly that sense, and the 2026-08-29
 audit (priority 4) found the plane shipping none of the floor the blog
@@ -380,9 +380,9 @@ recorded the store's absence as a decision. Decided:
   for every variant:** `x-content-type-options: nosniff`, `referrer-policy:
   strict-origin-when-cross-origin` (the blog's value, so one policy governs
   the domain), `x-frame-options: DENY` (nothing legitimately embeds the
-  store). The floor is applied at the SEAM — the front Worker's exported
+  store). The floor is applied at the SEAM, the front Worker's exported
   `fetch` wraps every response its router returns, the Worker's own 404 and
-  502 included — and written as `_headers` for the assets-first paths the
+  502 included, and written as `_headers` for the assets-first paths the
   script never sees, both from one module
   (`workers/front/src/security-floor.js`). `set`, never `append`: an upstream
   cannot weaken the floor, and a variant cannot carry a different one, so it
@@ -390,7 +390,7 @@ recorded the store's absence as a decision. Decided:
   addendum U and cancel in every comparison by construction.
 - **`X-Frame-Options: DENY` rather than `Content-Security-Policy:
   frame-ancestors 'none'`.** The modern spelling is a CSP directive, and a
-  CSP header carrying one directive is a half-CSP by another name — the exact
+  CSP header carrying one directive is a half-CSP by another name, the exact
   thing the next bullet refuses to ship silently. The legacy header is
   honoured by every browser the profiles model and is what a header scanner
   looks for. Given up: `frame-ancestors` can allow-list specific embedders;
@@ -398,11 +398,11 @@ recorded the store's absence as a decision. Decided:
   `frame-ancestors 'none'` joins it and the legacy header stays for the
   clients that only read it. HTTP/3's QPACK static table spells the value
   `deny`; ours is `DENY` (the conventional, case-insensitive spelling), which
-  costs one literal value per h3 connection — recorded, not material.
-- **No Content-Security-Policy on store pages — by decision, not omission.**
+  costs one literal value per h3 connection, recorded, not material.
+- **No Content-Security-Policy on store pages, by decision, not omission.**
   Qwik and Astro emit inline scripts on every editorial page, so a
   `script-src` needs either `'unsafe-inline'` (which buys nothing against
-  injected markup — the one attack a CSP is for) or a per-response nonce,
+  injected markup, the one attack a CSP is for) or a per-response nonce,
   and a nonce in the served HTML changes bytes on every request: the drift
   gate's normalized-DOM equivalence, the variant master-identity guards and
   the published KB cells would each need a nonce rule. That is a design pass
@@ -412,19 +412,19 @@ recorded the store's absence as a decision. Decided:
   plane so a partial CSP cannot arrive by accident. The blog's own CSP stands
   (ADR-0009 §5) and rides through the front's floor unchanged. Revisit
   trigger: the first XSS-shaped finding on a store surface, or
-  `domain-cutover` — a zone lets a Cloudflare Transform Rule add the header
+  `domain-cutover`, a zone lets a Cloudflare Transform Rule add the header
   without touching served bytes, which changes the tradeoff.
 
 Considered and rejected: **adding the headers in each variant** (five copies
 of one constant, and the first place a paradigm could differ on the
-transport — the dead-control falsehood one layer down); **a Cloudflare
+transport, the dead-control falsehood one layer down); **a Cloudflare
 Transform Rule** (needs the zone `domain-cutover` does not yet have, and puts
 the floor where the repo's own suite cannot see it); **`frame-ancestors`
 alone** (above). **Given up by this addendum:** nothing a visitor can see;
 106 bytes of headers per HTTP/1.1 response and a few per h2/h3 response,
 identical everywhere.
 
-## Addendum — the static variant's forwarder, qualified: plus at most one route for a path no asset answers (2026-09-24, `checkout-measure-prep`)
+## Addendum: the static variant's forwarder, qualified: plus at most one route for a path no asset answers (2026-09-24, `checkout-measure-prep`)
 
 The cf-composition-spike addendum above says every static variant ships a
 one-line `env.ASSETS.fetch(request)` forwarder, and the reason stands:
@@ -432,12 +432,12 @@ serving assets through a service binding without a script is undocumented.
 The vanilla variant's script is no longer one line. The checkout form is a
 real `method="post"` form (ADR-0008 §7), and a static-assets Worker answers a
 POST to a path that has an asset behind it with the binding's zero-length
-405 before the script runs — Cloudflare's routing page, fetched 2026-09-24:
+405 before the script runs, Cloudflare's routing page, fetched 2026-09-24:
 "Cloudflare will first attempt to serve static assets if one matches the
 incoming request"; the page says nothing about methods, and that a POST is
 matched the same way is what local `wrangler dev` 4.110 does, measured. So
-the form posts to a RELATIVE `place-order/` — a path with nothing in dist
-behind it, the one request that reaches the script — and the script answers
+the form posts to a RELATIVE `place-order/`, a path with nothing in dist
+behind it, the one request that reaches the script, and the script answers
 exactly `POST {variant}/checkout/place-order/` with a 303 to
 `{variant}/checkout/placed/`, a committed master of the surface baked into
 dist like every other page. Everything else still forwards to the binding.
@@ -448,24 +448,24 @@ page. Not `assets.run_worker_first` on a page path (a script invocation on
 every GET of a measured page, to answer a POST nobody measures), not a
 `_redirects` file (method-blind), not a 200 on the POST URL (a refresh
 re-posts). The body is never read. The post-deploy smoke's
-`checkout.test.ts` legs — a POST to the form page 405, a POST to the
-endpoint 303 — are what say whether the deployed plane agrees with the
+`checkout.test.ts` legs, a POST to the form page 405, a POST to the
+endpoint 303, are what say whether the deployed plane agrees with the
 local one. ADR-0008 addendum D carries the page design; this addendum
 carries only the composition rule it bends.
 
-## Addendum — the workers plane stays plain JS, and is checked as JS: the typed-JS boundary rule (2026-09-25, `workers-hardening`)
+## Addendum: the workers plane stays plain JS, and is checked as JS: the typed-JS boundary rule (2026-09-25, `workers-hardening`)
 
 §2's layout puts three Cloudflare Workers under `workers/` and every
 package under `packages/` and `tools/` in strict TypeScript
 (`tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`). The 2026-08-29
 audit (priority 5) found the boundary undocumented and unenforced: 4,224
 lines of plain JS under the three Workers' `src/` (`wc -l` at c7ed377) with no `@ts-check`, no JSDoc
-types and no typecheck task — the blog's auth, session, CSRF and SQL code
-among them — while `packages/reference/render/lib.mjs:10-13` records its own
+types and no typecheck task, the blog's auth, session, CSRF and SQL code
+among them, while `packages/reference/render/lib.mjs:10-13` records its own
 `.mjs` choice and nothing recorded this one. Decided:
 
 - **The Workers stay plain JavaScript.** Each `src/` tree is the module
-  wrangler bundles, with no compile step of the repo's own in front of it —
+  wrangler bundles, with no compile step of the repo's own in front of it,
   the paradigm-purity argument the plane was built on (a Worker is a
   `fetch` handler, not a build product) and a zero-byte change to what
   deploys. Converting the three trees to TypeScript was weighed and
@@ -478,7 +478,7 @@ among them — while `packages/reference/render/lib.mjs:10-13` records its own
   per-file `// @ts-check` is deliberate and the repo's own recurring rule: a
   declaration that can be omitted is an opt-out, and a new file must not be
   able to skip the check by forgetting a line. Types are JSDoc: `@param`,
-  `@returns`, `@typedef`, `@type` casts at the seams — D1 rows cast to the
+  `@returns`, `@typedef`, `@type` casts at the seams, D1 rows cast to the
   row their SQL selects, untrusted JSON read as `Record<string, unknown>`
   and checked field by field.
 - **Runtime and binding types come from wrangler, generated, never
@@ -491,7 +491,7 @@ among them — while `packages/reference/render/lib.mjs:10-13` records its own
   generated file is the runtime the config actually names, and two sources
   of the same globals would be the drift this addendum exists to close. The
   blog's browser code (the editor bundle and the footnote enhancement) is
-  a second target, `tsconfig.browser.json`, checked against the DOM lib —
+  a second target, `tsconfig.browser.json`, checked against the DOM lib,
   same discipline, different runtime.
 - **What crosses the boundary carries its type with it.** A TypeScript
   package a Worker imports (`@pm/measurement`, `@pm/switcher`) is typed by
@@ -499,21 +499,21 @@ among them — while `packages/reference/render/lib.mjs:10-13` records its own
   a Worker imports is checked WITH it: `packages/reference/render/plp-query.mjs`
   (the PLP query semantics the edge Worker serves, §2's third consumer)
   gained JSDoc typedefs for the tray and the query, so the Worker's calls
-  are checked against the spec's own signatures — and a plain `.mjs` a TS
+  are checked against the spec's own signatures, and a plain `.mjs` a TS
   consumer imports keeps a sibling `.d.mts` (`workers/front/lab/fit.d.mts`,
   the existing precedent), now held to the module it describes: the front's
   typecheck found that declaration missing `interactionId`, a field the
   template set and the build read since 2026-08-28, and `fit.mjs` is
   `@type`-annotated against it so the two cannot drift again.
 - **Build scripts are outside the program, stated.** `workers/front/build.mjs`
-  — the gate's only production caller — and its `stamp-build.mjs`,
+ , the gate's only production caller, and its `stamp-build.mjs`,
   `how-built-page.mjs` and `tokens-source.mjs` are node build tooling, not
   Worker code, and are not in the front's `include`: checking them costs
   `@types/node` and ~120 annotations, most of them in the reference
   renderer chain they import (verify-slice, conformance lens, priced
   read-only). So the deps contract between the composer and the gate is
   held by the refusal suite's lexical leg (build.mjs names every gate call)
-  and by the refactor-time dist byte-identity — not by `tsc`. A gate
+  and by the refactor-time dist byte-identity, not by `tsc`. A gate
   dependency added later must be added to the composer by hand, and the
   four today fail loud when missing. Owed, not done: bring the build
   scripts into a node-typed program.
@@ -535,7 +535,7 @@ fit declaration drift above. Given up: ~1 s per Worker per check for
 
 Considered and rejected: **per-file `// @ts-check`** (an opt-out by
 omission); **committing the generated `cloudflare-env.d.ts`** (the
-react-next precedent — 14 k generated lines per Worker to review, and a
+react-next precedent, 14 k generated lines per Worker to review, and a
 file that goes stale silently on the next wrangler pin); **`@cloudflare/
 workers-types`** (a second declaration of the same runtime beside the
 generated one); **converting to TypeScript** (above).

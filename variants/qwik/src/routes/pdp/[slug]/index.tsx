@@ -5,15 +5,15 @@ import { Shell } from "../../../components/Shell";
 import { type EdgeEnv, loadPdpDetail, projectPdpDetail } from "../../../lib/edge";
 
 /**
- * /qwik/pdp/{slug}/ — resumability on the surface where interactivity is
+ * /qwik/pdp/{slug}/, resumability on the surface where interactivity is
  * genuine (pdp-variants slice 3).
  *
  * The URL contract (pdp-build, settled): parse the LEADING id, fetch the
  * tray through the variant's own EDGE binding at request time, verify the
- * tray's slug equals the requested slug — any mismatch is a 404 via
+ * tray's slug equals the requested slug, any mismatch is a 404 via
  * `fail()`, matching what static generation does by construction; a
  * canonical 301 was REJECTED (build-time variants cannot serve one).
- * `fail(404)` keeps the visitor inside Long Decay Records' own chrome —
+ * `fail(404)` keeps the visitor inside Long Decay Records' own chrome,
  * this variant CAN brand its 404 server-side, where react-next's
  * multiple-root-layout structure defers its branded boundary to hydration;
  * the STATUS is the cross-paradigm contract, the body is each variant's own
@@ -47,7 +47,7 @@ export default component$(() => {
         <div class="pm-pdp">
           <h1>{"This record isn't in the crate"}</h1>
           <p>
-            {"No release in the frozen snapshot matches this address. The catalogue is fixed at capture time — a link that changed is a link that broke, honestly."}
+            {"No release in the frozen snapshot matches this address. The catalogue is fixed at capture time: a link that changed is a link that broke, honestly."}
           </p>
           <p>
             <a href="/react-next/plp/plain/">Back to all records</a>
@@ -59,7 +59,7 @@ export default component$(() => {
         <div class="pm-pdp">
           <h1>{"This page couldn't load"}</h1>
           <p>
-            {"The store's data plane didn't answer. This is a simulated demo storefront — nothing was ordered, nothing was lost."}
+            {"The store's data plane didn't answer. This is a simulated demo storefront. Nothing was ordered, nothing was lost."}
           </p>
         </div>
       </Shell>
@@ -78,9 +78,9 @@ export const head: DocumentHead = ({ resolveValue }) => {
   if (pdp.failed) {
     return {
       title: pdp.notFound
-        ? "This record isn't in the crate — Long Decay Records"
-        : "This page couldn't load — Long Decay Records",
+        ? "This record isn't in the crate · Long Decay Records"
+        : "This page couldn't load · Long Decay Records",
     };
   }
-  return { title: `${pdp.detail.title} — ${pdp.detail.artist} — Long Decay Records` };
+  return { title: `${pdp.detail.title} · ${pdp.detail.artist} · Long Decay Records` };
 };

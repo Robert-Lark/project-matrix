@@ -1,6 +1,6 @@
 ---
 /**
- * The whole editorial document, from props — the one render entry point.
+ * The whole editorial document, from props, the one render entry point.
  *
  * It exists as a props-taking component (rather than the page assembling the
  * shell itself) so the pre-merge identity guard can render it for BOTH
@@ -27,13 +27,13 @@ const essay = essayFor(data.name);
 const CSS = ["components/release-card.css", "components/prose.css", "surfaces/editorial.css"];
 ---
 
-<Shell title={`${essay.title} — Long Decay Records`} current="editorial" css={CSS}>
+<Shell title={`${essay.title} · Long Decay Records`} current="editorial" css={CSS}>
   <EditorialArticle data={data} />
   {/*
     The paradigm's one client enhancement, and the data it needs.
 
-    Astro processes a bare <script> — TypeScript, import bundling, dedupe, and
-    `type="module"` — which is the framework's documented way to add
+    Astro processes a bare <script>, TypeScript, import bundling, dedupe, and
+    `type="module"`, which is the framework's documented way to add
     interactivity "without the need for a UI framework like React, Svelte, or
     Vue. This avoids the overhead of shipping framework JavaScript." It is
     deliberately NOT an island: see DIFF-TO-STARTER.md for the measured reason
@@ -41,7 +41,7 @@ const CSS = ["components/release-card.css", "components/prose.css", "surfaces/ed
     master has no equivalent for).
 
     A bundled script cannot read frontmatter, so the release it adds to the cart
-    rides a JSON script element — delivery, not contract (ADR-0008's freedoms
+    rides a JSON script element, delivery, not contract (ADR-0008's freedoms
     list names `script` explicitly), so the canonical DOM stays clean. Astro's
     docs suggest data-* attributes for this; that would put a variant-invented
     attribute on a CONTRACT element and need a permitted-noise entry to excuse

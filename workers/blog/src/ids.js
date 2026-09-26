@@ -1,6 +1,6 @@
 // Id + token generation. Ids are time-sortable (ms timestamp base-32, fixed
 // width, then randomness) so revisions and media order by primary key; tokens
-// are 256-bit crypto-random base64url — session ids, preview links, CSRF.
+// are 256-bit crypto-random base64url, session ids, preview links, CSRF.
 
 const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
 

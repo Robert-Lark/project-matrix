@@ -4,7 +4,7 @@ import { loadFeatured, loadManifest } from "@/lib/edge";
 import { EditorialArticle, Shell, essayFor } from "@/lib/render";
 
 // Trays are fetched through the edge Worker at REQUEST time (SSR is the
-// paradigm's real shape, ADR-0002 §7) — force-dynamic guarantees this route
+// paradigm's real shape, ADR-0002 §7), force-dynamic guarantees this route
 // is never attempted at build time (no Cloudflare bindings exist then) and
 // is re-rendered fresh on every request, matching "heavy hydration" as a
 // genuine per-request cost, not a cached shortcut.
@@ -22,7 +22,7 @@ const loadPage = cache(async () => {
 
 export async function generateMetadata(): Promise<Metadata> {
   const { essay } = await loadPage();
-  return { title: `${essay.title} — Long Decay Records` };
+  return { title: `${essay.title} · Long Decay Records` };
 }
 
 export default async function EditorialPage() {

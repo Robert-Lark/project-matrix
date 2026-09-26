@@ -6,7 +6,7 @@ import { Shell } from "@/lib/render";
 import { PlpPlain } from "@/components/PlpPlain";
 
 // Trays are fetched through the edge Worker at REQUEST time (SSR is the
-// paradigm's real shape, ADR-0002 §7) — force-dynamic guarantees this route is
+// paradigm's real shape, ADR-0002 §7), force-dynamic guarantees this route is
 // never attempted at build time (no Cloudflare bindings exist then) and is
 // re-rendered fresh on every request. It is also what makes `?cache=` mean
 // anything: a cached render would serve one warmth under both presets.
@@ -15,10 +15,10 @@ import { PlpPlain } from "@/components/PlpPlain";
 // the HTTP status before an error boundary can set one.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Records — Long Decay Records" };
+export const metadata: Metadata = { title: "Records · Long Decay Records" };
 
-/** Serves BOTH switcher presets — "No caching (cold)" at `?cache=cold` and
- *  "Edge cache — KV" with no query. Byte-identical shipped code, one
+/** Serves BOTH switcher presets, "No caching (cold)" at `?cache=cold` and
+ *  "Edge cache, KV" with no query. Byte-identical shipped code, one
  *  architectural variable (ADR-0005 §1: the purest cell on the site). */
 export default async function PlpPlainPage({
   searchParams,

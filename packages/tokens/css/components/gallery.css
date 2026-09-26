@@ -1,5 +1,5 @@
 /*
- * Component module — PDP gallery. Appearance shared, BEHAVIOR per paradigm
+ * Component module, PDP gallery. Appearance shared, BEHAVIOR per paradigm
  * (ADR-0003 consequences: PDP interactivity is the render-axis variable).
  *
  * Canonical markup:
@@ -20,15 +20,15 @@
  *   </div>
  *
  * Geometry: the stage is a FIXED 1:1 mat (296/500 crate covers are exactly
- * square, 456/500 within 2% — tool-derived 2026-07-17); non-square images
- * letterbox on the sunk mat with object-fit: contain — the mat-board IS the
+ * square, 456/500 within 2%, tool-derived 2026-07-17); non-square images
+ * letterbox on the sunk mat with object-fit: contain, the mat-board IS the
  * Catalogue aesthetic, and a fixed frame means switching images can never
  * shift the buy panel (zero CLS by construction). The per-release frame
  * alternative is recorded in the session ADR.
  *
  * Thumb srcs use the 160px thumb derivative (`….thumb.avif`, issue #9
  * follow-up settled this session); selection state rides aria-current on the
- * selected thumb — an exclusive-selection semantic, managed identically by
+ * selected thumb, an exclusive-selection semantic, managed identically by
  * every paradigm. JS-off: the main image and all content are visible;
  * switching is the enhancement this surface exists to price.
  */
@@ -55,10 +55,10 @@
 }
 
 /* Zoomed state rides the button's aria-pressed (state off native attributes,
-   never JS classes — ADR-0003 §5); compositor-only, and it collapses under
+   never JS classes, ADR-0003 §5); compositor-only, and it collapses under
    reduced motion via the semantic gate. EVERY PARADIGM OWES THE TOGGLE:
    `aria-pressed` is not CSS-settable, so this rule alone renders a button
-   that announces a state it can never enter (WCAG 4.1.2 — what vanilla
+   that announces a state it can never enter (WCAG 4.1.2. What vanilla
    shipped until 2026-08-15). Zoom survives a thumb switch by design. */
 .pm-gallery__main {
   transition: transform var(--motion-base) var(--motion-ease); /* compositor-only */
@@ -91,7 +91,7 @@
 
 /* Thumbs WRAP. Unwrapped, the strip is one flex row that can never be
    narrower than its content, and a grid item's default `min-width: auto` then
-   grows the gallery column to match — pushing the DOCUMENT into horizontal
+   grows the gallery column to match, pushing the DOCUMENT into horizontal
    scrolling, which WCAG 1.4.10 forbids at 320 px. Four 72 px thumbs plus gaps
    need 312 px in a 280 px column, and 316 of the crate's 500 releases carry
    four or more images. Wrapping rather than scrolling: a scroll container

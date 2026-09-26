@@ -4,13 +4,13 @@ date: 2026-07-06
 ticket: design-system
 ---
 
-# Design system — shared tokens/components + zero-bias presentation
+# Design system: shared tokens/components + zero-bias presentation
 
 ## Context
 
 Every variant of the Discogs vinyl store renders the same storefront, so the
-presentation layer — like the data layer before it ([ADR-0002](0002-data-contract-and-frozen-snapshot.md))
-— is a shared, benchmark-critical surface. A storefront is a large shared surface,
+presentation layer, like the data layer before it ([ADR-0002](0002-data-contract-and-frozen-snapshot.md)),
+is a shared, benchmark-critical surface. A storefront is a large shared surface,
 which raises the stakes: any visual or structural difference between variants is a
 confound in the render-axis numbers.
 
@@ -27,14 +27,14 @@ audience is skeptical staff engineers, and the guarantee they must not be able t
 break is *"that variant is slow because its components were written differently."*
 
 Note on org standards: Discogs' frontend standard component library is **HiFi**, a
-React component library. It is deliberately **not** used here — it cannot be the
+React component library. It is deliberately **not** used here. It cannot be the
 shared layer across non-React paradigms (vanilla, HTMX, Qwik, Remix 3), and a
 React-only dependency would defeat the zero-bias guarantee. The shared layer must be
 framework-agnostic CSS.
 
 ## Decision
 
-**1. The shared artifact is CSS + a canonical markup contract — no shared runtime.**
+**1. The shared artifact is CSS + a canonical markup contract, no shared runtime.**
 The design system is (a) a framework-agnostic CSS layer (custom-property tokens +
 component style rules) and (b) a **canonical markup contract**: the exact rendered
 DOM (elements, nesting, `pm-` BEM class names) every variant must emit. Each paradigm
@@ -42,20 +42,20 @@ re-implements the markup in its own idiom (JSX, Astro, Qwik, an HTMX server part
 a vanilla template), but all emit identical DOM and import identical style rules, so
 pixels are identical **by construction**. A "component" is a spec (markup + classes),
 not shared code. **Web Components were rejected**: a custom-element runtime would be
-forced into every variant — including the vanilla and static/islands ones whose whole
-thesis is "little/no JS" — biasing the exact numbers the project exists to measure.
+forced into every variant, including the vanilla and static/islands ones whose whole
+thesis is "little/no JS", biasing the exact numbers the project exists to measure.
 
 **2. Presentation zero-bias = same styles, not same delivery.** The *control* is the
 declared style rules + the rendered DOM (byte-identical everywhere). The *measured
-variable* is how each paradigm **delivers and optimizes** that CSS — per-component
-scoping, code-splitting, critical-CSS inlining, unused-CSS elimination — because those
+variable* is how each paradigm **delivers and optimizes** that CSS, per-component
+scoping, code-splitting, critical-CSS inlining, unused-CSS elimination, because those
 are genuine paradigm capabilities whose payoff *is part of the verdict*. This mirrors
 ADR-0002's "same data, not same access." Two guardrails keep it honest:
 - **Repackage, don't re-value.** A paradigm may scope/split/inline/tree-shake, but the
   *computed* result must stay pixel-identical. Scoping (a hashed attribute) is fine;
   changing a token value is not. Enforced by the drift tests (§6), not by trust.
 - **Idiomatic default, not hand-tuned.** Each paradigm uses the CSS optimization a
-  competent team normally gets from it — not a bespoke per-variant purge tuned to win.
+  competent team normally gets from it, not a bespoke per-variant purge tuned to win.
 
 Consequently the CSS KB bucket (ADR-0001 §3) flips from noise to **signal**: Astro
 shipping less scoped/tree-shaken CSS than vanilla's full sheet is a legitimate part of
@@ -64,7 +64,7 @@ the story, reported, not suppressed.
 **3. Authoring shape: global token layer + per-component modules; two-tier tokens.**
 Tokens are one global custom-property layer (shipped identically to all); component
 rules are **per-component modules** so each paradigm can apply its native delivery
-(§2) — a monolith could not be scoped or tree-shaken per component. Tokens are
+(§2), a monolith could not be scoped or tree-shaken per component. Tokens are
 **two-tier**: **primitive** (raw palette/type/space scale) → **semantic** (the aliases
 components consume: `--color-text`, `--space-inset`, …). Components reference **semantic
 tokens only**. One indirection = one auditable seam for theming and forced-colors.
@@ -75,7 +75,7 @@ surfaces; flat/one-tier was rejected for having no theming seam.
 is not the thesis; a dark mode is pure surface that multiplies the cross-variant drift
 QA (N variants × M themes) with no architectural payoff. Forced-colors (Windows High
 Contrast), by contrast, is a *required* matrix constraint. It is handled at the
-semantic tier — under `@media (forced-colors: active)`, semantic tokens remap to CSS
+semantic tier, under `@media (forced-colors: active)`, semantic tokens remap to CSS
 system colors (`Canvas`, `CanvasText`, `LinkText`, `Highlight`, …) in one place and
 every component adapts for free. Rules: no meaning by color/background-image alone
 (carried by text + icon); a visible focus indicator that survives forced-colors;
@@ -87,21 +87,21 @@ defaults: focus-visible rings, WCAG target sizes, relative (`rem`) units for
 zoom/reflow, reduced-motion gating, the forced-colors remap, and accessible form
 wiring (associated labels, `aria-describedby`/`aria-invalid`, `autocomplete`, live
 regions), plus skip-link + landmarks. **State styles off native attributes**
-(`:focus-visible`, `[aria-invalid]`, `:disabled`), never JS-toggled classes — so a
+(`:focus-visible`, `[aria-invalid]`, `:disabled`), never JS-toggled classes, so a
 visual defect cannot exist without the programmatic one. Every a11y-relevant component
 ships as a **matched pair**: the compliant default and a documented **stripped**
 counterpart, byte-identical except the a11y treatment, so a side-by-side comparison
 differs *only* in accessibility. The failure→repair narrative is therefore **DS-off vs
-DS-on** — literally what a rushed team ships without the system. Five headline
+DS-on**, literally what a rushed team ships without the system. Five headline
 guarantees (forced-colors, accessible forms, focus, reflow/zoom, reduced-motion) span
 WCAG's Perceivable/Operable/Understandable/Robust; target-size and skip-link/landmarks
 are silent defaults.
 
 **6. Drift is proven, not promised.** A **framework-free reference render** of each
 component (canonical markup + shared CSS as plain static HTML, no framework) is the
-**golden master** — it *is* the contract, so nothing is privileged. In CI, every
+**golden master**. It *is* the contract, so nothing is privileged. In CI, every
 variant is checked against it two ways: **normalized-DOM equivalence** (after stripping
-paradigm-injected noise — hydration markers, comment nodes, and the scoping hashes §2
+paradigm-injected noise, hydration markers, comment nodes, and the scoping hashes §2
 permits) and **pixel screenshot diff** across ADR-0001's three test profiles. Either
 drift fails the build. This makes "repackage, don't re-value" an automated test. The
 reference render is a build artifact reused by the measurement harness.
@@ -113,14 +113,14 @@ prototype uses a clearly-labeled **neutral placeholder** aesthetic that proves t
 system; the real look is decided in a spun-out `aesthetic-direction` ticket.
 
 **8. Fonts are a controlled constant.** Self-hosted, subset, identical files + loading
-everywhere (like ADR-0001's image/compression controls) — font choice is not a
+everywhere (like ADR-0001's image/compression controls), font choice is not a
 paradigm feature, so no variant optimizes it differently. One variable sans (UI/prose)
 + tabular/mono figures for metrics (aligned prices, HUD).
 
 ## Considered alternatives
 
 - **Web Components / custom elements as the shared layer.** Write-once, no markup
-  drift — but forces a JS runtime into every variant, biasing the render-axis numbers.
+  drift, but forces a JS runtime into every variant, biasing the render-axis numbers.
   Rejected.
 - **Per-paradigm component libraries from shared tokens (Style Dictionary).** Idiomatic
   per framework, but near-guarantees visual drift (N re-implementations of the visuals)
@@ -129,7 +129,7 @@ paradigm feature, so no variant optimizes it differently. One variable sans (UI/
   paradigms; a React dependency would itself bias the benchmark. Rejected as the shared
   layer.
 - **CSS delivery held constant (one external stylesheet everywhere).** Would factor CSS
-  out as a confound — but robs paradigms (esp. Astro) of genuine built-in optimizations
+  out as a confound, but robs paradigms (esp. Astro) of genuine built-in optimizations
   whose payoff is precisely what the comparison is meant to reveal. Rejected in favor of
   delivery-as-measured-variable (§2).
 - **One monolithic stylesheet.** Cannot be scoped or tree-shaken per component, so it
@@ -147,25 +147,25 @@ paradigm feature, so no variant optimizes it differently. One variable sans (UI/
 
 ## Consequences
 
-- **New tickets spun out:** `aesthetic-direction` (Prototype — decide the look, pour it
+- **New tickets spun out:** `aesthetic-direction` (Prototype, decide the look, pour it
   into the primitive tier) and `a11y-section` (the dedicated ADA section: hybrid
   two-box-A/B for element-scoped defects + mode-toggle demos for global-state defects,
   hosted in the vanilla variant). A `home-surface` (gateway/landing) candidate was also
   surfaced and added to the map.
-- **Matrix reshaped:** the "Checkout/A11y" row splits — Checkout keeps INP-under-load +
+- **Matrix reshaped:** the "Checkout/A11y" row splits, Checkout keeps INP-under-load +
   the realistic form; accessibility becomes its own section.
 - **Guardrail carried forward:** the PDP's rich product interactivity (ADR-0002) is
   expressed through DS components whose *appearance* is shared but whose *behavior* is
   per-paradigm (the render-axis variable).
-- **The reference render is a shared build artifact** — the drift-test golden master and
+- **The reference render is a shared build artifact**: the drift-test golden master and
   the a11y-section's compliant baseline both reuse it.
 - The token file, canonical-markup contract, and drift-test approach double as source
   content for the "How it was built" surface.
-- **Prototype:** [`docs/prototypes/design-system/`](../prototypes/design-system/) —
+- **Prototype:** [`docs/prototypes/design-system/`](../prototypes/design-system/),
   `tokens.css` (two-tier + forced-colors + reduced-motion), three component modules,
   and the framework-free `reference/index.html` (golden master + reactable demo).
 
-## Addendum — §6 scope for the fenced Remix 3 exhibit (2026-07-11)
+## Addendum: §6 scope for the fenced Remix 3 exhibit (2026-07-11)
 
 `remix3-frontier` resolved that the fenced Remix 3 showcase **owes this
 ADR's canonical-markup/shared-CSS contract** (fencing excludes benchmark
@@ -181,12 +181,12 @@ the carve-out's reasoning and the paradigm-noise list to register when the
 gate is wired:
 [`prototypes/remix3-frontier/FINDINGS.md`](../prototypes/remix3-frontier/FINDINGS.md) §7(b).
 
-## Addendum — "idiomatic default" gets a mechanism (2026-07-12)
+## Addendum: "idiomatic default" gets a mechanism (2026-07-12)
 
 The strategy review
 ([finding 6](../reviews/2026-07-12-strategy-review.md)) observed that §2's
-"idiomatic default, not hand-tuned" — the fairness rule the flip framing leans
-on hardest — was the only one enforced by nothing but the author's judgment:
+"idiomatic default, not hand-tuned", the fairness rule the flip framing leans
+on hardest, was the only one enforced by nothing but the author's judgment:
 the drift gate proves pixel/DOM identity, not idiomatic-ness. Adopted
 mechanism, binding on every variant build:
 
@@ -196,10 +196,10 @@ the default, and why" is published per variant (most entries will be the
 canonical markup contract, the tokens import, and the composed-origin
 adapter). A reviewer no longer audits idiomatic-ness by reading six
 codebases; they read six diffs. The diffs double as "How it was built"
-content. Same rule, now an artifact instead of a claim — the §6 "proven, not
+content. Same rule, now an artifact instead of a claim, the §6 "proven, not
 promised" standard applied to §2.
 
-## Addendum — CSS delivery is nominal on the editorial slices (2026-08-01)
+## Addendum: CSS delivery is nominal on the editorial slices (2026-08-01)
 
 The `bench-accounting-fix` audit (issue #16 defect 3) found that all four
 editorial variants ship the shared component/surface stylesheets as raw
@@ -207,19 +207,19 @@ verbatim copies. §8 forces byte-identity for the FONT files and `fonts.css`
 only; the other eight sheets are raw **by choice**, for cross-variant
 comparability while the variants were brought up one slice at a time. The
 consequence is that the CSS KB cell is currently **byte-identical by
-construction** — so Astro's, Next's and Vite's CSS pipelines all appear to buy
+construction**, so Astro's, Next's and Vite's CSS pipelines all appear to buy
 nothing, which is exactly the false signal §2 says the CSS bucket must not
 carry ("flips from noise to signal").
 
 No decision reverses. §2 stands (delivery IS the measured variable) and the
-rejected "CSS held constant everywhere" alternative stays rejected — raw sheets
+rejected "CSS held constant everywhere" alternative stays rejected, raw sheets
 are a bring-up scaffold, not the end state. The binding resolution:
 
 **The CSS cell does NOT publish as a render-axis verdict while the sheets are
-raw-identical.** It publishes labeled as "held constant (raw sheets) — not yet a
+raw-identical.** It publishes labeled as "held constant (raw sheets), not yet a
 paradigm signal," or not at all, until each variant delivers the shared CSS its
 own idiomatic way (scoping / code-splitting / critical-CSS inlining /
-unused-CSS elimination — §2's "idiomatic default"). That native-delivery work is
+unused-CSS elimination, §2's "idiomatic default"). That native-delivery work is
 a scheduled follow-on, landing where it has real surface: the PDP/PLP builds,
 where components multiply. It is a cross-variant change (every variant's build
 plus the drift gate's byte assumptions), which is why no single editorial slice
@@ -230,7 +230,7 @@ guarantee is RENDERED identity (normalized-DOM + pixels), which "repackage,
 don't re-value" already requires native delivery to preserve. The current
 raw-byte-identity of the eight sheets is an artifact of today's delivery, not a
 contract; when a variant scopes/splits/inlines its CSS the delivered bytes
-diverge BY DESIGN, and only the rendered-identity assertions remain — the gate
+diverge BY DESIGN, and only the rendered-identity assertions remain, the gate
 does not (and must not) assert CSS byte-identity. Recorded so the CSS cell is
 never published as a paradigm verdict on the strength of a construction
 artifact.

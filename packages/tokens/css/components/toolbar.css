@@ -1,6 +1,6 @@
 /*
- * Component module — PLP toolbar. The result line (rendered from the tray:
- * total and page window — a condition stated plainly, never a bug) + search
+ * Component module, PLP toolbar. The result line (rendered from the tray:
+ * total and page window, a condition stated plainly, never a bug) + search
  * and sort as GET forms: real navigation JS-off (the loaders+PE story is
  * native here; client paradigms enhance).
  *

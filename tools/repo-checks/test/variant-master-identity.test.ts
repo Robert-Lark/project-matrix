@@ -2,11 +2,11 @@
  * Pre-merge textual identity: variant re-implementations vs the reference
  * masters, BOTH snapshots (editorial-build slice A; verify-slice finding).
  *
- * Variant-owned content is re-typed by design (the recorded slice-A call —
+ * Variant-owned content is re-typed by design (the recorded slice-A call,
  * no shared component runtime, ADR-0003 §1), and the browser drift gate
  * polices identity. But CI's browser legs only ever serve the FIXTURE:
  * crate-flavored text (CRATE_ESSAY and its twin) is otherwise first
- * compared on the deployed plane, AFTER merge — so a one-word crate-copy
+ * compared on the deployed plane, AFTER merge, so a one-word crate-copy
  * edit in one file would merge green and turn the post-deploy smoke red,
  * violating the PRD's standing rule ("nothing merges that turns the
  * deployed smoke red"). The crate TRAYS are committed, so this guard needs
@@ -18,7 +18,7 @@
  * Deliberately byte-strict beyond the browser normalizer (attribute order
  * is NOT freed here): today the two templates agree byte-for-byte after
  * the strip, and a legitimate serialization change should surface
- * pre-merge as a cheap, visible edit to this guard — never silently.
+ * pre-merge as a cheap, visible edit to this guard, never silently.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -62,7 +62,7 @@ function stripDelivery(html: string): string {
 describe("vanilla editorial equals the master textually, both snapshots (pre-merge)", () => {
   for (const name of ["fixture", "crate"] as const) {
     it(`${name}: renderEditorialPage matches renderEditorial after the delivery strip`, async () => {
-      // Dynamic import by file URL — both renderers are plain-JS build
+      // Dynamic import by file URL. Both renderers are plain-JS build
       // tooling with no side effects on import (the reference regeneration
       // test's own pattern).
       const lib = await import(
@@ -88,13 +88,13 @@ describe("vanilla editorial equals the master textually, both snapshots (pre-mer
 });
 
 /**
- * The PDP's version of the vanilla guard — and the one that would have caught
+ * The PDP's version of the vanilla guard, and the one that would have caught
  * the pdp-controls unit's whole reason for existing.
  *
  * The editorial guard above compares ONE page per snapshot, because editorial
  * IS one page. The PDP is ~500, and the four committed masters cover four of
  * the eight render classes `pdpRenderClass` can express. So this loops EVERY
- * detail tray in both snapshots rather than only `pdpMasterIds` — 740 pages,
+ * detail tray in both snapshots rather than only `pdpMasterIds`, 740 pages,
  * cheap because neither renderer needs a browser, a server or an image byte,
  * and it covers the render-class combinations the crate has and the fixture
  * does not.
@@ -104,14 +104,14 @@ describe("vanilla editorial equals the master textually, both snapshots (pre-mer
  * nodes, 30 with a real command, `@pm/vanilla#test`/`#typecheck` both
  * `<NONEXISTENT>`), and no test anywhere read `renderPdpPage`. "Turbo 30/30
  * on the final tree" had therefore never covered this variant at all, and the
- * 740 pages matching was an UNGUARDED true statement — which by this repo's
+ * 740 pages matching was an UNGUARDED true statement, which by this repo's
  * standard is the defect, not the reassurance. This guard lives in
  * `@pm/repo-checks`, whose `test` script IS one of the 30, so it blocks a
  * merge the way the editorial ones do.
  *
  * What it cannot see, recorded so nobody mistakes its scope: it compares
  * SERVED MARKUP, JS-off. Both of the dead controls this unit repaired were
- * dead only with JS ON — the markup was correct and identical on both sides
+ * dead only with JS ON, the markup was correct and identical on both sides
  * the whole time. That blind spot is closed separately, by
  * `tools/origin-suite/suite/pdp-controls.browser.test.ts`.
  */
@@ -162,20 +162,20 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
   /**
    * The STYLESHEET LIST, which `stripDelivery` deliberately throws away.
    *
-   * That strip is right for markup — the head is a delivery freedom — but it
+   * That strip is right for markup, the head is a delivery freedom, but it
    * means nothing in the repo compared which sheets a variant links against
    * which sheets the master links, and this unit changed exactly that axis:
    * `components/format-switch.css` left the PDP's list when the control was
    * cut. Had `pdp.mjs` dropped it and `variants/vanilla/render.mjs` kept it,
    * every check would have stayed green while the variant shipped a sheet of
-   * dead rules — or, in the other direction, shipped a page missing the rules
+   * dead rules, or, in the other direction, shipped a page missing the rules
    * its markup depends on, which is the `.pm-sr-only` failure mode one level
    * up.
    *
    * Compared by the tail after `css/`, because the two sides legitimately
    * differ in how they REACH the package: the master walks up to
    * `node_modules/@pm/tokens/css/…`, the variant serves its own copied tree at
-   * `assets/pm/css/…`. Order is compared too — cascade order is a rendering
+   * `assets/pm/css/…`. Order is compared too, cascade order is a rendering
    * property, not a freedom.
    */
   for (const name of ["fixture", "crate"] as const) {
@@ -232,7 +232,7 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
 
   /**
    * The masters are a SUBSET of what the loop above covers, but they are the
-   * only PDP pages the browser drift gate ever opens — so their four render
+   * only PDP pages the browser drift gate ever opens, so their four render
    * classes are pinned by id here too. A master silently resolving to a
    * release of the wrong class would leave the gate comparing four pages of
    * the same shape while still passing.
@@ -261,10 +261,10 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
   /**
    * `formatComposition` and capture-time `normalize.ts` build a format string
    * from the same tray by the same rule, in two different repos' worth of
-   * code — the "second derivation is a second opinion" class. For a single
+   * code, the "second derivation is a second opinion" class. For a single
    * component of quantity 1 they must produce the IDENTICAL string (that
    * equality is why cutting the format control left 309 of the crate's 500
-   * PDP meta lines byte-unchanged while 191 moved — 439 is the single-format
+   * PDP meta lines byte-unchanged while 191 moved, 439 is the single-format
    * COUNT, a different number, and an earlier draft of this comment confused
    * them), and for quantity > 1 the composition must differ by exactly the
    * prefix `format` drops.
@@ -290,7 +290,7 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
           plain += 1;
         }
       }
-      // NOT `plain + quantified === singles.length` — every iteration
+      // NOT `plain + quantified === singles.length`, every iteration
       // increments exactly one counter, so that holds whatever
       // formatComposition returns. Assert the COVERAGE each snapshot actually
       // provides instead: both arms are exercised on the crate, and the
@@ -307,13 +307,13 @@ describe("vanilla's PDP equals the master textually, every tray, both snapshots"
 });
 
 /**
- * htmx's version of the same guard (editorial-build slice E) — the vanilla
+ * htmx's version of the same guard (editorial-build slice E), the vanilla
  * MECHANISM exactly (byte-strict after the delivery strip), because the
  * renderer is the same species: plain template literals mirroring the
  * master's serialization, importable directly with no framework runtime.
  * The one shape difference is the data: htmx is REQUEST-TIME, so its
  * renderer takes the resolved per-request data ({ isFixture, capturedAt,
- * featured DETAIL tray }) rather than a whole snapshot — this guard
+ * featured DETAIL tray }) rather than a whole snapshot. This guard
  * assembles that from the committed trays, which also proves per snapshot
  * that the release card's fields are tray-identical between the summary
  * (what the master renders from) and the detail (what htmx renders from)
@@ -334,7 +334,7 @@ describe("htmx editorial equals the master textually, both snapshots (pre-merge)
 
       // The featured-id and essay-selection POLICY is derived through the
       // variant's OWN runtime module (src/snapshot.mjs), not this file's
-      // local constants — otherwise the one module production actually
+      // local constants, otherwise the one module production actually
       // executes would never run pre-merge, and a typo'd crate id or an
       // inverted isFixtureCrate would merge green and turn the deployed
       // smoke red (verify-slice finding, anti-rigging lens). Both are
@@ -366,20 +366,20 @@ describe("htmx editorial equals the master textually, both snapshots (pre-merge)
 });
 
 /**
- * react-next's version of the same guard (editorial-build slice B) — same
+ * react-next's version of the same guard (editorial-build slice B), same
  * hole to close (a crate-copy edit merging green, unproven until the
  * deployed smoke), different mechanism by necessity: vanilla's guard calls
  * a render function that returns a byte-exact string, because vanilla's
  * hand-typed template mirrors the master's serialization directly. A JSX
- * renderer never will — attribute order, quoting, and boolean-attribute
- * serialization are React's call, not this file's — so a byte-strict
+ * renderer never will, attribute order, quoting, and boolean-attribute
+ * serialization are React's call, not this file's, so a byte-strict
  * compare would fail on cosmetic differences that carry zero content risk,
  * defeating the point of a targeted crate-text guard.
  *
  * Instead this reuses the ACTUAL drift-gate normalizer (tools/drift-gate),
  * the same policy the browser-driven composed-origin leg holds every
  * variant to, run here via `linkedom` instead of a browser: no server, no
- * network, no image bytes — render.tsx is plain framework-neutral React,
+ * network, no image bytes, render.tsx is plain framework-neutral React,
  * callable with `react-dom/server` directly, exactly like vanilla's
  * render.mjs is callable directly. One registration
  * (`PERMITTED_NOISE["react-next"]`), one normalizer, on both mechanisms.
@@ -391,8 +391,8 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
    *  parsing (the HTML spec's tokenization algorithm); linkedom's parser
    *  does not (verified: `<time dateTime="...">` parses with attribute
    *  name `dateTime`, not `datetime`). React's `dateTime` JSX prop is
-   *  correct — a real browser (the drift gate's Playwright leg) sees the
-   *  spec-correct lowercase attribute — so this is a linkedom parsing gap,
+   *  correct, a real browser (the drift gate's Playwright leg) sees the
+   *  spec-correct lowercase attribute, so this is a linkedom parsing gap,
    *  not a real page difference; corrected once, pre-normalize, rather
    *  than treated as content drift or "fixed" by mangling correct JSX. */
   function lowercaseAttributeNames(document: ReturnType<typeof parseHTML>["document"]): void {
@@ -409,7 +409,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
   }
 
   /** PAGE_NORMALIZE (tools/drift-gate/src/normalize.ts) is written to run
-   *  inside a driven browser page — self-contained, referencing `document`/
+   *  inside a driven browser page, self-contained, referencing `document`/
    *  `Node` as globals rather than parameters. linkedom provides a
    *  same-shape `document`/`Node` for a plain HTML string; this temporarily
    *  installs them as globals for the one synchronous call, then restores
@@ -445,7 +445,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
       );
       // render.tsx is deliberately framework-neutral (relative imports
       // throughout, no Next-specific API) so it's importable from outside
-      // its own workspace's tsconfig path mapping — DIFF-TO-STARTER.md.
+      // its own workspace's tsconfig path mapping, DIFF-TO-STARTER.md.
       const reactNext = await import(
         pathToFileURL(
           join(repoRoot, "variants", "react-next", "src", "lib", "render.tsx"),
@@ -481,7 +481,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
       // is a synchronous, non-streaming render, so it never produces the
       // `<div hidden><!--$--><!--/$--></div>` wrapper the REAL served page
       // carries (drift.browser.test.ts's browser leg proves that page-level
-      // fact) — meaning `variant` above never exercises
+      // fact), meaning `variant` above never exercises
       // REACT_NEXT_NOISE.dropElementSelectors, and a typo'd selector, or a
       // future Next/OpenNext version reshaping the wrapper, would pass this
       // guard silently (verify-slice finding). Proven separately, below.
@@ -489,7 +489,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
   }
 
   /**
-   * NOTE — astro's equivalent guard is deliberately NOT in this file
+   * NOTE, astro's equivalent guard is deliberately NOT in this file
    * (editorial-build slice C). It closes the same hole for the same reason,
    * but through Astro's own render-to-string entry point: the Container API
    * (`experimental_AstroContainer` from `astro/container`), which needs
@@ -504,7 +504,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
    * under-declarable-inputs reason `@pm/repo-checks#test` is.
    */
   /**
-   * The react-next PDP — the same hole the vanilla PDP guard closes (every
+   * The react-next PDP, the same hole the vanilla PDP guard closes (every
    * tray, both snapshots; the crate's render-class combinations the fixture
    * lacks), through this describe's normalized-DOM mechanism (JSX owns
    * attribute order and entity forms, so vanilla's byte-strict compare is
@@ -557,7 +557,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
 
       // Non-vacuity (the vanilla guard's own rule): pin that real PDP markup
       // was compared, the fenced plaque is present ON BOTH SIDES (core PDP
-      // comparisons never drop it — it is canonical master content here,
+      // comparisons never drop it. It is canonical master content here,
       // unlike editorial), and the format CONTROL stays gone while the
       // format DATA survives (ADR-0008 addendum A).
       const sample = normalizeHtml(
@@ -584,8 +584,8 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
       // and skipped its deploy (run 33132628047).
       //
       // Why the budget is not extrapolated: the 9,648/8,903 ms this comment
-      // once quoted were TIMED-OUT durations — lower bounds, not measurements
-      // — and the 9× scalar derived to replace them proved too crude in the
+      // once quoted were TIMED-OUT durations, lower bounds, not measurements
+      //, and the 9× scalar derived to replace them proved too crude in the
       // other direction. Real local→CI ratios span 2.1×–15.5× on one runner in
       // one run.
     }, 300_000);
@@ -595,7 +595,7 @@ describe("react-next editorial equals the master by normalized DOM, both snapsho
    * The stylesheet LIST, which the normalized-DOM compare above throws away
    * with the head. The vanilla PDP has the byte-level version of this leg;
    * react-next's document head is a component (src/lib/document.tsx), so the
-   * leg renders it and compares sheet tails after `/css/` — order included,
+   * leg renders it and compares sheet tails after `/css/`, order included,
    * because cascade order is a rendering property, not a freedom.
    */
   it("react-next's PDP document links exactly the master's stylesheets, in order", async () => {

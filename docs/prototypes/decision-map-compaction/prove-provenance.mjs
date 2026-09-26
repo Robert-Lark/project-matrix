@@ -1,19 +1,19 @@
 // prove-provenance.mjs <map-before> <map-after> <log-after> [header-lines=8]
 //
 // The whole-file proof that the 2026-09-25 compaction of docs/decision-map.md
-// lost nothing and invented nothing — the rule every compacted node was
+// lost nothing and invented nothing, the rule every compacted node was
 // written to, run over the whole file:
 //  - every non-blank line REMOVED from the map is in the log verbatim;
 //  - every line ADDED to the map is a header line (the first N lines), a
 //    `Status:` line, or a contiguous SENTENCE-ALIGNED substring (≥ 40 chars)
-//    of exactly one removed line — it starts at that line's start or after
+//    of exactly one removed line. It starts at that line's start or after
 //    sentence punctuation / an em dash / a bold marker, and ends at the line's
 //    end or before a space or bold marker;
 //  - every added `Status:` line: each `#NN`, 7–40-hex SHA, `YYYY-MM-DD` and
 //    number in it appears in the map BEFORE (2026-09-25 and cited phase
 //    numbers excepted), and each "quoted title" after `build-log.md` is the
 //    exact text of a `##`/`###` heading in the log (with or without its
-//    `Phase N — ` prefix and its trailing dated parenthetical), a pointer
+//    `Phase N, ` prefix and its trailing dated parenthetical), a pointer
 //    that says "narrative moved from the decision map" naming the node's own
 //    key.
 //   node docs/prototypes/decision-map-compaction/prove-provenance.mjs \
@@ -28,7 +28,7 @@ const log = readFileSync(logPath, "utf8");
 const logLines = new Set(log.split("\n"));
 const headingForms = (h) => {
   const text = h.replace(/^#+\s+/, "").trim();
-  const noPhase = text.replace(/^Phase \d+(?:\.\d+)? — /, "");
+  const noPhase = text.replace(/^Phase \d+(?:\.\d+)?, /, "");
   const out = new Set();
   for (const t of [text, noPhase]) { out.add(t); out.add(t.replace(/\s\([^()]*\d{4}-\d{2}-\d{2}[^()]*\)$/, "")); }
   return [...out];
@@ -39,7 +39,7 @@ const beforeSet = new Set(before), afterSet = new Set(after);
 const removed = before.filter((l) => l !== "" && !afterSet.has(l));
 const added = after.map((l, i) => [l, i + 1]).filter(([l, i]) => l !== "" && !beforeSet.has(l));
 const notInLog = removed.filter((l) => !logLines.has(l));
-const isBoundaryStart = (line, i) => i === 0 || /(?:[.;:!?)\]]|\*\*|—|\()\s?$/.test(line.slice(Math.max(0, i - 3), i));
+const isBoundaryStart = (line, i) => i === 0 || /(?:[.;:!?)\]]|\*\*|\()\s?$/.test(line.slice(Math.max(0, i - 3), i));
 const isBoundaryEnd = (line, j) => j === line.length || /[.;:!?)\]`"*]$/.test(line.slice(0, j)) || line[j] === " ";
 const badAdds = [], badStatus = [];
 let statusLines = 0, substrings = 0;
@@ -58,7 +58,7 @@ for (const [l, n] of added) {
     if (cite >= 0) for (const m of l.slice(cite).matchAll(/["“]([^"”]+)["”]/g)) {
       const q = m[1];
       if (!forms.has(q)) badStatus.push(`L${n}: "${q}" is not the exact text of a log heading`);
-      if (q.includes("narrative moved from the decision map") && !q.startsWith(`\`${key}\` — `)) badStatus.push(`L${n}: moved-narrative pointer does not name ${key}`);
+      if (q.includes("narrative moved from the decision map") && !q.startsWith(`\`${key}\`, `)) badStatus.push(`L${n}: moved-narrative pointer does not name ${key}`);
     }
     continue;
   }

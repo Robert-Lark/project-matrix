@@ -1,12 +1,12 @@
-// The vanilla PDP's enhancement (pdp-build) — gallery, quantity, add-to-cart,
+// The vanilla PDP's enhancement (pdp-build), gallery, quantity, add-to-cart,
 // and the live-origin demonstration. The canonical SERVED state is what the
 // drift gate sees (JS-off, ADR-0008 §7): everything here is enhancement, and
 // with JS off the page is honestly static rather than falsely interactive.
 //
 // The cart storage contract (packages/reference/render/shell.mjs
 // CART_CONTRACT) is RE-IMPLEMENTED here rather than imported from cart.js.
-// That is the same rule the variants follow between themselves — a component
-// is a spec, not shared code (ADR-0003 §1) — and it keeps this paradigm's
+// That is the same rule the variants follow between themselves, a component
+// is a spec, not shared code (ADR-0003 §1), and it keeps this paradigm's
 // real shape: one request, one script, no module graph on a no-runtime
 // variant. The origin suite asserts BOTH implementations against the one
 // contract, so they cannot silently diverge.
@@ -51,7 +51,7 @@
   };
   const announce = (text) => {
     const status = document.querySelector("[data-pm-status]");
-    // textContent, never HTML — the title is tray data.
+    // textContent, never HTML, the title is tray data.
     if (status) status.textContent = text;
   };
 
@@ -60,7 +60,7 @@
   /* ── Gallery ───────────────────────────────────────────────────────────
      Thumbs are buttons (never links: they change the stage, they do not
      navigate). The stage is a fixed 1:1 mat, so swapping the image cannot
-     move the buy panel — CLS 0 by construction (ADR-0008 §8). A 1-image
+     move the buy panel, CLS 0 by construction (ADR-0008 §8). A 1-image
      release has no thumb list at all and this whole block is inert. */
   const stage = document.querySelector(".pm-gallery__main");
   const thumbs = [...document.querySelectorAll(".pm-gallery__thumb")];
@@ -73,7 +73,7 @@
       // URL convention, read backwards).
       stage.src = img.src.replace(/\.thumb\.avif$/, ".avif");
       // The stage's alt is the selected image's description. The thumb's own
-      // <img> is alt="" (decorative — the button is named by its sr-only
+      // <img> is alt="" (decorative, the button is named by its sr-only
       // span), so the accessible description comes from that span's text
       // after the "View image N of M: " prefix the contract fixes.
       const label = thumb.querySelector(".pm-sr-only")?.textContent ?? "";
@@ -87,7 +87,7 @@
   }
 
   /* ── Zoom ──────────────────────────────────────────────────────────────
-     A real toggle button. State lives on `aria-pressed` — a native attribute
+     A real toggle button. State lives on `aria-pressed`, a native attribute
      that is BOTH the accessible state and the selector gallery.css scales the
      stage from, so a visual state cannot exist without the programmatic one
      (ADR-0003 §5, the same rule the stepper and the thumbs follow).
@@ -95,7 +95,7 @@
      This shipped INERT on 500 deployed pages: the markup announced "Zoom,
      toggle button, not pressed" and nothing anywhere wrote the attribute
      (`aria-pressed` is not CSS-settable), so pressing it did nothing forever
-     — WCAG 4.1.2 name/role/value. Zoom deliberately survives a thumb switch:
+    , WCAG 4.1.2 name/role/value. Zoom deliberately survives a thumb switch:
      the visitor asked to look closely, and swapping the image does not
      withdraw that request. */
   const zoom = document.querySelector(".pm-gallery__zoom");
@@ -111,13 +111,13 @@
   /* ── Quantity ──────────────────────────────────────────────────────────
      The steppers drive the native number input and stay inside its own
      min/max, so keyboard, spinner and buttons cannot disagree. State lives
-     on the input (a native attribute), never in a JS variable — the DS rule
+     on the input (a native attribute), never in a JS variable, the DS rule
      that a visual defect cannot exist without the programmatic one. */
   const qty = document.getElementById("qty");
   const steppers = [...document.querySelectorAll(".pm-qty__step")];
   const qtyMin = () => parseInt(qty?.min || "1", 10);
   const qtyMax = () => parseInt(qty?.max || "99", 10);
-  // `max` does NOT constrain typed input — it only fails constraint
+  // `max` does NOT constrain typed input. It only fails constraint
   // validation, and this input is in no form, so validation never runs
   // (MDN, input/number: "You can still manually enter a number outside
   // these bounds"). Clamping HERE is what makes the comment above true:
@@ -168,20 +168,20 @@
       }
       const n = count(next);
       renderCount(n);
-      announce(`Added "${item.title}" to cart — ${n} in cart.`);
+      announce(`Added "${item.title}" to cart, ${n} in cart.`);
     });
   }
 
   /* ── The live-origin demonstration (ADR-0002 §3) ───────────────────────
      The ONLY serve-time Discogs call in the project, fenced from every
-     number, and on demand only — never on load, so no measured path can
+     number, and on demand only, never on load, so no measured path can
      touch it. The plaque's copy is the mandatory self-explaining text and is
      part of the canonical markup; this only wires its button.
 
      The endpoint is deliberately allowed not to exist yet: until the edge
      Worker's live route and its token secret are in place the demonstration
      says so plainly in its own output slot, which is the same rule every
-     unpublished number on this site follows — state the absence, never show
+     unpublished number on this site follows, state the absence, never show
      a number-shaped hole or a silent no-op. */
   const liveButton = document.querySelector(".pm-plaque--fenced button.pm-button");
   const liveOutput = document.querySelector("[data-pm-live-origin]");
@@ -199,7 +199,7 @@
         if (!res.ok) {
           liveOutput.textContent =
             res.status === 404
-              ? `The live route is not deployed yet — nothing to show, and nothing faked (${elapsed} ms to find that out).`
+              ? `The live route is not deployed yet. Nothing to show, and nothing faked (${elapsed} ms to find that out).`
               : `The live origin answered ${res.status} after ${elapsed} ms. That is the cost of a dynamic origin on a bad day.`;
           return;
         }
@@ -210,7 +210,7 @@
             : `The live origin answered in ${elapsed} ms but carried no price for this release.`;
       } catch {
         liveOutput.textContent =
-          "The live call failed. That is a real property of a dynamic origin — and why the numbers on this site never depend on one.";
+          "The live call failed. That is a real property of a dynamic origin, and why the numbers on this site never depend on one.";
       } finally {
         liveButton.disabled = false;
       }

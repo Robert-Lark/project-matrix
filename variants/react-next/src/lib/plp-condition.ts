@@ -2,8 +2,8 @@
  * The PLP measurement condition, and the one place its URLs are built.
  *
  * ADR-0004 §5 / CONTEXT.md "Measurement condition": the full set of variables
- * that define one reproducible measurement is carried in the URL — path
- * (strategy) + query (data volume, cache warmth, and — since 2026-09-04 —
+ * that define one reproducible measurement is carried in the URL, path
+ * (strategy) + query (data volume, cache warmth, and, since 2026-09-04,
  * ADR-0005 §5's five data-plane params). This module is the single
  * derivation of that query on this variant's side, shared by the server
  * render and by every strategy island, so the URL a page was SERVED under,
@@ -13,8 +13,8 @@
  * Client-safe by construction (no "server-only", no Next API): the strategy
  * islands import it. It imports NOTHING from the reference package: a
  * paradigm never ships the spec (ADR-0004 §2), so the three rules it shares
- * with `packages/reference/render/plp-query.mjs` — the n clamp, the q
- * normalizer, the href rule — are RE-TYPED here and pinned equal by the
+ * with `packages/reference/render/plp-query.mjs`, the n clamp, the q
+ * normalizer, the href rule, are RE-TYPED here and pinned equal by the
  * identity guard over tables of inputs (the `clampPlpN`/`clampN` precedent).
  */
 import type { PlpApplied } from "@pm/data-contract";
@@ -26,7 +26,7 @@ export const PER_PAGE = 24;
 /** The data-volume knob's canonical bounds. The rule of record is
  *  `packages/measurement/src/beacon.ts` (`PLP_N` + `clampN`), consumed by
  *  the edge Worker's served condition AND by the chrome's `environment` beacon
- *  tag — so a variant that clamped differently would serve one condition and
+ *  tag, so a variant that clamped differently would serve one condition and
  *  publish another. Re-implemented rather than imported because
  *  `@pm/measurement` publishes TypeScript source (`"exports": "./src/index.ts"`)
  *  and this module is compiled by Next, which does not transpile workspace
@@ -38,7 +38,7 @@ export function clampPlpN(raw: string | null | undefined): number {
 }
 
 /** `?page=` is a positive integer; junk and sub-floor values are page 1, and
- *  the cap is `Number.MAX_SAFE_INTEGER` — `parseInt` of 309+ digits is
+ *  the cap is `Number.MAX_SAFE_INTEGER`, `parseInt` of 309+ digits is
  *  Infinity, which would spell `page=Infinity` in the tray URL (the Worker
  *  reads that as page 1 while the island holds Infinity, and `settled` could
  *  never be true). Re-typed from plp-query.mjs `clampPage` and pinned equal
@@ -54,15 +54,15 @@ export const PLP_FACET_PARAMS = ["genre", "style", "format"] as const;
 export type PlpFacetParam = (typeof PLP_FACET_PARAMS)[number];
 
 /** The sort orders the data plane implements (plp-query.mjs PLP_SORTS). A
- *  value outside this list is still FORWARDED — the Worker 400s it and the
- *  route answers 404 — so a hand-typed `?sort=popularity` is an honest
+ *  value outside this list is still FORWARDED, the Worker 400s it and the
+ *  route answers 404, so a hand-typed `?sort=popularity` is an honest
  *  "no such filter", never silently the default. */
 export const PLP_SORTS = ["year-desc", "year-asc", "price-asc", "price-desc", "title"] as const;
 
 /** `q`'s normalized form (plp-query.mjs `normalizeQ`, re-typed): whitespace
  *  collapsed, trimmed, capped at 64 code units, trimmed again; `null` when
  *  nothing is left. Applied CLIENT-SIDE too, so the condition an island
- *  holds equals the `applied.q` the tray echoes — `settled` (below) compares
+ *  holds equals the `applied.q` the tray echoes, `settled` (below) compares
  *  the two, and a raw "  miles   davis " against an applied "miles davis"
  *  would never settle: the grid would move and the address bar would not
  *  (design critique). */
@@ -74,7 +74,7 @@ export function normalizePlpQ(raw: string | null | undefined): string | null {
 }
 
 export interface PlpCondition {
-  /** Effective (clamped) rows per page — never the raw query value. */
+  /** Effective (clamped) rows per page, never the raw query value. */
   n: number;
   page: number;
   /** `cold` bypasses the KV warm tier; `default` reads it (ADR-0005 §1). */
@@ -85,7 +85,7 @@ export interface PlpCondition {
    * This is part of the SERVED condition, not decoration: the bench runner
    * sets it on every measured URL (`tools/bench-runner/src/batch.ts`) and
    * the edge Worker folds a well-formed value into the KV key, which is how
-   * a batch mints warm state without touching other runs' — or live
+   * a batch mints warm state without touching other runs', or live
    * visitors'. A page that dropped it would send every batch, every
    * post-deploy smoke and every visitor through ONE infinite-TTL warm entry.
    */
@@ -93,7 +93,7 @@ export interface PlpCondition {
   /** The chrome's snapshot selector (ADR-0004 §5/§6). Carried in every
    *  in-surface href and history write so the HUD keeps reading the profile
    *  the visitor chose; NEVER forwarded to the data plane and never part of
-   *  a client-cache key — two visits differing only by profile hold one
+   *  a client-cache key, two visits differing only by profile hold one
    *  identical tray. `""` when absent or malformed. */
   profile: string;
   /** ADR-0005 §5's five, `null` when unapplied. `q` is normalized. */
@@ -116,7 +116,7 @@ export const PLP_RUN_RE = /^[A-Za-z0-9._-]{1,64}$/;
  *  the chrome's `environment` beacon tag talking about the same condition:
  *  the tag is derived from the URL by `knobTags`, never from what was served,
  *  so a page that ignored `?n=` would publish a tag that is simply false.
- *  Empty values are ABSENT — `?sort=` and `?q=` are what a GET form submits
+ *  Empty values are ABSENT, `?sort=` and `?q=` are what a GET form submits
  *  for an untouched select and an empty search box (the Worker's rule too). */
 export function readPlpCondition(params: URLSearchParams): PlpCondition {
   const run = params.get("run") ?? "";
@@ -166,7 +166,7 @@ export function conditionFromSearchParams(
  *  reads, in a FIXED order so one condition is one URL (the Worker mints its
  *  KV key from the parsed knobs, but a stable request URL is what makes a
  *  receipt legible). The five ADR-0005 §5 params are forwarded again since
- *  2026-09-04 — the data plane filters on them, so the request that looks
+ *  2026-09-04, the data plane filters on them, so the request that looks
  *  filtered IS. `profile` is NOT forwarded: it is the chrome's knob, and a
  *  tray does not vary by it. */
 export function plpApiPath(condition: PlpCondition): string {
@@ -184,8 +184,8 @@ export function plpApiPath(condition: PlpCondition): string {
 
 /**
  * THE ONE HREF RULE (`packages/reference/render/plp.mjs conditionHref`,
- * re-typed): knobs in canonical order — page, n, cache, run, profile, genre,
- * style, format, sort, q — each omitted at its default, and the bare
+ * re-typed): knobs in canonical order, page, n, cache, run, profile, genre,
+ * style, format, sort, q. Each omitted at its default, and the bare
  * condition spelled `?page=1` so no link is ever a bare `?`. Spelling is
  * `URLSearchParams`' (`+` for a space), the same encoding a browser gives a
  * GET form submit, so a JS-off form and a JS-on push reach the bar alike.
@@ -247,7 +247,7 @@ export function sameCondition(a: PlpCondition, b: PlpCondition): boolean {
 /** Is a tray the answer to this condition? The payload carries the query the
  *  data plane APPLIED (`PlpApplied`, ADR-0005 addendum), so the cache arms
  *  can tell "the page I asked for has landed" from "I am still showing the
- *  previous page under keepPreviousData" — and only then move the address
+ *  previous page under keepPreviousData", and only then move the address
  *  bar. Compares the five params and the page; `n` is the payload's
  *  `perPage`. */
 export function appliedMatches(
@@ -282,19 +282,19 @@ export function plpCacheKey(condition: PlpCondition): string {
  * "Client-cache config is published copy, never a silent default." Under
  * TanStack Query's own default (`staleTime: 0`, "consider cached data as
  * stale") a revisit paints instantly from cache but STILL refetches in the
- * background — the prototype measured 1 request / 11.6 KB — so "revisit = 0
+ * background, the prototype measured 1 request / 11.6 KB, so "revisit = 0
  * bytes" is only true of a stated config. This constant is that statement.
  *
  * It applies to the LEAD ONLY. Apollo ships no `staleTime` at all: its window
  * under `cache-first` is unbounded, which `APOLLO_CACHE_WINDOW` states and a
- * canary pins. What the two arms hold equal is the POLICY SHAPE — cache-first,
+ * canary pins. What the two arms hold equal is the POLICY SHAPE, cache-first,
  * seeded from the server, no hand-rolled TTL on either side.
  *
  * THE LEAD'S SECOND KNOB, published here because §4 says configuration is
  * published copy and this one was not. `createSeededQueryClient` also sets
  * `retry: false`, which is NOT TanStack's default (3 retries with exponential
  * backoff). It is set so a failed page change reaches the error floor at once
- * instead of after three silent re-requests — which would otherwise put bytes
+ * instead of after three silent re-requests, which would otherwise put bytes
  * and seconds into an interaction cell without appearing anywhere in the
  * receipt. Stating it is the rule; the exhibit's `cache-first` needs no
  * counterpart because Apollo does not retry by default.

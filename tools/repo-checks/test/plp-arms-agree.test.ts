@@ -1,12 +1,12 @@
 /**
- * The two PLP arms must serve the SAME DOM for the same URL — including the
+ * The two PLP arms must serve the SAME DOM for the same URL, including the
  * pages the reference master could not render when they were written, and
  * since 2026-09-04 every FILTERED, SORTED and SEARCHED condition too.
  *
  * WHY THIS FILE EXISTS. `renderPlp` took no `page` argument: it rendered
  * page 1 and hardcoded "1" as current, while emitting links to `?page=2..5`
  * on every visit. So the contract described one page and shipped invitations
- * to pages it could not describe, and each arm generalized the rest alone —
+ * to pages it could not describe, and each arm generalized the rest alone,
  * and they generalized it differently:
  *
  *   react-next   empty page reads "0–0"   `rel="next"` emitted unconditionally
@@ -22,7 +22,7 @@
  * The reference is condition-aware now (`renderPlp(snapshot, { page, genre,
  * style, format, sort, q, cache, run, profile })`), so all three agree by
  * construction. This guard is what makes that a checked fact rather than a
- * hope — it is the ONLY place both implementations are rendered in the same
+ * hope. It is the ONLY place both implementations are rendered in the same
  * process, which is why it lives here rather than in either variant's own
  * workspace. Since the data plane landed, each arm is ALSO held to the
  * reference's own block for the same payload, so a divergence names the
@@ -71,10 +71,10 @@ interface Carry {
 /** A real browser's HTML tokenizer lowercases attribute names during parsing
  *  (the spec's tokenization algorithm); linkedom's parser does not. React
  *  emits `fetchPriority` as JSX requires and a real browser sees
- *  `fetchpriority` — so without this, the two arms "disagree" on every card
+ *  `fetchpriority`, so without this, the two arms "disagree" on every card
  *  image over a linkedom parsing gap that no visitor could ever observe.
  *  Corrected once, pre-normalize, exactly as the sibling identity guard
- *  does — never by mangling correct JSX. */
+ *  does, never by mangling correct JSX. */
 function lowercaseAttributeNames(document: ReturnType<typeof parseHTML>["document"]): void {
   for (const el of document.querySelectorAll("*")) {
     for (const attr of [...el.attributes]) {
@@ -160,8 +160,8 @@ describe("the two PLP arms agree on every page, including the ones past the end"
     const plp = await import(
       pathToFileURL(join(repoRoot, "packages", "reference", "render", "plp.mjs")).href
     );
-    // The spec's OWN query module — the function the edge Worker serves from
-    // — so the payload under test is the served tray by construction, not a
+    // The spec's OWN query module, the function the edge Worker serves from
+    //, so the payload under test is the served tray by construction, not a
     // third re-typing of the slice arithmetic (this file carried one until
     // 2026-09-04, and it would have needed filtering/sorting copied too).
     const query = await import(
@@ -230,9 +230,9 @@ describe("the two PLP arms agree on every page, including the ones past the end"
     expect(h, `${label}: htmx rendered nothing`).toContain("pm-plp");
     expect(r, `${label}: react-next rendered nothing`).toContain("pm-plp");
     if (h !== ref) console.error(`${label}\n${firstDivergence(ref, h, "reference", "htmx")}`);
-    expect(h, `htmx diverges from the reference at ${label} — see above`).toBe(ref);
+    expect(h, `htmx diverges from the reference at ${label}, see above`).toBe(ref);
     if (r !== ref) console.error(`${label}\n${firstDivergence(ref, r, "reference", "react-next")}`);
-    expect(r, `react-next diverges from the reference at ${label} — see above`).toBe(ref);
+    expect(r, `react-next diverges from the reference at ${label}, see above`).toBe(ref);
   }
 
   for (const name of ["fixture", "crate"] as const) {
@@ -257,7 +257,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
       });
     }
 
-    it(`${name}: identical DOM under every RESTORED control — a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
+    it(`${name}: identical DOM under every RESTORED control, a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
       // The conditions the committed master cannot express, one per control
       // that came back on 2026-09-04. Values are found in the snapshot rather
       // than typed, so both snapshots exercise real ones.
@@ -290,7 +290,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
         ["empty intersection", { n: 24, page: 1, genre, style: emptyStyle }, {}],
         // A junk carry: every renderer must DROP it from the forms' hidden
         // inputs (the reference's CARRY_RE; react-next re-emitted it
-        // unbounded until 2026-09-18 — the one place the three disagreed).
+        // unbounded until 2026-09-18, the one place the three disagreed).
         ["junk carry dropped", { n: 24, page: 1, genre }, { run: "has space", profile: "x".repeat(70) }],
       ];
       for (const [label, q, carry] of cases) {
@@ -309,7 +309,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
         if (label === "empty intersection") {
           // Agreement proved above; this is what the agreed markup must SAY:
           // both selected values marked, both at 0, each href dropping its
-          // own param (verify-slice, 2026-09-18 — before the exception every
+          // own param (verify-slice, 2026-09-18, before the exception every
           // renderer drew a rail with no marked facet and no way out).
           const { document } = parseHTML(
             (plp as { renderPlpBlock: (d: unknown, c: Carry) => string }).renderPlpBlock(payload, carry),
@@ -324,7 +324,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
     });
   }
 
-  it("one past the end is genuinely degenerate — otherwise this guard proves nothing", async () => {
+  it("one past the end is genuinely degenerate, otherwise this guard proves nothing", async () => {
     // Non-vacuity. If `totalPages + 1` quietly served a full grid, every
     // assertion above would be comparing two ordinary pages and the case
     // that actually broke would be untested.
@@ -340,7 +340,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
 
   it("both arms render the empty page as `0`, and neither offers a Next from it", async () => {
     // The specific two things they disagreed about, asserted by value rather
-    // than only by equality — so a future change that made BOTH arms wrong
+    // than only by equality, so a future change that made BOTH arms wrong
     // in the same way still fails here.
     const { lib, query, htmx, reactNext } = await load();
     const summaries = lib.loadSnapshot("fixture").summaries as Summary[];
@@ -403,7 +403,7 @@ describe("the two PLP arms agree on every page, including the ones past the end"
       );
       expect(sortHidden).toEqual(["cache", "run", "genre", "q"]);
       // …and both forms SERIALIZE canonically: walking a form's controls in
-      // tree order — what a browser does on a JS-off submit — spells the URL
+      // tree order, what a browser does on a JS-off submit, spells the URL
       // the href rule spells (page reset to 1). The first draft put the sort
       // form's hidden `q` BEFORE the select, so a JS-off sort with a search
       // applied spelled `…&q=the&sort=title`: a third spelling of one

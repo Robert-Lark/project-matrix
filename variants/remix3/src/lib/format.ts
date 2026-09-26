@@ -1,8 +1,8 @@
-// Canonical field formatting — this variant's own re-implementation of the
+// Canonical field formatting. This variant's own re-implementation of the
 // lib.mjs rules of record (ADR-0003 §1: a component is a spec, re-implemented
 // per paradigm; nothing here imports the reference renderer). Unlike the
 // template-literal variants there is NO esc() here: Remix 3's serializer
-// escapes every interpolated text and attribute value itself — the paradigm
+// escapes every interpolated text and attribute value itself, the paradigm
 // owns escaping, so a hand escaper would double-escape.
 
 export interface PriceFrom {
@@ -22,7 +22,7 @@ export interface Cover {
   height: number;
 }
 
-/** The featured release's DETAIL tray — the fields this page renders. */
+/** The featured release's DETAIL tray, the fields this page renders. */
 export interface Detail {
   id: number;
   slug: string;

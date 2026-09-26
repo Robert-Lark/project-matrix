@@ -1,13 +1,13 @@
 /**
- * Phase 3 — per-release details: `GET /releases/{id}?curr_abbr=USD` (one call;
- * the commerce aggregate — lowest_price + num_for_sale — rides inline, ADR-0002
+ * Phase 3, per-release details: `GET /releases/{id}?curr_abbr=USD` (one call;
+ * the commerce aggregate, lowest_price + num_for_sale, rides inline, ADR-0002
  * §5). Raw responses land verbatim; a release that cannot serve the contract
  * (gone, no images, no artists, no formats) is TOMBSTONED and a substitute is
  * drawn deterministically from the plan's ordered reserve.
  *
  * The active set is a pure function of (plan, tombstones): chosen releases
  * minus tombstoned ones, each replaced by the next non-tombstoned reserve
- * entry in rank order — so resume runs, whatever they interleave, converge on
+ * entry in rank order, so resume runs, whatever they interleave, converge on
  * the same crate.
  */
 import { rmSync } from "node:fs";
@@ -64,7 +64,7 @@ export function activeIds(plan: Plan, tombstones: ReadonlyMap<number, string>): 
  *
  * The label check is the AUTHORITATIVE crate-membership test: search-result
  * label arrays mix in publishers/companies ("Par-ki-lee Publishing" surfaced
- * a Boogie Times record in the Ki sweep — probed live), but the release's own
+ * a Boogie Times record in the Ki sweep, probed live), but the release's own
  * labels[] lists actual label entities. Membership = the release's labels
  * match ANY spec label (co-releases between crate labels count).
  */
@@ -91,10 +91,10 @@ export async function detailsPhase(
 
     // Reconcile pass: re-run the arrival guard over details already on disk.
     // The guard can evolve between resumed runs (the label-mismatch rule was
-    // added mid-capture) — checkpointed responses must not bypass it. A
+    // added mid-capture), checkpointed responses must not bypass it. A
     // checkpoint that is not even JSON is torn (power loss can truncate
-    // despite atomic rename — no fsync): DELETED and refetched, never
-    // tombstoned — a good release must not be dropped over local corruption.
+    // despite atomic rename, no fsync): DELETED and refetched, never
+    // tombstoned, a good release must not be dropped over local corruption.
     let reconciled = 0;
     for (const id of ids) {
       if (!exists(paths.detail(dirs, id))) continue;
@@ -102,7 +102,7 @@ export async function detailsPhase(
       try {
         raw = readJson(paths.detail(dirs, id));
       } catch {
-        log(`[details] ${id}: torn checkpoint — deleted, will refetch`);
+        log(`[details] ${id}: torn checkpoint, deleted, will refetch`);
         rmSync(paths.detail(dirs, id), { force: true });
         reconciled += 1;
         continue;
@@ -112,19 +112,19 @@ export async function detailsPhase(
         ? arrivalDefect(parsed.data, plan.spec.labels)
         : "shape";
       if (defect) {
-        log(`[details] ${id}: ${defect} (reconcile) — tombstoned, substituting from reserve`);
+        log(`[details] ${id}: ${defect} (reconcile), tombstoned, substituting from reserve`);
         writeTombstone(dirs, id, defect);
         reconciled += 1;
       }
     }
-    if (reconciled > 0) continue; // active set changed — recompute
+    if (reconciled > 0) continue; // active set changed, recompute
 
     const missing = ids.filter((id) => !exists(paths.detail(dirs, id)));
     if (missing.length === 0) {
       const active = activeIds(plan, tombstones).length;
       if (active < plan.spec.targetReleases) {
         log(
-          `[details] WARNING: reserve exhausted — ${active} of ${plan.spec.targetReleases} target releases`,
+          `[details] WARNING: reserve exhausted, ${active} of ${plan.spec.targetReleases} target releases`,
         );
       }
       return;
@@ -137,7 +137,7 @@ export async function detailsPhase(
         raw = await client.getJson(`/releases/${id}?curr_abbr=USD`);
       } catch (err) {
         if (err instanceof HttpStatusError && [403, 404, 410].includes(err.status)) {
-          log(`[details] ${id}: ${err.status} — tombstoned, substituting from reserve`);
+          log(`[details] ${id}: ${err.status}, tombstoned, substituting from reserve`);
           writeTombstone(dirs, id, `http-${err.status}`);
           continue;
         }
@@ -146,18 +146,18 @@ export async function detailsPhase(
 
       const parsed = RawRelease.safeParse(raw);
       if (!parsed.success) {
-        log(`[details] ${id}: unusable shape — tombstoned (${parsed.error.issues[0]?.message})`);
+        log(`[details] ${id}: unusable shape, tombstoned (${parsed.error.issues[0]?.message})`);
         writeTombstone(dirs, id, "shape");
         continue;
       }
       const defect = arrivalDefect(parsed.data, plan.spec.labels);
       if (defect) {
-        log(`[details] ${id}: ${defect} — tombstoned, substituting from reserve`);
+        log(`[details] ${id}: ${defect}, tombstoned, substituting from reserve`);
         writeTombstone(dirs, id, defect);
         continue;
       }
       writeJsonAtomic(paths.detail(dirs, id), raw, false);
     }
-    // Tombstones may have pulled substitutes into the active set — go again.
+    // Tombstones may have pulled substitutes into the active set, go again.
   }
 }

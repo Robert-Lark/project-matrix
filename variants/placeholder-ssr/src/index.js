@@ -1,5 +1,5 @@
 // Throwaway SSR placeholder: renders the SAME canonical sample markup as
-// placeholder-static (the ADR-0003 §1 markup contract — each paradigm
+// placeholder-static (the ADR-0003 §1 markup contract. Each paradigm
 // re-implements it), wrapped in representative PERMITTED paradigm noise so
 // the drift gate (issue #6) can prove its normalizer strips exactly the
 // ADR-0003 §6 permitted classes rather than passing vacuously:
@@ -16,7 +16,7 @@ function samplePage() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sample surface — Project Matrix placeholder</title>
+  <title>Sample surface · Project Matrix placeholder</title>
   <link rel="preload" href="../assets/pm/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/pm/css/fonts.css">
   <link rel="stylesheet" href="../assets/pm/css/tokens.css">
@@ -31,7 +31,7 @@ function samplePage() {
     <ul class="pm-grid ph-x7f3a2" role="list" data-ph-scope="x7f3a2" data-ph-hydrate="idle">
       <li class="pm-release-card ph-x7f3a2">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="Miles Davis — Kind Of Blue, front cover"
+             alt="Miles Davis, Kind Of Blue, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">Kind Of Blue</h3>
@@ -45,7 +45,7 @@ function samplePage() {
       </li>
       <li class="pm-release-card ph-x7f3a2">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="John Coltrane — A Love Supreme, front cover"
+             alt="John Coltrane, A Love Supreme, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">A Love Supreme</h3>
@@ -89,7 +89,7 @@ export default {
       if (url.pathname === "/placeholder-ssr/sample/boom") {
         // Deliberate failure hook (throwaway, like the variant itself): lets
         // the origin suite assert unexpected errors return a generic message
-        // with details logged server-side — at the seam, not via unit tests.
+        // with details logged server-side, at the seam, not via unit tests.
         throw new Error("deliberate placeholder failure (boom)");
       }
 
@@ -99,7 +99,7 @@ export default {
             "content-type": "text/html; charset=utf-8",
             "x-pm-ssr": "1",
             // Fidelity evidence: what this Worker actually received through
-            // the front hop (ADR-0004 §5 — the URL is the measurement
+            // the front hop (ADR-0004 §5, the URL is the measurement
             // condition; nothing may be lost in transit).
             "x-pm-echo-path": url.pathname,
             "x-pm-echo-search": url.search,
@@ -108,7 +108,7 @@ export default {
         });
       }
 
-      // Everything else — the variant's own assets included — goes to the
+      // Everything else, the variant's own assets included, goes to the
       // ASSETS binding explicitly (spike hardening 1): whether a service-
       // binding fetch traverses the target's asset-routing layer is
       // UNDOCUMENTED (it happens to work locally), so this script never

@@ -1,7 +1,7 @@
-// Public blog templates — server-rendered strings, semantic HTML, zero
+// Public blog templates, server-rendered strings, semantic HTML, zero
 // framework bytes (ADR-0009 §7). The register is "Sleeve & Shelf" (build-log
-// Phase 9): every post carries a spine — the record-sleeve edge, colored by
-// the per-post accent knob — a mono catalog line as its metadata register,
+// Phase 9): every post carries a spine, the record-sleeve edge, colored by
+// the per-post accent knob, a mono catalog line as its metadata register,
 // and the contents page is the shelf: year numerals down the page.
 
 import { esc } from "../html.js";
@@ -37,7 +37,7 @@ export function layout({
   ogImage = null,
   scripts = [],
 }) {
-  const fullTitle = title ? `${title} — ${MASTHEAD}` : MASTHEAD;
+  const fullTitle = title ? `${title} · ${MASTHEAD}` : MASTHEAD;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -165,7 +165,7 @@ ${browseBlock}`;
 
   return layout({
     title: heading,
-    description: "Writing by Rob Lark — engineering, records, photography.",
+    description: "Writing by Rob Lark: engineering, records, photography.",
     origin,
     path,
     body,
@@ -231,7 +231,7 @@ ${tagList}
 // The footnote popover enhancement rides only on pages that actually carry
 // footnote refs. Worst case a post whose prose contains the literal string
 // "data-footnote-ref" loads a ~2 KB script that finds no [data-footnote-ref]
-// elements and no-ops — never a correctness or security cost, just an
+// elements and no-ops, never a correctness or security cost, just an
 // avoided-when-cheap fetch.
 /** @param {PostRow} post @returns {string[]} */
 function postScripts(post) {
@@ -262,7 +262,7 @@ export function previewPage(post, { origin, cover = null }) {
     path: `/blog/preview/${post.preview_token}`,
     noindex: true,
     scripts: postScripts(post),
-    body: `<p class="preview-banner">Draft preview — unpublished, unlisted.</p>\n${postArticle(post, { cover })}`,
+    body: `<p class="preview-banner">Draft preview: unpublished, unlisted.</p>\n${postArticle(post, { cover })}`,
   });
 }
 
@@ -303,7 +303,7 @@ export function feedXml(posts, origin) {
     <title>${esc(MASTHEAD)}</title>
     <link>${esc(origin)}/blog/</link>
     <atom:link href="${esc(origin)}/blog/feed.xml" rel="self" type="application/rss+xml"/>
-    <description>Writing by Rob Lark — engineering, records, photography.</description>
+    <description>Writing by Rob Lark: engineering, records, photography.</description>
     <language>en</language>
 ${items}
   </channel>

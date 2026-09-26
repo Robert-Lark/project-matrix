@@ -1,5 +1,5 @@
 /*
- * Component module — store masthead. The shared shell's header, byte-identical
+ * Component module, store masthead. The shared shell's header, byte-identical
  * on every store surface (surface-design session, 2026-07-17).
  *
  * Canonical markup:
@@ -13,11 +13,11 @@
  *   </header>
  *
  * Nav hrefs are ABSOLUTE, to each surface's designated host variant (the
- * sparse matrix means relative cross-surface links 404 — recorded in the
+ * sparse matrix means relative cross-surface links 404, recorded in the
  * session ADR). The cart count is CLIENT state (ADR-0004 §5): the canonical
  * served state is the empty slot; the slot reserves fixed width so client
  * population cannot shift layout, and each paradigm sets the anchor's
- * aria-label ("Cart, 3 items") when it populates — announcements ride the
+ * aria-label ("Cart, 3 items") when it populates, announcements ride the
  * shell's status slot, not this badge (aria-hidden: it is a visual duplicate).
  */
 
@@ -98,7 +98,7 @@
 }
 
 /* Fixed-width badge slot: empty when served (canonical state), populated by
-   the paradigm client-side — tabular figures, no reflow either way. */
+   the paradigm client-side, tabular figures, no reflow either way. */
 .pm-masthead__cart-count {
   display: inline-block;
   min-width: 2.4ch;
@@ -107,7 +107,7 @@
   color: var(--color-accent);
 }
 
-/* Skip link (the shell's first focusable — before the chrome slot). */
+/* Skip link (the shell's first focusable, before the chrome slot). */
 .pm-skip {
   position: absolute;
   left: -9999px;

@@ -1,11 +1,11 @@
 /*
- * Component module — button / CTA. A11y defaults baked in (ADR-0003):
+ * Component module, button / CTA. A11y defaults baked in (ADR-0003):
  *  - min target size (WCAG 2.5.8)
  *  - visible focus via :focus-visible (never `outline: none`)
  *  - a 1px border so the button SHAPE stays visible under forced-colors,
  *    where background fills are flattened
  *  - transition reads --motion-fast, which collapses to ~0 under
- *    prefers-reduced-motion — no per-component media query needed
+ *    prefers-reduced-motion, no per-component media query needed
  */
 
 .pm-button {

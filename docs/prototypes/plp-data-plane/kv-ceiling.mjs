@@ -1,4 +1,4 @@
-// KV key-space ceiling for the PLP warm tier — MEASURED with the real query
+// KV key-space ceiling for the PLP warm tier, MEASURED with the real query
 // module for the adopted policy (n ∈ {24,240}); counted exactly and bytes
 // ESTIMATED (lifted-set facet rule + applied) for the rejected n-free policy.
 //   cacheable ⇔ q absent ∧ n ∈ warmed ∧ page ≤ totalPages (of the filtered set)

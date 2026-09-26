@@ -1,4 +1,4 @@
-// Inline probes for unit 7 (checkout measure-prep) against a HELD plane —
+// Inline probes for unit 7 (checkout measure-prep) against a HELD plane,
 // the layout-shift measurement before and after the fixed cell, the empty
 // summary geometry, the 320 px overflow check and the JS-off POST. The
 // layout-shift reading waits two animation frames and 600 ms after the last

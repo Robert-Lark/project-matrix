@@ -4,21 +4,21 @@ The framework-free **reference render** ([ADR-0003 §6](../../docs/adr/0003-desi
 lifted from [`docs/prototypes/design-system/reference/`](../../docs/prototypes/design-system/reference/).
 
 `index.html` is the **golden-master spec**: the canonical `pm-` markup contract
-rendered with the shared `@pm/tokens` CSS and font as plain static HTML — no
+rendered with the shared `@pm/tokens` CSS and font as plain static HTML, no
 framework, no scripts. The measurement harness reuses it; downstream, the a11y
 section's compliant baseline does too.
 
 `surfaces/sample/index.html` is the **surface golden master** the drift gate
 (issue #6, `tools/drift-gate`) actually compares variant pages against: the
 sample surface's canonical markup composed from the component renders, with
-none of `index.html`'s demo scaffolding — its body is exactly what a
+none of `index.html`'s demo scaffolding. Its body is exactly what a
 contract-conforming variant serves (minus the chrome slot, which is
 instrumentation and excluded by the gate). In CI every variant page is checked
 against it by normalized-DOM equivalence + pixel diff across the three test
 profiles. Real surfaces each land their own `surfaces/{surface}/` master with
 their builds.
 
-It is a *spec*, not consumed code, and it is **never deployed as a variant** —
+It is a *spec*, not consumed code, and it is **never deployed as a variant**,
 nothing a visitor loads is this file.
 
 Open it directly in a browser (after `pnpm install`, the `./node_modules/@pm/tokens`
@@ -27,6 +27,6 @@ workspace link resolves the CSS and font).
 **Serving it for the drift gate (issue #6):** the asset links resolve through
 `./node_modules/@pm/tokens`, which pnpm creates as a symlink pointing *outside*
 this package (`../../../tokens`). A static server rooted at this directory must
-follow symlinks (some treat that as opt-in), or serve the **repo root** instead
-— then every link resolves as a plain path. Verified 2026-07-07: Python's
+follow symlinks (some treat that as opt-in), or serve the **repo root** instead,
+then every link resolves as a plain path. Verified 2026-07-07: Python's
 `http.server` on the repo root serves all six assets 200, font included.

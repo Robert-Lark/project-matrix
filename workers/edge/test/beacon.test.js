@@ -2,7 +2,7 @@
  * The beacon collector's ROSTER (security floor, 2026-09-18; 2026-08-29
  * audit priority 4, task 2). Before this, `handleBeacon` checked the five
  * tags for presence and byte length only, then used `tags.variant` as the
- * Analytics Engine INDEX — so any string became a sampling key. The roster
+ * Analytics Engine INDEX, so any string became a sampling key. The roster
  * is `@pm/measurement`'s: the variant prefixes the front Worker dispatches,
  * the switcher registry's surface names, the home HUD's `singleton`/`home`,
  * and the suite's reserved `ci-smoke`. Everything else is a 400 that names
@@ -32,7 +32,7 @@ function stubEnv() {
 
 const post = (env, event) => postRaw(env, JSON.stringify(event));
 /** The body as TEXT: JSON has no NaN or Infinity literal, and
- *  `JSON.stringify` writes both as `null` — so the non-finite half of the
+ *  `JSON.stringify` writes both as `null`, so the non-finite half of the
  *  value check can only be reached with a raw out-of-range literal, which
  *  `JSON.parse` turns into ±Infinity (verify-slice, correctness lens: the
  *  first draft's "NaN" and "Infinity" legs sent null on the wire and proved
@@ -61,14 +61,14 @@ const event = (tags) => ({
 });
 
 describe("the roster is exactly what the plane can emit", () => {
-  it("variants: every dispatched prefix, the home HUD's singleton, the smoke sentinel — nothing else", () => {
+  it("variants: every dispatched prefix, the home HUD's singleton, the smoke sentinel. Nothing else", () => {
     expect([...BEACON_VARIANTS].sort()).toEqual(
       [...VARIANT_PREFIXES, HOME_TAGS.variant, SMOKE_TAG].sort(),
     );
     expect(BEACON_VARIANTS.size).toBe(VARIANT_PREFIXES.length + 2);
   });
 
-  it("surfaces: every registered surface, home, the smoke sentinel — nothing else", () => {
+  it("surfaces: every registered surface, home, the smoke sentinel. Nothing else", () => {
     expect([...BEACON_SURFACES].sort()).toEqual(
       [...SURFACE_NAMES, HOME_TAGS.surface, SMOKE_TAG].sort(),
     );
@@ -132,7 +132,7 @@ describe("the collector refuses everything off the roster, and writes nothing", 
     expect(points).toHaveLength(0);
   });
 
-  it("the client's 'unknown' fallback — a chrome that lost its data attributes — is refused", async () => {
+  it("the client's 'unknown' fallback, a chrome that lost its data attributes, is refused", async () => {
     const { env, points } = stubEnv();
     expect((await post(env, event({ variant: "unknown" }))).status).toBe(400);
     expect((await post(env, event({ surface: "unknown" }))).status).toBe(400);
@@ -167,7 +167,7 @@ describe("the collector refuses everything off the roster, and writes nothing", 
 
 describe("the value is a finite number, or the point is refused (workers-hardening, 2026-09-25)", () => {
   // Before this, `doubles: [finite ? value : 0]` wrote a fabricated 0 for
-  // every shape below and answered 204 — a dashboard row that never
+  // every shape below and answered 204, a dashboard row that never
   // happened. Asserted on the dataset: no point, not just a status.
   for (const [label, value] of [
     ["absent", undefined],
@@ -208,7 +208,7 @@ describe("the value is a finite number, or the point is refused (workers-hardeni
     expect(points).toHaveLength(0);
   });
 
-  it("CONTROL: zero is a real value — a measured 0 (CLS on a still page) is written as 0", async () => {
+  it("CONTROL: zero is a real value, a measured 0 (CLS on a still page) is written as 0", async () => {
     const { env, points } = stubEnv();
     const res = await post(env, { ...event({}), name: "CLS", value: 0 });
     expect(res.status).toBe(204);

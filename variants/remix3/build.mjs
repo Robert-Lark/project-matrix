@@ -1,15 +1,15 @@
-// Assemble the remix3 variant's static assets. NOT snapshot-parameterized —
+// Assemble the remix3 variant's static assets. NOT snapshot-parameterized,
 // this is a REQUEST-TIME variant (trays fetched through the edge Worker per
 // request, ADR-0002 §7), so no PM_SNAPSHOT is declared anywhere for it and
 // nothing baked here depends on a snapshot. What dist/ carries:
 //
-//  - the prebuilt client runtime (src/client/entry.ts bundled by esbuild —
+//  - the prebuilt client runtime (src/client/entry.ts bundled by esbuild,
 //    the template's runtime asset server is Node-only (fs + esbuild +
 //    chokidar), so prebuilding is the Workers-shaped equivalent; the spike's
 //    build-client.mjs is the prior art. No islands ship, so there is one
 //    entry and no code-splitting concern);
 //  - the shared tokens css/fonts, copied verbatim (the paradigm's delivery
-//    model, ADR-0003 §2 — resolved through this package's own declared
+//    model, ADR-0003 §2, resolved through this package's own declared
 //    dependency, the placeholder-static mold);
 //  - the exhibit stylesheet (src/frontier.css) for the two fenced subtrees;
 //  - the cart enhancement (src/cart.js).
@@ -39,7 +39,7 @@ await build({
   outfile: join(dist, "assets", "entry.js"),
   target: "es2022",
   // Production posture (the template serves unminified dev builds through
-  // its Node-only asset server; a real adapter would minify — recorded in
+  // its Node-only asset server; a real adapter would minify, recorded in
   // DIFF-TO-STARTER.md). The exhibit publishes no numbers either way.
   minify: true,
   sourcemap: false,

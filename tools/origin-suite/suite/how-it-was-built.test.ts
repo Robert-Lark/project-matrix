@@ -3,17 +3,17 @@
  * docs/prds/how-it-was-built-build.md, duties D2, D7, D9). Plain HTTP,
  * outside-in, no Worker internals.
  *
- *  - D7: the URL SERVES — 200, the doc root, no injected chrome, no in-page
+ *  - D7: the URL SERVES, 200, the doc root, no injected chrome, no in-page
  *    HUD, zero script. Before this build every store page's footer linked
  *    this URL and the front Worker answered `not found` (probed 2026-09-02).
  *  - D2: the served body is BYTE-IDENTICAL to a fresh `renderHowBuilt` at the
- *    attestation the plane serves — the same function renders the committed
+ *    attestation the plane serves, the same function renders the committed
  *    master, so this is the tie between the served page and the spec that no
  *    variant comparison could give a hostless singleton. Exact equality, not
  *    the normalizer: there is no paradigm noise to tolerate here, and a
  *    weaker compare would hide the drift it exists to catch.
  *  - D9: every deep link pins the attested SHA, or falls back to `main` with
- *    the page saying the tree was unclean — BOTH directions asserted in one
+ *    the page saying the tree was unclean, BOTH directions asserted in one
  *    leg, the published-readings pattern (`:442-473`), so neither state can
  *    pass by never being exercised: the branch the plane is in is asserted
  *    positively and the other branch's text is asserted absent.
@@ -49,9 +49,9 @@ async function servedBuild(): Promise<Build> {
   return build;
 }
 
-/** The <body> inner — the part both heads share. Anchored on `</head>`: the
+/** The <body> inner, the part both heads share. Anchored on `</head>`: the
  *  served head inlines @pm/tokens' sheets verbatim, and shell.css's skeleton
- *  comment contains a literal `<body>` (the first sabotage run matched it —
+ *  comment contains a literal `<body>` (the first sabotage run matched it,
  *  and the comment's `<div id="pm-chrome-slot">` with it). */
 function bodyOf(html: string): string {
   const m = html.match(/<\/head>\s*<body>([\s\S]*)<\/body>\s*<\/html>\s*$/);
@@ -65,7 +65,7 @@ const DEEP_LINK =
 const unescape = (t: string) =>
   t.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 
-describe("/how-it-was-built/ — the decision record as a served surface (ADR-0008 §8)", () => {
+describe("/how-it-was-built/, the decision record as a served surface (ADR-0008 §8)", () => {
   it("D7: serves 200 with the doc root, chrome-free, HUD-free, script-free", async () => {
     const res = await get("/how-it-was-built/");
     // Status FIRST: a 404 body is a string too, and every `not.toContain`
@@ -77,7 +77,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
     expect(body).toContain('id="decision-records"');
     // Current-state pins, mirroring /methodology/'s leg: no injected chrome
     // (assets-first never reaches the Worker script) and no chrome slot for
-    // it to fill; no in-page HUD either (PRD Decision 3 — this surface
+    // it to fill; no in-page HUD either (PRD Decision 3. This surface
     // publishes no number for a HUD to sit beside).
     expect(body).not.toContain("data-pm-chrome");
     expect(body).not.toContain('id="pm-chrome"');
@@ -85,7 +85,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
     // The slot is asserted on the BODY markup: the head inlines the real
     // @pm/tokens sheets verbatim, and surfaces/shell.css's own skeleton
     // comment names `<div id="pm-chrome-slot">` as the thing variants carry
-    // and masters do not — a comment, not a slot.
+    // and masters do not, a comment, not a slot.
     const markup = bodyOf(body);
     expect(markup).not.toContain("pm-chrome-slot");
     // The head inlines CSS (the home delivery shape); the body carries none.
@@ -96,7 +96,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
   it("D2: the served body is byte-identical to a fresh render at the served attestation", async () => {
     const build = await servedBuild();
     // The expected body is rendered from THIS checkout's docs, so the leg
-    // needs the checkout the plane was built from — otherwise a plane built
+    // needs the checkout the plane was built from, otherwise a plane built
     // from another commit reads as composition drift, with a message that
     // blames the wrong thing (verify-slice, correctness + seams lenses). The
     // bench runner refuses a cross-tree plane the same way; refuse here too,
@@ -104,7 +104,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
     const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
     expect(
       build.sha === head,
-      `D2 renders its expected body from this checkout's docs, so it needs the checkout the plane was built from: the plane attests ${build.sha.slice(0, 7)}, this checkout is ${head.slice(0, 7)} — run against run-local, or check out the attested commit`,
+      `D2 renders its expected body from this checkout's docs, so it needs the checkout the plane was built from: the plane attests ${build.sha.slice(0, 7)}, this checkout is ${head.slice(0, 7)}, run against run-local, or check out the attested commit`,
     ).toBe(true);
     const res = await get("/how-it-was-built/");
     expect(res.status).toBe(200);
@@ -126,11 +126,11 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
 
     expect(
       served === expected,
-      `${firstDomDivergence(expected, served, 2) ?? ""}\n(both sides at ${build.sha.slice(0, 7)}; a docs edit made after the plane was built also produces this — rebuild the plane and re-run)`,
+      `${firstDomDivergence(expected, served, 2) ?? ""}\n(both sides at ${build.sha.slice(0, 7)}; a docs edit made after the plane was built also produces this, rebuild the plane and re-run)`,
     ).toBe(true);
   });
 
-  it("D9: deep links pin the attested SHA, or fall back to main and say the tree was unclean — both directions", async () => {
+  it("D9: deep links pin the attested SHA, or fall back to main and say the tree was unclean. Both directions", async () => {
     const build = await servedBuild();
     const body = await (await get("/how-it-was-built/")).text();
     const refs = [...new Set([...body.matchAll(DEEP_LINK)].map((m) => m[1]!))];
@@ -143,7 +143,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
     // accepts either arm would pass it (verify-slice, seams + skeptic
     // lenses). Local planes legitimately run dirty; the remote never may.
     if (REMOTE) {
-      expect(build.dirty, "a deployed plane must attest a clean tree — otherwise this page ships the main fallback as its receipt").toBe(false);
+      expect(build.dirty, "a deployed plane must attest a clean tree, otherwise this page ships the main fallback as its receipt").toBe(false);
     }
     const PINNED = "is pinned to commit";
     const UNCLEAN = "uncommitted changes";
@@ -184,7 +184,7 @@ describe("/how-it-was-built/ — the decision record as a served surface (ADR-00
 
     // Heading fragments (the addenda): re-derived from the named file's
     // headings with the renderer's anchor rule, which reference.test.ts pins
-    // to anchors GitHub rendered. Line anchors (the phases — GitHub does not
+    // to anchors GitHub rendered. Line anchors (the phases, GitHub does not
     // render the build log): line n of the file must BE the heading shown.
     const howBuilt = await import(
       pathToFileURL(join(repoRoot, "packages", "reference", "render", "how-built.mjs")).href

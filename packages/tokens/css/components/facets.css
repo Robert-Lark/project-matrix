@@ -1,5 +1,5 @@
 /*
- * Component module — facet rail. Filters are NAVIGATION (every strategy
+ * Component module, facet rail. Filters are NAVIGATION (every strategy
  * delegates filter/sort/search to the data plane, ADR-0005 §5): each facet is
  * a plain link carrying the canonical query params (?genre= / ?style= /
  * ?format=), so the rail works JS-off in every paradigm and enhancement is
@@ -20,9 +20,9 @@
  *     </section> …
  *   </nav>
  *
- * aria-current="true" marks the SELECTED facet (a filter state, not a page —
+ * aria-current="true" marks the SELECTED facet (a filter state, not a page,
  * the variant switcher's "page" token is the other, deliberate case). A
- * selected facet's href REMOVES its param — the same link toggles it off.
+ * selected facet's href REMOVES its param, the same link toggles it off.
  * Every facet href resets `page` and keeps every other applied knob
  * (packages/reference/render/plp.mjs conditionHref is the rule of record).
  *

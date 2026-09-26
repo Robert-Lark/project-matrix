@@ -1,17 +1,17 @@
 ---
 /**
- * The PDP article — this variant's re-implementation of the canonical PDP
+ * The PDP article. This variant's re-implementation of the canonical PDP
  * markup (`packages/reference/render/pdp.mjs` is the contract of record; the
  * four masters under `packages/reference/surfaces/pdp/` are what the drift
  * gate holds it to). Build-time all the way down: the tray arrives as a prop
  * from the baked module, nothing runs per request, and the interactions are
  * wired by the page's one bundled script (src/scripts/pdp.ts) exactly as the
- * editorial page's cart is — deliberately not an island (DIFF-TO-STARTER).
+ * editorial page's cart is, deliberately not an island (DIFF-TO-STARTER).
  *
  * The degenerate arms are contract too, including the three no committed
  * master gates (lib.mjs pdpRenderClass's recorded gap): an absent notes
  * section, a null track duration (sr-only "No duration listed"), and a null
- * year (named em-dash) — implemented from pdp.mjs source, not from the
+ * year (named em-dash), implemented from pdp.mjs source, not from the
  * masters, precisely because no fixture master takes those arms.
  *
  * Whitespace discipline (Shell.astro's rule): inline-sensitive runs are
@@ -31,13 +31,13 @@ const price = formatPrice(d.priceFrom);
 const sold = d.numForSale === 0;
 
 /** The amount/year slots carry either data or a NAMED glyph (never a bare
- *  em-dash — lib.mjs namedGlyph's reasoning); both arrive pre-escaped. */
-const amountHtml = price !== null ? esc(price) : namedGlyph("—", "No price listed");
-const yearHtml = d.year !== null ? esc(d.year) : namedGlyph("—", "No year listed");
+ *  em-dash, lib.mjs namedGlyph's reasoning); both arrive pre-escaped. */
+const amountHtml = price !== null ? esc(price) : namedGlyph("–", "No price listed");
+const yearHtml = d.year !== null ? esc(d.year) : namedGlyph("–", "No year listed");
 const labelLine = d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; ");
 
 /** Notes: the master escapes each paragraph then turns single newlines into
- *  <br> (renderPdp notesBlock) — reproduced here as pre-escaped HTML through
+ *  <br> (renderPdp notesBlock), reproduced here as pre-escaped HTML through
  *  set:html, the essays.ts precedent for prose whose inner markup is built. */
 const notesHtml = d.notes
   ? d.notes
@@ -112,7 +112,7 @@ const notesHtml = d.notes
     <aside class="pm-plaque pm-plaque--fenced" data-pm-fenced="true">
       <p class="pm-plaque__kicker">Fenced demonstration</p>
       <p class="pm-plaque__name"><strong>The live-origin demonstration</strong></p>
-      <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
+      <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead: the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
       <p class="pm-plaque__claim"><button class="pm-button pm-button--secondary" type="button">Fetch today's price live</button> <output data-pm-live-origin></output></p>
       <p class="pm-plaque__rule">measured with the same harness · excluded from every benchmark number</p>
     </aside>

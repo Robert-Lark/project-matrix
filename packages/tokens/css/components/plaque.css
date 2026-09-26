@@ -1,13 +1,13 @@
 /*
- * Component module — plaque: the ONE labeling system for everything that
+ * Component module, plaque: the ONE labeling system for everything that
  * needs a stated boundary (surface-design session, 2026-07-17). Register:
- * pressing-plant stamp — a rule line and tracked small caps, never a siren
+ * pressing-plant stamp, a rule line and tracked small caps, never a siren
  * (the store stays quiet, ADR-0006 §1; the covers must win).
  *
  * Two forms:
- *   base    — a stated fact (e.g. checkout's "Simulated checkout…" notice;
+ *   base   , a stated fact (e.g. checkout's "Simulated checkout…" notice;
  *             checkout IS measured, so it is NOT fenced).
- *   --fenced — a true number-exclusion (Remix 3 exhibit, the Apollo
+ *   --fenced, a true number-exclusion (Remix 3 exhibit, the Apollo
  *             misapplication exhibit, the live-origin demonstration, the
  *             a11y DS-OFF exhibits). Carries data-pm-fenced="true" (the
  *             machine hook the harness and tests key on) and the exclusion
@@ -17,7 +17,7 @@
  *   <aside class="pm-plaque [pm-plaque--fenced]" [data-pm-fenced="true"]>
  *     <p class="pm-plaque__kicker">Fenced exhibit</p>       (uppercase via CSS,
  *                                                            never typed caps)
- *     <p class="pm-plaque__name"><strong>…</strong></p>     (a <p> by default —
+ *     <p class="pm-plaque__name"><strong>…</strong></p>     (a <p> by default,
  *                                                            heading level is a
  *                                                            per-placement call,
  *                                                            outlines stay sane)
@@ -63,7 +63,7 @@
 }
 
 /* The fence: the exclusion is carried by TEXT (the rule line), reinforced by
-   the dashed boundary — never by color alone (forced-colors safe). */
+   the dashed boundary, never by color alone (forced-colors safe). */
 .pm-plaque--fenced {
   border-style: dashed;
   border-inline-start-style: solid;

@@ -5,13 +5,13 @@ import type { Image } from "@pm/data-contract";
 import { thumbSrc } from "../lib/pdp-format";
 
 /**
- * The gallery — thumbs switch the stage, zoom is a real toggle. Idiomatic
+ * The gallery, thumbs switch the stage, zoom is a real toggle. Idiomatic
  * React state where vanilla writes attributes by hand, but the SERVED shape
  * is the master's exactly: selected index 0 (first thumb aria-current),
  * zoom not pressed, stage = the first image.
  *
  * Two behaviors the contract pins (vanilla's pdp.js is the precedent):
- *  - the stage's width/height attributes STAY the first image's — the stage
+ *  - the stage's width/height attributes STAY the first image's, the stage
  *    is a fixed 1:1 mat, so a switch swaps only src and alt and can never
  *    move the buy panel (ADR-0008 §8, CLS 0 by construction);
  *  - zoom survives a thumb switch: the visitor asked to look closely, and

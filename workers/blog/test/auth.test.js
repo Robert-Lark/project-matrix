@@ -6,7 +6,7 @@
  *    SQLite and the DDL below is the committed migration's), so "one
  *    statement, no read-modify-write", the 5-failure threshold, the 30-minute
  *    lock and the 10-minute window reset are proven on the engine that
- *    executes them — not on a mock that agrees with the code by design. The
+ *    executes them, not on a mock that agrees with the code by design. The
  *    origin suite's twenty-parallel burst (blog.test.ts) exercises the
  *    lockout end-to-end but does NOT distinguish this statement from
  *    read-modify-write on local D1 (sabotage 2026-09-18: the racy code
@@ -16,7 +16,7 @@
  *  - The CSRF compare is proven to go THROUGH `crypto.subtle.timingSafeEqual`
  *    with the Workers runtime's contract (a TypeError on a length mismatch).
  *    Node's SubtleCrypto has no such method (checked: Node 24.13), so the leg
- *    installs one that RECORDS its calls — a test that only checked the
+ *    installs one that RECORDS its calls, a test that only checked the
  *    boolean would pass against `===` too, which is exactly the defect.
  */
 import { readFileSync } from "node:fs";
@@ -76,7 +76,7 @@ describe("the lockout increment, on real SQLite", () => {
     db.close();
   });
 
-  it("is ONE statement — an INSERT … ON CONFLICT, never a SELECT first", async () => {
+  it("is ONE statement, an INSERT … ON CONFLICT, never a SELECT first", async () => {
     await recordFailure(env, from("203.0.113.1"));
     expect(log).toHaveLength(1);
     expect(log[0]).toMatch(/^\s*INSERT INTO login_attempts/);
@@ -122,7 +122,7 @@ describe("the lockout increment, on real SQLite", () => {
     });
   });
 
-  it("twenty increments in one bucket count twenty — the statement carries the arithmetic, not the caller", async () => {
+  it("twenty increments in one bucket count twenty, the statement carries the arithmetic, not the caller", async () => {
     await Promise.all(Array.from({ length: 20 }, () => recordFailure(env, from("203.0.113.1"))));
     expect(row(db, "203.0.113.1").count).toBe(20);
     expect(log.filter((sql) => /select/i.test(sql))).toHaveLength(0);
@@ -165,7 +165,7 @@ describe("the CSRF compare goes through the constant-time helper", () => {
   const request = (headers = {}) =>
     new Request("https://plane.test/blog/admin/api/posts/x", { method: "PUT", headers });
 
-  it("a matching header token is accepted — and the compare was the constant-time one", () => {
+  it("a matching header token is accepted, and the compare was the constant-time one", () => {
     expect(csrfOk(request({ "x-pm-blog-csrf": TOKEN }), session)).toBe(true);
     expect(calls).toEqual([[43, 43]]);
   });
@@ -180,7 +180,7 @@ describe("the CSRF compare goes through the constant-time helper", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("a wrong-LENGTH token is false, not a TypeError — the length guard precedes the runtime call", () => {
+  it("a wrong-LENGTH token is false, not a TypeError, the length guard precedes the runtime call", () => {
     expect(csrfOk(request({ "x-pm-blog-csrf": "short" }), session)).toBe(false);
     expect(calls).toHaveLength(0);
   });

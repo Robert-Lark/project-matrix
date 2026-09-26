@@ -1,20 +1,20 @@
 /**
- * The a11y section's controls DO what the page says — driven, not inspected
+ * The a11y section's controls DO what the page says, driven, not inspected
  * (a11y-section build, 2026-09-03; the checkout-controls-behave pattern).
  *
  * `pdp-controls-wired.test.ts`'s a11y block proves the enhancement can REACH
  * every control the masters render. This file runs the REAL `a11y.js` against
- * the REAL served pages (variants/vanilla/render.mjs renderA11yPage — the
+ * the REAL served pages (variants/vanilla/render.mjs renderA11yPage, the
  * same call build.mjs makes) in linkedom, before merge, with no plane and no
  * ports, and holds it to the promises the page makes ON ITSELF:
  *
  *  - the live-region demo writes the same sentence into each twin's OWN
- *    output slot — the DS-ON slot is role="status", the DS-OFF slot a plain
- *    element — and never into the shell's status region (routing the DS-OFF
+ *    output slot, the DS-ON slot is role="status", the DS-OFF slot a plain
+ *    element, and never into the shell's status region (routing the DS-OFF
  *    twin there would announce the silence the exhibit exists to show);
  *  - a mode toggle writes its own `aria-pressed` and NOTHING ELSE: no
  *    attribute on <html> or <body>, no class, no inline style, no <style>
- *    element — the emulation is stage-scoped CSS keyed on that one attribute,
+ *    element, the emulation is stage-scoped CSS keyed on that one attribute,
  *    which is what makes "these demos never override your OS setting" true;
  *  - no DS-OFF <details> is ever opened by script;
  *  - a specimen answers in the page's OWN visible `role="status"` line,
@@ -25,7 +25,7 @@
  *    read(), uniqueness clause included) and the script never WRITES storage.
  *
  * Plus the one CSS claim the emulation makes: the forced-colors rule's
- * custom-property declarations are the real media query's, verbatim — held
+ * custom-property declarations are the real media query's, verbatim, held
  * equal here so the demonstration of the seam cannot drift from the seam.
  *
  * What this cannot do, stated: linkedom has no layout, no computed styles and
@@ -51,7 +51,7 @@ let served: Record<Page, string>;
 let enhancement: string;
 
 beforeAll(async () => {
-  // The SERVED documents, from the variant's own renderer — never a
+  // The SERVED documents, from the variant's own renderer, never a
   // hand-written fixture, which is the thing that silently stops matching.
   const vanilla = await import(
     pathToFileURL(join(repoRoot, "variants", "vanilla", "render.mjs")).href
@@ -100,14 +100,14 @@ const $$ = (env: Env, sel: string): Element[] => [...env.document.querySelectorA
  *  `<details>` open states and the `<style>` element count.
  *
  *  Deliberately total rather than a list of suspects. The first draft
- *  captured only `<html>`/`<body>` attributes, classes and inline styles —
+ *  captured only `<html>`/`<body>` attributes, classes and inline styles,
  *  enough for the failure the guard was written for (a class on the root, an
  *  inline style on the stage), but NARROWER THAN ITS OWN TEST NAME, which
  *  says the toggle touches nothing but its own `aria-pressed`. A guard whose
  *  name claims more than it checks is the vacuity this repo treats as the
  *  defect, so the check now covers what the name says: any attribute written
- *  anywhere — a `data-` hook on a compare box, an `aria-hidden` on a stage, a
- *  `hidden` on a twin — moves this string. `aria-pressed` on the toggles is
+ *  anywhere, a `data-` hook on a compare box, an `aria-hidden` on a stage, a
+ *  `hidden` on a twin, moves this string. `aria-pressed` on the toggles is
  *  masked because writing it is the whole permitted behaviour; a toggle
  *  writing `aria-pressed` on anything ELSE is not masked and still fails. */
 function untouchables(env: Env): string {
@@ -131,7 +131,7 @@ function untouchables(env: Env): string {
   });
 }
 
-/** The `role="status"` line of ONE section — there is one per compare and per
+/** The `role="status"` line of ONE section. There is one per compare and per
  *  mode, so a test that reads "the" slot reads the wrong one. */
 function slotIn(env: Env, sectionSel: string): Element {
   const section = env.document.querySelector(sectionSel);
@@ -142,7 +142,7 @@ function slotIn(env: Env, sectionSel: string): Element {
 }
 
 const DEMO_SENTENCE = (n: number) =>
-  `Added "A sample record" to the demo cart — ${n} in the demo cart.`;
+  `Added "A sample record" to the demo cart, ${n} in the demo cart.`;
 
 describe("the live-region demo (element-demos)", () => {
   it("the DS-ON button writes the announcement into its role=status slot; the shell's region stays silent", () => {
@@ -155,14 +155,14 @@ describe("the live-region demo (element-demos)", () => {
     click($(env, '[data-pm-demo="status-on"]'));
     expect(out.textContent).toBe(DEMO_SENTENCE(2));
     // The shell's own live region is the CART's (CART_CONTRACT); the demo
-    // never borrows it — otherwise the DS-OFF twin below would be announced
+    // never borrows it, otherwise the DS-OFF twin below would be announced
     // through it too, and the exhibit would show nothing.
     expect($(env, "[data-pm-status]").textContent).toBe("");
     // And nothing reached the real cart.
     expect(env.writes).toBe(0);
   });
 
-  it("the DS-OFF button writes the SAME sentence into a plain element — silent to AT by construction — and never the shell's region", () => {
+  it("the DS-OFF button writes the SAME sentence into a plain element, silent to AT by construction, and never the shell's region", () => {
     const env = run("a11y/element-demos");
     const out = $(env, '[data-pm-demo-out="status-off"]');
     expect(out.getAttribute("role"), "the DS-OFF slot must be a plain element").toBeNull();
@@ -184,7 +184,7 @@ describe("the live-region demo (element-demos)", () => {
   it("a specimen answers in ITS OWN section's visible status line, never the shell's clipped one", () => {
     // Two defects the verification pass found, both fixed here and both
     // guarded: (F1) the first draft answered through the shell's
-    // `[data-pm-status]`, which masthead.css sizes 1x1 and clips — silent to
+    // `[data-pm-status]`, which masthead.css sizes 1x1 and clips, silent to
     // everyone looking rather than listening; (F3) the second draft used one
     // page-level line, leaving the answer one to three viewports above the
     // button. The answer now belongs to the section that was pressed.
@@ -203,8 +203,8 @@ describe("the live-region demo (element-demos)", () => {
 
     click($(env, `${focus} .pm-compare__box:not(.pm-compare__box--off) button`));
     expect(slotIn(env, focus).textContent).toContain('"Add to cart"');
-    expect(slotIn(env, focus).textContent).toContain("nothing was added or saved");
-    // The answer went to the pressed section and NOWHERE else — a write that
+    expect(slotIn(env, focus).textContent).toContain("Nothing was added or saved");
+    // The answer went to the pressed section and NOWHERE else, a write that
     // lands in another section is the F3 defect wearing a different shape.
     expect(slotIn(env, target).textContent, "another section's line was written").toBe("");
     expect(shell.textContent, "the shell's clipped region is never used here").toBe("");
@@ -219,7 +219,7 @@ describe("the live-region demo (element-demos)", () => {
     expect(env2.writes).toBe(0);
   });
 
-  it("a repeated press says something NEW — a live region will not re-announce unchanged text, and the target-size demo invites repeats", () => {
+  it("a repeated press says something NEW, a live region will not re-announce unchanged text, and the target-size demo invites repeats", () => {
     // F-A8: the walkthrough tells the visitor to try the target "on a phone,
     // or with a tremor", so the second press is the designed interaction. A
     // per-control counter makes every press a distinct string, and answers
@@ -230,7 +230,7 @@ describe("the live-region demo (element-demos)", () => {
     const slot = slotIn(env, target);
     const said: string[] = [];
     for (let i = 0; i < 3; i++) { click(button); said.push(slot.textContent ?? ""); }
-    expect(new Set(said).size, "a repeated press repeated itself — silent to AT").toBe(3);
+    expect(new Set(said).size, "a repeated press repeated itself, silent to AT").toBe(3);
     expect(said[1]).toContain("(2 presses)");
     expect(said[2]).toContain("(3 presses)");
     expect(said[0]).not.toContain("presses)");
@@ -238,7 +238,7 @@ describe("the live-region demo (element-demos)", () => {
 
   it("the two twins of a compare produce DIFFERENT sentences in the SAME line", () => {
     // F2: both focus twins are the same component with the same label, so a
-    // message built from the label alone was byte-identical for both — silent
+    // message built from the label alone was byte-identical for both, silent
     // on the second press, at exactly the moment the visitor is comparing
     // them. They share one section, so they share one answer line, which is
     // what makes the distinctness load-bearing rather than incidental.
@@ -256,11 +256,11 @@ describe("the live-region demo (element-demos)", () => {
     // The demo's NAME is deliberately not in the sentence: the line sits
     // inside the demo's own section, so the heading above it already says
     // which comparison this is, and every character is height the line must
-    // reserve. What the sentence must carry is what the section cannot —
+    // reserve. What the sentence must carry is what the section cannot,
     // which control, which side, and that nothing happened.
     for (const line of said) {
       expect(line).toContain("Specimen:");
-      expect(line).toContain("nothing was added or saved");
+      expect(line).toContain("Nothing was added or saved");
       expect(line).not.toContain("Focus, visible");
     }
 
@@ -277,7 +277,7 @@ describe("the live-region demo (element-demos)", () => {
     expect(all.size, "two specimens share a sentence").toBe(specimens.length);
   });
 
-  it("the answer line is styled VISIBLE with reserved geometry — the sheet is what keeps F1 fixed", () => {
+  it("the answer line is styled VISIBLE with reserved geometry, the sheet is what keeps F1 fixed", () => {
     // linkedom has no layout, so the visibility half is asserted against the
     // rule that provides it; the browser leg measures the real box.
     const css = readFileSync(join(tokensCss, "surfaces", "a11y.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -288,7 +288,7 @@ describe("the live-region demo (element-demos)", () => {
     // hand-typed pattern list: `.pm-sr-only` is the shape this line must not
     // have, and reading it from the sheet means a change to how this repo
     // hides things cannot leave this check testing yesterday's shape
-    // (F-6 — the first draft asserted the absence of a CLASS the line would
+    // (F-6, the first draft asserted the absence of a CLASS the line would
     // never have carried, which is no check at all).
     const shellCss = readFileSync(join(tokensCss, "surfaces", "shell.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     const hidden = shellCss.match(/\.pm-sr-only\s*\{([\s\S]*?)\}/)?.[1];
@@ -325,7 +325,7 @@ describe("the mode toggles (mode-demos)", () => {
     expect($$(env, emulation("forced-colors")).length).toBe(0);
   });
 
-  it("a toggle touches NOTHING but its own aria-pressed — additive, stage-scoped, never the document", () => {
+  it("a toggle touches NOTHING but its own aria-pressed, additive, stage-scoped, never the document", () => {
     // The promise the caveat makes ("these demos never override it"), as a
     // mechanism: the emulation lives entirely in one attribute on one button
     // and the sheet that reads it. If the script set a class on <html>, an
@@ -337,7 +337,7 @@ describe("the mode toggles (mode-demos)", () => {
       expect($(env, `[data-pm-mode-toggle="${mode}"]`).getAttribute("aria-pressed")).toBe("true");
     }
     expect(untouchables(env)).toBe(before);
-    // And every stage's ATTRIBUTES are exactly as served — the stage is
+    // And every stage's ATTRIBUTES are exactly as served, the stage is
     // never written; the sibling combinator does the work.
     for (const stage of $$(env, ".pm-mode__stage")) {
       expect([...stage.attributes].map((a) => a.name).sort()).toEqual(["class", "data-pm-mode"]);
@@ -353,7 +353,7 @@ describe("the mode toggles (mode-demos)", () => {
     click($(env, '.pm-mode__stage[data-pm-mode="reflow"] button.pm-button'));
     expect(slotIn(env, zoom).textContent).toContain('"Add to cart"');
     // The mode is identified by WHICH line was written, not by naming it in
-    // the sentence — the assertion below is what carries that.
+    // the sentence, the assertion below is what carries that.
     expect(slotIn(env, forced).textContent, "another mode's line was written").toBe("");
     expect($(env, "[data-pm-status]").textContent).toBe("");
   });
@@ -372,7 +372,7 @@ describe("the emulation IS the seam remap, scoped (mode-demo.css vs tokens.css)"
   it("the forced-colors rule's custom properties are the media query's, verbatim", () => {
     const tokens = rules("tokens.css");
     const query = tokens.match(/@media \(forced-colors: active\)\s*\{\s*:root\s*\{([\s\S]*?)\}/)?.[1];
-    expect(query, "tokens.css lost its forced-colors remap — the seam this demo demonstrates").toBeTruthy();
+    expect(query, "tokens.css lost its forced-colors remap, the seam this demo demonstrates").toBeTruthy();
     const demo = rules("components/mode-demo.css").match(
       /\.pm-mode__toggle\[aria-pressed="true"\] \+ \.pm-mode__stage\[data-pm-mode="forced-colors"\]\s*\{([\s\S]*?)\}/,
     )?.[1];
@@ -436,7 +436,7 @@ describe("the contrast numbers the exhibit PUBLISHES are the tokens' own", () =>
   it("every ratio the copy quotes is computed from the palette, and none of them is a superlative", async () => {
     // The verification pass found this page publishing "our worst shipped
     // pair measures 6.14:1". The number was right; "worst" was checked by
-    // nothing and was false — muted ink on the SUNK surface is 5.73:1 and
+    // nothing and was false, muted ink on the SUNK surface is 5.73:1 and
     // ships on the editorial feature note and the checkout's empty-cart line.
     // A number on this site carries its artifact; the artifact for these two
     // is the palette, so they are recomputed here and the copy is held to
@@ -452,8 +452,8 @@ describe("the contrast numbers the exhibit PUBLISHES are the tokens' own", () =>
 
     const onPaper = ratio(muted, paper).toFixed(2);
     const onSunk = ratio(muted, sunk).toFixed(2);
-    expect(onPaper, "the paper pairing moved — requote the page").toBe("6.14");
-    expect(onSunk, "the sunk pairing moved — requote the page").toBe("5.73");
+    expect(onPaper, "the paper pairing moved, requote the page").toBe("6.14");
+    expect(onSunk, "the sunk pairing moved, requote the page").toBe("5.73");
     expect(copy).toContain(`${onPaper}:1`);
     expect(copy).toContain(`${onSunk}:1`);
     // Both still clear AA for normal text, which is the claim around them.
@@ -465,7 +465,7 @@ describe("the contrast numbers the exhibit PUBLISHES are the tokens' own", () =>
     }
   });
 
-  it("the stripped twin's grey really fails AA — the exhibit's failure is a real failure", () => {
+  it("the stripped twin's grey really fails AA, the exhibit's failure is a real failure", () => {
     const a11yCss = readFileSync(join(tokensCss, "surfaces", "a11y.css"), "utf8");
     expect(a11yCss).toBeTruthy();
     // The hardcoded grey the DS-OFF twin uses, read from the renderer.
@@ -474,12 +474,12 @@ describe("the contrast numbers the exhibit PUBLISHES are the tokens' own", () =>
     expect(grey, "the stripped twin no longer hardcodes a grey").toBeTruthy();
     const paper = primitive("--color-surface");
     const r = ratio(grey!, paper);
-    expect(r, `the stripped twin measures ${r.toFixed(2)}:1 — it must FAIL AA to be an exhibit`).toBeLessThan(4.5);
+    expect(r, `the stripped twin measures ${r.toFixed(2)}:1. It must FAIL AA to be an exhibit`).toBeLessThan(4.5);
     expect(r.toFixed(2)).toBe("1.70");
   });
 });
 
-describe("the cart badge on this surface (CART_CONTRACT — the fourth vanilla read())", () => {
+describe("the cart badge on this surface (CART_CONTRACT, the fourth vanilla read())", () => {
   it("populates from storage on every one of the three pages, and never writes", () => {
     for (const rel of PAGES) {
       const env = run(rel, { v: 1, items: [{ id: 7, qty: 2 }, { id: 9, qty: 1 }] });

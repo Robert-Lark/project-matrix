@@ -7,7 +7,7 @@ import { CART_CHANGED_EVENT, badge, cartCount, cartLabel, readCart } from "../li
  *  (the contract: every shell page load reflects whatever is already
  *  stored, which is what makes the cart survive a variant swap) and again
  *  whenever another island changes the cart. Server-rendered with count 0
- *  (no aria-label, empty slot) — the canonical served state. */
+ *  (no aria-label, empty slot), the canonical served state. */
 export function CartCount({ checkoutHref }: { checkoutHref: string }) {
   const [count, setCount] = useState(0);
 

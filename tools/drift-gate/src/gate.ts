@@ -1,12 +1,12 @@
 /**
- * Playwright page helpers — the gate's contact surface with the browser the
+ * Playwright page helpers, the gate's contact surface with the browser the
  * origin suite drives. The suite owns the browser; these helpers own the
  * gate's mechanics so the policy (what is stripped, when a screenshot is
  * trustworthy) lives here, next to the normalizer, not in test files.
  *
  * Contexts are created JS-OFF (`javaScriptEnabled: false`), deliberately:
  *  - the served markup is what the canonical-markup contract governs
- *    (ADR-0003 §1) — with scripts off, the DOM under test is exactly the
+ *    (ADR-0003 §1), with scripts off, the DOM under test is exactly the
  *    served DOM, and the SSR placeholder's permitted noise cannot be
  *    mutated away before the normalizer proves it strips it;
  *  - rendering is deterministic (no HUD live readouts ticking mid-shot);
@@ -20,7 +20,7 @@ import { PAGE_NORMALIZE, NO_NOISE, type NoiseSpec } from "./normalize";
 /**
  * Browser-context options for one published test profile: the gate applies
  * the profile's VIEWPORT axis (width/height/DPR/mobile emulation). The
- * network/CPU axes are the bench runner's business (issue #7) — throttling
+ * network/CPU axes are the bench runner's business (issue #7), throttling
  * cannot change what a settled page looks like, and the gate always waits
  * for settled rendering.
  */
@@ -41,16 +41,16 @@ export function profileContextOptions(
 
 /**
  * Extract the page's normalized DOM (see normalize.ts for what is stripped
- * and why). Reads a CLONE — the live page is untouched, so callers can
+ * and why). Reads a CLONE, the live page is untouched, so callers can
  * still screenshot afterwards. The chrome slot is dropped by the normalizer
  * itself: that exclusion is part of the DOM check's own contract
  * (ADR-0004 §7), independent of {@link neutralizeChrome}.
  *
- * `rootSelector` scopes the extract to one element's subtree — used to pin
+ * `rootSelector` scopes the extract to one element's subtree, used to pin
  * the component demo's canonical markup to the surface golden master.
  *
  * `dropFencedSubtrees` drops `[data-pm-fenced]` subtrees before serializing
- * — passed ONLY by a fenced variant's own comparison legs (see the flag's
+ *, passed ONLY by a fenced variant's own comparison legs (see the flag's
  * doc comment in normalize.ts for why the scoping is caller-side).
  */
 export function extractNormalizedDom(
@@ -70,7 +70,7 @@ export function extractNormalizedDom(
 }
 
 /**
- * REMOVE the chrome slot subtree from the live page — the pixel check's
+ * REMOVE the chrome slot subtree from the live page, the pixel check's
  * chrome exclusion. Removal, not region-masking: the chrome participates in
  * normal document flow, so masking its region cannot compensate for the
  * layout shift it causes below (packages/switcher/README.md); removing the
@@ -93,16 +93,16 @@ export function neutralizeChrome(page: Page): Promise<number> {
 }
 
 /**
- * REMOVE `[data-pm-fenced]` subtrees from the live page — the pixel check's
+ * REMOVE `[data-pm-fenced]` subtrees from the live page, the pixel check's
  * counterpart to the DOM normalizer's `dropFencedSubtrees` (editorial-build
  * slice F). Removal for the same reflow reason as {@link neutralizeChrome}:
  * the plaque/demo participate in document flow, so masking their regions
  * could not undo the layout shift below them. Called ONLY by a fenced
- * variant's own pixel legs — the caller-side scoping documented on the
+ * variant's own pixel legs, the caller-side scoping documented on the
  * normalizer flag.
  *
  * Returns the number of subtrees removed so callers can assert the count
- * (the remix3 editorial page carries exactly 2 — plaque + frames demo — and
+ * (the remix3 editorial page carries exactly 2, plaque + frames demo, and
  * the reference render 0; an unexpected extra fenced element must fail the
  * leg, not ride the fence).
  */
@@ -119,7 +119,7 @@ export function neutralizeFenced(page: Page): Promise<number> {
  * or mid-`font-display: swap` webfont is the classic false pixel diff).
  *
  * Two subtleties, both demonstrated/spec-verified 2026-07-09:
- *  - Font readiness is polled from Node via SYNC evaluates — in a
+ *  - Font readiness is polled from Node via SYNC evaluates, in a
  *    JS-disabled page `requestAnimationFrame` never fires, and an async
  *    in-page await dies with "execution context was destroyed".
  *  - `document.fonts.status` alone is vacuous: it reads "loaded" while the
@@ -127,7 +127,7 @@ export function neutralizeFenced(page: Page): Promise<number> {
  *    fetch (CSS Font Loading spec). So layout is forced first (offsetHeight
  *    starts any pending @font-face load), then the poll waits until no face
  *    is still `loading` AND at least one has `loaded` (an empty FontFaceSet
- *    fails loudly — every gate page loads the shared fonts.css by contract,
+ *    fails loudly, every gate page loads the shared fonts.css by contract,
  *    so "no faces" means a broken page, not a fontless one). It does NOT
  *    require EVERY registered face to load: a `unicode-range` fallback face
  *    (e.g. the "PM Warn Glyph" ⚠ that only the field error triggers,
@@ -150,14 +150,14 @@ export async function captureStablePixels(page: Page): Promise<Buffer> {
         count: faces.length,
         anyLoaded: faces.some((f) => f.status === "loaded"),
         // a never-triggered unicode-range fallback stays "unloaded", NOT
-        // "loading" — so it doesn't count here and can't stall the gate.
+        // "loading", so it doesn't count here and can't stall the gate.
         loading: faces.some((f) => f.status === "loading"),
       };
     });
     if (fonts.count > 0 && fonts.anyLoaded && !fonts.loading) break;
     if (Date.now() > deadline) {
       throw new Error(
-        `fonts never settled (${JSON.stringify(fonts)}) — a screenshot now could false-diff`,
+        `fonts never settled (${JSON.stringify(fonts)}), a screenshot now could false-diff`,
       );
     }
     await new Promise((r) => setTimeout(r, 100));

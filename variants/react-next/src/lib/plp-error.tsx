@@ -9,13 +9,13 @@ import { useEffect, useState } from "react";
  * PDP boundary's reasoning (`src/app/(pdp)/pdp/[slug]/error.tsx:12-19`): this
  * is a client entry, and a second client importer of `Shell` registers it as a
  * named export inside `render.tsx`'s client instantiation, which re-groups a
- * chunk the EDITORIAL page serves — and editorial's chunk set is pinned at
+ * chunk the EDITORIAL page serves, and editorial's chunk set is pinned at
  * eight by `tools/origin-suite/suite/pdp.test.ts:641` under a published
  * initial-JS cell. One shared module for the two PLP route groups rather than
  * two copies: both are PLP-only client entries, so the containment holds.
  *
  * Keeping the shell here keeps the chrome slot present, so the front Worker's
- * slot-cardinality contract holds on error paths too — the `not-found.tsx`
+ * slot-cardinality contract holds on error paths too, the `not-found.tsx`
  * rule. The boundary fetches nothing, so it cannot re-throw the failure it is
  * reporting.
  *
@@ -84,7 +84,7 @@ export function PlpErrorPage({ retry }: { retry: () => void }) {
             <h1>This page couldn&apos;t load</h1>
             <p>
               The store&apos;s catalogue didn&apos;t answer. This is a simulated demo storefront
-              — nothing was ordered, nothing was lost.
+             . Nothing was ordered, nothing was lost.
             </p>
             <button className="pm-button" type="button" onClick={() => retry()}>
               Try again
@@ -94,7 +94,7 @@ export function PlpErrorPage({ retry }: { retry: () => void }) {
         <p className="pm-status" role="status" data-pm-status=""></p>
         <footer className="pm-footer">
           <p className="pm-footer__fiction">
-            A working store on frozen Discogs data — nothing ships, checkout is simulated.
+            A working store on frozen Discogs data. Nothing ships. Checkout is simulated.
           </p>
           <nav className="pm-footer__nav" aria-label="About this site">
             <a href="/">What is this?</a>

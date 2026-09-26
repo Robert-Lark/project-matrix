@@ -1,6 +1,6 @@
 /*
- * Surface module — Editorial. The render baseline: prose + exactly one
- * interaction. The composition IS the argument — a reading page good enough
+ * Surface module, Editorial. The render baseline: prose + exactly one
+ * interaction. The composition IS the argument, a reading page good enough
  * that "just use HTML" is a felt conclusion.
  *
  * Skeleton:
@@ -11,7 +11,7 @@
  *       <p class="pm-editorial__dek">…</p>
  *       <p class="pm-editorial__dateline">From the crate ·
  *          frozen <time>…</time></p>              (the dateline IS the freeze
- *     </header>                                    date — manifest-sourced)
+ *     </header>                                    date, manifest-sourced)
  *     <div class="pm-prose">…figure, prose, blockquote…</div>
  *     <aside class="pm-editorial__feature" aria-label="Featured release">
  *       …the ONE interaction: a release card + Add to cart…

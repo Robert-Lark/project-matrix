@@ -3,7 +3,7 @@
  * and its keys carry no snapshot identity, so any un-nonced, non-cold tray
  * request the origin suite makes against the DEPLOYED plane either plants
  * a warm entry that outlives the next snapshot re-seed (served stale to
- * real visitors forever — no TTL on canonical keys by design) or reads a
+ * real visitors forever, no TTL on canonical keys by design) or reads a
  * previous run's stale entry into an assertion. The rule, enforced here
  * rather than remembered in comments: every `/api/plp` / `/api/pdp`
  * request in the suite must carry `run=` (the harness isolation nonce,
@@ -12,20 +12,20 @@
  * naming why it provably never touches the tier.
  *
  * This defect class was found three independent times in one verification
- * pass (a single un-nonced request in chrome.test.ts) — a convention that
+ * pass (a single un-nonced request in chrome.test.ts), a convention that
  * survives only as prose WILL regress.
  *
  * PAGE paths that proxy the tray server-side count as tray requests
  * (widened 2026-09-04 with the PLP data plane): `/htmx/plp/` fetches
  * `/api/plp` inside its Worker forwarding the page URL's `cache`/`run`
  * (variants/htmx/src/index.js PLP_KNOBS), and every `/react-next/plp/…`
- * route does the same in `loadPlp` — so an un-nonced, non-cold page request
+ * route does the same in `loadPlp`, so an un-nonced, non-cold page request
  * plants the canonical key exactly as a direct tray call would. The
  * 2026-08-28 handoff named htmx (§6.6); react-next had the same hole, and
  * `a11y.test.ts` carried a live instance until this widening.
  *
  * BOUNDARY, stated: request-time EDITORIAL and PDP pages also fetch a tray
- * server-side (`/api/pdp/<featured>`), with no query forwarded at all —
+ * server-side (`/api/pdp/<featured>`), with no query forwarded at all,
  * the measurement-pass decision (ADR-0002 addendum, 2026-09-01) accepted
  * that those fetches read the warm tier under every column. They are out
  * of this guard's scope because no page-URL discipline could change what
@@ -44,20 +44,20 @@ const suiteDir = join(
   "suite",
 );
 
-// A tray path — or a PLP page path that proxies it — opening a string
+// A tray path, or a PLP page path that proxies it, opening a string
 // literal. Test titles mentioning the path mid-sentence don't match; request
 // builders do (`get("/api/plp…")`, `const path = \`/htmx/plp/…\``). The
 // lookbehind excludes a quote preceded by `=`: that is an HTML attribute
-// INSIDE a JS string — `toContain('href="/react-next/plp/plain/"')` asserts
-// on a body and requests nothing — which the widened alternation would
+// INSIDE a JS string, `toContain('href="/react-next/plp/plain/"')` asserts
+// on a body and requests nothing, which the widened alternation would
 // otherwise report on every masthead assertion in the suite. The second
 // alternative is a template-literal interpolation closing right before the
-// path — `fetch(\`${ORIGIN}/api/plp?…\`)`, the shape the PLP browser suite
+// path, `fetch(\`${ORIGIN}/api/plp?…\`)`, the shape the PLP browser suite
 // introduced (2026-09-18, verify-slice): without it the guard was blind to
 // that file's two tray requests, which were cold and nonced by luck of the
 // object form, not because anything checked.
 // The third alternative is an interpolated PATH variable opening the query
-// — `get(\`${arm.path}?cache=cold&…\`)`, the loop-over-arms shape of the two
+//, `get(\`${arm.path}?cache=cold&…\`)`, the loop-over-arms shape of the two
 // PLP suite files, whose request lines carried no literal path at all and so
 // were invisible here (2026-09-18, verify-slice skeptic lens): their
 // discipline rested on a `kv-exempt` comment on a constant, not on this
@@ -110,7 +110,7 @@ describe("origin-suite warm-tier discipline (issue #11)", () => {
     expect(TRAY_REQUEST.test('get("/react-next/plpx/")')).toBe(false);
     expect(
       violations,
-      `un-nonced, non-cold warm-tier request(s) — nonce them, use cache=cold, or add a "kv-exempt: <why>" marker:\n${violations.join("\n")}`,
+      `un-nonced, non-cold warm-tier request(s), nonce them, use cache=cold, or add a "kv-exempt: <why>" marker:\n${violations.join("\n")}`,
     ).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-# Handoff — data-strategy-lab resolved (2026-07-12)
+# Handoff: data-strategy-lab resolved (2026-07-12)
 
 **Session summary:** the PLP data-strategy comparison is decided and
 prototype-proven. Rob's one call: the misapplication exhibit is **in**;
@@ -26,15 +26,15 @@ data layer, 7.3×, identical revisit UX).
 
 ## What changed
 
-- `docs/adr/0005-plp-data-strategy-comparison.md` — new.
-- `docs/prototypes/data-strategy-lab/` — new (README, FINDINGS,
+- `docs/adr/0005-plp-data-strategy-comparison.md`: new.
+- `docs/prototypes/data-strategy-lab/`: new (README, FINDINGS,
   evidence.json, sources, probe; own npm root with a public-registry
-  `.npmrc` — the user-level CodeArtifact default 401s otherwise).
-- `CONTEXT.md` — new "Data strategies (PLP)" vocabulary: data strategy,
+  `.npmrc`, the user-level CodeArtifact default 401s otherwise).
+- `CONTEXT.md`: new "Data strategies (PLP)" vocabulary: data strategy,
   client warmth, priming interaction, misapplication exhibit.
-- `docs/decision-map.md` — data-strategy-lab resolved (8 decisions);
+- `docs/decision-map.md`: data-strategy-lab resolved (8 decisions);
   locked-axes note records the exhibit as in (Rob 2026-07-12).
-- `docs/build-log.md` — Phase 5 entry.
+- `docs/build-log.md`: Phase 5 entry.
 - No composed-origin code touched (prototype interactions are page-flips
   precisely so the origin stayed untouched; origin-suite runs not
   required).
@@ -42,7 +42,7 @@ data layer, 7.3×, identical revisit UX).
 ## What the next ticket (the PLP build) consumes
 
 - ADR-0005 §5: the edge Worker's canonical `genre/style/format/sort/q`
-  params — validated against real facet values, 400 on junk, no junk KV
+  params, validated against real facet values, 400 on junk, no junk KV
   keys.
 - §3: the bench registry's `{ prime?, measure }` extension + the six
   named sequences; wall-ms per measured step joins the receipt.
@@ -51,7 +51,7 @@ data layer, 7.3×, identical revisit UX).
 - §8: per-interaction HUD readout + replay affordance (chrome, stripped
   from measured KB).
 - §4: the published staleTime and the footnote run.
-- FINDINGS §6: the tray sends facet counts on every page — a data-plane
+- FINDINGS §6: the tray sends facet counts on every page, a data-plane
   design note for that ticket (per-interaction bytes favor hypermedia
   partials until considered).
 - The HTMX variant Worker owes the x-pm-cache-state pass-through onto
@@ -59,14 +59,14 @@ data layer, 7.3×, identical revisit UX).
 
 ## Housekeeping
 
-- `pnpm dev` was stopped mid-session (background task killed) — nothing
+- `pnpm dev` was stopped mid-session (background task killed). Nothing
   left running from it; the prototype's node server on :8940 was killed
   at close. Re-run per `workers/README.md` when needed.
 - Playwright CDN is TLS-intercepted on this machine; the prototype's
   probe (like the origin suite) falls back to system Chrome.
 - Rob's standing riders remain: the two published-data flags (public R2
   cover images; price aggregates in committed trays) and the
-  verify-slice args-parse patch — surfaced at session start, untouched.
+  verify-slice args-parse patch, surfaced at session start, untouched.
 
 ## The map now
 

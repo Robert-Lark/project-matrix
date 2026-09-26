@@ -1,9 +1,9 @@
 // Estimator lab for bench-instrumentation-dilution: compute candidate
 // attribution estimators on the three real delivery shapes served by the
 // deployed plane, plus two validity probes:
-//   A. chrome-swap invariance — the recorded defect (astro 0.42→0.37 KB when
+//   A. chrome-swap invariance, the recorded defect (astro 0.42→0.37 KB when
 //      the chrome grew) must not survive the chosen estimator;
-//   B. external recovery — an inlined copy of cart.js should attribute close
+//   B. external recovery, an inlined copy of cart.js should attribute close
 //      to what the identical file costs when served externally (its actual
 //      Cloudflare wire bytes), since cross-variant comparability of exactly
 //      that choice is what the JS cell exists for.
@@ -225,7 +225,7 @@ for (const [label, fn] of [
 const cartWire = read("cart-js.br").length;
 const cartSrc = dec("cart-js.br");
 const vanillaInlined = vanilla.replace("</body>", `<script>${cartSrc}</script></body>`);
-console.log(`\n─── Probe B: inline a copy of cart.js into vanilla — JS attribution vs the file's real external wire cost ───`);
+console.log(`\n─── Probe B: inline a copy of cart.js into vanilla, JS attribution vs the file's real external wire cost ───`);
 console.log(`cart.js: ${Buffer.byteLength(cartSrc)} B raw, served externally at ${cartWire} B br (Cloudflare); isolated local q11=${br(cartSrc, 11)} q5=${br(cartSrc, 5)} q4=${br(cartSrc, 4)}`);
 const segsB = segment(vanillaInlined);
 for (const [label, r] of [

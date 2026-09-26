@@ -1,5 +1,5 @@
 /**
- * Phase 1 — label searches. One paginated `GET /database/search` sweep per
+ * Phase 1, label searches. One paginated `GET /database/search` sweep per
  * spec label (type=release, format=Vinyl), every page landed raw on disk
  * before the next request. The year window is applied at PLAN time, client
  * side: the docs document `year` only as a single-value filter.
@@ -7,7 +7,7 @@
  * Checkpoints: page-NNN.json per fetched page; complete.json per finished
  * label. Resume: a label with complete.json is skipped; otherwise the sweep
  * continues after the highest landed page (re-requesting past the last page
- * is safe — Discogs returns an empty results array).
+ * is safe, Discogs returns an empty results array).
  */
 import type { DiscogsClient } from "./discogs";
 import { RawSearchPage } from "./raw";
@@ -68,7 +68,7 @@ export async function searchPhase(
       if (capped) {
         // No silent caps: the checkpoint records exactly what was left behind.
         log(
-          `[search] ${label}: CAPPED at ${page} of ${pages} reported pages — remainder not fetched`,
+          `[search] ${label}: CAPPED at ${page} of ${pages} reported pages, remainder not fetched`,
         );
       }
       if (done || capped) {

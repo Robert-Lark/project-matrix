@@ -1,25 +1,25 @@
 /**
  * Snapshot resolution for the composed-origin suite (issue #11): determine
- * WHICH frozen snapshot the origin under test is serving — the dated
- * SnapshotManifest is the provenance signal (ADR-0002 §1) — and load THAT
+ * WHICH frozen snapshot the origin under test is serving, the dated
+ * SnapshotManifest is the provenance signal (ADR-0002 §1), and load THAT
  * snapshot's committed artifacts, so every data-plane assertion is
  * parameterized by committed truth instead of fixture literals. The smoke
  * then holds whether the bucket serves the synthesized fixture or the real
  * crate.
  *
- * Fail-closed by design (ADR-0001 §9 — no vacuous assertions): an
+ * Fail-closed by design (ADR-0001 §9, no vacuous assertions): an
  * unreadable /api/snapshot, an unknown crate name, a served manifest that
  * doesn't exactly match the committed one, or internally inconsistent
  * committed artifacts all THROW. The suite fails; it never skips.
  *
  * CI independence (issue #9): candidate roots are tried lazily, fixture
- * first — when the origin serves the fixture (CI, always), the crate's
+ * first, when the origin serves the fixture (CI, always), the crate's
  * files are never read, so CI keeps zero dependency on the crate artifact.
  *
  * Image byte-identity travels as sha256: the crate's image bytes are
  * deliberately not in git (its committed images-index.json carries a sha256
- * per derivative), so a fresh checkout — CI running the post-deploy smoke
- * against a crate-seeded bucket — can still prove the wire bytes are the
+ * per derivative), so a fresh checkout, CI running the post-deploy smoke
+ * against a crate-seeded bucket, can still prove the wire bytes are the
  * frozen ones. When a snapshot's bytes ARE committed (the fixture), they
  * ride along for a direct byte comparison on top of the same sha256 floor.
  */
@@ -51,7 +51,7 @@ interface ImageIndexEntry {
 export interface ServedSnapshot {
   /** The manifest, served and committed-verified-identical. */
   manifest: SnapshotManifest;
-  /** The committed manifest EXACTLY as committed (raw JSON, no Zod strip) —
+  /** The committed manifest EXACTLY as committed (raw JSON, no Zod strip),
    *  the deep-equality reference for what the origin must serve. */
   manifestRaw: unknown;
   /** Repo-relative root of the matched committed snapshot. */
@@ -59,7 +59,7 @@ export interface ServedSnapshot {
   /** The committed trays, raw-parsed (deep-equality reference values). */
   summaries: ReleaseSummary[];
   details: ReleaseDetail[];
-  /** A committed release with a gallery + tracklist — the full-tray probe. */
+  /** A committed release with a gallery + tracklist, the full-tray probe. */
   pdpDetail: ReleaseDetail;
   /** A second, distinct committed id for the cache-state leg. */
   cachePdpId: number;
@@ -67,20 +67,20 @@ export interface ServedSnapshot {
   missingId: number;
   /** One committed image: served path + its frozen byte identity. */
   image: { path: string; sha256: string; bytes?: Buffer };
-  /** A deterministic five-position spread over ALL committed derivatives —
+  /** A deterministic five-position spread over ALL committed derivatives,
    *  so image byte-identity coverage is not a single predictable probe. */
   imageSample: { path: string; sha256: string }[];
 }
 
 function fail(message: string): never {
-  throw new Error(`[snapshot-resolution] ${message} — the suite fails closed, it never skips (issue #11)`);
+  throw new Error(`[snapshot-resolution] ${message}, the suite fails closed, it never skips (issue #11)`);
 }
 
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-/** Key-order-insensitive JSON equality — plain JSON values only. */
+/** Key-order-insensitive JSON equality, plain JSON values only. */
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (value !== null && typeof value === "object") {
@@ -95,14 +95,14 @@ function stableStringify(value: unknown): string {
 async function resolve(): Promise<ServedSnapshot> {
   // 1. Ask the origin under test which snapshot it serves. The raw wire
   // JSON is what equality runs on (Zod strips unknown keys, so parsing is
-  // shape validation only — comparing parsed values would silently bless a
+  // shape validation only, comparing parsed values would silently bless a
   // served manifest that differs from the committed one in non-contract
   // fields, and vice versa).
   let served: SnapshotManifest;
   let servedRaw: unknown;
   try {
     const res = await fetch(`${ORIGIN}/api/snapshot`);
-    if (res.status !== 200) fail(`GET ${ORIGIN}/api/snapshot returned ${res.status} — cannot tell which snapshot the origin serves`);
+    if (res.status !== 200) fail(`GET ${ORIGIN}/api/snapshot returned ${res.status}, cannot tell which snapshot the origin serves`);
     servedRaw = await res.json();
     served = SnapshotManifest.parse(servedRaw);
   } catch (err) {
@@ -110,7 +110,7 @@ async function resolve(): Promise<ServedSnapshot> {
     fail(`GET ${ORIGIN}/api/snapshot did not yield a contract-valid SnapshotManifest (${err instanceof Error ? err.message : String(err)})`);
   }
 
-  // 2. Match it against a known committed snapshot — lazily, fixture first.
+  // 2. Match it against a known committed snapshot, lazily, fixture first.
   let root: string | undefined;
   let committed: SnapshotManifest | undefined;
   let committedRaw: unknown;
@@ -139,7 +139,7 @@ async function resolve(): Promise<ServedSnapshot> {
   }
   // Name the resolution in the run log: which snapshot a green run actually
   // asserted must be readable evidence, not something inferred from exit 0.
-  console.log(`[snapshot-resolution] origin serves crate "${served.crate}" — asserting the committed artifacts under ${root}`);
+  console.log(`[snapshot-resolution] origin serves crate "${served.crate}", asserting the committed artifacts under ${root}`);
 
   // 3. Load that snapshot's committed trays and cross-check consistency.
   const summaries = readJson(join(repoRoot, root, "summaries.json")) as ReleaseSummary[];
@@ -151,11 +151,11 @@ async function resolve(): Promise<ServedSnapshot> {
     );
   }
 
-  // 4. Derive the probe values from the committed artifacts — never literals.
+  // 4. Derive the probe values from the committed artifacts, never literals.
   const pdpDetail = details.find((d) => d.images.length >= 2 && d.tracklist.length >= 1);
   if (!pdpDetail) fail(`no committed release under ${root} has a gallery (≥2 images) and a tracklist to probe the full tray with`);
   const cachePdpId = details.find((d) => d.id !== pdpDetail.id)?.id;
-  if (cachePdpId === undefined) fail(`snapshot under ${root} has fewer than two releases — cannot isolate the cache-state leg`);
+  if (cachePdpId === undefined) fail(`snapshot under ${root} has fewer than two releases, cannot isolate the cache-state leg`);
   const missingId = Math.max(...details.map((d) => d.id)) + 1;
 
   const firstImage = pdpDetail.images[0];
@@ -174,10 +174,10 @@ async function resolve(): Promise<ServedSnapshot> {
     if (!entry) fail(`${root}/images-index.json has no entry for ${imageFile}, which the committed trays reference`);
     sha256 = entry.sha256;
   } else {
-    fail(`snapshot under ${root} commits neither image bytes (img/${imageFile}) nor an images-index.json — no frozen byte identity to assert`);
+    fail(`snapshot under ${root} commits neither image bytes (img/${imageFile}) nor an images-index.json, no frozen byte identity to assert`);
   }
   // When both exist (the crate on the capture machine), the committed index
-  // must agree with the committed bytes — a torn artifact fails here.
+  // must agree with the committed bytes, a torn artifact fails here.
   if (bytes && existsSync(indexPath)) {
     const entry = (readJson(indexPath) as ImageIndexEntry[]).find((e) => e.file === imageFile);
     if (entry && entry.sha256 !== sha256) {
@@ -186,7 +186,7 @@ async function resolve(): Promise<ServedSnapshot> {
   }
 
   // The image sample: committed truth is the images-index when present
-  // (the crate — its bytes are git-excluded), else the committed bytes
+  // (the crate. Its bytes are git-excluded), else the committed bytes
   // themselves (the fixture). Five evenly-spread positions over the whole
   // set, so doctoring any sampled derivative is caught, not just the one
   // predictable probe image above.
@@ -241,7 +241,7 @@ export function loadServedSnapshot(): Promise<ServedSnapshot> {
   return cached;
 }
 
-/** The reference renderer's snapshot name for a resolved committed root —
+/** The reference renderer's snapshot name for a resolved committed root,
  *  the two names `packages/reference/render/lib.mjs` loads by. */
 export function snapshotNameFor(root: string): "fixture" | "crate" {
   return root === "tools/snapshot-fixture/snapshot" ? "fixture" : "crate";
@@ -250,7 +250,7 @@ export function snapshotNameFor(root: string): "fixture" | "crate" {
 /** The editorial surface's featured release id for the resolved snapshot:
  *  the fixture's curation.json names it; the crate's frozen curation
  *  predates the field, so the crate pick is the recorded design constant
- *  (ADR-0008 §9 — editorial 953800, a curated choice, not a receipt). */
+ *  (ADR-0008 §9, editorial 953800, a curated choice, not a receipt). */
 export function editorialFeaturedId(snap: ServedSnapshot): number {
   if (snapshotNameFor(snap.root) === "crate") return 953800;
   const curated = (

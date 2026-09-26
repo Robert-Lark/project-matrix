@@ -1,5 +1,5 @@
 /* ============================================================
-   MARGINALIA — working-notes register for roblark.com/blog
+   MARGINALIA, working-notes register for roblark.com/blog
    A text that talks to itself: the outer margin is a live
    gutter for asides, dates, and notes, hung on the margin rule.
    ============================================================ */
@@ -10,7 +10,7 @@
   --ink: #211E1A;     /* iron-gall ink, 15.9:1 */
   --pencil: #6B665E;  /* graphite meta, 5.46:1 */
   --rule: #DFDCD4;    /* hairlines */
-  --pen: #2447A8;     /* ballpoint blue — site default annotation ink, 7.92:1 */
+  --pen: #2447A8;     /* ballpoint blue, site default annotation ink, 7.92:1 */
   --a: var(--pen);    /* resolved accent (per-post override below) */
   --codepaper: #FFFFFF;
 
@@ -112,7 +112,7 @@ ol.contents,
     max-width: none;
   }
 
-  /* THE MARGIN RULE — the signature. A notebook margin line in the
+  /* THE MARGIN RULE, the signature. A notebook margin line in the
      post's own ink, separating text from the live gutter. */
   .post { position: relative; }
   .post::before,
@@ -200,7 +200,7 @@ ol.contents,
   }
 }
 
-/* display: for big statements — oversized title crossing the rule */
+/* display: for big statements, oversized title crossing the rule */
 .post-head--display h1 {
   font-size: clamp(2.5rem, 6vw, 4.25rem);
   font-weight: 500;
@@ -210,7 +210,7 @@ ol.contents,
   .post-head--display h1 { width: calc(var(--measure) + var(--gap) + var(--mcol)); }
 }
 
-/* photo: quiet small-caps slug — the photographs carry the page */
+/* photo: quiet small-caps slug, the photographs carry the page */
 .post-head--photo { margin-bottom: 1rem; }
 .post-head--photo h1 {
   font-family: var(--body);
@@ -221,7 +221,7 @@ ol.contents,
   margin-bottom: 0.4rem;
 }
 
-/* bare: no title at all — a ledger line and straight into the text */
+/* bare: no title at all, a ledger line and straight into the text */
 .post-head--bare { margin-bottom: 1.5rem; }
 .post-head--bare .post-meta::before { content: "※ "; color: var(--a); }
 
@@ -245,7 +245,7 @@ ol.contents,
   margin: 2.2em 0 0.7em;
 }
 
-/* margin notes — asides live in the gutter on wide screens */
+/* margin notes, asides live in the gutter on wide screens */
 .bp-aside {
   font-size: 0.9375rem;
   line-height: 1.55;
@@ -274,7 +274,7 @@ ol.contents,
   }
 }
 
-/* pullquote — crosses the margin rule */
+/* pullquote, crosses the margin rule */
 .bp-pullquote {
   margin: 2.2em 0;
   padding: 0;
@@ -316,7 +316,7 @@ ol.contents,
   .bp-gallery[data-layout="bleed"] { width: calc(100% + 2 * var(--pad)); margin-inline: calc(-1 * var(--pad)); }
 }
 
-/* figures — essay captions hang in the margin */
+/* figures, essay captions hang in the margin */
 .post-body figure { margin: 2.2em 0; position: relative; }
 .post-body figcaption {
   font-size: 0.875rem;
@@ -337,7 +337,7 @@ ol.contents,
   }
 }
 
-/* code — shiki dual theme */
+/* code, shiki dual theme */
 pre.shiki {
   font-family: var(--mono);
   font-size: 0.85rem;
@@ -368,7 +368,7 @@ p code, li code { background: color-mix(in srgb, var(--pencil) 10%, transparent)
 }
 .post-body blockquote p { margin: 0 0 0.8em; }
 
-/* footnotes — the notes register at the foot of the text */
+/* footnotes, the notes register at the foot of the text */
 sup { line-height: 0; }
 sup a[data-footnote-ref], sup a {
   font-family: var(--mono);
@@ -432,7 +432,7 @@ sup a:hover { text-decoration: underline; }
   align-items: baseline;
 }
 .tag-list::before {
-  content: "filed under —";
+  content: "filed under:";
   font-style: italic;
   font-size: 0.875rem;
   color: var(--pencil);

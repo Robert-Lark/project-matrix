@@ -6,14 +6,14 @@ import { addToCartQty } from "../lib/pdp-cart";
 /**
  * The quantity stepper + add-to-cart. The input is UNCONTROLLED on purpose:
  * the DS rule (and vanilla's precedent) is that state lives on the native
- * attribute, never in a JS variable — keyboard, spinner and buttons cannot
+ * attribute, never in a JS variable, keyboard, spinner and buttons cannot
  * disagree, and a programmatic `.value` write (the browser suite's priming)
  * behaves identically to a visitor's typing.
  *
- * `max` does NOT constrain typed input — it only fails constraint
+ * `max` does NOT constrain typed input. It only fails constraint
  * validation, and this input is in no form, so validation never runs.
- * Normalising on the NATIVE change event — the commit event (Enter, the
- * spinner, leaving the field) — is what makes the displayed value the value
+ * Normalising on the NATIVE change event, the commit event (Enter, the
+ * spinner, leaving the field), is what makes the displayed value the value
  * add-to-cart will use. Deliberately not React's onChange (the input event,
  * which would clamp per keystroke) and not onBlur alone: verify-slice
  * reproduced the blur-only draft diverging from vanilla on Enter-commit
@@ -85,7 +85,7 @@ export function PdpPurchase({
         {/* Unlike editorial's single-unit button, the PDP adds the CHOSEN
             quantity (CART_CONTRACT's quantity clause). addToCartQty announces
             through the shared events on success and stays silent on a
-            failed write — state unchanged, nothing announced. */}
+            failed write, state unchanged, nothing announced. */}
         <button
           className="pm-button"
           type="button"

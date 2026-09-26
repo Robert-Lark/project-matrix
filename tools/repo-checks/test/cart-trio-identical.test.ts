@@ -1,5 +1,5 @@
 /**
- * The vanilla cart trio — `read`, `count`, `renderCount` — is byte-identical
+ * The vanilla cart trio, `read`, `count`, `renderCount`, is byte-identical
  * (after comment stripping) in every vanilla script that re-implements the
  * cart storage contract, and this is the guard that keeps it so
  * (checkout-measure-prep, 2026-09-24; the decision map's owed item (7)).
@@ -7,14 +7,14 @@
  * Why four copies exist is recorded in each file and stands: a component is
  * a spec, not shared code (ADR-0003 §1), and the vanilla paradigm's real
  * shape is one request, one script, no module graph. What did NOT stand was
- * the drift risk — nothing asserted the copies stayed identical, and the
+ * the drift risk. Nothing asserted the copies stayed identical, and the
  * repo's own history says what happens to an unguarded true statement
  * (CART_CONTRACT's uniqueness clause: stated for months, checked by nothing,
  * and the two readers disagreed about a value neither could write).
  *
  * The oracle is INDEPENDENT on purpose: the files are compared to EACH OTHER,
  * never to the contract module they re-implement from (`shell.mjs`
- * CART_CONTRACT) and never to a canonical copy — a test that compares an
+ * CART_CONTRACT) and never to a canonical copy, a test that compares an
  * implementation to a function it was written from is the self-referential
  * class unit 6 recorded (a dropped prefix moved both sides). Here a change
  * to one copy fails against three others; a change to all four passes, which
@@ -26,7 +26,7 @@
  *
  * The storage KEY is compared too, separately: `read()` closes over
  * `const KEY = "pm:cart"`, the one free variable the trio depends on, and it
- * is declared above the span — so a guard over the span alone would pass a
+ * is declared above the span, so a guard over the span alone would pass a
  * copy that reads a different key (the verify-slice skeptic lens, 2026-09-24:
  * cart.js writing `pm:cart:v2` while the other badges read `pm:cart` would
  * have merged green). Files against each other, never against the contract.
@@ -44,7 +44,7 @@ const srcDir = join(repoRoot, "variants", "vanilla", "src");
 const TRIO = ["const read = () =>", "const count = (cart) =>", "const renderCount = (n) =>"] as const;
 
 /**
- * The span from `const read` through the end of `renderCount`'s body —
+ * The span from `const read` through the end of `renderCount`'s body,
  * brace-matched, so the extractor does not depend on the body's length.
  * Returns null when the file has no trio, which is how the file set below is
  * derived: a vanilla script HAS the trio or it does not.
@@ -70,7 +70,7 @@ function trioSpan(source: string): string | null {
   return null;
 }
 
-/** Comment-free, whitespace-collapsed code — what "identical" means here. */
+/** Comment-free, whitespace-collapsed code. What "identical" means here. */
 function normalized(span: string): string {
   return codeOnly(span).replace(/\s+/g, " ").trim();
 }
@@ -91,7 +91,7 @@ function trioFiles(): { file: string; span: string; key: string | null }[] {
   return out;
 }
 
-/** First point of divergence, with context — a guard whose failure output
+/** First point of divergence, with context, a guard whose failure output
  *  cannot be read is a guard that gets muted (checkout-vanilla's lesson). */
 function firstDivergence(a: string, b: string, context = 60): string {
   let i = 0;
@@ -142,7 +142,7 @@ describe("the vanilla cart trio is identical in every copy", () => {
     }
   });
 
-  it("every copy declares the same storage KEY — the free variable the span closes over", () => {
+  it("every copy declares the same storage KEY, the free variable the span closes over", () => {
     const keys = FILES.map((f) => f.key);
     for (const [i, key] of keys.entries()) {
       expect(key, `${FILES[i]!.file} declares no const KEY`).not.toBeNull();
@@ -152,7 +152,7 @@ describe("the vanilla cart trio is identical in every copy", () => {
     expect(keys[0]).toMatch(/const KEY = "[^"]+";/);
   });
 
-  it("fires on a one-token drift and NOT on a comment-only edit — the two directions of the claim", () => {
+  it("fires on a one-token drift and NOT on a comment-only edit, the two directions of the claim", () => {
     // The self-proof: the comparison is not trivially equal, and the strip is
     // doing its job. Both against a real copy, never a synthetic string.
     const real = FILES[0]!.span;

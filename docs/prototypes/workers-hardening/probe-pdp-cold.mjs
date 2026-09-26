@@ -2,7 +2,7 @@
 // audit priority 5, task 3). `GET /api/pdp/:id?cache=cold` fetches and
 // parses the WHOLE details tray from R2 to serve one release; a warm hit
 // returns from KV. This probe times both on a HELD local plane, ten each,
-// against the edge Worker directly (port 8790 — the Worker whose parse it
+// against the edge Worker directly (port 8790, the Worker whose parse it
 // is; the composed origin at 8787 adds the front hop) and reports medians.
 //
 //   PM_SEED_DIR=tools/snapshot-capture/crate PM_HOLD=1 node tools/origin-suite/run-local.mjs

@@ -1,13 +1,13 @@
 /**
  * The cost-report contract (ADR-0001 §7 + §9): the calculator's output is
- * itself a receipt — it echoes the measurement's provenance (the bench
+ * itself a receipt. It echoes the measurement's provenance (the bench
  * receipt), the price side's provenance (the dated card), and every
  * intermediate step of the arithmetic, so a skeptic can swap any input and
  * re-run rather than argue with a bottom line.
  *
  * Nulls are honest throughout: a quantity the measurement's named source
  * could not account (e.g. CPU-ms against a deployed origin before the
- * telemetry leg arms) yields an UNPRICED line and a null total — partial
+ * telemetry leg arms) yields an UNPRICED line and a null total, partial
  * sums are labeled as such, never passed off as the answer. The one
  * deliberate exception: a $0 rate prices ANY usage at exactly $0 (the
  * cost is arithmetic, not an estimate; the usage itself stays null).
@@ -24,7 +24,7 @@ const BlendedQuantity = z.object({
   /** Per-visit expectation; null when a needed column couldn't account it. */
   value: z.number().nullable(),
   arithmetic: z.string(),
-  /** The measurement source(s), carried from the receipt — never invented. */
+  /** The measurement source(s), carried from the receipt, never invented. */
   source: z.string(),
 });
 export type BlendedQuantityT = z.infer<typeof BlendedQuantity>;
@@ -63,7 +63,7 @@ const PricedTarget = z.object({
     egressBytes: BlendedQuantity,
   }),
   lines: z.array(CostLine),
-  /** Null whenever any line is unpriced — a partial sum is not a total. */
+  /** Null whenever any line is unpriced, a partial sum is not a total. */
   totalUsdPer1MVisits: z.number().nullable(),
   /** Sum of the lines that DID price (labeled partial via `unpriced`). */
   pricedSubtotalUsdPer1MVisits: z.number(),
@@ -85,7 +85,7 @@ const AllowanceCheck = z.object({
 const FreePlanFit = z.object({
   plan: z.string(),
   checks: z.array(AllowanceCheck),
-  /** $0 while every checkable allowance fits — free plans block, not bill. */
+  /** $0 while every checkable allowance fits, free plans block, not bill. */
   chargeUsd: z.number().nullable(),
   overflow: z.string(),
   arithmetic: z.string(),
@@ -133,13 +133,13 @@ export const CostReport = z.object({
     n: z.number(),
     runsPerUrl: z.number(),
     runLocation: z.string(),
-    /** The batch's unique key — receipts are gitignored, so date+SHA alone
+    /** The batch's unique key, receipts are gitignored, so date+SHA alone
      *  cannot say WHICH receipt priced this report. */
     runNonce: z.string(),
   }),
   /** Provenance echo of the price side. */
   card: z.object({ id: z.string(), capturedAt: z.string(), verifiedBy: z.string() }),
-  /** The stated, required inputs — never defaults hidden in code. */
+  /** The stated, required inputs, never defaults hidden in code. */
   assumptions: z.object({
     cacheHitRatio: z.number(),
     region: z.string(),

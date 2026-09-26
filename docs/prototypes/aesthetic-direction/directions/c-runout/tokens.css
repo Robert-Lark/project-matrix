@@ -1,12 +1,12 @@
 /*
- * aesthetic-direction · CANDIDATE C — "Runout"
+ * aesthetic-direction · CANDIDATE C, "Runout"
  * ----------------------------------------------------------------------------
  * The pressing-plant document: spec sheets, test-pressing labels, the matrix
  * number etched in the deadwax. Cool paper ground, stamp-blue accent, square
- * corners, no shadow — structure carried by rule and tone, nothing floats.
+ * corners, no shadow, structure carried by rule and tone, nothing floats.
  * Archivo's width axis is the display voice (condensed labels, wide display).
  *
- * PRIMITIVE TIER ONLY (ADR-0003 §7) — loaded after the shared tokens.css.
+ * PRIMITIVE TIER ONLY (ADR-0003 §7), loaded after the shared tokens.css.
  */
 :root {
   /* Palette */
@@ -23,7 +23,7 @@
   --pm-accent-700:  #1b3b79;
   --pm-danger-600:  #b02e20;
 
-  /* Type — Archivo (variable wght 100–900 × wdth 62–125, tnum). The same
+  /* Type, Archivo (variable wght 100–900 × wdth 62–125, tnum). The same
      face carries metrics: tnum is native. Sharper scale contrast. */
   --pm-font-ui: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --pm-font-metric: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -38,7 +38,7 @@
   --pm-weight-medium: 550;
   --pm-weight-bold: 650; /* revised: Archivo's 700 too heavy at title size; 650 reads print-bold */
 
-  /* Space — document grid rhythm */
+  /* Space, document grid rhythm */
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
   --pm-space-3: 0.75rem;
@@ -46,7 +46,7 @@
   --pm-space-5: 1.75rem;
   --pm-space-6: 2.5rem;
 
-  /* Voice dials — flat, stamped, immediate */
+  /* Voice dials, flat, stamped, immediate */
   --pm-radius-1: 0px;
   --pm-radius-2: 2px;
   --pm-shadow-1: none;

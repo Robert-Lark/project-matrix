@@ -1,5 +1,5 @@
 /*
- * aesthetic-direction · CANDIDATE B — "Faceplate"
+ * aesthetic-direction · CANDIDATE B, "Faceplate"
  * ----------------------------------------------------------------------------
  * The instrument panel: the hardware corner of the crate (modular racks,
  * mixer faceplates, VU glow). The ONE canonical theme poured dark: warm
@@ -7,14 +7,14 @@
  * metrics. Album art glows against it like sleeves under shop lighting.
  *
  * Note the seam proof: the primitive SCALE inverts (neutral-0 darkest →
- * 950 lightest) while the semantic tier is untouched — surface stays
+ * 950 lightest) while the semantic tier is untouched, surface stays
  * neutral-0, text stays neutral-900. Hover (accent-700) pours LIGHTER,
  * as dark-ground affordance wants.
  *
- * PRIMITIVE TIER ONLY (ADR-0003 §7) — loaded after the shared tokens.css.
+ * PRIMITIVE TIER ONLY (ADR-0003 §7), loaded after the shared tokens.css.
  */
 :root {
-  /* Palette — inverted scale: this theme is dark, there is no second theme */
+  /* Palette, inverted scale: this theme is dark, there is no second theme */
   --pm-neutral-0:   #171410;
   --pm-neutral-50:  #1e1a14;
   --pm-neutral-100: #262117;
@@ -28,7 +28,7 @@
   --pm-accent-700:  #f2c275;
   --pm-danger-600:  #e27b6e;
 
-  /* Type — Public Sans (variable wght 100–900, tnum) + JetBrains Mono
+  /* Type, Public Sans (variable wght 100–900, tnum) + JetBrains Mono
      metrics (monospaced = tabular by construction). Compact scale. */
   --pm-font-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --pm-font-metric: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -43,7 +43,7 @@
   --pm-weight-medium: 550;
   --pm-weight-bold: 700;
 
-  /* Space — dense, rack-unit regular */
+  /* Space, dense, rack-unit regular */
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
   --pm-space-3: 0.75rem;
@@ -51,7 +51,7 @@
   --pm-space-5: 1.5rem;
   --pm-space-6: 2rem;
 
-  /* Voice dials — machined edges, shadow as seat not float */
+  /* Voice dials, machined edges, shadow as seat not float */
   --pm-radius-1: 3px;
   --pm-radius-2: 8px;
   --pm-shadow-1: 0 1px 0 rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.35);

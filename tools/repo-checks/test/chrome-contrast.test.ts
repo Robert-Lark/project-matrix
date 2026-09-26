@@ -5,7 +5,7 @@
  * poured neutrals (home §7 rule: no literal hex), on a near-black ground
  * where the store's DEFAULT pairings demonstrably fail (panel-audited:
  * --color-text-muted 3.02:1, --color-accent 2.71:1 on neutral-950). This
- * test re-derives the ACTUAL mixes from packages/switcher/src/chrome.css —
+ * test re-derives the ACTUAL mixes from packages/switcher/src/chrome.css,
  * the same anti-rigging shape as the font cmap re-derivation: the audit
  * reads the shipped formulas, so a palette re-pour or a chrome edit that
  * breaks contrast fails CI instead of shipping.
@@ -101,7 +101,7 @@ describe("the instrument's dark-ground inks (WCAG 1.4.3 / 1.4.11)", () => {
     expect(contrast(ink, ground)).toBeGreaterThanOrEqual(3);
   });
 
-  it("the etch rules stay decorative — structure never rides on them alone", () => {
+  it("the etch rules stay decorative, structure never rides on them alone", () => {
     // The hairline etch is deliberately below 3:1 (it is a texture, like the
     // store's mat-board border, ADR-0006 §2's recorded exception). This
     // assertion DOCUMENTS that: if someone brightens it past 3:1 they may

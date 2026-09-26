@@ -1,5 +1,5 @@
 /**
- * The PDP's controls, JS ON — the leg whose absence let two dead controls
+ * The PDP's controls, JS ON, the leg whose absence let two dead controls
  * ship to ~500 deployed pages (pdp-controls unit, 2026-08-15).
  *
  * The drift gate is JS-OFF BY CONSTRUCTION (`drift.browser.test.ts`, ADR-0008
@@ -11,7 +11,7 @@
  *
  * The headline test here is the LAST one: every button on the page must
  * change something observable when pressed. It is written generically on
- * purpose — a check that names zoom would have been written only after zoom
+ * purpose, a check that names zoom would have been written only after zoom
  * broke, and would say nothing about the next control. The specific tests
  * above it exist so a failure names the control rather than just "something
  * on this page is inert".
@@ -22,7 +22,7 @@
  * origin and therefore cannot. Neither is sufficient alone.
  *
  * Matchers are vitest's, not Playwright's web-first ones (this suite runs
- * under vitest — the cart suite's pattern): waits are `expect.poll`, never a
+ * under vitest, the cart suite's pattern): waits are `expect.poll`, never a
  * fixed sleep, which is the same discipline ADR-0001 addendum I applied to
  * the bench runner's settle windows.
  */
@@ -35,7 +35,7 @@ const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/,
 const CART_KEY = "pm:cart";
 const ADD_TO_CART = ".pm-pdp__buy button.pm-button";
 
-/** Every LIVE PDP variant, read from the registry rather than named here —
+/** Every LIVE PDP variant, read from the registry rather than named here,
  *  the `cart.browser.test.ts` idiom. Today that is `["vanilla"]`; when
  *  react-next, astro or qwik moves `plannedVariants → variants` this file
  *  starts holding it to the same contract with no edit, which is the whole
@@ -46,18 +46,18 @@ const PDP_VARIANTS = SURFACE_CONTROLS["pdp"]!.variants;
 
 let browser: Browser;
 let snap: ServedSnapshot;
-/** A release with a gallery + tracklist — zoom, thumbs and the scroll region. */
+/** A release with a gallery + tracklist, zoom, thumbs and the scroll region. */
 let pdpSlug: string;
-/** A release actually FOR SALE — the cart legs. These are deliberately two
+/** A release actually FOR SALE, the cart legs. These are deliberately two
  *  different pages: the suite's `pdpDetail` is the first release with ≥2
  *  images and a tracklist, and in the FIXTURE that is 9000001, which is
  *  unpriced and zero-stock, so its CTA ships `disabled` and `pdp.js`
  *  correctly does not wire it. Pointing the cart legs at it would have
  *  tested the harness's assumption rather than the page. Both are derived
- *  from the SERVED snapshot, never named — the suite's standing rule. */
+ *  from the SERVED snapshot, never named, the suite's standing rule. */
 let buySlug: string;
 let buyable: { id: number; slug: string };
-/** The widest gallery in the served snapshot — the reflow leg. */
+/** The widest gallery in the served snapshot, the reflow leg. */
 let reflowSlug: string;
 let widestThumbs: number;
 
@@ -84,7 +84,7 @@ beforeAll(async () => {
   if (widest.images.length < 4) {
     throw new Error(
       `[pdp-controls] the served snapshot's widest gallery has ${widest.images.length} images; ` +
-        "the reflow leg needs at least 4 to exercise thumb wrapping, or it passes vacuously — " +
+        "the reflow leg needs at least 4 to exercise thumb wrapping, or it passes vacuously, " +
         "the suite fails closed, it never skips",
     );
   }
@@ -94,7 +94,7 @@ beforeAll(async () => {
   const forSale = snap.details.find((d) => d.numForSale > 0 && d.priceFrom != null);
   if (!forSale) {
     throw new Error(
-      "[pdp-controls] the served snapshot has no purchasable release — the cart legs " +
+      "[pdp-controls] the served snapshot has no purchasable release, the cart legs " +
         "would pass vacuously against a disabled CTA; the suite fails closed, it never skips",
     );
   }
@@ -107,7 +107,7 @@ afterAll(async () => {
 
 /** Beacons intercepted (the cart-suite precedent): these are JS-on loads of a
  *  REAL measured surface, and the post-deploy smoke runs them against
- *  production — un-intercepted, every goto here would land synthetic RUM in
+ *  production, un-intercepted, every goto here would land synthetic RUM in
  *  the live collector. The live-origin route is intercepted too: ADR-0002 §3
  *  fences it, and a test must never turn it into a real Discogs call. */
 async function open(context: BrowserContext, url: string): Promise<Page> {
@@ -123,9 +123,9 @@ async function open(context: BrowserContext, url: string): Promise<Page> {
 const url = (variant: string, slug: string) => `${ORIGIN}/${variant}/pdp/${slug}/`;
 /** The gallery-bearing page (zoom, thumbs, the scroll region). */
 const openPdp = (context: BrowserContext, v: string) => open(context, url(v, pdpSlug));
-/** The purchasable page — its CTA is enabled, so add-to-cart is live. */
+/** The purchasable page. Its CTA is enabled, so add-to-cart is live. */
 const openBuy = (context: BrowserContext, v: string) => open(context, url(v, buySlug));
-/** The widest gallery on the plane — where reflow breaks first. */
+/** The widest gallery on the plane, where reflow breaks first. */
 const openWidest = (context: BrowserContext, v: string) => open(context, url(v, reflowSlug));
 
 const cartCount = (page: Page) =>
@@ -136,7 +136,7 @@ const transform = (page: Page) =>
   page.locator(".pm-gallery__main").evaluate((el) => getComputedStyle(el).transform);
 
 describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)", (variant) => {
-  it("Zoom is a real toggle — the attribute flips AND the stage responds", async () => {
+  it("Zoom is a real toggle, the attribute flips AND the stage responds", async () => {
     const context = await browser.newContext();
     const page = await openPdp(context, variant);
     const zoom = page.locator(".pm-gallery__zoom");
@@ -148,7 +148,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
 
     await zoom.click();
     await expect.poll(() => zoom.getAttribute("aria-pressed")).toBe("true");
-    // The attribute alone is not the fix — gallery.css scales the stage FROM
+    // The attribute alone is not the fix, gallery.css scales the stage FROM
     // it, so this asserts the whole chain (script → native attribute → rule)
     // rather than the half a unit test could see.
     await expect.poll(() => transform(page)).not.toBe(resting);
@@ -193,7 +193,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
     await up.click();
     await expect.poll(() => qty.inputValue()).toBe("2");
 
-    // `max` does not constrain TYPED input — the field is in no form, so
+    // `max` does not constrain TYPED input, the field is in no form, so
     // constraint validation never runs. The clamp is the enhancement's, and
     // without it typing 250 added 250 while the "+" button showed 99.
     await qty.fill("250");
@@ -202,7 +202,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
 
     // The clamp rides the COMMIT event, not blur alone: Enter commits a
     // typed value without leaving the field, and a blur-only draft shipped
-    // exactly that divergence (verify-slice, pdp-variants slice 1 — vanilla
+    // exactly that divergence (verify-slice, pdp-variants slice 1, vanilla
     // clamped 2501→99 on Enter while react-next held the raw value until
     // blur). Every variant is held to the Enter-commit clamp here so the
     // rejected draft cannot return green.
@@ -262,7 +262,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
 
     // 2. The thumb strip must WRAP. Non-wrapping, its flex row can never be
     //    narrower than its content, and a grid item's `min-width: auto` grows
-    //    the gallery column to match — which is how 316 of the crate's 500
+    //    the gallery column to match, which is how 316 of the crate's 500
     //    releases came to scroll the document sideways in production.
     const rows = await page.evaluate(
       () =>
@@ -273,7 +273,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
         ).size,
     );
     expect(await page.locator(".pm-gallery__thumb").count()).toBe(widestThumbs);
-    expect(rows, "the thumb strip did not wrap — this leg is not exercising the case").toBeGreaterThan(1);
+    expect(rows, "the thumb strip did not wrap. This leg is not exercising the case").toBeGreaterThan(1);
 
     // 3. The property all of that exists to protect (WCAG 1.4.10).
     const { scrollWidth, clientWidth } = await page.evaluate(() => ({
@@ -291,7 +291,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
    * The general rule, and the reason this file exists rather than a handful
    * of targeted assertions: pressing any button on this page must change
    * something a visitor or assistive technology could notice. It is what
-   * turns "we fixed zoom" into "a control cannot ship inert here again" —
+   * turns "we fixed zoom" into "a control cannot ship inert here again",
    * including controls nobody has written yet.
    */
   // A generous budget on purpose: this opens one page per button and waits on
@@ -307,14 +307,14 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
     expect(total).toBeGreaterThan(3);
 
     /** Everything a visitor could notice: the serialized DOM (attributes and
-     *  text), every live input VALUE — a property, invisible in the
-     *  serialization, which is what the stepper changes — and stored state.
+     *  text), every live input VALUE, a property, invisible in the
+     *  serialization, which is what the stepper changes, and stored state.
      *
      *  Scoped to `.pm-page`, NOT to `document.body`, and that scoping is the
      *  whole difference between a real check and a vacuous one. The front
      *  Worker injects the chrome into `#pm-chrome-slot`, a SIBLING of
      *  `.pm-page`, and the HUD's live vitals readout writes an LCP value into
-     *  itself after the first interaction — so a body-scoped probe changes on
+     *  itself after the first interaction, so a body-scoped probe changes on
      *  ANY click and this test passed against the build with the dead Zoom
      *  button. Measured, not reasoned: the first difference was
      *  `data-pm-hud-live="LCP"` going from "–" to "60ms". Same boundary the
@@ -337,16 +337,16 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
     //    one that catches the body-scoped draft. Being explicit about why the
     //    idle check below cannot: `measure.js` calls `onLCP(record)` with no
     //    options, and web-vitals only reports LCP on keydown / click /
-    //    visibilitychange — so the HUD slot that made every button look alive
+    //    visibilitychange, so the HUD slot that made every button look alive
     //    does not move while the page merely sits there. It moves on the
     //    CLICK. Only the scope boundary defeats it.
     const chrome = await quiet.locator("#pm-chrome").count();
-    expect(chrome, "no injected chrome on this page — the scoping proves nothing").toBe(1);
+    expect(chrome, "no injected chrome on this page, the scoping proves nothing").toBe(1);
     expect(
       await quiet.evaluate(
         () => document.querySelector(".pm-page")?.contains(document.querySelector("#pm-chrome")) ?? true,
       ),
-      "the observed subtree contains the injected chrome — its live HUD would make every button look alive",
+      "the observed subtree contains the injected chrome. Its live HUD would make every button look alive",
     ).toBe(false);
 
     // 2. And the observed subtree must be still when nothing is pressed, which
@@ -356,7 +356,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
     await quiet.waitForTimeout(1500);
     expect(
       JSON.stringify(await observable(quiet)),
-      "the page changes on its own — this probe cannot tell a live control from ambient churn",
+      "the page changes on its own. This probe cannot tell a live control from ambient churn",
     ).toBe(settled);
     await quiet.close();
 
@@ -379,7 +379,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
         await input.blur();
       }
       // 2. If the target shares its first class with siblings, select a
-      //    DIFFERENT one first — an exclusive-selection control already on
+      //    DIFFERENT one first, an exclusive-selection control already on
       //    the target has nothing to change, which is the contract working.
       const target = page.locator("button:not([disabled])").nth(index);
       const first = ((await target.getAttribute("class")) ?? "").split(/\s+/)[0];
@@ -406,7 +406,7 @@ describe.each(PDP_VARIANTS)("%s PDP: controls do what their markup says (JS on)"
       await prime(page, i);
       // SETTLE after priming, before the baseline. prime() may CLICK a
       // sibling, and on the crate plane the `pm-button` group has two members
-      // — add-to-cart and the fenced live-origin button, whose handler is
+      //, add-to-cart and the fenced live-origin button, whose handler is
       // async. Reading `before` straight after the priming click would let
       // that click's later output land during the target's poll window and be
       // credited to the target, so an inert button could pass. Wait for two

@@ -1,5 +1,5 @@
 // Per-node byte table for docs/decision-map.md: a node is a `### ` heading
-// line plus every line up to the next `### ` (or EOF); bytes are UTF-8 —
+// line plus every line up to the next `### ` (or EOF); bytes are UTF-8,
 // the span tools/repo-checks/test/decision-map-node-cap.test.ts measures.
 //   node docs/prototypes/decision-map-compaction/node-bytes.mjs docs/decision-map.md
 import { readFileSync } from "node:fs";

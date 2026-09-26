@@ -1,8 +1,8 @@
 /**
- * Strategy: cold / no caching — the naive baseline every cure is compared to.
+ * Strategy: cold / no caching, the naive baseline every cure is compared to.
  * Plain fetch on render and on every interaction; nothing is remembered.
  * This exact build is ALSO the edge-cache strategy's page: cold pins
- * ?cache=cold, edge-cache drops it — same code, one condition flip.
+ * ?cache=cold, edge-cache drops it, same code, one condition flip.
  */
 import { createRoot } from "react-dom/client";
 import { useEffect, useState } from "react";

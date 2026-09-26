@@ -1,11 +1,11 @@
-// The htmx variant's pages — this variant's OWN re-implementation of the
+// The htmx variant's pages. This variant's OWN re-implementation of the
 // canonical markup (ADR-0003 §1: a component is a spec, re-implemented per
 // paradigm; ADR-0008: the masters under packages/reference/surfaces/ are the
 // contract of record). Two surfaces live here: the EDITORIAL page (slice E)
-// and, since 2026-08-28, the PLP catalogue grid — this paradigm's arm of the
+// and, since 2026-08-28, the PLP catalogue grid. This paradigm's arm of the
 // data-strategy comparison (ADR-0005). The paradigm IS the template: hypermedia means the server
 // renders complete HTML per request, so plain template literals in the
-// Worker are the idiomatic shape — no framework, no compile step, nothing
+// Worker are the idiomatic shape, no framework, no compile step, nothing
 // here imports the reference renderer (essay copy is re-typed as
 // variant-owned content, the recorded slice-A call; the drift gate polices
 // textual identity in CI against the fixture master and on the deployed
@@ -14,15 +14,15 @@
 //
 // Framework-neutral by construction: this module renders from plain data and
 // touches no Worker API, so the pre-merge master-identity guards import and
-// drive it directly, byte-strict — the vanilla mechanism. Those guards now
+// drive it directly, byte-strict, the vanilla mechanism. Those guards now
 // sit in TWO homes, which is worth knowing before adding a third surface:
 // editorial's is tools/repo-checks/test/variant-master-identity.test.ts
 // (both snapshots), and the PLP's is this variant's own variants/htmx/test/
-// — repo-checks belongs to another unit's boundary, and the split is
+//, repo-checks belongs to another unit's boundary, and the split is
 // recorded in the PLP build's handoff for a later consolidation call.
 
 /** HTML-escape interpolated tray values (frozen data is still external).
- *  Byte-identical to the reference renderer's esc() — decimal &#39;. */
+ *  Byte-identical to the reference renderer's esc(), decimal &#39;. */
 export function esc(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -54,14 +54,14 @@ function metaLine(release) {
   return release.year == null ? release.format : `${release.format} · ${release.year}`;
 }
 
-/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "—"
+/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "–"
  *  announces as "em dash" or as nothing, so the glyph is hidden and a real
  *  phrase rides beside it. Both arguments are authored literals. */
 function namedGlyph(glyph, name) {
   return `<span aria-hidden="true">${glyph}</span><span class="pm-sr-only">${name}</span>`;
 }
 
-/* ── The per-snapshot essays — committed CONTENT, re-typed verbatim from the
+/* ── The per-snapshot essays, committed CONTENT, re-typed verbatim from the
       contract of record (packages/reference/render/editorial.mjs). Prose
       narrates allusively; every precise number interpolates tray fields;
       the dateline is the manifest's freeze date. ─────────────────────────── */
@@ -69,16 +69,16 @@ function namedGlyph(glyph, name) {
 const CRATE_ESSAY = {
   kicker: "Staff pick",
   title: "The price of stillness",
-  dek: "A drone record from 2007 has become the most expensive thing in our crate — without a single loud moment on it.",
+  dek: "A drone record from 2007 has become the most expensive thing in our crate, without a single loud moment on it.",
   body: (d) => [
-    `p:There are records you put on and records you put up — and ${esc(d.artist)}'s <em>${esc(d.title)}</em> has spent nearly two decades being both. Two hours of tape-saturated strings and horns that barely move, released on ${esc(d.labels[0]?.name ?? "Kranky")} in ${d.year}, it is the kind of album whose fans describe it in architectural terms: a room, a horizon, a place they go.`,
-    `p:It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer — ${formatPrice(d.priceFrom)} at the freeze, to be exact — and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
-    `blockquote:Stillness scales badly. You can stream it anywhere, but the people who want this record want the object — the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.`,
+    `p:There are records you put on and records you put up, and ${esc(d.artist)}'s <em>${esc(d.title)}</em> has spent nearly two decades being both. Two hours of tape-saturated strings and horns that barely move, released on ${esc(d.labels[0]?.name ?? "Kranky")} in ${d.year}, it is the kind of album whose fans describe it in architectural terms: a room, a horizon, a place they go.`,
+    `p:It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer, ${formatPrice(d.priceFrom)} at the freeze, to be exact, and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
+    `blockquote:Stillness scales badly. You can stream it anywhere, but the people who want this record want the object, the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.`,
     `p:The economics are unsentimental. A triple LP of very quiet music is expensive to press and risky to repress, so supply arrives in slow, deliberate waves; a reissue surfaces, sells through, and the originals resume their climb. Meanwhile the music itself does the one thing collectible records must do: it keeps being recommended, year after year, by people who sound slightly embarrassed at how much they mean it.`,
-    `p:We are not in the appreciation business — this is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.`,
+    `p:We are not in the appreciation business. This is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.`,
   ],
   featureNote: () =>
-    `The pressing described above, as captured in the frozen snapshot — price and availability are the real aggregate at the freeze.`,
+    `The pressing described above, as captured in the frozen snapshot, price and availability are the real aggregate at the freeze.`,
 };
 
 const FIXTURE_ESSAY = {
@@ -86,22 +86,22 @@ const FIXTURE_ESSAY = {
   title: "A quiet variation, on repeat",
   dek: "The fixture's stand-in essay: synthetic prose over synthetic data, exercising every structure the real one uses.",
   body: (d) => [
-    `p:<em>${esc(d.title)}</em> by ${esc(d.artist)} is not a real record — it is release ${d.id} of the synthesized fixture crate, pressed on ${esc(d.labels[0]?.name ?? "a placeholder label")} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`,
+    `p:<em>${esc(d.title)}</em> by ${esc(d.artist)} is not a real record. It is release ${d.id} of the synthesized fixture crate, pressed on ${esc(d.labels[0]?.name ?? "a placeholder label")} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`,
     `p:It carries everything the real staff pick carries: a priced feature card rendered from the tray (${formatPrice(d.priceFrom) ?? "unpriced"} at the fixture's pinned capture date), a figure with data-sized dimensions, one blockquote, and exactly one interaction below.`,
-    `blockquote:If you can read this in a published benchmark screenshot, the wrong snapshot is being served — the fixture never leaves CI.`,
+    `blockquote:If you can read this in a published benchmark screenshot, the wrong snapshot is being served. The fixture never leaves CI.`,
     `p:Structure is the point: the drift gate compares this page's rendered DOM against every paradigm's re-implementation, so even placeholder prose is part of the contract. The words are synthetic; the markup is law.`,
-    `p:The real essay ships wherever the real crate is served, with the same shape and the same rules — numbers from trays, dates from the manifest, verdicts from nowhere.`,
+    `p:The real essay ships wherever the real crate is served, with the same shape and the same rules: numbers from trays, dates from the manifest, verdicts from nowhere.`,
   ],
   featureNote: () =>
-    `The fixture's featured release, rendered from its tray — same contract as the real crate's.`,
+    `The fixture's featured release, rendered from its tray, same contract as the real crate's.`,
 };
 
-/* ── The shell — canonical skeleton (packages/reference/render/shell.mjs):
+/* ── The shell, canonical skeleton (packages/reference/render/shell.mjs):
       skip link FIRST, then the chrome slot (variants only), then .pm-page.
       Cross-surface links absolute to each surface's designated host. ─────── */
 
 /** The shell sheets every surface links, in the reference `head()`'s order
- *  (shell.mjs:130-134) — the per-surface list is appended after them, so a
+ *  (shell.mjs:130-134), the per-surface list is appended after them, so a
  *  variant page's cascade order matches its master's. */
 const SHELL_CSS = [
   "tokens.css",
@@ -136,7 +136,7 @@ const PLP_CSS = [
 const ASSETS = "/htmx/assets";
 
 /** The canonical font-loading markup (@pm/tokens/fonts/loading-markup.html)
- *  verbatim modulo the base path — ADR-0003 §8: fonts are a controlled
+ *  verbatim modulo the base path, ADR-0003 §8: fonts are a controlled
  *  constant, only the asset base may differ per consumer. Template literals
  *  reproduce the file byte-for-byte (bare `crossorigin`, unclosed void
  *  elements), so the suite's assertion here is the strict form, like
@@ -158,13 +158,13 @@ function head(title, css) {
 }
 
 /** The paradigm's scripts. The vendored htmx runtime (the documented
- *  install is a script tag, served same-origin — never a CDN include: the
+ *  install is a script tag, served same-origin, never a CDN include: the
  *  suite's request tracker fails any request off the composed origin) plus
  *  the cart enhancement ride EVERY page: `cart.js` populates the masthead's
  *  `[data-pm-cart-count]` slot on every shell page load, which the cart
  *  contract requires of every surface, not just the one with a button
  *  (shell.mjs CART_CONTRACT, "Count"). It costs nothing on a page with no
- *  add-to-cart control — it returns early when the editorial feature button
+ *  add-to-cart control. It returns early when the editorial feature button
  *  is absent (cart.js:62).
  *
  *  Script elements are delivery, not contract (ADR-0008 freedoms), but they
@@ -192,7 +192,7 @@ function mastheadLink(href, label, key, current) {
 /** The shared page frame: canonical shell around `content`, with this
  *  variant's delivery (font/CSS links, htmx runtime, cart enhancement).
  *  `hooks` carries extra pre-script elements (the cart's JSON data hook);
- *  `css` is the surface's sheet list and `current` its masthead marker —
+ *  `css` is the surface's sheet list and `current` its masthead marker,
  *  both were editorial-only constants until the PLP build (2026-08-28). */
 function pageFrame({ title, content, hooks = [], css, current, scripts }) {
   return `<!doctype html>
@@ -217,7 +217,7 @@ ${content}
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>
@@ -247,7 +247,7 @@ function releaseCard(release, imgAttrs = "") {
     <p class="pm-release-card__artist">${esc(release.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(release))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("–", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(release.numForSale))}</span>
     </div>
   </div>
@@ -256,7 +256,7 @@ function releaseCard(release, imgAttrs = "") {
 
 /**
  * Render the editorial page from this request's resolved data:
- * `{ isFixture, capturedAt, featured }` — the served manifest picks the
+ * `{ isFixture, capturedAt, featured }`, the served manifest picks the
  * honest essay, the dateline IS the freeze date (ADR-0008 §8), and the
  * featured release's DETAIL tray supplies every rendered field (the
  * request-time shape: one /api/snapshot + one /api/pdp/{id} through the
@@ -276,11 +276,11 @@ export function renderEditorialPage({ isFixture, capturedAt, featured }) {
   blocks.splice(
     1,
     0,
-    `<figure><img src="${esc(figureImg.src)}" width="${figureImg.width}" height="${figureImg.height}" alt="${esc(figureImg.alt)}" loading="lazy" decoding="async"><figcaption>${esc(featured.artist)} — ${esc(featured.title)} (${esc(featured.labels[0]?.name ?? "")}${featured.labels[0]?.catno ? ` · ${esc(featured.labels[0].catno)}` : ""}), from the frozen snapshot.</figcaption></figure>`,
+    `<figure><img src="${esc(figureImg.src)}" width="${figureImg.width}" height="${figureImg.height}" alt="${esc(figureImg.alt)}" loading="lazy" decoding="async"><figcaption>${esc(featured.artist)}, ${esc(featured.title)} (${esc(featured.labels[0]?.name ?? "")}${featured.labels[0]?.catno ? ` · ${esc(featured.labels[0].catno)}` : ""}), from the frozen snapshot.</figcaption></figure>`,
   );
 
-  // The enhancement's data hook rides a script element — delivery, not
-  // contract (ADR-0008 freedoms) — so the canonical DOM carries no extra
+  // The enhancement's data hook rides a script element, delivery, not
+  // contract (ADR-0008 freedoms), so the canonical DOM carries no extra
   // attribute. `<` is escaped so a tray string can never close the script
   // element early.
   const cartItem = JSON.stringify({ id: featured.id, title: featured.title }).replace(
@@ -305,13 +305,13 @@ ${releaseCard(featured)}
           <div class="pm-editorial__feature-body">
             <p class="pm-editorial__feature-note">${esc(essay.featureNote(featured))}</p>
             <div><button class="pm-button" type="button"${featured.numForSale === 0 ? " disabled" : ""}>Add to cart</button></div>
-            <p class="pm-editorial__feature-note">The only interactive element on this page — that's the experiment.</p>
+            <p class="pm-editorial__feature-note">The only interactive element on this page. That's the experiment.</p>
           </div>
         </aside>
       </article>`;
 
   return pageFrame({
-    title: `${essay.title} — Long Decay Records`,
+    title: `${essay.title} · Long Decay Records`,
     content,
     hooks: [`<script type="application/json" id="pm-cart-item">${cartItem}</script>`],
     css: EDITORIAL_CSS,
@@ -320,7 +320,7 @@ ${releaseCard(featured)}
   });
 }
 
-/* ── The PLP (catalogue grid) — the data axis's server-rendered arm
+/* ── The PLP (catalogue grid), the data axis's server-rendered arm
       (ADR-0005 §1: "the server fetches the tray and returns finished HTML;
       interactions are real links enhanced into partial swaps (works
       JS-off)"). Re-implemented from the contract of record
@@ -336,19 +336,19 @@ const STYLE_CUT = 12;
 const FORMAT_CUT = 8;
 
 /** The sort select's options, in the master's order (plp.mjs SORT_OPTIONS).
- *  The default is the snapshot's committed order — id-ascending, per
- *  snapshot-capture — and is labelled as such, never "Popularity". */
+ *  The default is the snapshot's committed order, id-ascending, per
+ *  snapshot-capture, and is labelled as such, never "Popularity". */
 const SORT_OPTIONS = [
   ["", "Catalogue order"],
-  ["year-desc", "Year — newest first"],
-  ["year-asc", "Year — oldest first"],
-  ["price-asc", "Price — low to high"],
-  ["price-desc", "Price — high to low"],
-  ["title", "Title — A to Z"],
+  ["year-desc", "Year, newest first"],
+  ["year-asc", "Year, oldest first"],
+  ["price-asc", "Price, low to high"],
+  ["price-desc", "Price, high to low"],
+  ["title", "Title, A to Z"],
 ];
 
 /** The knobs a carried value must look like to ride an href (plp.mjs
- *  CARRY_RE) — `run` and `profile` are opaque pass-throughs, bounded. */
+ *  CARRY_RE), `run` and `profile` are opaque pass-throughs, bounded. */
 const CARRY_RE = /^[A-Za-z0-9._-]{1,64}$/;
 
 /**
@@ -357,7 +357,7 @@ const CARRY_RE = /^[A-Za-z0-9._-]{1,64}$/;
  * spelled `?page=1`, `URLSearchParams` encoding. Pagination, facets, both
  * forms' hidden inputs and the boosted swaps all spell a condition this way.
  *
- * It carries `cache`, `run` and `profile` — the defect the first PLP build
+ * It carries `cache`, `run` and `profile`, the defect the first PLP build
  * reported and could not fix alone: a page-flip from this arm's own preset
  * (`/htmx/plp/?cache=cold`) used to land on the WARM tier while the injected
  * chrome, rendered against the original search outside the swapped subtree,
@@ -385,8 +385,8 @@ export function conditionHref(condition) {
  *  way `conditionHref` does. */
 function hiddenKnobs(condition, own) {
   // Two halves (plp.mjs): a browser serializes a GET form in TREE order, so
-  // the knobs that canonically FOLLOW the form's own control — the sort
-  // form's `q` — are emitted after it, and a JS-off submit spells the
+  // the knobs that canonically FOLLOW the form's own control, the sort
+  // form's `q`, are emitted after it, and a JS-off submit spells the
   // condition the way `plpConditionHref` does (verify-slice, 2026-09-18).
   const before = [];
   const after = [];
@@ -410,12 +410,12 @@ function hiddenKnobs(condition, own) {
  *
  * `hx-target` and `hx-swap` ride the `.pm-plp` ROOT and are inherited by
  * every boosted element inside it; `hx-boost="true"` rides the FOUR
- * navigation containers — the facet rail, the search form, the sort form,
- * the pagination — and NOT the root. That placement is load-bearing, and
+ * navigation containers, the facet rail, the search form, the sort form,
+ * the pagination, and NOT the root. That placement is load-bearing, and
  * the design critique caught the alternative before it shipped: `hx-boost`
  * on the root would boost every descendant same-origin anchor
  * (htmx.js `boostElement`), including the 24 card links to
- * `/vanilla/pdp/<slug>/` — so a click on a record title would GET the whole
+ * `/vanilla/pdp/<slug>/`, so a click on a record title would GET the whole
  * PDP document and swap it INTO the grid, masthead and second chrome slot
  * included. Cards stay plain navigation; the four containers that navigate
  * WITHIN this surface are enhanced. A boosted GET form is htmx's documented
@@ -424,7 +424,7 @@ function hiddenKnobs(condition, own) {
  *
  * Six attributes on five elements, all under the one registered prefix. The
  * anchors and forms keep their own `href`/`action`, byte-identical to the
- * master's, so with JavaScript off every control is ordinary navigation —
+ * master's, so with JavaScript off every control is ordinary navigation,
  * ADR-0005 §1's "(works JS-off)" is a property of the markup, not a claim.
  *
  * The server half is in src/index.js: a request carrying htmx's `HX-Request`
@@ -458,13 +458,13 @@ function facetGroup(title, param, buckets, cut, condition) {
 }
 
 /**
- * The `.pm-plp` block — the whole surface, and the unit a swap replaces.
+ * The `.pm-plp` block, the whole surface, and the unit a swap replaces.
  *
  * Takes the edge Worker's `/api/plp` payload verbatim (`{ items, page,
  * perPage, total, totalPages, facets, applied }`): the tray already carries
  * the paginated slice, the facet buckets RECOUNTED over the filtered set, and
- * the query the data plane APPLIED. Everything the block shows — the grid,
- * the count, the selected facet, the chosen sort, the search box's value —
+ * the query the data plane APPLIED. Everything the block shows, the grid,
+ * the count, the selected facet, the chosen sort, the search box's value,
  * comes from the payload; `carry` contributes only the three knobs the tray
  * cannot know (`cache`, `run`, `profile`), read off the request URL. That is
  * the arm: "where the data layer lives" is the server, and the server asks
@@ -475,9 +475,9 @@ function plpBlock({ items, page, perPage, total, totalPages, facets, applied }, 
   const condition = { n, page, cache: carry.cache, run: carry.run, profile: carry.profile, ...applied };
   const start = (page - 1) * n;
   // An out-of-range page answers 200 with an empty `items` array (the edge
-  // floors `page` at 1 and applies its ceiling on the way out — a page past
+  // floors `page` at 1 and applies its ceiling on the way out, a page past
   // the end is served, never stored), and the arithmetic range would read
-  // BACKWARDS — "Showing 241–240 of 240"; `src/plp.js` would announce that
+  // BACKWARDS, "Showing 241–240 of 240"; `src/plp.js` would announce that
   // sentence to a screen reader verbatim. An empty page shows "0", which is
   // true.
   const range = items.length ? `${start + 1}–${start + items.length}` : "0";
@@ -497,7 +497,7 @@ function plpBlock({ items, page, perPage, total, totalPages, facets, applied }, 
 
   // A five-wide window that CONTAINS the current page, clamped to the ends
   // (plp.mjs): from page 6 on the naive `1..5` window carried NO
-  // `aria-current="page"` at all — measured on both snapshots before the
+  // `aria-current="page"` at all, measured on both snapshots before the
   // reference grew its `page` option.
   const first = Math.min(Math.max(page - 2, 1), Math.max(totalPages - 4, 1));
   const pages = Array.from(
@@ -573,7 +573,7 @@ ${cards}
  *  three URL knobs the tray cannot know (see plpBlock). */
 export function renderPlpPage(data, carry = {}) {
   return pageFrame({
-    title: `Records — Long Decay Records`,
+    title: `Records · Long Decay Records`,
     content: plpBlock(data, carry),
     css: PLP_CSS,
     current: "plp",
@@ -581,14 +581,14 @@ export function renderPlpPage(data, carry = {}) {
   });
 }
 
-/** The partial: the `.pm-plp` block ALONE — exactly the swap target, so a
+/** The partial: the `.pm-plp` block ALONE, exactly the swap target, so a
  *  boosted request replaces the surface and nothing else. */
 export function renderPlpFragment(data, carry = {}) {
   return `${plpBlock(data, carry).trimStart()}\n`;
 }
 
-/** The canonical spelling of the condition a tray ANSWERS — the served
- *  page/n/applied query plus the carried knobs — for the Worker's
+/** The canonical spelling of the condition a tray ANSWERS, the served
+ *  page/n/applied query plus the carried knobs, for the Worker's
  *  `HX-Push-Url`. htmx pushes the REQUEST URL by default, which for a boosted
  *  form is whatever the visitor typed (`?q=++Golden++`, encodeURIComponent
  *  spelling); the data plane normalizes `q` and the address bar should name
@@ -607,24 +607,24 @@ export function plpConditionHref(data, carry = {}) {
 /**
  * The branded fallback for a live data-plane failure (the slice-B/D
  * precedent: this is a request-time variant, so an edge error is a real
- * runtime state). Keeps the visitor inside Long Decay Records' own shell —
+ * runtime state). Keeps the visitor inside Long Decay Records' own shell,
  * chrome slot included, so the instrument still frames the failure.
  *
  * `current` names the surface the visitor was ON, and it defaults to
  * "editorial" so this page stays byte-identical to the one editorial's
  * receipts were measured against. It is a parameter because a PLP failure
  * was otherwise served with `aria-current="page"` on the masthead's
- * EDITORIAL link — telling a screen-reader user on /htmx/plp/ that the
+ * EDITORIAL link, telling a screen-reader user on /htmx/plp/ that the
  * current page is Editorial, a wrong ARIA state served deliberately. The
  * stylesheets stay editorial's either way: the fallback markup is
  * `.pm-editorial`, so those are the sheets it actually needs.
  */
 export function renderUnavailablePage({ current = "editorial", reason = "unavailable" } = {}) {
-  // `reason: "no-such-filter"` is the PLP's answer to a tray 400 — a facet or
+  // `reason: "no-such-filter"` is the PLP's answer to a tray 400, a facet or
   // sort value the snapshot does not hold. It is a 404 and says so; the
   // generic branch below is the data plane NOT ANSWERING, and reporting a
   // near-miss filter as an outage was the served falsehood the design
-  // critique caught (the plane answered — with a 400).
+  // critique caught (the plane answered, with a 400).
   const content =
     reason === "no-such-filter"
       ? `      <div class="pm-editorial">
@@ -635,13 +635,13 @@ export function renderUnavailablePage({ current = "editorial", reason = "unavail
       : `      <div class="pm-editorial">
         <p class="pm-page__kicker">Staff pick</p>
         <h1>This page couldn&#39;t load</h1>
-        <p>The store&#39;s data plane didn&#39;t answer. This is a simulated demo storefront — nothing was ordered, nothing was lost.</p>
+        <p>The store&#39;s data plane didn&#39;t answer. This is a simulated demo storefront. Nothing was ordered, nothing was lost.</p>
       </div>`;
   return pageFrame({
     title:
       reason === "no-such-filter"
-        ? "No such filter — Long Decay Records"
-        : "This page couldn't load — Long Decay Records",
+        ? "No such filter · Long Decay Records"
+        : "This page couldn't load · Long Decay Records",
     content,
     css: EDITORIAL_CSS,
     current,

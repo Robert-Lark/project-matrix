@@ -1,12 +1,12 @@
 /**
- * Project Matrix — data-contract prototype
+ * Project Matrix, data-contract prototype
  * The zero-bias normalized payload schema. Every variant consumes THIS shape,
  * byte-identical. Raw Discogs JSON is normalized into it once, at capture time,
  * and frozen; no variant ever parses a raw Discogs response.
  *
  * Guardrails baked in (see docs/adr/0002):
  *  - DATA, not UI: typed primitives only (price = number, duration = seconds).
- *    No pre-sorting, no pre-formatting, no pre-computed render output — those are
+ *    No pre-sorting, no pre-formatting, no pre-computed render output. Those are
  *    real per-render work and hiding them would make the benchmark lie.
  *  - Complete per surface: no variant re-fetches to fill gaps (kills N+1 bias).
  *  - Self-hosted assets: image `src` points at our frozen assets; width/height
@@ -21,7 +21,7 @@
  */
 import { z } from "zod";
 
-/** Money as data — formatted in-render, never here. */
+/** Money as data, formatted in-render, never here. */
 export const Price = z.object({
   amount: z.number().nonnegative(), // Discogs `lowest_price`
   currency: z.literal("USD"), // pinned via `curr_abbr=USD` at capture time
@@ -51,7 +51,7 @@ export const ReleaseSummary = z.object({
 });
 
 export const Track = z.object({
-  position: z.string(), // "A1", "2" — Discogs positions are not all numeric
+  position: z.string(), // "A1", "2", Discogs positions are not all numeric
   title: z.string(),
   durationSeconds: z.number().int().nonnegative().nullable(), // "4:35" -> 275
 });
@@ -85,7 +85,7 @@ export const FacetBucket = z.object({
   count: z.number().int().nonnegative(),
 });
 
-/** Response of GET /api/plp — the small tray, paginated, with facet counts. */
+/** Response of GET /api/plp, the small tray, paginated, with facet counts. */
 export const PlpPage = z.object({
   items: z.array(ReleaseSummary),
   page: z.number().int().positive(),
@@ -100,7 +100,7 @@ export const PlpPage = z.object({
 });
 
 /**
- * Dataset manifest — ties the frozen snapshot to a date + commit SHA, per the
+ * Dataset manifest, ties the frozen snapshot to a date + commit SHA, per the
  * measurement methodology (ADR-0001): dated snapshots, not live-updated.
  */
 export const SnapshotManifest = z.object({

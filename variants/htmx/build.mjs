@@ -1,16 +1,16 @@
-// Assemble the htmx variant's static assets. NOT snapshot-parameterized —
+// Assemble the htmx variant's static assets. NOT snapshot-parameterized,
 // this is a REQUEST-TIME variant (trays fetched through the edge Worker per
 // request, ADR-0002 §7), so no PM_SNAPSHOT is declared anywhere for it and
 // nothing baked here depends on a snapshot. What dist/ carries:
 //
 //  - the shared tokens css/fonts, copied verbatim (the paradigm's delivery
-//    model, ADR-0003 §2 — resolved through this package's own declared
+//    model, ADR-0003 §2, resolved through this package's own declared
 //    dependency, the placeholder-static mold);
 //  - the PINNED htmx runtime, vendored from the htmx.org npm package into
 //    the variant's own assets and served same-origin (the documented install
 //    is a script tag; a CDN include would fail the suite's same-origin
-//    request tracker — editorial-build ISSUE E);
-//  - the cart enhancement (src/cart.js), on every page — the masthead
+//    request tracker, editorial-build ISSUE E);
+//  - the cart enhancement (src/cart.js), on every page, the masthead
 //    badge is the cart contract's duty for every surface;
 //  - the PLP's focus/announcement enhancement (src/plp.js), which the
 //    hx-boost partial swap makes necessary rather than optional.
@@ -26,7 +26,7 @@ const require = createRequire(join(root, "package.json"));
 
 const tokensRoot = dirname(dirname(require.resolve("@pm/tokens/css/tokens.css")));
 // Resolved as a package subpath so the lockfile pin is the single source of
-// the bytes — nothing is copied into git.
+// the bytes. Nothing is copied into git.
 const htmxJs = require.resolve("htmx.org/dist/htmx.min.js");
 
 const dist = join(root, "dist", "htmx");

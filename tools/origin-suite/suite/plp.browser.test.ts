@@ -2,7 +2,7 @@
  * The PLP's restored controls in a REAL browser, at the composed-origin seam
  * (ADR-0005 §5, landed 2026-09-04). "Done" for this unit is a sentence the
  * in-process guards cannot finish: a facet click, a search and a sort each
- * return a genuinely filtered grid on both arms — JS on (a partial swap on
+ * return a genuinely filtered grid on both arms, JS on (a partial swap on
  * htmx, an island fetch on react-next, no document load) AND JS off (a real
  * navigation). Playwright drives Chromium against PM_ORIGIN.
  *
@@ -29,7 +29,7 @@ const genre = snap.summaries[0]!.genres[0]!;
 const word = snap.summaries[3]!.title.split(" ").find((w) => /^[A-Za-z]{3,}$/.test(w))!;
 
 const ARMS = [
-  // kv-exempt: path constants — every navigation below goes through url(), which sets cache=cold and the run= nonce
+  // kv-exempt: path constants, every navigation below goes through url(), which sets cache=cold and the run= nonce
   { name: "htmx", path: "/htmx/plp/", noise: PERMITTED_NOISE["htmx"]! }, // kv-exempt: path constant
   { name: "react-next", path: "/react-next/plp/plain/", noise: PERMITTED_NOISE["react-next"]! }, // kv-exempt: path constant
   // The client-cache arm: the ONLY arm with the in-flight window ADR-0005
@@ -45,7 +45,7 @@ const ARMS = [
  *  and both spell `cache=cold` and the run nonce LITERALLY on their own line:
  *  the repo-checks warm-tier guard reads lines, and the object form these
  *  replaced (`new URLSearchParams({ cache: "cold", run: NONCE, … })`) was
- *  invisible to it — cold and nonced by luck, not because anything checked
+ *  invisible to it, cold and nonced by luck, not because anything checked
  *  (verify-slice, 2026-09-18). Nothing here may plant a warm-tier key on the
  *  deployed plane. */
 const url = (path: string, params: Record<string, string> = {}) => {
@@ -53,7 +53,7 @@ const url = (path: string, params: Record<string, string> = {}) => {
   return `${ORIGIN}${path}?cache=cold&run=${NONCE}${qs ? `&${qs}` : ""}`;
 };
 
-/** The filtered total the tray reports for a condition — what the page must state. */
+/** The filtered total the tray reports for a condition. What the page must state. */
 async function trayTotal(params: Record<string, string>): Promise<number> {
   const qs = new URLSearchParams(params).toString();
   const res = await fetch(`${ORIGIN}/api/plp?cache=cold&run=${NONCE}${qs ? `&${qs}` : ""}`);
@@ -65,7 +65,7 @@ async function trayTotal(params: Record<string, string>): Promise<number> {
  *  after insertion (htmx.js `insertNodesBefore` → `makeAjaxLoadTask` →
  *  `processNode`): until it runs, the new block's forms and anchors carry
  *  `hx-boost` but no listener, and a submit in that window is a NATIVE
- *  navigation — progressive enhancement's honest fallback, not a defect, but
+ *  navigation, progressive enhancement's honest fallback, not a defect, but
  *  not what these legs test. The URL is pushed BEFORE settle, so a leg that
  *  acts the moment the address bar moves races it; on a fresh plane the race
  *  was lost deterministically (2026-09-18: the Back leg saw the browser's own
@@ -101,7 +101,7 @@ for (const arm of ARMS) {
       await context?.close();
     });
 
-    it("a facet click filters the grid IN PLACE — no document load, URL carries the filter, the column and the nonce", async () => {
+    it("a facet click filters the grid IN PLACE, no document load, URL carries the filter, the column and the nonce", async () => {
       const page = await context.newPage();
       await page.goto(url(arm.path), { waitUntil: "load" });
       // A marker that only survives if the document is NOT reloaded.
@@ -184,7 +184,7 @@ for (const arm of ARMS) {
 
     it("Back restores the CONTROLS too: after search → sort → Back → Back, the select reads the default and the box is empty", async () => {
       // ADR-0005 addendum Q2: every control is drawn from `applied`, never
-      // from the URL — and never from what the visitor last touched. An
+      // from the URL, and never from what the visitor last touched. An
       // uncontrolled React <select>/<input> keeps its last value across a
       // re-render unless remounted, so before the `key` on each (plp.tsx)
       // this leg failed on react-next while htmx (whole-block swap) passed:
@@ -199,7 +199,7 @@ for (const arm of ARMS) {
       await page.locator(".pm-toolbar__sort button").click();
       await page.waitForFunction(() => new URL(location.href).searchParams.get("sort") === "year-desc", undefined, { timeout: 15_000 });
       await settled(page);
-      // Back once: the sort goes, the search stays — in the URL, the grid AND the controls.
+      // Back once: the sort goes, the search stays, in the URL, the grid AND the controls.
       await page.goBack();
       await page.waitForFunction(() => new URL(location.href).searchParams.get("sort") === null, undefined, { timeout: 15_000 });
       await expect.poll(() => page.inputValue("#plp-sort"), { timeout: 15_000 }).toBe("");
@@ -240,12 +240,12 @@ for (const arm of ARMS) {
   });
 }
 
-describe("the two arms serve one DOM for one filtered URL — at the seam, in a browser", () => {
+describe("the two arms serve one DOM for one filtered URL, at the seam, in a browser", () => {
   it("normalized DOM of /htmx/plp/ and /react-next/plp/plain/ agree under a facet + sort + search", async () => {
     // The in-process guard (repo-checks plp-arms-agree) proves this for the
     // `.pm-plp` block; this is the whole served page through the composed
     // origin, chrome and paradigm noise removed by each arm's own
-    // registration — the deployed-seam version of the same claim.
+    // registration, the deployed-seam version of the same claim.
     const context = await browser.newContext(profileContextOptions(PROFILES["avg-broadband-desktop"]!));
     const params = { genre, sort: "title", q: word.slice(0, 3) };
     const doms: string[] = [];

@@ -1,14 +1,14 @@
 /* ==========================================================================
-   FIELD NOTEBOOK — shared tokens for the Rob Lark blog boards
+   FIELD NOTEBOOK, shared tokens for the Rob Lark blog boards
    Paper: pale surveyor green (the Rite-in-the-Rain field book, not cream).
-   Signature: the margin rule — one vertical line of ink down every page;
+   Signature: the margin rule, one vertical line of ink down every page;
    chronology (dates, section marks, years) hangs on it.
    ========================================================================== */
 
 :root {
   color-scheme: light dark;
 
-  /* palette — light */
+  /* palette, light */
   --paper: #ECEEE3;        /* surveyor-green paper */
   --card:  #F4F5EC;        /* pasted-in card */
   --ink:   #23241D;        /* iron-gall ink        13.35:1 on paper */
@@ -165,21 +165,21 @@ a:hover { color: var(--accent-ui); }
   color: var(--muted);
 }
 
-/* display — for the big essays */
+/* display, for the big essays */
 .post-head--display h1 {
   font-size: clamp(2.25rem, 4.5vw, 3.25rem);
   line-height: 1.05;
   letter-spacing: -0.015em;
 }
 
-/* photo — quiet title, the photographs carry the page */
+/* photo, quiet title, the photographs carry the page */
 .post-head--photo h1 {
   font: 500 1.25rem/1.3 var(--sans);
   letter-spacing: 0.02em;
 }
 .post-head--photo .dek { font-size: 1.0625rem; }
 
-/* bare — no title at all (notes) */
+/* bare, no title at all (notes) */
 .post-head--bare { padding-top: 3.25rem; }
 .post-head--bare .post-eyebrow { grid-row: 1; }
 .post-head--bare .post-meta { grid-row: 2; }
@@ -200,7 +200,7 @@ a:hover { color: var(--accent-ui); }
 }
 .post-body { counter-reset: section; }
 .post-body h2::before {
-  content: "\00a7\2009" counter(section);   /* § 1 — real sequence, hangs on the rule */
+  content: "\00a7\2009" counter(section);   /* § 1, real sequence, hangs on the rule */
   position: absolute;
   right: calc(100% + var(--gap));
   top: 0.3em;
@@ -212,7 +212,7 @@ a:hover { color: var(--accent-ui); }
 }
 .post-body h3 { font: 600 1.0625rem/1.3 var(--sans); }
 
-/* aside — the pencil note */
+/* aside, the pencil note */
 .bp-aside {
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
@@ -233,7 +233,7 @@ a:hover { color: var(--accent-ui); }
 .bp-aside p { margin: 0; }
 .bp-aside p + p { margin-top: 0.625rem; }
 
-/* pullquote — set in the display voice, accent ink */
+/* pullquote, set in the display voice, accent ink */
 .bp-pullquote {
   margin: 2.5rem 0;
   padding: 0;
@@ -246,7 +246,7 @@ a:hover { color: var(--accent-ui); }
   text-wrap: balance;
 }
 
-/* blockquote — quoted matter, italic, hanging bar of paper not ink */
+/* blockquote, quoted matter, italic, hanging bar of paper not ink */
 .post-body blockquote {
   margin: 1.75rem 0 1.75rem 1.75rem;
   font-style: italic;
@@ -272,7 +272,7 @@ a:hover { color: var(--accent-ui); }
 .bp-gallery[data-layout="grid"] { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
 .bp-gallery[data-layout="bleed"] { max-width: 76rem; justify-self: center; }
 
-/* code — the taped-in printout */
+/* code, the taped-in printout */
 .post-body pre.shiki {
   font: 400 0.8125rem/1.65 var(--mono);
   padding: 1.125rem 1.375rem;
@@ -406,7 +406,7 @@ ol.contents {
 .entry--photo a { font: italic 400 1.0625rem/1.5 var(--serif); }
 .entry--link a::after { content: "\2009\2197"; color: var(--accent-ui); font-family: var(--mono); font-size: 0.8125em; }
 
-/* year dividers — the years sit on the rule itself */
+/* year dividers, the years sit on the rule itself */
 .entry[data-year] { margin-top: 2.75rem; }
 ol.contents .entry[data-year]:first-child { margin-top: 0; }
 .entry[data-year]::before {

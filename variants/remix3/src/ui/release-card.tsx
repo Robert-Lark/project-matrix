@@ -1,6 +1,6 @@
 // The canonical release card (packages/tokens/css/components/release-card.css
 // anatomy; packages/reference/render/shell.mjs releaseCard is the contract of
-// record), rendered from the featured release's DETAIL tray — the
+// record), rendered from the featured release's DETAIL tray, the
 // request-time shape. Card link absolute to the PDP's designated host.
 import type { Handle } from "remix/ui";
 
@@ -30,7 +30,7 @@ export function ReleaseCard(handle: Handle<{ release: Detail }>) {
           <p class="pm-release-card__artist">{release.artist}</p>
           <p class="pm-release-card__meta">{metaLine(release)}</p>
           <div class="pm-release-card__foot">
-            <span class="pm-release-card__price">{price ?? (<><span aria-hidden="true">—</span><span class="pm-sr-only">No price listed</span></>)}</span>
+            <span class="pm-release-card__price">{price ?? (<><span aria-hidden="true">–</span><span class="pm-sr-only">No price listed</span></>)}</span>
             <span class="pm-release-card__stock">{stockLine(release.numForSale)}</span>
           </div>
         </div>

@@ -1,8 +1,8 @@
 /*
- * Component module — the two-box A/B compare frame (a11y section). Ordering
+ * Component module, the two-box A/B compare frame (a11y section). Ordering
  * is the contract (strategy-review finding 21, panel a11y kill): the
  * walkthrough label comes FIRST, then the compliant DS-ON box, then the
- * stripped DS-OFF twin INSIDE a collapsed <details> — content in a closed
+ * stripped DS-OFF twin INSIDE a collapsed <details>, content in a closed
  * details is natively unfocusable and hidden from AT, so the page's default
  * keyboard path never enters a deliberate defect; the visitor opens it on
  * purpose, label already read. Works JS-off; vanilla singleton, so
@@ -14,14 +14,14 @@
  *     <div class="pm-compare__walkthrough">…what to try, what AT announces…</div>
  *     <div class="pm-compare__pair">
  *       <div class="pm-compare__box">
- *         <p class="pm-compare__tag">DS-ON — the shipped default</p>
+ *         <p class="pm-compare__tag">DS-ON, the shipped default</p>
  *         …compliant component…
  *       </div>
  *       <details class="pm-compare__off">
  *         <summary class="pm-compare__summary">Open the stripped twin
  *           (deliberately fails)</summary>
  *         <div class="pm-compare__box pm-compare__box--off">
- *           <p class="pm-compare__tag">DS-OFF — what ships without the system</p>
+ *           <p class="pm-compare__tag">DS-OFF. What ships without the system</p>
  *           …stripped twin…
  *         </div>
  *       </details>

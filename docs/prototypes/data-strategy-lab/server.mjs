@@ -2,14 +2,14 @@
  * The prototype's one server (throwaway):
  *
  *  - `/api/*`            same-origin proxy to the LOCAL composed origin
- *                        (front Worker :8787) — the client strategy pages
+ *                        (front Worker :8787), the client strategy pages
  *                        fetch the real data plane without CORS, exactly
  *                        the shape the composed origin gives real variants.
  *  - `/loaders/`         the server-loaders + progressive-enhancement leg:
  *                        THIS server fetches the tray upstream, renders full
  *                        HTML; pagination is plain <a href> (works JS-off),
  *                        enhanced by htmx into partial swaps.
- *  - `/partials/grid`    the htmx swap target — grid-only HTML.
+ *  - `/partials/grid`    the htmx swap target, grid-only HTML.
  *  - static              /plain/ /tanstack/ /apollo/ shells + /dist bundles
  *                        + vendored htmx.
  *
@@ -45,7 +45,7 @@ function gridHtml(data) {
     .map(
       (r) => `<article class="pm-card">
   <h2>${esc(r.title)}</h2>
-  <p>${esc(r.artist)}${r.year ? ` — ${esc(r.year)}` : ""}</p>
+  <p>${esc(r.artist)}${r.year ? `, ${esc(r.year)}` : ""}</p>
   <p>${
     r.priceFrom
       ? `$${esc(r.priceFrom.amount)} (${esc(r.numForSale)} for sale)`
@@ -67,7 +67,7 @@ function pageQs(query, page) {
 function pagerHtml(query, data) {
   const prev = Math.max(1, data.page - 1);
   const next = data.page + 1;
-  // Progressive enhancement: real links first (JS-off works — a full
+  // Progressive enhancement: real links first (JS-off works, a full
   // document navigation), htmx upgrades them to grid-only swaps.
   return `<p>
   <a id="prev" href="/loaders/?${esc(pageQs(query, prev))}"

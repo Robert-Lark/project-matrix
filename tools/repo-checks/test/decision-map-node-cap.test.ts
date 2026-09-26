@@ -3,9 +3,9 @@
  * 2026-08-29 audit's priority 8, runbook unit 9).
  *
  * `docs/decision-map.md` is loaded in full into every session, and its own
- * header rule — one node per unit carrying the QUESTION, the ANSWER as
+ * header rule, one node per unit carrying the QUESTION, the ANSWER as
  * decisions with their tradeoffs, and what is OWED; evidence, narrative and
- * measured numbers in `build-log.md`, LINKED and never repeated — was
+ * measured numbers in `build-log.md`, LINKED and never repeated, was
  * restated on 2026-08-29 because nothing enforced it and every unit since
  * the editorial build had broken it. By 2026-09-25 the file was 253,385 B
  * (35 nodes; the eleven heaviest resolved nodes 9.6–21.9 KB each, read at
@@ -21,8 +21,8 @@
  * Which is which is a CHECKED VOCABULARY, not a guess (verify-slice,
  * correctness lens: the map's own history holds `PRD published`, `sliced`,
  * `SPEC WRITTEN, NOT BUILT`, `CODE COMPLETE, NOT MERGED`, `in-progress`, all
- * of them active work). The `Status:` line's leading clause — up to its first
- * ` — `, `. ` or `; ` — is read: it is OPEN when it begins `open` or
+ * of them active work). The `Status:` line's leading clause, up to its first
+ * `, `, `. ` or `; `, is read: it is OPEN when it begins `open` or
  * `in progress`, or names an in-flight state (`not yet built`, `not merged`,
  * `unmerged`, `in build`, `sliced`, `PRD published`, `spec written`, `code
  * complete`, `blocked`); it is RESOLVED when it carries a settled word
@@ -30,14 +30,14 @@
  * `shipped`); a clause that says neither FAILS the leg by name, so a status
  * cannot fall into the exemption by using a word nobody classified.
  *
- * The cap is derived, not chosen — see NODE_CAP_BYTES.
+ * The cap is derived, not chosen, see NODE_CAP_BYTES.
  *
  * Non-vacuity, four ways: zero resolved nodes FAILS (an empty set passes
  * every cap); the exemption cannot swallow the rule (open nodes must be the
  * minority); every node names a status except the ones listed by name; and
  * the classifier, the cap and the header/pointer legs are proven live
  * against literal fixtures. A stated limit: the exemption trusts the
- * `Status:` line the way every registry guard here trusts its registry —
+ * `Status:` line the way every registry guard here trusts its registry,
  * flipping a resolved node to `open` to dodge the cap is a one-line diff on
  * a status line, which a reviewer reads (sabotage row N4 records the miss).
  */
@@ -51,12 +51,12 @@ const MAP = join(repoRoot, "docs", "decision-map.md");
 const LOG = join(repoRoot, "docs", "build-log.md");
 
 /**
- * NODE_CAP_BYTES — derived on 2026-09-25 from the compacted file: 7,168 B (7 KiB). The largest RESOLVED node after compaction is 6,707 B (`checkout-measure-prep`, whose six changes each carry a rejected alternative and a stated cost — the first cap tried, 6 KiB, would have forced dropping those, and a cap that removes decisions is the wrong cap); 7 KiB is the smallest whole KiB above it, leaving 461 B there. Of the sixteen nodes this unit compacted, 15 would fail it at their pre-compaction size (6,365–21,937 B; the exception, `how-it-was-built` at 6,365 B, was compacted for the same reason and sits at 4,486 B). The median resolved node after compaction is 4,113 B, so the cap is about 1.7× the median. Bytes here are what `splitNodes` measures: the heading line through the blank line before the next `### `, UTF-8. Numbers from `docs/prototypes/decision-map-compaction/node-bytes-2026-09-25.md` (derived by its `node-bytes.mjs`, never typed).
+ * NODE_CAP_BYTES, derived on 2026-09-25 from the compacted file: 7,168 B (7 KiB). The largest RESOLVED node after compaction is 6,707 B (`checkout-measure-prep`, whose six changes each carry a rejected alternative and a stated cost, the first cap tried, 6 KiB, would have forced dropping those, and a cap that removes decisions is the wrong cap); 7 KiB is the smallest whole KiB above it, leaving 461 B there. Of the sixteen nodes this unit compacted, 15 would fail it at their pre-compaction size (6,365–21,937 B; the exception, `how-it-was-built` at 6,365 B, was compacted for the same reason and sits at 4,486 B). The median resolved node after compaction is 4,113 B, so the cap is about 1.7× the median. Bytes here are what `splitNodes` measures: the heading line through the blank line before the next `### `, UTF-8. Numbers from `docs/prototypes/decision-map-compaction/node-bytes-2026-09-25.md` (derived by its `node-bytes.mjs`, never typed).
  */
 export const NODE_CAP_BYTES = 7168;
 
 /**
- * PREAMBLE_CAP_BYTES — everything before the first `### ` (the header, Notes,
+ * PREAMBLE_CAP_BYTES. Everything before the first `### ` (the header, Notes,
  * the matrix table, the Tickets lead). The skeptic lens pasted 20 KB of prose
  * under `## Notes` and every leg stayed green: the node cap never read that
  * region. Derived the same way: 7,655 B on 2026-09-26 (6,255 B before this
@@ -86,7 +86,7 @@ export type StatusClass = "open" | "resolved" | "unclassified";
 export function splitNodes(markdown: string): MapNode[] {
   const lines = markdown.split("\n");
   // A file that ends in "\n" splits into a trailing "" that is not a line of
-  // the last node (it would count one byte twice — verify-slice).
+  // the last node (it would count one byte twice, verify-slice).
   if (lines.length && lines[lines.length - 1] === "") lines.pop();
   const nodes: MapNode[] = [];
   let cur: { key: string; heading: string; line: number; body: string[] } | null = null;
@@ -109,7 +109,7 @@ export function splitNodes(markdown: string): MapNode[] {
 /** The status's leading clause, markdown emphasis stripped, lower-cased. */
 export function statusVerdict(status: string): string {
   const bare = status.replace(/^Status:\s*/, "").replace(/[*_`]/g, "").trimStart().toLowerCase();
-  return bare.split(/ — |\. |; /)[0] ?? bare;
+  return bare.split(/\. |; /)[0] ?? bare;
 }
 
 export function classify(status: string | null): StatusClass {
@@ -126,12 +126,12 @@ export function overCap(nodes: MapNode[], cap: number): MapNode[] {
 
 /**
  * Every form a Status line may quote a log heading in: the heading's text
- * after its `#`s, with or without a leading `Phase N — ` / `Phase N.M — `
+ * after its `#`s, with or without a leading `Phase N, ` / `Phase N.M, `
  * and with or without a trailing ` (date…)` parenthetical.
  */
 export function headingForms(headingLine: string): string[] {
   const text = headingLine.replace(/^#+\s+/, "").trim();
-  const noPhase = text.replace(/^Phase \d+(?:\.\d+)? — /, "");
+  const noPhase = text.replace(/^Phase \d+(?:\.\d+)?: /, "");
   const forms = new Set<string>();
   for (const t of [text, noPhase]) {
     forms.add(t);
@@ -170,7 +170,7 @@ describe("the decision map stays a map: resolved nodes under the byte cap (compa
     const over = overCap(nodes, NODE_CAP_BYTES).map((n) => `${n.key} (${n.bytes} B at line ${n.line})`);
     expect(
       over,
-      `resolved nodes over the cap — the map carries the question, the decisions with their tradeoffs and what is owed; move the narrative, the numbers and the verification record to docs/build-log.md under the node's phase (a "narrative moved from the decision map" sub-entry, verbatim) and link it from the Status line`,
+      `resolved nodes over the cap, the map carries the question, the decisions with their tradeoffs and what is owed; move the narrative, the numbers and the verification record to docs/build-log.md under the node's phase (a "narrative moved from the decision map" sub-entry, verbatim) and link it from the Status line`,
     ).toEqual([]);
   });
 
@@ -184,24 +184,24 @@ describe("the decision map stays a map: resolved nodes under the byte cap (compa
 
   it("the classifier and the cap are live (literal fixtures)", () => {
     expect(classify("Status: open")).toBe("open");
-    expect(classify("Status: **IN PROGRESS (2026-09-01)** — PR-1 is this commit")).toBe("open");
+    expect(classify("Status: **IN PROGRESS (2026-09-01)**, PR-1 is this commit")).toBe("open");
     expect(classify("Status: in-progress (slice B)")).toBe("open");
     expect(classify("Status: open, and **not a conformance failure** (found 2026-09-03)")).toBe("open");
-    expect(classify("Status: **CODE COMPLETE, NOT MERGED** — branch x, nine commits")).toBe("open");
+    expect(classify("Status: **CODE COMPLETE, NOT MERGED**, branch x, nine commits")).toBe("open");
     expect(classify("Status: **SPEC WRITTEN, NOT BUILT** (2026-08-28)")).toBe("open");
     expect(classify("Status: PRD published (2026-07-07)")).toBe("open");
-    expect(classify("Status: sliced — slices A + B landed")).toBe("open");
+    expect(classify("Status: sliced, slices A + B landed")).toBe("open");
     expect(classify(null)).toBe("open");
     expect(classify("Status: resolved")).toBe("resolved");
-    expect(classify("Status: **BUILT AND VERIFIED (2026-09-18)** — branch `x`")).toBe("resolved");
-    expect(classify("Status: **MERGED — PR #35 (`ae97f8e`, 2026-08-28).**")).toBe("resolved");
-    expect(classify("Status: **RESOLVED (2026-08-15)** — the opening question is closed")).toBe("resolved");
-    expect(classify("Status: **ALL SIX SLICES LANDED — the editorial build is CLOSED**")).toBe("resolved");
-    expect(classify("Status: **CLOSED (2026-08-17)** — ruler landed")).toBe("resolved");
+    expect(classify("Status: **BUILT AND VERIFIED (2026-09-18)**, branch `x`")).toBe("resolved");
+    expect(classify("Status: **MERGED, PR #35 (`ae97f8e`, 2026-08-28).**")).toBe("resolved");
+    expect(classify("Status: **RESOLVED (2026-08-15)**, the opening question is closed")).toBe("resolved");
+    expect(classify("Status: **ALL SIX SLICES LANDED, the editorial build is CLOSED**")).toBe("resolved");
+    expect(classify("Status: **CLOSED (2026-08-17)**, ruler landed")).toBe("resolved");
     expect(classify("Status: finished")).toBe("unclassified");
-    expect(classify("Status: wrapped up (2026-01-01) — nearly")).toBe("unclassified");
+    expect(classify("Status: wrapped up (2026-01-01), nearly")).toBe("unclassified");
     // A resolved status whose PROSE mentions an in-flight word after its verdict stays resolved: only the leading clause is read.
-    expect(classify("Status: **RESOLVED (2026-08-29)** — PR #39; the JS-on half the pre-merge tree left not merged ran green")).toBe("resolved");
+    expect(classify("Status: **RESOLVED (2026-08-29)**, PR #39; the JS-on half the pre-merge tree left not merged ran green")).toBe("resolved");
     const pad = "x".repeat(NODE_CAP_BYTES);
     const fixture = `# T\n\n### a: resolved and fat\nStatus: resolved\n${pad}\n\n### b: open and fat\nStatus: open\n${pad}\n\n### c: resolved and thin\nStatus: **RESOLVED (2026-01-01)**\nfine\n\n### d: in flight and fat\nStatus: **CODE COMPLETE, NOT MERGED**\n${pad}\n`;
     const split = splitNodes(fixture);
@@ -230,14 +230,14 @@ describe("the map's header and its build-log pointers stay true", () => {
   it("every Status line that cites build-log.md quotes only titles that are headings in the log, exactly, and its moved-narrative pointer names its own node", () => {
     const forms = new Set(readFileSync(LOG, "utf8").split("\n").filter((l) => /^#{2,3} /.test(l)).flatMap(headingForms));
     const citing = nodes.filter((n) => n.status !== null && n.status.includes("build-log.md"));
-    expect(citing.length, "no Status line cites build-log.md — the compacted nodes must").toBeGreaterThan(10);
+    expect(citing.length, "no Status line cites build-log.md, the compacted nodes must").toBeGreaterThan(10);
     const bad: string[] = [];
     for (const n of citing) {
       const after = n.status!.slice(n.status!.indexOf("build-log.md"));
       for (const m of after.matchAll(/["“]([^"”]+)["”]/g)) {
         const q = m[1]!;
         if (!forms.has(q)) bad.push(`${n.key}: "${q}" is not the exact text of a heading in docs/build-log.md`);
-        if (q.includes("narrative moved from the decision map") && !q.startsWith(`\`${n.key}\` — `)) bad.push(`${n.key}: its moved-narrative pointer names "${q.split(" — ")[0]}"`);
+        if (q.includes("narrative moved from the decision map") && !q.startsWith(`\`${n.key}\`: `)) bad.push(`${n.key}: its moved-narrative pointer names "${q.split(", ")[0]}"`);
       }
     }
     expect(bad).toEqual([]);
@@ -250,9 +250,9 @@ describe("the map's header and its build-log pointers stay true", () => {
     // completeness shape: the set of nodes the log holds a sub-entry for and
     // the set of nodes whose Status cites one must be equal and non-empty.
     const inLog = new Set(
-      [...readFileSync(LOG, "utf8").matchAll(/^### `([^`]+)` — narrative moved from the decision map \(\d{4}-\d{2}-\d{2}\)$/gm)].map((m) => m[1]!),
+      [...readFileSync(LOG, "utf8").matchAll(/^### `([^`]+)`: narrative moved from the decision map \(\d{4}-\d{2}-\d{2}\)$/gm)].map((m) => m[1]!),
     );
-    const POINTER = /^`([^`]+)` — narrative moved from the decision map \(\d{4}-\d{2}-\d{2}\)$/;
+    const POINTER = /^`([^`]+)`: narrative moved from the decision map \(\d{4}-\d{2}-\d{2}\)$/;
     const inMap = new Set<string>();
     const bare: string[] = [];
     for (const n of nodes) {
@@ -270,18 +270,18 @@ describe("the map's header and its build-log pointers stay true", () => {
   });
 
   it("the pointer check is live: a fragment, a reworded title and another node's sub-entry all fail it", () => {
-    const forms = new Set(["## Phase 15 — The instrument was the thing that was wrong (2026-08-28)", "### `plp-htmx` — narrative moved from the decision map (2026-09-25)"].flatMap(headingForms));
+    const forms = new Set(["## Phase 15: The instrument was the thing that was wrong (2026-08-28)", "### `plp-htmx`: narrative moved from the decision map (2026-09-25)"].flatMap(headingForms));
     expect(forms.has("The instrument was the thing that was wrong (2026-08-28)")).toBe(true);
     expect(forms.has("The instrument was the thing that was wrong")).toBe(true);
-    expect(forms.has("Phase 15 — The instrument was the thing that was wrong (2026-08-28)")).toBe(true);
+    expect(forms.has("Phase 15: The instrument was the thing that was wrong (2026-08-28)")).toBe(true);
     expect(forms.has("Phase 15")).toBe(false);
     // Curly quotes are extracted too (seams lens): a “Phase 15” fragment must reach the lookup and fail it.
-    const curly = [...'Narrative: `build-log.md` Phase 15, “Phase 15”; and “The instrument was the thing that was wrong (2026-08-28)”'.matchAll(/["“]([^"”]+)["”]/g)].map((m) => m[1]!);
+    const curly = [...'Narrative: `build-log.md` Phase 15: “Phase 15”; and “The instrument was the thing that was wrong (2026-08-28)”'.matchAll(/["“]([^"”]+)["”]/g)].map((m) => m[1]!);
     expect(curly).toEqual(["Phase 15", "The instrument was the thing that was wrong (2026-08-28)"]);
     expect(curly.filter((q) => !forms.has(q))).toEqual(["Phase 15"]);
     expect(forms.has("The instrument was the thing")).toBe(false);
     expect(forms.has("The instrument was the thing that was wrong (2026-08-29)")).toBe(false);
-    expect(forms.has("`plp-htmx` — narrative moved from the decision map (2026-09-25)")).toBe(true);
-    expect(forms.has("`plp-react-next` — narrative moved from the decision map (2026-09-25)")).toBe(false);
+    expect(forms.has("`plp-htmx`: narrative moved from the decision map (2026-09-25)")).toBe(true);
+    expect(forms.has("`plp-react-next`: narrative moved from the decision map (2026-09-25)")).toBe(false);
   });
 });

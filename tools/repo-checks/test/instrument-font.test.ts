@@ -5,7 +5,7 @@
  * tokens fonts do (packages/switcher/fonts/README.md), so it gets the same
  * hardening: the cmap is re-derived from the shipped woff2 bytes, and every
  * non-ASCII codepoint the chrome's OWN strings can render (chrome.css
- * `content:` values, the renderer's literal glyphs) must be present — a
+ * `content:` values, the renderer's literal glyphs) must be present, a
  * chrome copy edit that reaches outside the subset fails here, not on some
  * visitor's platform.
  */
@@ -36,12 +36,12 @@ describe("PM Instrument Mono covers the chrome's own glyphs", () => {
 
   it("covers every non-ASCII codepoint in chrome.css content values and chrome.ts literals", () => {
     // The chrome renders NO crate/user text in the mono (titles stay in the
-    // store register) — its glyph universe is its own source strings.
+    // store register). Its glyph universe is its own source strings.
     const sources = [
       // CSS content: values ("·", "▾", "▴", …)
       ...[...chromeCss.matchAll(/content:\s*"([^"]*)"/g)].map((m) => m[1]!),
       // Renderer template literals (labels, separators, em-dashes, ellipses)
-      // — comments stripped first: "ADR-0004 §5" citations are not rendered
+      //, comments stripped first: "ADR-0004 §5" citations are not rendered
       // output and must not drag § into the subset.
       chromeTs.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""),
     ];
@@ -56,7 +56,7 @@ describe("PM Instrument Mono covers the chrome's own glyphs", () => {
     for (const cp of needed) {
       expect(
         font.hasGlyphForCodePoint(cp),
-        `U+${cp.toString(16).toUpperCase().padStart(4, "0")} not in PMInstrumentMono — re-cut the subset (fonts/README.md recipe)`,
+        `U+${cp.toString(16).toUpperCase().padStart(4, "0")} not in PMInstrumentMono, re-cut the subset (fonts/README.md recipe)`,
       ).toBe(true);
     }
   });

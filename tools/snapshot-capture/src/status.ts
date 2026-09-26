@@ -1,4 +1,4 @@
-/** `pnpm capture status` — phase-by-phase progress, read purely from disk. */
+/** `pnpm capture status`, phase-by-phase progress, read purely from disk. */
 import { SnapshotManifest } from "@pm/data-contract";
 import { activeIds, readTombstones } from "./details";
 import { imageJobs, originalsByKey } from "./images";
@@ -66,7 +66,7 @@ export function statusCommand(spec: CrateSpec, dirs: Dirs, log: (line: string) =
   }
   log(
     `images:     ${doneJobs}/${jobs} originals landed (of fetched details)` +
-      (unreadable > 0 ? ` — ${unreadable} unreadable detail checkpoints` : ""),
+      (unreadable > 0 ? `, ${unreadable} unreadable detail checkpoints` : ""),
   );
   log(`derive:     ${listDir(paths.crateImgDir(dirs)).length} derivatives in crate/img`);
 

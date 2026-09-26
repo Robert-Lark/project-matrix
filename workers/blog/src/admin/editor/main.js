@@ -1,7 +1,7 @@
 // The writing surface (ADR-0009 §3). Contracts this file keeps:
 // - never lose a word: dirty-tracked autosave (idle + heartbeat + hidden-tab
 //   flush with keepalive) AND a localStorage mirror consulted on boot;
-// - the preview IS the blog: the iframe shows /api/render's full document —
+// - the preview IS the blog: the iframe shows /api/render's full document,
 //   the same pipeline and template the public page uses;
 // - keyboard-first: ⌘S save, ⌘E preview, ⌘, settings, ⌘⇧M media library,
 //   ⌘B/I/K markdown, slash-commands at line start, paste/drop image upload.
@@ -101,7 +101,7 @@ let dirty = false;
 /** @type {ReturnType<typeof setTimeout> | undefined} */
 let idleTimer;
 let accentCleared = !post.accent;
-// Optimistic concurrency baseline — the server refuses saves whose base is
+// Optimistic concurrency baseline, the server refuses saves whose base is
 // stale (another tab / another device), so nothing silently clobbers.
 let knownUpdatedAt = post.updated_at;
 /** @type {Promise<boolean> | null} */
@@ -130,7 +130,7 @@ async function saveOnce({ keepalive = false } = {}) {
     const data = await res.json().catch(() => ({}));
     if (res.status === 409) {
       dirty = true;
-      saveState.textContent = "Edited elsewhere — copy anything unsaved, then reload.";
+      saveState.textContent = "Edited elsewhere. Copy anything unsaved, then reload.";
       return false;
     }
     if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
@@ -141,7 +141,7 @@ async function saveOnce({ keepalive = false } = {}) {
     return true;
   } catch (err) {
     dirty = true;
-    saveState.textContent = `Save failed — retrying (${err instanceof Error ? err.message : String(err)})`;
+    saveState.textContent = `Save failed, retrying (${err instanceof Error ? err.message : String(err)})`;
     return false;
   }
 }
@@ -199,7 +199,7 @@ function mirror() {
         JSON.stringify({ t: Date.now(), body: view.state.doc.toString(), title: input("f-title").value }),
       );
     } catch {
-      /* quota — the server autosave is still the net */
+      /* quota, the server autosave is still the net */
     }
   }, 800);
 }
@@ -375,7 +375,7 @@ const editorTheme = EditorView.theme({
   "&.cm-focused": { outline: "none" },
   ".cm-line": { padding: "0" },
   ".cm-cursor": { borderLeftWidth: "2px" },
-  // Autocomplete (slash menu) — themed here because CM's injected styles
+  // Autocomplete (slash menu), themed here because CM's injected styles
   // outrank admin.css in the cascade.
   ".cm-tooltip.cm-tooltip-autocomplete": {
     border: "1px solid var(--line)",
@@ -548,7 +548,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     if (!mediaDialog.open) openMediaLibrary();
   }
-  // The dialog owns Escape while open (native cancel) — don't also fold the
+  // The dialog owns Escape while open (native cancel), don't also fold the
   // settings panel underneath it.
   if (event.key === "Escape" && !metaPanel.hidden && !mediaDialog.open) {
     toggleMeta(false);
@@ -587,9 +587,9 @@ el("publish").addEventListener("click", async () => {
       markDirty();
     }
     // The header status is transient (autosave overwrites it) and sits under
-    // the drawer — put the guidance where the author is now looking.
+    // the drawer, put the guidance where the author is now looking.
     publishHint.textContent = input("f-slug").value
-      ? "Check this URL — it’s permanent once published. Then press Publish again."
+      ? "Check this URL. It’s permanent once published. Then press Publish again."
       : "Give this post a slug (its URL), then press Publish again.";
     publishHint.hidden = false;
     return;
@@ -624,7 +624,7 @@ el("delete-post").addEventListener("click", async () => {
 // ------------------------------------------------------------ media library --
 // Browse everything already in R2 (the media table), insert without
 // re-uploading, fix alt after the fact. Inserts use the EMPTY-alt form so
-// the library's alt flows through mediaLookup at render time — editing alt
+// the library's alt flows through mediaLookup at render time, editing alt
 // here re-fixes every referencing post's cached HTML on the server.
 const mediaDialog = /** @type {HTMLDialogElement} */ (el("media-library"));
 
@@ -678,7 +678,7 @@ function mediaCell(item) {
         ? `Saved · re-rendered ${rerendered} post${rerendered === 1 ? "" : "s"}`
         : "Saved";
     } else {
-      saveAlt.textContent = "Failed — retry";
+      saveAlt.textContent = "Failed, retry";
     }
     setTimeout(() => (saveAlt.textContent = "Save alt"), 2500);
   });
@@ -712,7 +712,7 @@ async function openMediaLibrary() {
   const items = await res.json();
   status.textContent = items.length
     ? ""
-    : "Nothing here yet — paste or drop an image into the editor to upload.";
+    : "Nothing here yet. Paste or drop an image into the editor to upload.";
   for (const item of items) grid.append(mediaCell(item));
 }
 

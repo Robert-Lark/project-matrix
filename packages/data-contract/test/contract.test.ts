@@ -1,6 +1,6 @@
 /**
  * The prototype fixtures must validate against the lifted schema (issue #2
- * acceptance). The fixtures are ILLUSTRATIVE (not captured data) — they pin the
+ * acceptance). The fixtures are ILLUSTRATIVE (not captured data). They pin the
  * contract's shape, not real values. Real data arrives via `snapshot-capture`.
  */
 import { describe, expect, it } from "vitest";

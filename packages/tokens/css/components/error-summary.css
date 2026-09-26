@@ -1,8 +1,8 @@
 /*
- * Component module — form error summary (the GOV.UK/WAI pattern, adopted by
+ * Component module, form error summary (the GOV.UK/WAI pattern, adopted by
  * panel finding: WCAG 3.3.1 + 4.1.3). Rendered by the paradigm on an invalid
  * submit; focus MOVES to it (tabindex="-1"); each item links its field. The
- * canonical SERVED state is absent — the interaction registry entry
+ * canonical SERVED state is absent, the interaction registry entry
  * (`checkout-submit-invalid`) performs identical DOM + focus work in every
  * paradigm, so the INP comparison compares like work.
  *

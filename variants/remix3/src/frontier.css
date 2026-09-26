@@ -3,7 +3,7 @@
  * shared components/plaque.css; this file dresses the frames demo). Variant-
  * owned DELIVERY, not contract: both subtrees are dropped from the drift
  * comparison, and style elements/links are ADR-0008 serialization freedoms.
- * Register: the plaque's pressing-plant stamp, extended — dashed fence
+ * Register: the plaque's pressing-plant stamp, extended, dashed fence
  * boundary, tracked small caps, semantic tokens only (the store stays quiet,
  * ADR-0006 §1; never color alone, forced-colors safe).
  *

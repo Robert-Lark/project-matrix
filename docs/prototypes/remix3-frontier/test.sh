@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Asserts the Remix 3 frontier mechanisms against both running hosts:
-#   worker: http://localhost:8931  (wrangler dev — the hand-rolled Workers entry)
+#   worker: http://localhost:8931  (wrangler dev, the hand-rolled Workers entry)
 #   node:   http://localhost:8932  (the official-template node:http shape)
 # Start them first (two background jobs; `A && B & C` would background the
 # build and block the shell on the Node leg):
@@ -10,7 +10,7 @@
 #
 # What curl can prove, curl proves here. The browser-only behaviors (island
 # hydration, anchor-driven frame reload without a document reload, history
-# traversal) were verified interactively — see FINDINGS.md §5.
+# traversal) were verified interactively, see FINDINGS.md §5.
 
 set -u
 

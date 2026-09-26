@@ -1,7 +1,7 @@
 /**
  * The profile spec is a published measurement condition (ADR-0001 §4): its
  * values are pinned EXACTLY, so any change is a deliberate, version-bumped
- * decision — never an accidental edit. Receipts cite the spec version.
+ * decision, never an accidental edit. Receipts cite the spec version.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -69,20 +69,20 @@ describe("the canonical knob vocabulary (shared by tag and served condition)", (
       environment: "n=24|cache=default",
       cacheState: "default",
     });
-    // Bounded regardless of input — a junk ?n= can never push the tag past
+    // Bounded regardless of input, a junk ?n= can never push the tag past
     // the collector's 96-byte limit (silent-RUM-loss guard).
     const junk = knobTags(`?n=${"9".repeat(300)}`);
     expect(junk.environment.length).toBeLessThan(30);
   });
 
-  it("cacheState is `none` for a condition the warm tier never holds — a search, or an unwarmed n", () => {
+  it("cacheState is `none` for a condition the warm tier never holds, a search, or an unwarmed n", () => {
     // The PLP data plane's key-cardinality policy (ADR-0005 addendum,
     // 2026-09-04): free-text search is never stored, and n is warmed only at
     // the two published knob values. A RUM point for such a page tagged
     // `default` would blend an R2 read into the KV column it never reached.
     expect(knobTags("?q=ambient").cacheState).toBe("none");
     expect(knobTags("?n=48").cacheState).toBe("none");
-    // The REQUESTED column in `environment` is unchanged — it names what was
+    // The REQUESTED column in `environment` is unchanged. It names what was
     // asked for; `cacheState` names what could be served.
     expect(knobTags("?n=48")).toEqual({ environment: "n=48|cache=default", cacheState: "none" });
     // Cold is cold whatever the condition: the bypass was asked for and given.

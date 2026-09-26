@@ -1,6 +1,6 @@
 /**
  * The front Worker's first tests (security floor, 2026-09-18). Two things the
- * origin suite — which only sees HTTP — cannot pin:
+ * origin suite, which only sees HTTP, cannot pin:
  *
  *  - The dispatch table and wrangler.jsonc's `services` are ONE set. The
  *    table is derived from @pm/measurement's VARIANT_PREFIXES (the beacon
@@ -13,7 +13,7 @@
  *  - The floor module's own mechanics: it OVERRIDES an upstream's weaker
  *    value (never appends), it keeps status, body and unrelated headers, a
  *    null body stays null, the `_headers` text is the same three headers in
- *    the platform's rule syntax — and the byte figure ADR-0001 addendum U
+ *    the platform's rule syntax, and the byte figure ADR-0001 addendum U
  *    cites is DERIVED from the module here, not typed into prose.
  */
 import { readFileSync } from "node:fs";
@@ -25,7 +25,7 @@ import { SECURITY_FLOOR, headersFileText, withSecurityFloor } from "../src/secur
 const bindingOf = (prefix) => prefix.toUpperCase().replaceAll("-", "_");
 
 // JSONC → JSON: this file's comments are whole lines (a `//` inside a string
-// value — a URL — would survive this strip, and none of the values is one).
+// value, a URL, would survive this strip, and none of the values is one).
 const wrangler = JSON.parse(
   readFileSync(join(import.meta.dirname, "..", "wrangler.jsonc"), "utf8").replace(
     /^\s*\/\/.*$/gm,
@@ -42,7 +42,7 @@ describe("the dispatch table IS wrangler.jsonc's service list (roster ↔ deploy
     }
   });
 
-  it("every service binding that is not a variant is exactly EDGE or BLOG — no unreachable variant binding", () => {
+  it("every service binding that is not a variant is exactly EDGE or BLOG, no unreachable variant binding", () => {
     const variantBindings = new Set(VARIANT_PREFIXES.map(bindingOf));
     const rest = [...bindings.keys()].filter((b) => !variantBindings.has(b)).sort();
     expect(rest).toEqual(["BLOG", "EDGE"]);
@@ -69,7 +69,7 @@ describe("the floor module", () => {
     for (const name of Object.keys(SECURITY_FLOOR)) expect(name).toBe(name.toLowerCase());
   });
 
-  it("OVERRIDES an upstream's weaker value — set, never append", () => {
+  it("OVERRIDES an upstream's weaker value, set, never append", () => {
     const upstream = new Response("x", {
       headers: { "x-frame-options": "SAMEORIGIN", "content-type": "text/plain" },
     });
@@ -116,7 +116,7 @@ describe("the floor module", () => {
     );
   });
 
-  it("the HTTP/1.1 wire cost ADR-0001 addendum U cites — 106 bytes — is what the module spells", () => {
+  it("the HTTP/1.1 wire cost ADR-0001 addendum U cites, 106 bytes, is what the module spells", () => {
     // `name: value\r\n` per header. The figure is derived here so the prose
     // cannot drift from the code that ships the bytes.
     const bytes = Object.entries(SECURITY_FLOOR).reduce(

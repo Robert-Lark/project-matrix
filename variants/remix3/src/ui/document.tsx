@@ -1,6 +1,6 @@
 // The canonical shell (packages/reference/render/shell.mjs is the contract
 // of record): skip link FIRST, then the chrome slot (variants only), then
-// .pm-page — masthead · main · status region · footer. Cross-surface links
+// .pm-page, masthead · main · status region · footer. Cross-surface links
 // absolute to each surface's designated host. Re-implemented as Remix 3
 // Handle components (ADR-0003 §1: a component is a spec, re-implemented per
 // paradigm; the spike proved the pm- markup contract renders frictionlessly).
@@ -8,7 +8,7 @@
 // Delivery notes (all inside ADR-0008's serialization freedoms):
 //  - createHtmlResponse emits the doctype; this component starts at <html>.
 //  - remix/ui's css() mixin is deliberately unused on every served element,
-//    so the compared DOM carries no rmxc-* class and no <style data-rmx> —
+//    so the compared DOM carries no rmxc-* class and no <style data-rmx>,
 //    the measured-clean outcome the drift registry records (the astro/htmx
 //    "earned emptiness" precedent).
 //  - The plaque/demo stylesheet (frontier.css) is variant-owned delivery for
@@ -32,10 +32,10 @@ const CSS = [
   "surfaces/editorial.css",
   // Exhibit-only addition to the canonical editorial list (a <link> is an
   // ADR-0008 delivery freedom): the fenced plaque IS the DS plaque
-  // component, and its module ships with the copied css tree — without
+  // component, and its module ships with the copied css tree, without
   // this link the boundary label renders unstyled, and NOTHING else can
   // catch that: the fenced subtrees are by construction the one region
-  // every comparison drops (verify-slice finding, conformance lens — the
+  // every comparison drops (verify-slice finding, conformance lens, the
   // origin suite now asserts this link for exactly that reason).
   "components/plaque.css",
 ];
@@ -45,19 +45,19 @@ export interface DocumentProps {
   children?: RemixNode;
   /** Paradigm scripts, rendered at the END of body (the shell contract's ✂
    *  placement for variant script additions; script elements are delivery,
-   *  not contract — ADR-0008 freedoms). */
+   *  not contract, ADR-0008 freedoms). */
   scripts?: RemixNode;
 }
 
 /** The canonical font-loading markup (@pm/tokens/fonts/loading-markup.html)
- *  verbatim modulo the base path — ADR-0003 §8: fonts are a controlled
+ *  verbatim modulo the base path, ADR-0003 §8: fonts are a controlled
  *  constant, only the asset base may differ per consumer. Two framework-
  *  shaped serialization deltas, both spec-equivalent to the canonical file
  *  and tolerated by the suite's font leg like react-next's JSX form:
  *  `crossorigin="anonymous"` for the bare `crossorigin` (remix's type only
  *  admits the two named states; the canonical bare attribute IS the
  *  empty-value form, and per the HTML spec the EMPTY value default and
- *  "anonymous" both select the Anonymous CORS state — a MISSING attribute
+ *  "anonymous" both select the Anonymous CORS state, a MISSING attribute
  *  would be the No CORS state instead, so never delete it: a no-CORS
  *  preload can't serve the CORS-mode @font-face fetch and both fonts would
  *  download twice), and self-closed voids. */
@@ -127,7 +127,7 @@ export function Document(handle: Handle<DocumentProps>) {
             <p class="pm-status" role="status" data-pm-status></p>
             <footer class="pm-footer">
               <p class="pm-footer__fiction">
-                {"A working store on frozen Discogs data — nothing ships, checkout is simulated."}
+                {"A working store on frozen Discogs data. Nothing ships. Checkout is simulated."}
               </p>
               <nav class="pm-footer__nav" aria-label="About this site">
                 <a href="/">{"What is this?"}</a>

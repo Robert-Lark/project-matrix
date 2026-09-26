@@ -1,23 +1,23 @@
-# DIFF-TO-STARTER — vanilla
+# DIFF-TO-STARTER: vanilla
 
 **No official starter exists for this paradigm** (editorial-build PRD: the
 starterless case, recorded rather than scaffolded). "Vanilla" means static
 HTML with no framework runtime; the honest minimal shape is a hand-rolled
 static build in the `placeholder-static` mold, and **the whole tree is the
-diff** — small enough to read:
+diff**, small enough to read:
 
-- `render.mjs` — the variant's own re-implementation of the editorial
+- `render.mjs`: the variant's own re-implementation of the editorial
   canonical markup (template literals over the frozen trays).
-- `build.mjs` — the snapshot-parameterized static build (`PM_SNAPSHOT`:
+- `build.mjs`: the snapshot-parameterized static build (`PM_SNAPSHOT`:
   `fixture` default, `crate` on the deploy job); copies `@pm/tokens`
   css/fonts into the variant's own assets (ADR-0003 §2 delivery) and the
   cart enhancement into `assets/cart.js`.
-- `src/index.js` — the `env.ASSETS.fetch(request)` forwarder every static
+- `src/index.js`: the `env.ASSETS.fetch(request)` forwarder every static
   variant ships (spike hardening 1), plus this variant's ONE route: the
   checkout form's native POST → 303 → `checkout/placed/` (decision 8).
-- `src/cart.js` — the one client enhancement: add-to-cart against the cart
+- `src/cart.js`: the one client enhancement: add-to-cart against the cart
   storage contract (`packages/reference/render/shell.mjs` `CART_CONTRACT`).
-- `wrangler.jsonc` — assets Worker, `workers_dev: false` (reachable only
+- `wrangler.jsonc`: assets Worker, `workers_dev: false` (reachable only
   through pm-front's service binding).
 
 Pinned tooling: `wrangler ^4.110.0` (the workspace pin; exact version in the
@@ -30,7 +30,7 @@ committed `pnpm-lock.yaml`).
    re-type: `@pm/reference` deliberately exposes no JS entry point (the
    no-component-runtime guard, ADR-0003 §1), and the request-time paradigms
    (react-next SSR, qwik, htmx) would otherwise have to bundle reference
-   renderer code into their served Workers — reference code executing in a
+   renderer code into their served Workers, reference code executing in a
    variant's production path is exactly what the guard exists to prevent.
    Textual identity is policed mechanically either way: the drift gate
    compares this page against the fixture master in CI, and the deployed
@@ -43,7 +43,7 @@ committed `pnpm-lock.yaml`).
    strings match (ADR-0002 §6 kept display strings out of the trays for
    exactly this).
 3. **The crate's featured id is the recorded design constant** (editorial
-   953800, ADR-0008 §9 — a curated pick, not a receipt); the fixture's comes
+   953800, ADR-0008 §9, a curated pick, not a receipt); the fixture's comes
    from its `curation.json`.
 4. **The enhancement's data hook is a `<script type="application/json">`
    element, not a data attribute.** Script elements are delivery, not
@@ -54,7 +54,7 @@ committed `pnpm-lock.yaml`).
    count populates from storage on every page load, which is what makes the
    cart survive a variant swap.
 6. **The a11y section is rendered by `@pm/reference`'s own renderer, not
-   re-typed** (a11y-section build, 2026-09-03) — the ONE exception to
+   re-typed** (a11y-section build, 2026-09-03), the ONE exception to
    decision 1, and it is an exception by kind rather than by convenience.
    Decision 1's rationale is ADR-0003 §1: paradigms are compared on identical
    markup, so each re-implements the spec in its own idiom and the gate proves
@@ -66,30 +66,30 @@ committed `pnpm-lock.yaml`).
    how-it-was-built build had already made the same call for the other
    singleton and qualified ADR-0004 §2 to allow it ("build-time spec
    consumption is the @pm/tokens class"); this variant declares
-   `@pm/reference` as a dependency for that reason — turbo hashes the
+   `@pm/reference` as a dependency for that reason, turbo hashes the
    renderer into `@pm/vanilla#build`'s key (proven HIT → MISS → HIT), and
    nothing from it reaches a visitor: the output is static HTML, the one
    script is this variant's own. What stays this variant's: the `<head>`
-   (its asset base — the master's ordered sheet list arrives through
+   (its asset base, the master's ordered sheet list arrives through
    `page()`'s head callback, never re-typed), the chrome slot, and
    `assets/a11y.js`. `test/a11y-master-identity.test.mjs` holds each page to
    its master after the delivery strip, so the composition can add exactly
    those three things. The benchmarked surfaces above stay re-typed; a future
    benchmarked surface must not cite this decision.
 7. **`a11y.js` is the fourth vanilla `read()`** of the cart contract (badge
-   only — the page never writes storage), re-implemented for the reason
+   only, the page never writes storage), re-implemented for the reason
    `pdp.js` and `checkout.js` record; the uniqueness clause is checked. The
    mode toggles write ONLY their own `aria-pressed`: the emulation is CSS on
    the adjacent stage keyed on that attribute (ADR-0003 §5), which is what
    keeps the on-page caveat true. Since 2026-09-24 the four copies are held
    identical after comment stripping by a repo check
-   (`tools/repo-checks/test/cart-trio-identical.test.ts`) — the drift risk
+   (`tools/repo-checks/test/cart-trio-identical.test.ts`), the drift risk
    the no-module-graph justification never covered.
 8. **A JS-off "Place order" is answered by the static site, not by the assets
    binding's 405** (checkout-measure-prep, 2026-09-24). The checkout form is
    a real `method="post"`, so with JavaScript off the browser submits it
    natively, and the assets binding answers every non-GET with a zero-length
-   405 — measured on the held plane before the change. The paradigm's honest
+   405, measured on the held plane before the change. The paradigm's honest
    answer is the classic static-site shape: the form posts to a RELATIVE
    `place-order/` (the master's contract, so each variant answers its own),
    the Worker matches exactly `POST /vanilla/checkout/place-order/` and
@@ -97,12 +97,12 @@ committed `pnpm-lock.yaml`).
    baked into dist like every other (re-typed from its master,
    `packages/reference/surfaces/checkout/placed/`). Why not the form's own
    URL: on a static-assets Worker a request whose path has an asset behind it
-   is answered by the assets layer before the script runs — the first draft
+   is answered by the assets layer before the script runs, the first draft
    matched `POST /vanilla/checkout/`, its pre-merge pin passed, and the plane
    kept answering 405 because the script was never invoked. A path with no
    asset is the one request that reaches the script, so every page GET stays
    assets-first and the measured page pays no script invocation. The body is
-   never read — by the master's rule 1 it carries only `shipping=…`, and not
+   never read, by the master's rule 1 it carries only `shipping=…`, and not
    reading it is the stronger form of the plaque's promise, so the page states
    what the request carried rather than what was chosen. Rejected:
    `assets.run_worker_first` on the page path (a script invocation on every

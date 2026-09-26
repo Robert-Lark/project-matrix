@@ -10,7 +10,7 @@
       "src": "/assets/img/1611072-primary.avif",
       "width": 600,
       "height": 600,
-      "alt": "Miles Davis — Kind Of Blue, front cover"
+      "alt": "Miles Davis, Kind Of Blue, front cover"
     },
     "format": "Vinyl, LP, Album, Reissue, 180 Gram",
     "year": 1959,
@@ -29,7 +29,7 @@
       "src": "/assets/img/1611072-primary.avif",
       "width": 600,
       "height": 600,
-      "alt": "Miles Davis — Kind Of Blue, front cover"
+      "alt": "Miles Davis, Kind Of Blue, front cover"
     },
     "format": "Vinyl, LP, Album, Reissue, 180 Gram",
     "year": 1959,
@@ -38,7 +38,7 @@
     "genres": ["Jazz"],
     "styles": ["Modal", "Cool Jazz"],
     "images": [
-      { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis — Kind Of Blue, front cover" },
+      { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis, Kind Of Blue, front cover" },
       { "src": "/assets/img/1611072-back.avif", "width": 600, "height": 600, "alt": "Kind Of Blue, back cover" }
     ],
     "tracklist": [
@@ -62,7 +62,7 @@
         "slug": "1611072-miles-davis-kind-of-blue",
         "title": "Kind Of Blue",
         "artist": "Miles Davis",
-        "cover": { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis — Kind Of Blue" },
+        "cover": { "src": "/assets/img/1611072-primary.avif", "width": 600, "height": 600, "alt": "Miles Davis, Kind Of Blue" },
         "format": "Vinyl, LP, Album, Reissue, 180 Gram",
         "year": 1959,
         "priceFrom": { "amount": 21.5, "currency": "USD" },
@@ -75,7 +75,7 @@
         "slug": "1420493-john-coltrane-a-love-supreme",
         "title": "A Love Supreme",
         "artist": "John Coltrane",
-        "cover": { "src": "/assets/img/1420493-primary.avif", "width": 600, "height": 600, "alt": "John Coltrane — A Love Supreme" },
+        "cover": { "src": "/assets/img/1420493-primary.avif", "width": 600, "height": 600, "alt": "John Coltrane, A Love Supreme" },
         "format": "Vinyl, LP, Album, Reissue",
         "year": 1965,
         "priceFrom": { "amount": 28.0, "currency": "USD" },

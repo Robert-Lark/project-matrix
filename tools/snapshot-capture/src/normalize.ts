@@ -1,5 +1,5 @@
 /**
- * Phase 6 — normalize ONCE + freeze (ADR-0002 §6). Raw Discogs JSON becomes
+ * Phase 6, normalize ONCE + freeze (ADR-0002 §6). Raw Discogs JSON becomes
  * the two trays here and only here; no variant ever parses a raw response.
  * Every row is Zod-validated against @pm/data-contract before anything is
  * written, and the output mirrors the fixture snapshot layout so the edge
@@ -7,7 +7,7 @@
  *
  * Data-not-UI guardrails applied: durations to integer seconds, price as a
  * number, image dimensions as data read from the actual derivative files,
- * Discogs markup stripped from notes — and nothing pre-sorted, pre-formatted,
+ * Discogs markup stripped from notes, and nothing pre-sorted, pre-formatted,
  * or pre-computed for render. Row order is id-ascending: the one neutral,
  * deterministic order that is not a presentation choice.
  */
@@ -61,10 +61,10 @@ async function imageData(dirs: Dirs, file: string, alt: string): Promise<Image> 
 }
 
 /**
- * The manifest's SHA must attest a tree that actually produced the trays —
+ * The manifest's SHA must attest a tree that actually produced the trays,
  * a dirty working tree demonstrably did not (the capture code itself may be
  * uncommitted, as it was for this crate's first freeze). Dirty tree → null;
- * the commit that lands the trays is then the provenance of record — and MUST
+ * the commit that lands the trays is then the provenance of record, and MUST
  * be backfilled into the committed manifest (and re-put to any remote bucket
  * serving the crate) in the immediately-following commit. A published
  * `"commitSha": null` is a broken provenance chain in public: the strategy
@@ -108,8 +108,8 @@ export async function normalizePhase(
           dirs,
           file,
           idx === 0
-            ? `${artist} — ${title}, front cover`
-            : `${artist} — ${title}, release photo ${idx + 1}`,
+            ? `${artist}, ${title}, front cover`
+            : `${artist}, ${title}, release photo ${idx + 1}`,
         ),
       ),
     );
@@ -117,7 +117,7 @@ export async function normalizePhase(
     const cover = images[0];
     if (!cover) throw new Error(`[normalize] no cover image for ${id}`);
 
-    // formats[].text is free descriptive text ("Digipak", vinyl color) —
+    // formats[].text is free descriptive text ("Digipak", vinyl color),
     // folded into descriptions so it survives normalization as data.
     const formats = (raw.formats ?? []).map((f) => ({
       name: f.name,
@@ -183,7 +183,7 @@ export async function normalizePhase(
     throw new Error(`[normalize] ${failures.length} releases failed contract validation`);
   }
 
-  // The small tray is DERIVED from the full tray — one source of truth
+  // The small tray is DERIVED from the full tray, one source of truth
   // (fixture precedent).
   const summaries = details.map((d) =>
     ReleaseSummary.parse({
@@ -202,13 +202,13 @@ export async function normalizePhase(
   );
 
   // The environment "data volume" knob serves n up to PLP_N.max from the one
-  // crate (ADR-0002 §5) — a real crate below that is not a warning, it is a
+  // crate (ADR-0002 §5), a real crate below that is not a warning, it is a
   // broken premise (reserve exhaustion, upstream incident). Freeze refuses.
   // Deliberately small specs (probe/dev runs) bind to their own target.
   const floor = Math.min(plan.spec.targetReleases, PLP_N.max);
   if (details.length < floor) {
     throw new Error(
-      `[normalize] crate holds ${details.length} releases — below the floor of ${floor} ` +
+      `[normalize] crate holds ${details.length} releases, below the floor of ${floor} ` +
         `(min of spec target ${plan.spec.targetReleases} and the ?n= knob's ` +
         `${PLP_N.max}, ADR-0002 §5). Refusing to freeze.`,
     );
@@ -220,10 +220,10 @@ export async function normalizePhase(
   }
 
   // Orphaned derivatives (from releases tombstoned after an earlier derive
-  // pass) must not ride into the frozen artifact — remove, loudly. Raw
+  // pass) must not ride into the frozen artifact, remove, loudly. Raw
   // listing on purpose: stale atomic-write leftovers (*.tmp) are orphans too.
   // A thumb (`X.thumb.avif`, derive's 160px tier) is referenced exactly when
-  // its parent derivative `X.avif` is — the trays never name thumbs (renders
+  // its parent derivative `X.avif` is, the trays never name thumbs (renders
   // derive the src by convention), so referenced-set membership is inherited.
   const isLiveThumb = (f: string) =>
     f.endsWith(".thumb.avif") && referenced.has(f.replace(/\.thumb\.avif$/, ".avif"));
@@ -236,7 +236,7 @@ export async function normalizePhase(
   // Committed integrity index: anyone can verify the (uncommitted) image
   // bytes against the public repo without the repo redistributing them.
   // originalSha256 chains each derivative to the retained Discogs original;
-  // the chain necessarily ends there — the live URLs are signed, auth-gated,
+  // the chain necessarily ends there, the live URLs are signed, auth-gated,
   // and not byte-stable, so no public hash of Discogs's own bytes can exist.
   // Thumbs (derive's 160px tier) are indexed artifacts like any other: each
   // `X.thumb.avif` entry chains to the SAME original as its parent `X.avif`
@@ -267,9 +267,9 @@ export async function normalizePhase(
     parentEntries.map(async (parent) => {
       const file = parent.file.replace(/\.avif$/, ".thumb.avif");
       const path = paths.derivative(dirs, file);
-      // derive always mints the thumb beside the derivative — a missing one
+      // derive always mints the thumb beside the derivative, a missing one
       // here is a pipeline bug (stale img dir), not a data gap. Fail loudly.
-      if (!exists(path)) throw new Error(`[normalize] missing thumb ${file} — re-run derive`);
+      if (!exists(path)) throw new Error(`[normalize] missing thumb ${file}, re-run derive`);
       const bytes = readFileSync(path);
       const meta = await sharp(path).metadata();
       if (!meta.width || !meta.height) throw new Error(`[normalize] no dimensions in ${file}`);
@@ -289,7 +289,7 @@ export async function normalizePhase(
   );
 
   // The committed curation receipt (ADR-0001 §9): the spec, per-label stats,
-  // and every tombstone with its reason — enough to audit how the crate was
+  // and every tombstone with its reason, enough to audit how the crate was
   // cut without the gitignored working state.
   const tombstoneList = listDir(paths.tombstoneDir(dirs))
     .map((f) => readJson<Tombstone>(join(paths.tombstoneDir(dirs), f)))
@@ -307,7 +307,7 @@ export async function normalizePhase(
   const newDetails = JSON.stringify(details) + "\n";
 
   // Content-aware freeze: when the trays are byte-identical to the existing
-  // frozen artifact, the dated manifest is PRESERVED — a no-op re-run must
+  // frozen artifact, the dated manifest is PRESERVED, a no-op re-run must
   // not drift capturedAt/commitSha on a committed snapshot (ADR-0001 §9).
   const existingSummaries = exists(paths.summaries(dirs))
     ? readFileSync(paths.summaries(dirs), "utf8")
@@ -339,7 +339,7 @@ export async function normalizePhase(
   writeJsonAtomic(join(dirs.crate, "curation.json"), curation);
 
   log(
-    `[normalize] ${unchanged ? "unchanged — manifest preserved" : "frozen"}: ` +
+    `[normalize] ${unchanged ? "unchanged, manifest preserved" : "frozen"}: ` +
       `${details.length} releases, ${referenced.size} images, ` +
       `captured-at ${manifest.capturedAt}, sha ${manifest.commitSha ?? "null"}`,
   );

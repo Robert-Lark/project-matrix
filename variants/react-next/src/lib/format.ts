@@ -1,5 +1,5 @@
 // Canonical formatting rules (packages/reference/render/lib.mjs is the rules
-// of record) — re-implemented, not shared (DIFF-TO-STARTER.md; ADR-0002 §6
+// of record), re-implemented, not shared (DIFF-TO-STARTER.md; ADR-0002 §6
 // kept display strings out of the trays for exactly this). The drift gate
 // proves the strings match; it does not care that the implementation lives
 // twice.

@@ -1,8 +1,8 @@
-// The app router — fetch-shaped (web Request in, web Response out), which is
+// The app router, fetch-shaped (web Request in, web Response out), which is
 // exactly a Worker's fetch handler (the spike's verdict; ADR-0004 second
 // addendum). Built PER REQUEST so the controller actions close over this
 // request's `env` (the Workers way to reach the EDGE service binding; the
-// spike had no bindings so it built once — the delta is recorded in
+// spike had no bindings so it built once, the delta is recorded in
 // DIFF-TO-STARTER.md). Two routes and one middleware make the per-request
 // construction cost negligible, and nothing is cached across requests that
 // could leak one request's data into another.

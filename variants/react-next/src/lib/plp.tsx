@@ -1,11 +1,11 @@
 /**
- * The react-next PLP — this variant's OWN re-implementation of the canonical
+ * The react-next PLP. This variant's OWN re-implementation of the canonical
  * catalogue markup (ADR-0003 §1: a component is a spec, re-implemented per
  * paradigm; `packages/reference/surfaces/plp/index.html` is the contract of
  * record and `packages/reference/render/plp.mjs` is the renderer that
  * produces it).
  *
- * DELIBERATELY SELF-CONTAINED — no import from `render.tsx`, `format.ts` or
+ * DELIBERATELY SELF-CONTAINED, no import from `render.tsx`, `format.ts` or
  * `cart.ts`, and the release card is re-typed here rather than shared. That is
  * the `pdp-format.ts`/`pdp-cart.ts` precedent, and it is load-bearing rather
  * than stylistic: `tools/origin-suite/suite/pdp.test.ts` pins the editorial
@@ -21,7 +21,7 @@
  * PDP guards call `render.tsx` and `pdp.tsx`.
  *
  * WHERE EVERYTHING COMES FROM: THE PAYLOAD. This module computes NO facet
- * buckets, filters nothing, sorts nothing — the tray (`GET /api/plp` →
+ * buckets, filters nothing, sorts nothing, the tray (`GET /api/plp` →
  * `PlpPage`) carries the paginated slice, the facets RECOUNTED over the
  * filtered set, and the query the data plane APPLIED, and the whole
  * `.pm-plp` block is rendered from that one object. That is ADR-0005 §5's
@@ -29,7 +29,7 @@
  * the last inch: the rail's selected facet, the sort select's chosen option
  * and the search box's value come from `payload.applied`, never from the URL
  * the island was asked for. The distinction is live on the two client-cache
- * arms — under `keepPreviousData`/`previousData` the PREVIOUS tray is on
+ * arms, under `keepPreviousData`/`previousData` the PREVIOUS tray is on
  * screen while a new condition is in flight, and controls rendered from the
  * request would show one condition's selection over another condition's
  * grid: a toggle-off link that does not toggle off. `carry` contributes only
@@ -59,11 +59,11 @@ import {
 // them here historically; the definitions moved beside the href rule.
 export { PER_PAGE, clampPlpN, clampPlpPage };
 
-/** Designated hosts — `packages/reference/render/shell.mjs` HOSTS, ported.
+/** Designated hosts, `packages/reference/render/shell.mjs` HOSTS, ported.
  *  Re-typed rather than imported from render.tsx for the chunk reason above;
  *  only the two entries this surface actually links are carried. A card's
  *  title links the PDP's DESIGNATED HOST (`/vanilla/pdp/…`), never this
- *  variant's own PDP — the sparse-matrix rule. */
+ *  variant's own PDP, the sparse-matrix rule. */
 export const PLP_HOSTS = {
   pdp: (slug: string) => `/vanilla/pdp/${slug}/`,
 };
@@ -74,19 +74,19 @@ export const STYLE_CUT = 12;
 export const FORMAT_CUT = 8;
 
 /** The sort select's options (plp.mjs SORT_OPTIONS). The default is the
- *  snapshot's committed order — id-ascending — labelled as such. */
+ *  snapshot's committed order, id-ascending, labelled as such. */
 export const SORT_OPTIONS: readonly (readonly [PlpSort | "", string])[] = [
   ["", "Catalogue order"],
-  ["year-desc", "Year — newest first"],
-  ["year-asc", "Year — oldest first"],
-  ["price-asc", "Price — low to high"],
-  ["price-desc", "Price — high to low"],
-  ["title", "Title — A to Z"],
+  ["year-desc", "Year, newest first"],
+  ["year-asc", "Year, oldest first"],
+  ["price-asc", "Price, low to high"],
+  ["price-desc", "Price, high to low"],
+  ["title", "Title, A to Z"],
 ];
 
 /* ── Canonical formatting rules ───────────────────────────────────────────────
  * `packages/reference/render/lib.mjs` is the rules of record; re-implemented,
- * not shared (the `format.ts` precedent — ADR-0002 §6 kept display strings out
+ * not shared (the `format.ts` precedent, ADR-0002 §6 kept display strings out
  * of the trays for exactly this). Duplicated from `format.ts` rather than
  * imported, for the client-chunk reason in this file's header comment.
  */
@@ -114,7 +114,7 @@ export function metaLine(summary: Pick<ReleaseSummary, "format" | "year">): stri
 
 /* ── Components ───────────────────────────────────────────────────────────── */
 
-/** `packages/reference/render/lib.mjs namedGlyph` — a bare "—" is not an
+/** `packages/reference/render/lib.mjs namedGlyph`, a bare "–" is not an
  *  accessible name, so the glyph is hidden and a real phrase supplied beside
  *  it. Both arguments are AUTHORED literals, never tray data. */
 function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
@@ -130,12 +130,12 @@ function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
  * The release card (`shell.mjs releaseCard`), with the PLP's POSITIONAL image
  * attributes (`plp.mjs`): card 1 eager + `fetchpriority="high"`, cards 2-4
  * eager, the rest `loading="lazy" decoding="async"`; every card carries the
- * same `sizes`. The index boundary is `< 4`, and it is a needle — get it
+ * same `sizes`. The index boundary is `< 4`, and it is a needle, get it
  * wrong and exactly one of twenty-four cards diverges.
  *
  * React spells the prop `fetchPriority` and emits it CAMEL-CASED into the wire
  * bytes; a browser's tokenizer lowercases it on parse, so the served DOM
- * carries the master's `fetchpriority`. Measured, not assumed — and it is why
+ * carries the master's `fetchpriority`. Measured, not assumed, and it is why
  * the identity guard lowercases attribute names before normalizing (linkedom
  * does not). React ALSO hoists a `<link rel="preload" as="image">` out of the
  * card for every eager image; `link` is a DELIVERY element the drift gate
@@ -168,7 +168,7 @@ function ReleaseCard({ summary, index }: { summary: ReleaseSummary; index: numbe
         <p className="pm-release-card__meta">{metaLine(summary)}</p>
         <div className="pm-release-card__foot">
           <span className="pm-release-card__price">
-            {price ?? <NamedGlyph glyph="—" name="No price listed" />}
+            {price ?? <NamedGlyph glyph="–" name="No price listed" />}
           </span>
           <span className="pm-release-card__stock">{stockLine(summary.numForSale)}</span>
         </div>
@@ -190,7 +190,7 @@ type FacetParam = "genre" | "style" | "format";
 
 /** The condition the block's hrefs are built from: the payload's served
  *  state plus the carried knobs. `n` is the payload's `perPage`, never a
- *  prop — the served value is the only one the hrefs may spell. */
+ *  prop, the served value is the only one the hrefs may spell. */
 function blockCondition(payload: PlpPage, carry: PlpCarry): PlpCondition {
   return {
     n: payload.perPage,
@@ -220,7 +220,7 @@ function HiddenKnobs({
   own: "q" | "sort";
   /** A browser serializes a GET form in TREE order, so the knobs that
    *  canonically FOLLOW the form's own control (the sort form's `q`) render
-   *  AFTER it — `side="after"` — and a JS-off submit spells the condition the
+   *  AFTER it, `side="after"`, and a JS-off submit spells the condition the
    *  way the href rule does (plp.mjs `hiddenKnobs`; verify-slice 2026-09-18). */
   side: "before" | "after";
 }) {
@@ -253,12 +253,12 @@ function HiddenKnobs({
 }
 
 /**
- * The catalogue, assembled — the whole `div.pm-plp` subtree.
+ * The catalogue, assembled, the whole `div.pm-plp` subtree.
  *
  * `onNavigate` is the seam every data strategy plugs into. When it is absent
  * (the server render, and this guard's render) every anchor is exactly the
  * master's plain link and every form is a plain GET form, so the SERVED page
- * is byte-faithful and works JS-off — ADR-0005 §8's "the anchor-link core
+ * is byte-faithful and works JS-off, ADR-0005 §8's "the anchor-link core
  * stays JS-off functional". When a strategy island supplies it, the click or
  * submit is intercepted and the strategy's data layer answers instead, with
  * the SAME condition the anchor's href spells.
@@ -284,7 +284,7 @@ export function PlpArticle({
   const { applied } = payload;
   const shown = payload.items.length;
   const start0 = (payload.page - 1) * payload.perPage;
-  // An empty page reads "0", not "0–0" — one sentence, three renderers.
+  // An empty page reads "0", not "0–0", one sentence, three renderers.
   const range = shown === 0 ? "0" : `${start0 + 1}–${start0 + shown}`;
   const PAGE_WINDOW = 5;
   const span = Math.min(payload.totalPages, PAGE_WINDOW);
@@ -341,7 +341,7 @@ export function PlpArticle({
         <ul className="pm-facets__list" role="list">
           {list.map((b) => {
             const isSelected = b.value === selected;
-            // A selected facet's href REMOVES its param — the same link
+            // A selected facet's href REMOVES its param, the same link
             // toggles it off. Every facet href resets `page`.
             const next: PlpCondition = { ...condition, page: 1, [param]: isSelected ? null : b.value };
             return (
@@ -400,7 +400,7 @@ export function PlpArticle({
               {/* `key`: both controls are UNCONTROLLED (`defaultValue`), the
                   plain-GET-form shape, and React never re-applies a changed
                   defaultValue to a mounted select or a dirty input. So on
-                  Back/Forward — `applied` changes under a live island — the
+                  Back/Forward, `applied` changes under a live island, the
                   select kept the old sort and the box the old search over a
                   grid that had moved: one condition's controls over another's,
                   the very thing addendum Q2 exists to prevent. Keying each on

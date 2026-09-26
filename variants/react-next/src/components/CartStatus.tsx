@@ -7,7 +7,7 @@ interface AnnounceDetail {
   message: string;
 }
 
-/** The shell's live region (WCAG 4.1.3) — a sibling of `<main>`, not inside
+/** The shell's live region (WCAG 4.1.3), a sibling of `<main>`, not inside
  *  it, so it is reached by event rather than prop. Starts empty (the
  *  canonical served state); a successful add anywhere on the page sets its
  *  text via the shared cart-announce event. */

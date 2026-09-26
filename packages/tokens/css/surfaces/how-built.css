@@ -1,9 +1,9 @@
 /*
- * Surface module — How it was built (front-Worker static singleton, the home
+ * Surface module, How it was built (front-Worker static singleton, the home
  * precedent). The decision record as an INDEX, not a reading surface: a
  * sticky table of contents beside long-form prose. Content is GENERATED at
- * build from docs/ — the ADR index with each ADR's addenda, the build-log
- * phase headings, the reviews — and from /methodology/'s own <h2 id> list;
+ * build from docs/, the ADR index with each ADR's addenda, the build-log
+ * phase headings, the reviews, and from /methodology/'s own <h2 id> list;
  * never re-typed. The decision map is NOT rendered (PRD
  * docs/prds/how-it-was-built-build.md, Decision 1); an earlier version of
  * this comment said "decision-map rows", which was never true.
@@ -17,7 +17,7 @@
  *     <div class="pm-doc__body">
  *       <header>
  *         …kicker + h1…
- *         <p class="pm-doc__build">…the dek: the build line — which commit
+ *         <p class="pm-doc__build">…the dek: the build line, which commit
  *           the deep links pin, or that the tree was unclean…</p>
  *       </header>
  *       <div class="pm-prose">
@@ -92,8 +92,8 @@
 .pm-doc__body { min-width: 0; }
 
 /* The build line is a receipt, in the quiet voice: it names the commit the
-   deep links pin (or says the tree was unclean). It is the header's dek —
-   the slot prose.css leaves to the surface composition — and the one line on
+   deep links pin (or says the tree was unclean). It is the header's dek,
+   the slot prose.css leaves to the surface composition, and the one line on
    the page that is neither an index entry nor prose. */
 .pm-doc__build {
   margin: var(--space-stack-sm) 0 0;

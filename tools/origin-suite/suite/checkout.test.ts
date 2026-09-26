@@ -7,32 +7,32 @@
  * class is security-floor.test.ts's.
  *
  *  - The form page SERVES with the chrome injected for this surface and the
- *    JS-off statement the master carries — including the sentence this unit
+ *    JS-off statement the master carries, including the sentence this unit
  *    added, that Place order posts natively to a confirmation page.
  *  - The POST is answered. Until this unit a JS-off "Place order" posted to
  *    the form's own URL and met the assets binding's zero-length 405
  *    (measured on the held plane: status 405, 0 body bytes). The form now
- *    posts to a RELATIVE `place-order/` — a path with no asset behind it,
- *    the one request that reaches the variant's script — and gets a 303 to a
+ *    posts to a RELATIVE `place-order/`, a path with no asset behind it,
+ *    the one request that reaches the variant's script, and gets a 303 to a
  *    page that exists. The endpoint is derived from the SERVED form's action
  *    exactly as the browser derives it, never typed twice. The Worker never
  *    reads the body, so an express body, a standard body and an EMPTY body
- *    all land on the same Location — pinned, because "the page cannot name
+ *    all land on the same Location, pinned, because "the page cannot name
  *    the method chosen" is a claim the placed copy makes.
  *  - Why not the form's own URL, pinned as behaviour: a POST to the form
  *    page STILL meets the binding's 405 (an asset behind the path answers
- *    before the script runs — Cloudflare's routing page, fetched 2026-09-24:
+ *    before the script runs, Cloudflare's routing page, fetched 2026-09-24:
  *    "Cloudflare will first attempt to serve static assets if one matches
  *    the incoming request"), and the first draft of the route sat unreached
  *    behind exactly that. A GET of the endpoint is not a page: 404.
  *  - What the browser would post: the served form carries exactly two
- *    `name=` attributes, both the shipping radios — the master's rule 1 on
+ *    `name=` attributes, both the shipping radios, the master's rule 1 on
  *    the wire, and the whole reason the 303 is safe to issue without reading.
  *  - The placed page: 200, chrome injected for THIS surface, `noindex`, no
  *    form, exactly the master's sheets in order, every linked asset 200 from
  *    the variant's own tree, the way back a link.
  *  - The registry: checkout serves in vanilla, with two planned, no lab
- *    bundle yet — no batch is minted by this unit, and the front build
+ *    bundle yet, no batch is minted by this unit, and the front build
  *    refuses the flag until one is.
  */
 import { dirname, join } from "node:path";
@@ -49,7 +49,7 @@ const FORM = "/vanilla/checkout/";
 const PLACED = "/vanilla/checkout/placed/";
 
 /** The POST endpoint, derived from the served form's `action` the way the
- *  browser derives it — resolved against the page URL. */
+ *  browser derives it, resolved against the page URL. */
 async function placeOrderPath(): Promise<string> {
   const body = await (await get(FORM)).text();
   const action = body.match(/<form class="pm-checkout__form" method="post" action="([^"]*)">/)?.[1];
@@ -74,7 +74,7 @@ function sheetTails(html: string): string[] {
 }
 
 /** The master's sheet list, rendered in-process (file URL, the drift gate's
- *  pattern) — never typed. */
+ *  pattern), never typed. */
 async function masterSheets(which: "form" | "placed"): Promise<string[]> {
   const checkout = await import(
     pathToFileURL(join(repoRoot, "packages", "reference", "render", "checkout.mjs")).href
@@ -82,7 +82,7 @@ async function masterSheets(which: "form" | "placed"): Promise<string[]> {
   return sheetTails(which === "form" ? checkout.renderCheckout({}) : checkout.renderCheckoutPlaced({}));
 }
 
-describe("/vanilla/checkout/ — the form page, served", () => {
+describe("/vanilla/checkout/, the form page, served", () => {
   it("the registry: served by vanilla, two planned, host vanilla, no lab bundle yet", () => {
     const controls = SURFACE_CONTROLS["checkout"]!;
     expect(controls.variants).toEqual(["vanilla"]);
@@ -120,7 +120,7 @@ describe("/vanilla/checkout/ — the form page, served", () => {
 });
 
 describe("the JS-off Place order is answered, not dead-ended", () => {
-  it("the form's action resolves to a path nothing in dist serves — the one request that reaches the script", async () => {
+  it("the form's action resolves to a path nothing in dist serves, the one request that reaches the script", async () => {
     const endpoint = await placeOrderPath();
     expect(endpoint).toBe("/vanilla/checkout/place-order/");
     // Not a page: a GET of it is the binding's 404, never a document.
@@ -137,14 +137,14 @@ describe("the JS-off Place order is answered, not dead-ended", () => {
     }
   });
 
-  it("a POST with no body at all is answered the same way — the Worker reads nothing", async () => {
+  it("a POST with no body at all is answered the same way, the Worker reads nothing", async () => {
     const res = await post(await placeOrderPath(), null);
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe(PLACED);
   });
 
   it("the route is one path and one method: a POST to any PAGE still meets the binding's 405, a non-POST to the endpoint its 404", async () => {
-    // The pre-unit shape survives everywhere but the endpoint — including on
+    // The pre-unit shape survives everywhere but the endpoint, including on
     // the form page itself, which is the proof that the script never sees a
     // request an asset answers (the mechanism the first draft ran into).
     for (const [path, method, status] of [
@@ -160,7 +160,7 @@ describe("the JS-off Place order is answered, not dead-ended", () => {
     }
   });
 
-  it("following the redirect lands on a 200 HTML page — the browser's path, end to end", async () => {
+  it("following the redirect lands on a 200 HTML page, the browser's path, end to end", async () => {
     const res = await get(await placeOrderPath(), {
       method: "POST",
       redirect: "follow",
@@ -174,7 +174,7 @@ describe("the JS-off Place order is answered, not dead-ended", () => {
   });
 });
 
-describe("/vanilla/checkout/placed/ — where the JS-off order lands", () => {
+describe("/vanilla/checkout/placed/, where the JS-off order lands", () => {
   it("serves 200 with the canonical shell, the chrome injected for the CHECKOUT surface, and noindex", async () => {
     const res = await get(PLACED);
     expect(res.status).toBe(200);
@@ -185,7 +185,7 @@ describe("/vanilla/checkout/placed/ — where the JS-off order lands", () => {
     expect(body).toContain('<a class="pm-skip pm-button" href="#main">Skip to content</a>');
     // A confirmation reached by posting has no standalone meaning to index.
     expect(body).toContain('<meta name="robots" content="noindex">');
-    // The chrome: exactly one, stamped for this surface — the second path
+    // The chrome: exactly one, stamped for this surface, the second path
     // segment is `checkout`, so the switcher and the beacon tag read checkout.
     expect(count(body, 'data-pm-chrome="1"')).toBe(1);
     expect(body).toContain('data-pm-variant="vanilla"');

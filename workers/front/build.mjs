@@ -1,5 +1,5 @@
 // Assemble the front Worker's static assets: the home surface plus the
-// /_pm/* instrumentation files (ADR-0001 §6, ADR-0004 §7) — the chrome
+// /_pm/* instrumentation files (ADR-0001 §6, ADR-0004 §7), the chrome
 // stylesheet from @pm/switcher and the pinned web-vitals client bundle from
 // @pm/measurement. Instrumentation bytes live ONLY on this known path so the
 // harness strips them precisely from measured KB.
@@ -7,26 +7,26 @@
 // The home surface (home-surface ticket, ADR-0007) is composed at build time:
 //  - %%PM_TOKENS_CSS%% / %%PM_HOME_CSS%% inline the render-critical CSS from
 //    the REAL @pm/tokens sources (single source of truth; the singleton paints
-//    in one round trip — it is off the benchmarked matrix, so the variants'
+//    in one round trip. It is off the benchmarked matrix, so the variants'
 //    canonical delivery contract is not in play, while the font loading
 //    markup stays canonical per @pm/tokens/fonts/loading-markup.html).
-//  - %%SNAP_*%% fields come from the committed crate SnapshotManifest — the
-//    same document served live at /api/snapshot — so the page's on-surface
+//  - %%SNAP_*%% fields come from the committed crate SnapshotManifest, the
+//    same document served live at /api/snapshot, so the page's on-surface
 //    receipts (release count, freeze date, commit) structurally cannot drift
 //    from the plane's. Hand-typing them is how a wrong SHA ships.
 //
 // The published-runs artifacts (first editorial bench batch, ADR-0008 §3's
 // owner obligation) are built here too: the per-surface lab bundle at
 // /_pm/lab/{surface}.json is GENERATED from the committed receipts under
-// lab/receipts/ — the served file and the bundle the Worker imports and
-// hands renderChrome are the SAME artifact, so they cannot drift — and the
+// lab/receipts/, the served file and the bundle the Worker imports and
+// hands renderChrome are the SAME artifact, so they cannot drift, and the
 // methodology page (ADR-0001 §9) is composed like home, every number on it
 // substituted from a committed artifact, never typed.
 //
 // The how-it-was-built page (ADR-0008 §8; docs/prds/how-it-was-built-build.md)
 // is NOT composed here: it is the committed master's own renderer
 // (@pm/reference) under this Worker's head, written by stampBuild() at the
-// end of this build — and again by every re-stamp — so its deep links pin the
+// end of this build, and again by every re-stamp, so its deep links pin the
 // exact SHA /_pm/build.json attests. See how-built-page.mjs and
 // stamp-build.mjs.
 import {
@@ -67,7 +67,7 @@ mkdirSync(join(dist, "pm", "fonts"), { recursive: true });
 mkdirSync(join(dist, "methodology"), { recursive: true });
 
 // The security-header floor for the assets-first paths (src/security-floor.js
-// — ONE definition with the Worker's own floor). Workers Static Assets parse
+//, ONE definition with the Worker's own floor). Workers Static Assets parse
 // a `_headers` file at the assets root and never serve it; it applies ONLY to
 // asset responses (Cloudflare docs, fetched 2026-09-18), which is exactly the
 // set the script never sees: /, /methodology/, /how-it-was-built/, /_pm/*,
@@ -96,10 +96,10 @@ if (
   );
 }
 // Home's Product-page row href (repo-shopfront): the crate's featured PDP,
-// whose slug is READ from the committed summaries tray rather than typed — a
+// whose slug is READ from the committed summaries tray rather than typed, a
 // typed slug is the hand-typed-SHA failure one field over. The id is a
 // constant of the DESIGN (`CRATE_FEATURED.pdp`, packages/reference/render/
-// lib.mjs — the crate predates curation.json's `featured` field; the vanilla
+// lib.mjs, the crate predates curation.json's `featured` field; the vanilla
 // build carries the editorial twin the same way). summaries.json is declared
 // as a turbo input beside the manifest for the same cache reason.
 const CRATE_FEATURED_PDP_ID = 896191;
@@ -114,19 +114,19 @@ const featuredSummary = Array.isArray(crateSummaries)
   : undefined;
 if (typeof featuredSummary?.slug !== "string" || !/^[a-z0-9-]+$/.test(featuredSummary.slug)) {
   throw new Error(
-    `front: crate summaries carry no usable slug for the featured PDP id ${CRATE_FEATURED_PDP_ID} — home's Product page row cannot link a product it cannot name`,
+    `front: crate summaries carry no usable slug for the featured PDP id ${CRATE_FEATURED_PDP_ID}, home's Product page row cannot link a product it cannot name`,
   );
 }
 const pdpFeaturedHref = `/vanilla/pdp/${featuredSummary.slug}/`;
 
-// ── /_pm/lab/* — the published-runs artifacts (ADR-0008 §3; ADR-0001 §9) ──
+// ── /_pm/lab/*, the published-runs artifacts (ADR-0008 §3; ADR-0001 §9) ──
 // Inputs are COMMITTED: lab/receipts/{surface}-{profile}.json (raw batch
 // receipts) + lab/chrome-constant.json (the addendum-F probe artifact) +
 // lab/fit.mjs (the fit templates). C2 as build mechanism: every reading
 // carries its receipt by construction, and a fit sentence the receipts do
 // not support REFUSES to build (ADR-0001 addendum C).
 //
-// The REFUSALS live in lab/publish.mjs (workers-hardening, 2026-09-25) — a
+// The REFUSALS live in lab/publish.mjs (workers-hardening, 2026-09-25), a
 // pure module this file composes and test/publish-refusals.test.js drives
 // with one committed malformed fixture per refusal class. This file reads
 // the artifacts, hands them to the gate, and writes what the gate admits;
@@ -137,7 +137,7 @@ const roundTo = (v, places) => Math.round(v * 10 ** places) / 10 ** places;
 // esbuild bundles the exports the build needs in-process (the mechanism the
 // chrome-constant identity gate introduced; hoisted here because the surface
 // registry drives the receipt loop too). The lab-publishing surfaces are the
-// `labBundle`-flagged entries of SURFACE_CONTROLS — one registry for the
+// `labBundle`-flagged entries of SURFACE_CONTROLS, one registry for the
 // build, the Worker's served bundles, and the origin suite's per-surface
 // bundle leg, so registering a surface IS the wiring, not a reminder to wire.
 const switcherBundle = buildSync({
@@ -163,7 +163,7 @@ const LAB_SURFACES = labSurfacesOf(switcherMod.SURFACE_CONTROLS);
 const labDir = join(root, "lab");
 const labReceiptsDir = join(labDir, "receipts");
 // Per-surface accumulation: a receipt joins its surface's publication, and
-// each surface's batch discipline is checked against ITS OWN batch below —
+// each surface's batch discipline is checked against ITS OWN batch below,
 // two surfaces may legitimately publish batches minted on different days at
 // different SHAs (each is one publication; the mixed-batch refusals are
 // per-surface, never cross-surface).
@@ -178,9 +178,9 @@ const gateDeps = {
 for (const file of readdirSync(labReceiptsDir).sort()) {
   if (!file.endsWith(".json")) continue;
   const receipt = JSON.parse(readFileSync(join(labReceiptsDir, file), "utf8"));
-  // Every refusal between this file and a published cell — provenance,
+  // Every refusal between this file and a published cell, provenance,
   // estimator, surface identity, the fence, the fit template, the
-  // interaction clauses, the band rule — is the gate's (publish.mjs
+  // interaction clauses, the band rule, is the gate's (publish.mjs
   // admitReceipt → bundleFromReceipt), each with its fixture.
   const { surface, bundle } = admitReceipt(file, receipt, gateDeps);
   profilesBySurface[surface][receipt.profile.id] = {
@@ -203,7 +203,7 @@ for (const surface of LAB_SURFACES) {
 // state every unbuilt surface is in, and the state a surface is in
 // between a code change and the batch that re-measures it. The bundle still
 // builds (empty), the chrome renders its designed empty states everywhere,
-// and the pages that quote lab numbers say so plainly — the same rule as
+// and the pages that quote lab numbers say so plainly, the same rule as
 // every other number here: none without its artifact.
 const editorialReceipts = receiptsBySurface.editorial ?? [];
 const published = editorialReceipts.length > 0;
@@ -219,7 +219,7 @@ for (const surface of LAB_SURFACES) {
 // slice's first draft, and verify-slice killed it unanimously: nothing tied
 // it to the registry, so flagging a surface and forgetting its import line
 // left every guard green while the surface's pages rendered the empty state
-// over a fully published bundle — the exact serve/embed drift the file's own
+// over a fully published bundle, the exact serve/embed drift the file's own
 // comment promises is impossible. Deleting BOTH import lines passed all 478
 // legs, which made the slice's own Worker change unguarded.
 //
@@ -232,7 +232,7 @@ const generatedDir = join(root, "generated");
 mkdirSync(generatedDir, { recursive: true });
 writeFileSync(
   join(generatedDir, "lab-bundles.js"),
-  "// GENERATED by workers/front/build.mjs — do not edit.\n" +
+  "// GENERATED by workers/front/build.mjs, do not edit.\n" +
     "// One entry per labBundle-flagged surface in SURFACE_CONTROLS. Each bundle\n" +
     "// is imported from the very file served at /_pm/lab/{surface}.json, so the\n" +
     "// embedded object and the served artifact cannot drift.\n" +
@@ -244,14 +244,14 @@ writeFileSync(
     "};\n",
 );
 
-// The chrome constant (ADR-0001 addendum F) is OPTIONAL-BUT-VALIDATED —
+// The chrome constant (ADR-0001 addendum F) is OPTIONAL-BUT-VALIDATED,
 // absent, the methodology page renders its designed "not yet measured"
 // statement; present, it meets the full refusal set in publish.mjs
 // admitChromeConstant (kind/dirty, finite deltas, provenance with the
 // bootstrap pin, populated, renderContext, and the addendum-N hole-1
-// IDENTITY gate: the build re-renders the fragment the Worker will serve —
+// IDENTITY gate: the build re-renders the fragment the Worker will serve,
 // the REAL renderer against the lab bundles written above, under the exact
-// renderContext the probe recorded — and refuses when the sha256 differs).
+// renderContext the probe recorded, and refuses when the sha256 differs).
 const chromeConstantPath = join(labDir, "chrome-constant.json");
 const chromeConstant = existsSync(chromeConstantPath)
   ? JSON.parse(readFileSync(chromeConstantPath, "utf8"))
@@ -259,7 +259,7 @@ const chromeConstant = existsSync(chromeConstantPath)
 if (chromeConstant) {
   // The lab bundles are read back from the artifacts written above: the
   // Worker imports those very files, so the identity comparison rides the
-  // exact objects it will serve — every registered surface, because the
+  // exact objects it will serve, every registered surface, because the
   // probe's renderContext may name any of them.
   const labBundles = Object.fromEntries(
     LAB_SURFACES.map((s) => {
@@ -280,11 +280,11 @@ if (chromeConstant) {
 }
 
 // The default-profile bundle backs home's build-derived numbers (the chrome
-// itself defaults to avg-broadband-desktop — packages/switcher chrome.ts).
+// itself defaults to avg-broadband-desktop, packages/switcher chrome.ts).
 let labFacts = null;
 if (published) {
   // Home's spread quotes the EDITORIAL surface by design (ADR-0007 §4/§5:
-  // the front door's measured row is the editorial batch) — this read stays
+  // the front door's measured row is the editorial batch). This read stays
   // surface-specific on purpose; it is content, not pipeline.
   const defaultBundle = profilesBySurface.editorial["avg-broadband-desktop"];
   if (!defaultBundle) {
@@ -306,12 +306,12 @@ if (published) {
     variantCount: editorialReceipts[0].targets.length,
     jsMin: Math.min(...defaultJsKb),
     jsMax: Math.max(...defaultJsKb),
-    // The receipt behind home's spread — taken from the readings themselves,
+    // The receipt behind home's spread, taken from the readings themselves,
     // never composed from a filename.
     receiptUrl: defaultJsCells[0].receipt.url,
   };
   // Batch integrity (one SHA / one date / one location / one shape per
-  // publication) is enforced in the per-surface loop above — it moved there
+  // publication) is enforced in the per-surface loop above. It moved there
   // when the pipeline generalised off `editorial-`, so it now runs for EVERY
   // surface with receipts rather than only when the editorial publication
   // exists. The statements labFacts publishes ("ran <date>", "labeled in
@@ -336,7 +336,7 @@ const homeSpread = labFacts
 // the served bundle one click away falsified it: react-next's warm median is
 // 32 ms on average broadband, and runs span 24-32 (verify-slice, conformance
 // lens). A hand-typed number the site's own artifact contradicts is the exact
-// class this pipeline exists to make impossible — and it would have gone stale
+// class this pipeline exists to make impossible, and it would have gone stale
 // again at the next editorial batch even if it had been right.
 const inpSpread = (() => {
   const receipts = receiptsBySurface.editorial ?? [];
@@ -352,7 +352,7 @@ const inpSpread = (() => {
   // WARM only. The reading table publishes the warm column (ADR-0001 §5), so
   // "the published medians" has to mean those: a cold median outside the warm
   // range would otherwise widen a sentence about cells that do not exist
-  // anywhere on the site — the same class of error this sentence replaced,
+  // anywhere on the site, the same class of error this sentence replaced,
   // one abstraction up (verify-slice, anti-rigging lens).
   const medians = receipts
     .flatMap((r) => r.targets.map((t) => t.columns.warm.medians.webVitals.INP))
@@ -367,7 +367,7 @@ const inpSpread = (() => {
     `columns, falls between ` +
     `<span class="num">${esc(Math.min(...runs))}</span> and <span class="num">${esc(Math.max(...runs))}</span>&nbsp;ms, ` +
     `and the published (warm) medians span <span class="num">${esc(Math.min(...medians))}</span>–` +
-    `<span class="num">${esc(Math.max(...medians))}</span>&nbsp;ms — one narrow band, every column inside it.`
+    `<span class="num">${esc(Math.max(...medians))}</span>&nbsp;ms, one narrow band, every column inside it.`
   );
 })();
 
@@ -376,7 +376,7 @@ const inpSpread = (() => {
 // editorial was the only publishing surface and became a correctness bug the
 // moment a second one published: a reader on a PDP page follows the
 // methodology link and reads a description of a batch that is not the one
-// behind the numbers they just read — falsified by the receipt links on those
+// behind the numbers they just read, falsified by the receipt links on those
 // very cells. Per-surface batches are legal by design (the integrity loop
 // above runs per surface, never across them: editorial's batch and the PDP's
 // are separate publications minted on their own days), so the statement has
@@ -412,7 +412,7 @@ const labRuns =
 const batchStatement =
   surfaceBatchFacts.length === 0
     ? `No batch is published for any surface right now, so no reading table on this site carries a ` +
-      `number — the cells show an em-dash until one does.`
+      `number, the cells show an em-dash until one does.`
     : surfaceBatchFacts
         .map(
           (f) =>
@@ -420,7 +420,7 @@ const batchStatement =
             `<span class="num">${esc(f.date)}</span> at commit <span class="num">${esc(f.sha7)}</span>: ` +
             `${esc(f.variantCount)} variants × ${esc(f.profileCount)} profiles × two cache columns × ` +
             `${esc(f.runs)} runs, driving <span class="num">${esc(f.interactionId)}</span> as its scripted ` +
-            `interaction, against the live plane from a quiet, single-purpose local machine — labeled ` +
+            `interaction, against the live plane from a quiet, single-purpose local machine, labeled ` +
             `honestly in every receipt as <span class="num">${esc(f.location)}</span>, an unpinned ` +
             `developer machine.`,
         )
@@ -431,7 +431,7 @@ const batchStatement =
         : ``);
 
 // Function replacements: with a string replacement, `$'`/`$&`/`$$` in the
-// CSS would be replacement patterns — a future `[href$='…']` selector would
+// CSS would be replacement patterns, a future `[href$='…']` selector would
 // silently duplicate the document tail past the %% guard.
 const home = readFileSync(join(root, "home", "index.html"), "utf8")
   .replace("/*%%PM_TOKENS_CSS%%*/", () => `${tokensCss}\n${buttonCss}`)
@@ -440,7 +440,7 @@ const home = readFileSync(join(root, "home", "index.html"), "utf8")
   .replaceAll("%%SNAP_DATE%%", () => esc(manifest.capturedAt))
   .replaceAll("%%SNAP_SHA7%%", () => esc(manifest.commitSha.slice(0, 7)))
   .replaceAll("%%SNAP_SOURCE%%", () => esc(manifest.source))
-  // ADR-0001 §9: every published number links its receipt — including the
+  // ADR-0001 §9: every published number links its receipt, including the
   // one on the front door. The whole clause is composed above from the same
   // bundle the values come from, so the href cannot drift from what it backs.
   .replaceAll("%%LAB_ED_SPREAD%%", () => homeSpread)
@@ -475,9 +475,9 @@ const ccLocal = cc ? /^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)(:|\/|$)/.te
 // Addendum-N band rule, applied to the constant's own cells: the long-task
 // MEDIAN can hide a one-sided signal (N: two with-chrome runs at 55/64 ms
 // behind a "0 ms" median), and the paint deltas ride real run-to-run spread
-// — so the statement composes across-runs ranges from the artifact's own
+//, so the statement composes across-runs ranges from the artifact's own
 // runs. Both band bounds are DERIVED, never typed (a hard-coded 0 floor is
-// a number the artifact may not contain — verify-slice, this unit).
+// a number the artifact may not contain, verify-slice, this unit).
 const ccRuns = (condition, metric) =>
   cc ? cc.conditions[condition].runs.map((r) => r[metric]).filter((v) => Number.isFinite(v)) : [];
 const ltAll = cc ? [...ccRuns("with", "longTaskMs"), ...ccRuns("without", "longTaskMs")] : [];
@@ -512,7 +512,7 @@ const paintBands = cc
       .join("; ")
   : "";
 const paintBandClause = paintBands
-  ? ` The medians ride real spread — ${paintBands} across the runs behind them.`
+  ? ` The medians ride real spread, ${paintBands} across the runs behind them.`
   : "";
 const ccStatement = cc
   ? `It is stated as a constant: <strong>${esc(signedMs(cc.deltaMedians.FCP))}&nbsp;ms first paint, ` +
@@ -520,10 +520,10 @@ const ccStatement = cc
     `${esc(signedMs(cc.deltaMedians.longTaskMs))}&nbsp;ms of long tasks</strong>${ltClause}, plus ` +
     `<strong>${esc(cc.measuredChrome.wireBytesBrotli)}&nbsp;bytes</strong> on the wire` +
     (cc.measuredChrome.wireCalibrated
-      ? ` — priced at the brotli quality that reproduces the plane's own compressed serving of this page ` +
+      ? `, priced at the brotli quality that reproduces the plane's own compressed serving of this page ` +
         `(quality ${esc(cc.measuredChrome.wireQuality)}, residual ${esc(cc.measuredChrome.calibrationResidualBytes)}&nbsp;B ` +
         `on ${esc(cc.measuredChrome.encodedBodySize)}&nbsp;B)`
-      : ` — priced at an uncalibrated default quality, because the measured plane served the page uncompressed; ` +
+      : `, priced at an uncalibrated default quality, because the measured plane served the page uncompressed; ` +
         `the deployed-plane re-measure replaces this figure`) +
     `.${paintBandClause} The figures come from ` +
     `${esc(cc.runsPerCondition)} runs per condition under the ` +
@@ -531,7 +531,7 @@ const ccStatement = cc
     `<span class="num">${esc(cc.commit.sha.slice(0, 7))}</span> on <span class="num">${esc(cc.target)}</span> ` +
     `(<a href="/_pm/lab/chrome-constant.json">the raw probe artifact</a>). The two halves are kept apart on ` +
     `purpose: both conditions are padded to identical document bytes so the timing figure is the chrome's ` +
-    `processing and subresource cost — a render-blocking stylesheet, a preloaded mono, and the ruler — ` +
+    `processing and subresource cost, a render-blocking stylesheet, a preloaded mono, and the ruler, ` +
     `while what it adds to the document on the wire is the byte figure beside it.` +
     (ccLocal
       ? ` It was measured on the local composed origin rather than the live plane, for a reason worth stating: ` +
@@ -540,7 +540,7 @@ const ccStatement = cc
         `Local first paint is not a production number; the difference between the two conditions is what is ` +
         `published, and both conditions ran on the same plane under the same emulated network.`
       : ``)
-  : `That measurement has not been published for the current chrome yet, so no constant is stated here — ` +
+  : `That measurement has not been published for the current chrome yet, so no constant is stated here, ` +
     `the same rule the reading tables follow: no number without its artifact.`;
 const methodology = readFileSync(join(root, "methodology", "index.html"), "utf8")
   .replace("/*%%PM_TOKENS_CSS%%*/", () => `${tokensCss}\n${buttonCss}`)
@@ -560,7 +560,7 @@ if (methodology.includes("%%")) {
 writeFileSync(join(dist, "methodology", "index.html"), methodology);
 
 // Canonical font loading (ADR-0003 §8): the identical files, served from this
-// Worker's own assets at /pm/* — only the base path differs per consumer.
+// Worker's own assets at /pm/*, only the base path differs per consumer.
 cpSync(join(tokensRoot, "css", "fonts.css"), join(dist, "pm", "css", "fonts.css"));
 for (const f of [
   "FamiljenGrotesk.var.woff2",
@@ -578,7 +578,7 @@ cpSync(
   join(dist, "_pm", "chrome.css"),
 );
 // The chrome-owned instrument mono (surface-design session): served from the
-// /_pm/* excluded path — chrome bytes, never variant bytes (ADR-0001 §6).
+// /_pm/* excluded path, chrome bytes, never variant bytes (ADR-0001 §6).
 for (const f of ["PMInstrumentMono.var.woff2", "LICENSE-OFL-JetBrainsMono.txt"]) {
   cpSync(
     join(dirname(require.resolve("@pm/switcher/package.json")), "fonts", f),
@@ -593,7 +593,7 @@ cpSync(
   join(dist, "_pm", "measure.js"),
 );
 
-// The build attestation (ADR-0001 addendum N hole 2) — re-stamped by the
+// The build attestation (ADR-0001 addendum N hole 2), re-stamped by the
 // deploy script and run-local against turbo cache replays; see
 // stamp-build.mjs for why all three call sites exist.
 stampBuild();

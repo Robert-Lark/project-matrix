@@ -1,5 +1,5 @@
 // Post lifecycle + queries (ADR-0009 §2, §6). Markdown in, cached HTML out,
-// revisions on content change, redirects on published-slug change — the
+// revisions on content change, redirects on published-slug change, the
 // invariants live here so every route shares them.
 
 import { newId } from "./ids.js";
@@ -9,7 +9,7 @@ import { renderMarkdown } from "./render.js";
 // The row typedefs below are the committed migrations column for column
 // (0001_init.sql, 0002_scheduled_publishing.sql): D1 hands rows back
 // untyped (`Record<string, unknown>`), so every `.first()`/`.all()` is
-// cast to the row its SQL selects — the cast is the one place the schema
+// cast to the row its SQL selects, the cast is the one place the schema
 // is asserted, and it sits beside the statement that reads it. The result
 // unions (`Saved | Refused`) are what the routes used to check by
 // convention alone (`result.ok ? … : result.error`): a typo in either
@@ -145,13 +145,13 @@ const MOODS = new Set(["default", "quiet", "loud"]);
 
 // Save a whitelisted patch. Returns { ok, updated_at, warnings? } or
 // { error }. "Never a lost word" shapes the error model: an invalid
-// METADATA field is dropped with a warning — it must never block the body
+// METADATA field is dropped with a warning. It must never block the body
 // from persisting. Rendering happens here so body_html can never drift
 // from body_md.
 /**
  * @param {Env} env
  * @param {string} id
- * @param {Record<string, unknown> | null | undefined} patch the request body — untrusted JSON
+ * @param {Record<string, unknown> | null | undefined} patch the request body, untrusted JSON
  * @returns {Promise<Saved | Refused>}
  */
 export async function savePost(env, id, patch) {
@@ -176,31 +176,31 @@ export async function savePost(env, id, patch) {
 
   /** A patched text field is text, or it is dropped like any other invalid
    *  value: the typecheck found that a hand-made PUT could put a number
-   *  into a TEXT column (workers-hardening, 2026-09-25) — the editor never
+   *  into a TEXT column (workers-hardening, 2026-09-25), the editor never
    *  sends one, and the warning model is this file's own.
    *  @param {string} key @returns {string | null} the value when it is text */
   const text = (key) => (typeof fields[key] === "string" ? /** @type {string} */ (fields[key]) : null);
 
   if ("kind" in fields && !["essay", "photo", "note", "link"].includes(/** @type {string} */ (text("kind")))) {
-    warnings.kind = "unknown kind — kept the old one";
+    warnings.kind = "unknown kind, kept the old one";
     delete fields.kind;
   }
   // Art direction is curated at the wall, not just in the picker (ADR-0009
   // §4): arbitrary strings would leak into class names and CSS variables.
   if ("header_style" in fields && !HEADER_STYLES.has(/** @type {string} */ (text("header_style")))) {
-    warnings.header_style = "unknown header treatment — kept the old one";
+    warnings.header_style = "unknown header treatment, kept the old one";
     delete fields.header_style;
   }
   if ("mood" in fields && !MOODS.has(/** @type {string} */ (text("mood")))) {
-    warnings.mood = "unknown mood — kept the old one";
+    warnings.mood = "unknown mood, kept the old one";
     delete fields.mood;
   }
   if ("accent" in fields && fields.accent !== null && !/^#[0-9a-fA-F]{6}$/.test(text("accent") ?? "")) {
-    warnings.accent = "accent must be a #rrggbb color — kept the old one";
+    warnings.accent = "accent must be a #rrggbb color, kept the old one";
     delete fields.accent;
   }
   if ("link_url" in fields && fields.link_url !== null && !/^https?:\/\//.test(text("link_url") ?? "")) {
-    warnings.link_url = "link URL must be http(s) — kept the old one";
+    warnings.link_url = "link URL must be http(s), kept the old one";
     delete fields.link_url;
   }
   if (
@@ -208,12 +208,12 @@ export async function savePost(env, id, patch) {
     fields.original_date !== null &&
     !/^\d{4}-\d{2}-\d{2}$/.test(text("original_date") ?? "")
   ) {
-    warnings.original_date = "display date must be YYYY-MM-DD — kept the old one";
+    warnings.original_date = "display date must be YYYY-MM-DD, kept the old one";
     delete fields.original_date;
   }
   for (const key of ["title", "dek", "body_md", "editor_state"]) {
     if (key in fields && fields[key] !== null && typeof fields[key] !== "string") {
-      warnings[key] = `${key} must be text — kept the old one`;
+      warnings[key] = `${key} must be text, kept the old one`;
       delete fields[key];
     }
   }
@@ -222,20 +222,20 @@ export async function savePost(env, id, patch) {
     /** @type {string | null} */
     let slugProblem = null;
     const slug = fields.slug;
-    if (!validSlug(slug)) slugProblem = "invalid slug — kept the old one";
+    if (!validSlug(slug)) slugProblem = "invalid slug, kept the old one";
     else {
       const taken = await env.DB.prepare(
         "SELECT id FROM posts WHERE slug = ? AND id != ?",
       )
         .bind(slug, id)
         .first();
-      if (taken) slugProblem = "slug in use — kept the old one";
+      if (taken) slugProblem = "slug in use, kept the old one";
     }
     if (slugProblem) {
       warnings.slug = slugProblem;
       delete fields.slug;
     } else if (post.published_at) {
-      // Any once-published slug 301s forever — including while the post is
+      // Any once-published slug 301s forever, including while the post is
       // temporarily unpublished; a slug reclaiming its old name unwinds it.
       await env.DB.prepare("DELETE FROM redirects WHERE from_slug = ?")
         .bind(fields.slug)
@@ -361,7 +361,7 @@ export async function addRevision(env, postId, kind, title, bodyMd) {
 //
 // The instant rule, deliberately (a scheduled re-publish of a post that was
 // once published keeps a stale published_at under COALESCE, misfiling it on
-// the shelf and in RSS — caught in verify): an explicit `at` WINS, because
+// the shelf and in RSS, caught in verify): an explicit `at` WINS, because
 // the author picked it in the schedule dialog; a plain manual publish (at
 // null) stamps now on a first publish but PRESERVES an existing date, so a
 // manual re-publish keeps the post's original publication date. The display
@@ -396,7 +396,7 @@ export async function publishPost(env, id, { at = null } = {}) {
 export async function unpublishPost(env, id) {
   const post = await getPost(env, id);
   if (!post) return { error: "not found", status: 404 };
-  // Any pre-publish schedule was consumed or superseded — never let a stale
+  // Any pre-publish schedule was consumed or superseded, never let a stale
   // scheduled_at silently re-publish an unpublished post from the cron.
   await env.DB.prepare(
     "UPDATE posts SET status = 'draft', updated_at = ?, scheduled_at = NULL WHERE id = ?",
@@ -408,14 +408,14 @@ export async function unpublishPost(env, id) {
 
 // ------------------------------------------------ scheduled publishing ----
 // The mechanism is a cron trigger calling publishDue (ADR-0009 addendum):
-// public queries stay untouched — a scheduled post is an ordinary draft
+// public queries stay untouched, a scheduled post is an ordinary draft
 // until the trigger publishes it through the same publishPost invariants
 // (slug gate, snapshot revision, redirect story) a manual publish gets.
 
 /**
  * @param {Env} env
  * @param {string} id
- * @param {unknown} at the request body's `at` — untrusted JSON
+ * @param {unknown} at the request body's `at`, untrusted JSON
  * @returns {Promise<{ ok: true, scheduled_at: string } | Refused>}
  */
 export async function schedulePost(env, id, at) {
@@ -425,7 +425,7 @@ export async function schedulePost(env, id, at) {
     return { error: "already published", status: 400 };
   }
   // The same permanent-URL gate as publish, enforced when the promise is
-  // MADE — a schedule that could never fire is a word-losing surprise.
+  // MADE, a schedule that could never fire is a word-losing surprise.
   if (!validSlug(post.slug) || post.slug.startsWith("draft-")) {
     return { error: "set a real slug before scheduling", status: 400 };
   }
@@ -455,7 +455,7 @@ export async function cancelSchedule(env, id) {
 
 // The cron body. A refused publish (the slug was edited back to draft-… or
 // went invalid after scheduling) drops the schedule rather than retrying
-// forever — the post stays a draft, no words move, and the editor shows it
+// forever, the post stays a draft, no words move, and the editor shows it
 // unscheduled.
 /**
  * @param {Env} env
@@ -599,7 +599,7 @@ export async function getMediaById(env, id) {
 }
 
 // The media library (editor follow-up, ADR-0009 addendum): every R2 object
-// through its media row, newest first, each carrying where it is used — one
+// through its media row, newest first, each carrying where it is used, one
 // posts scan in JS beats N LIKE queries at admin-library scale.
 /** @param {Env} env */
 export async function listMedia(env) {
@@ -623,7 +623,7 @@ export async function listMedia(env) {
   }));
 }
 
-// Alt lives on the media row and feeds rendering through mediaLookup — but
+// Alt lives on the media row and feeds rendering through mediaLookup, but
 // body_html is a CACHE, so an alt fix must re-render every post whose body
 // references the key or published pages would keep serving the stale alt.
 // body_html-only updates: updated_at stays put, so an open editor's
@@ -631,7 +631,7 @@ export async function listMedia(env) {
 /**
  * @param {Env} env
  * @param {string} id
- * @param {unknown} alt the request body's `alt` — untrusted JSON
+ * @param {unknown} alt the request body's `alt`, untrusted JSON
  * @returns {Promise<{ ok: true, rerendered: number } | Refused>}
  */
 export async function updateMediaAlt(env, id, alt) {
@@ -684,7 +684,7 @@ export async function listBrowse(env) {
 // The zip-of-markdown variant of the export (ADR-0009 §2 recorded
 // follow-up): every post as front-matter + body_md, readable anywhere,
 // plus the media manifest and redirect map. Revisions stay the JSON
-// dump's job — the zip is the CURRENT words in the most portable shape.
+// dump's job, the zip is the CURRENT words in the most portable shape.
 /** @param {string} key @param {unknown} value */
 function yamlLine(key, value) {
   // JSON scalars are valid YAML scalars; numbers stay bare.

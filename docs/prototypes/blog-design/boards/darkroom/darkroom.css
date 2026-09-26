@@ -1,18 +1,18 @@
 /* ==========================================================================
-   DARKROOM — Rob Lark blog design board
+   DARKROOM, Rob Lark blog design board
    Committed dark scheme. Photographs are the brightest objects on the page.
    Tokens verified for WCAG AA (ratios in NOTES.md).
    ========================================================================== */
 
 :root {
   /* palette */
-  --darkroom:  #16130F;  /* page ground — warm near-black, amber-safe   */
+  --darkroom:  #16130F;  /* page ground, warm near-black, amber-safe   */
   --tray:      #201B15;  /* raised surface (code, asides, series nav)   */
-  --baryta:    #DAD3C6;  /* body text — warm paper white, 12.44:1       */
-  --halftone:  #9C9284;  /* secondary text — 6.05:1                     */
-  --safelight: #E5A445;  /* default accent — amber safelight, 8.58:1    */
-  --fern:      #A9BB98;  /* photo accent — 9.04:1                       */
-  --slate:     #9FB2BC;  /* note accent — 8.44:1                        */
+  --baryta:    #DAD3C6;  /* body text, warm paper white, 12.44:1       */
+  --halftone:  #9C9284;  /* secondary text, 6.05:1                     */
+  --safelight: #E5A445;  /* default accent, amber safelight, 8.58:1    */
+  --fern:      #A9BB98;  /* photo accent, 9.04:1                       */
+  --slate:     #9FB2BC;  /* note accent, 8.44:1                        */
   --emulsion:  #12100D;  /* code-block ground (vitesse-dark adjacent)   */
   --line:      #332C23;  /* hairlines, decorative only                  */
 
@@ -154,9 +154,9 @@ img { max-width: 100%; height: auto; display: block; }
   margin: 1.5rem auto 0;
 }
 
-/* standard — the default essay head, nothing else */
+/* standard, the default essay head, nothing else */
 
-/* display — oversized expanded title for capital-E essays */
+/* display, oversized expanded title for capital-E essays */
 .post-head--display h1 {
   font-variation-settings: "wdth" 122;
   font-weight: 780;
@@ -166,7 +166,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .post-head--display .frame-no { margin-bottom: 1.75rem; }
 
-/* photo-hero — full-bleed lead image; title steps back to a caption card */
+/* photo-hero, full-bleed lead image; title steps back to a caption card */
 .post-head--photo-hero { margin-top: 0; }
 .post-head--photo-hero .hero {
   max-width: none;
@@ -182,7 +182,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .post-head--photo-hero .post-meta { margin-top: 0.6rem; }
 
-/* bare — notes: no title, just the strip marker and the date on one line */
+/* bare, notes: no title, just the strip marker and the date on one line */
 .post-head--bare { margin-top: 3.5rem; }
 .post-head--bare .frame-no { display: inline; margin: 0; padding-inline: 0; }
 .post-head--bare .post-meta {
@@ -227,7 +227,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .post-body hr::before { content: "· · ·"; letter-spacing: 0.6em; }
 
-/* aside — margin note pulled into the column on narrow screens */
+/* aside, margin note pulled into the column on narrow screens */
 .bp-aside {
   border-left: 2px solid var(--accent);
   padding-block: 0.25rem;
@@ -238,7 +238,7 @@ img { max-width: 100%; height: auto; display: block; }
 .bp-aside p { margin-block-end: 0.8em; }
 .bp-aside p:last-child { margin-block-end: 0; }
 
-/* pullquote — set like an enlargement test strip: big, italic, exposed */
+/* pullquote, set like an enlargement test strip: big, italic, exposed */
 .bp-pullquote {
   margin-block: 3rem;
   padding-block: 0.5rem;

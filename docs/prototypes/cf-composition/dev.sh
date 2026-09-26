@@ -12,7 +12,7 @@ set -euo pipefail
 # Verified defect in that mode (wrangler 4.107.0, latest as of 2026-07-06):
 # static ASSETS served through a service binding return a bare 500
 # (html_handling redirects survive, asset content does not). Cross-process
-# mode serves them correctly — see FINDINGS.md.
+# mode serves them correctly, see FINDINGS.md.
 
 ## Configuration ===============================================================
 
@@ -26,12 +26,12 @@ PIDS=()
 ## Script ======================================================================
 
 if ! command -v npx > /dev/null; then
-    echo "Error: npx not found — install Node.js first" >&2
+    echo "Error: npx not found, install Node.js first" >&2
     exit 1
 fi
 
 if [ ! -d node_modules ]; then
-    echo "Error: node_modules missing — run 'npm install' first" >&2
+    echo "Error: node_modules missing, run 'npm install' first" >&2
     exit 1
 fi
 
@@ -73,7 +73,7 @@ ATTEMPTS=0
 until curl -s -o /dev/null "http://localhost:${FRONT_PORT}/"; do
     ATTEMPTS=$((ATTEMPTS + 1))
     if [ "${ATTEMPTS}" -ge 45 ]; then
-        echo "Error: front Worker not reachable after 45s — check ${LOG_DIR}/*.log" >&2
+        echo "Error: front Worker not reachable after 45s, check ${LOG_DIR}/*.log" >&2
         exit 1
     fi
     sleep 1

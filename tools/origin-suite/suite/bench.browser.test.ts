@@ -1,6 +1,6 @@
 /**
  * The bench runner at the composed-origin seam (issue #7, ADR-0001): a tiny
- * batch — three targets, two runs, one profile — driven against the same
+ * batch, three targets, two runs, one profile, driven against the same
  * origin the visitors get, then the receipt is held to the acceptance
  * criteria. The two placeholder PAGES prove the chrome-beacon vitals
  * harvest, instrumentation stripping, and the trivial interaction; the bare
@@ -11,9 +11,9 @@
  * Locally the CPU field comes from the inspector profiler over the four
  * pinned dev inspectors; against the deployed origin (the post-deploy
  * smoke) no inspector exists and the field must be an honest null naming
- * the armed-path source — asserted both ways. Note: vitest runs suite
+ * the armed-path source, asserted both ways. Note: vitest runs suite
  * FILES in parallel, so sibling files' traffic can inflate this batch's
- * CPU samples — the assertions here are presence/provenance (> 0, source
+ * CPU samples, the assertions here are presence/provenance (> 0, source
  * named), never magnitude; clean numbers come from `pnpm bench` runs on a
  * quiet plane.
  */
@@ -55,7 +55,7 @@ const PAGE_TARGETS = ["/placeholder-static/sample/", "/placeholder-ssr/sample/"]
 // nonce for every visit it drives (@pm/bench-runner batch discipline).
 // kv-exempt: nonced by the bench runner at request time
 const API_TARGET = "/api/plp";
-// Real editorial variants — the END-TO-END non-vacuity for the inline-byte
+// Real editorial variants, the END-TO-END non-vacuity for the inline-byte
 // decomposition (issue #16). A placeholder has no inline script, so only a real
 // variant page, driven through the composed origin with chrome injected, proves
 // initialJsBytes actually counts inline executable JS (astro, whose bundle is
@@ -66,7 +66,7 @@ let receipt: ReceiptT;
 
 beforeAll(async () => {
   if (REMOTE) {
-    // Real KV caches negative lookups and is eventually consistent — warm
+    // Real KV caches negative lookups and is eventually consistent, warm
     // the batch's nonce-keyed entry and poll for the hit (the data-plane
     // suite's pattern) so the batch's warm column measures warm, not
     // propagation luck.
@@ -135,7 +135,7 @@ describe("the receipt is a complete, SHA-pinned record (ADR-0001 §9)", () => {
     // settled receipt from one minted under the latch (ADR-0001 addendum R).
     // zod strips unknown keys and the field is optional, so a typo in
     // `batch.ts` would drop it silently and every receipt from that point on
-    // would be byte-indistinguishable from a pre-fix one — with nothing red
+    // would be byte-indistinguishable from a pre-fix one, with nothing red
     // until the gate lands and starts rejecting honest receipts (verify-slice,
     // anti-rigging lens). Asserted where a receipt is actually minted.
     expect(receipt.harness.quiescence).toBe("in-flight-tracked");
@@ -165,7 +165,7 @@ describe("cold and warm are real, separate columns (ADR-0001 §4)", () => {
     }
   });
 
-  it("page documents carry no cache-state header — recorded as null, never invented", () => {
+  it("page documents carry no cache-state header, recorded as null, never invented", () => {
     for (const path of PAGE_TARGETS) {
       const target = receipt.targets.find((t) => t.path === path)!;
       for (const run of [...target.columns.cold.runs, ...target.columns.warm.runs]) {
@@ -180,14 +180,14 @@ describe("KB accounting (ADR-0001 §3, §6)", () => {
     for (const path of PAGE_TARGETS) {
       const target = receipt.targets.find((t) => t.path === path)!;
       for (const run of target.columns.cold.runs) {
-        // chrome.css + measure.js at minimum — the exclusion has something
+        // chrome.css + measure.js at minimum, the exclusion has something
         // to exclude, so a severed stripping path cannot pass silently.
         expect(run.requests.instrumentation).toBeGreaterThanOrEqual(2);
         expect(run.kb.instrumentationBytes).toBeGreaterThan(0);
         expect(run.kb.buckets.html).toBeGreaterThan(0);
         expect(run.kb.buckets.fonts).toBeGreaterThan(0);
         expect(run.kb.buckets.css).toBeGreaterThan(0);
-        // Placeholders ship no page JS: the headline is honestly zero —
+        // Placeholders ship no page JS: the headline is honestly zero,
         // measure.js rides the instrumentation bucket, not the JS bucket.
         expect(run.kb.initialJsBytes).toBe(0);
         expect(run.kb.buckets.js).toBe(0);
@@ -203,19 +203,19 @@ describe("KB accounting (ADR-0001 §3, §6)", () => {
 
 describe.skipIf(REMOTE)("editorial KB accounting is non-vacuous end-to-end (issue #16 defect 1/4)", () => {
   // The placeholders above ship no page JS, so they can only prove the NEGATIVE
-  // (js === 0). These real variant pages drive the full pipeline — measureVisit
-  // → served-body decomposition → chrome-injected document — the only place the
+  // (js === 0). These real variant pages drive the full pipeline, measureVisit
+  // → served-body decomposition → chrome-injected document, the only place the
   // inline-byte accounting is proven against real served HTML rather than a
   // hand-written fixture (decompose.test.ts).
   it("astro's INLINED cart module lands in the JS headline; its cart-item JSON in data", () => {
     const astro = receipt.targets.find((t) => t.path === "/astro/editorial/")!;
     for (const run of astro.columns.cold.runs) {
       // Astro ships ZERO external JS (the bundle is inlined), so a non-zero JS
-      // headline here can ONLY come from the inline-executable decomposition —
+      // headline here can ONLY come from the inline-executable decomposition,
       // exactly the "0 KB JS islands variant" defect this unit kills.
       expect(run.kb.initialJsBytes).toBeGreaterThan(0);
       expect(run.kb.buckets.js).toBeGreaterThan(0);
-      // The cart-item is `<script type="application/json">` — inert data, not JS.
+      // The cart-item is `<script type="application/json">`, inert data, not JS.
       expect(run.kb.buckets.data).toBeGreaterThan(0);
       // Instrumentation markup is stripped, and the buckets still partition.
       expect(run.kb.instrumentationBytes).toBeGreaterThan(0);
@@ -232,7 +232,7 @@ describe.skipIf(REMOTE)("editorial KB accounting is non-vacuous end-to-end (issu
       // Qwik serializes resumability state as `<script type="qwik/json">` → data.
       expect(run.kb.buckets.data).toBeGreaterThan(0);
       // Nothing fetches on the body click, and the preloader was awaited onto
-      // the initial side — so the interaction boundary is a clean zero, not the
+      // the initial side, so the interaction boundary is a clean zero, not the
       // run-varying straddle defect 4 was about.
       expect(run.kb.interactionBytes).toBe(0);
     }
@@ -347,7 +347,7 @@ describe("the cost calculator consumes the receipt as-is (issue #8: input shape 
 });
 
 describe("one-command reproduce (ADR-0001 §9)", () => {
-  it("re-runs the receipt's batch — same URLs, profile, run count — emitting a new receipt", async () => {
+  it("re-runs the receipt's batch, same URLs, profile, run count, emitting a new receipt", async () => {
     const spec = specFromReceipt(receipt, repoRoot, {
       origin: ORIGIN,
       cpuSource: REMOTE ? undefined : new InspectorCpuSource(LOCAL_PLANE_INSPECTORS),
@@ -365,7 +365,7 @@ describe("one-command reproduce (ADR-0001 §9)", () => {
     // are now GENUINE quiescence waits rather than a latch that returned
     // instantly (ADR-0001 addendum R), and this file gained a sibling that
     // drives its own batches, so the whole suite contends harder. This leg
-    // drives a full batch TWICE over — it timed out at exactly 300003 ms on
+    // drives a full batch TWICE over. It timed out at exactly 300003 ms on
     // the first full run after those landed. Sized to catch a HANG, not fitted
     // to an extrapolation: the last unit's own lesson (PR #34).
   }, 600_000);
@@ -373,14 +373,14 @@ describe("one-command reproduce (ADR-0001 §9)", () => {
 
 describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, slice F)", () => {
   // No origin needed: the guard sits in runBatch's validation block, BEFORE
-  // any browser launches — a receipt naming the fenced exhibit cannot be
+  // any browser launches, a receipt naming the fenced exhibit cannot be
   // minted by the CLI, the reproduce path, or a direct library import.
   it("assertBenchableTarget names the fence for any /remix3/* path", () => {
     expect(() => assertBenchableTarget("/remix3/editorial/")).toThrowError(
       /fenced exhibit.*excluded from every benchmark number/,
     );
     expect(() => assertBenchableTarget("/remix3/anything/else")).toThrowError(/fenced/);
-    // The guard resolves the path the way the runner's effectiveUrl does —
+    // The guard resolves the path the way the runner's effectiveUrl does,
     // the spec shapes URL() accepts must not slip past a naive split
     // (verify-slice finding: both of these previously minted a fenced
     // receipt).
@@ -392,10 +392,10 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
     expect(() => assertBenchableTarget("/placeholder-static/sample/")).not.toThrow();
   });
 
-  it("every chrome-labeled fenced exhibit is refused by the runner — the two fence registries cannot drift apart", () => {
+  it("every chrome-labeled fenced exhibit is refused by the runner, the two fence registries cannot drift apart", () => {
     // The fence is double-entry: batch.ts FENCED_VARIANT_PREFIXES is the
     // hand-written variant wall, and the runner's second wall (fencedPathOf)
-    // is derived from SURFACE_CONTROLS itself — @pm/switcher is already a
+    // is derived from SURFACE_CONTROLS itself, @pm/switcher is already a
     // bench-runner dependency (chrome-constant.ts imports chromeFragmentOf).
     // The correspondence is still pinned HERE, where both packages meet, so
     // a registry edit that breaks the derivation fails a test rather than
@@ -466,7 +466,7 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
     ).rejects.toThrowError(/fenced exhibit/);
   });
 
-  it("runBatch refuses a PLP batch at an n the warm tier never holds — before driving anything", async () => {
+  it("runBatch refuses a PLP batch at an n the warm tier never holds, before driving anything", async () => {
     // The PLP key policy (ADR-0005 addendum, 2026-09-04) warms n ∈ {24, 240}
     // only; a PLP batch at any other n would measure R2 under a column
     // labelled warm, and on react-next nothing in the receipt could say so
@@ -487,7 +487,7 @@ describe("the fence as mechanism: the runner refuses remix3 (FINDINGS §7(c)3, s
     expect(PLP_N.warmed).toEqual([24, 240]);
   });
 
-  it("runBatch rejects a batch carrying the fenced Apollo route — slashless, the 308 shape — before driving anything", async () => {
+  it("runBatch rejects a batch carrying the fenced Apollo route, slashless, the 308 shape, before driving anything", async () => {
     await expect(
       runBatch({
         origin: ORIGIN,

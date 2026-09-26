@@ -1,5 +1,5 @@
 /**
- * The bench CLI — `pnpm bench …` from the repo root (built by esbuild to
+ * The bench CLI, `pnpm bench …` from the repo root (built by esbuild to
  * dist/cli.mjs; playwright stays external).
  *
  *   pnpm bench run --origin http://127.0.0.1:8787 \
@@ -11,7 +11,7 @@
  *   pnpm bench reproduce <receipt.json> [--origin …] [--local-cpu] [--out …]
  *
  * `reproduce` is the ADR-0001 §9 one-command path: it re-runs the receipt's
- * batch — same URLs, profile, run count, as one batch — and emits a NEW
+ * batch, same URLs, profile, run count, as one batch, and emits a NEW
  * receipt (fresh date, fresh run nonce, current SHA).
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -55,14 +55,14 @@ function isLoopbackOrigin(origin: string): boolean {
 // ADR-0001 §7 binding E: local workerd sampling profiles are DEVELOPMENT ONLY.
 // Profiling the idle local plane while benching a REMOTE origin emits a
 // near-zero CPU number the remote requests never incurred, labelled as measured
-// (audit 2026-08-01, cli.ts:42). Refuse it — the deployed plane's CPU arrives
+// (audit 2026-08-01, cli.ts:42). Refuse it, the deployed plane's CPU arrives
 // from Workers observability telemetry with the deploy leg, never a local
 // inspector. Returns an error string when the combination is illegal.
 function localCpuOriginError(local: boolean, origin: string): string | null {
   if (!local || isLoopbackOrigin(origin)) return null;
   return (
     `--local-cpu profiles the LOCAL plane's inspectors and cannot measure a remote origin (${origin}); ` +
-    `bench a loopback origin or drop --local-cpu — the deployed plane's CPU comes from observability telemetry, not a local inspector (ADR-0001 §7 binding E).`
+    `bench a loopback origin or drop --local-cpu, the deployed plane's CPU comes from observability telemetry, not a local inspector (ADR-0001 §7 binding E).`
   );
 }
 
@@ -82,7 +82,7 @@ async function main(): Promise<number> {
         "local-cpu": { type: "boolean", default: false },
         // Batch-constant run-isolation nonce override (BatchSpec.runNonce).
         // Lets an operator pre-warm the EXACT effective URLs (the deployed
-        // plane serves a brand-new URL's first hit uncompressed — the
+        // plane serves a brand-new URL's first hit uncompressed, the
         // slice-C cache-MISS class) before any measured visit; generated
         // when absent, exactly as before.
         nonce: { type: "string" },
@@ -131,7 +131,7 @@ async function main(): Promise<number> {
         "local-cpu": { type: "boolean", default: false },
         // Reproduce mints a FRESH nonce by default (fresh cache state, the
         // honest reproduction). Pass the published receipt's own nonce to
-        // re-drive the exact effective URLs — the only way to pre-warm them
+        // re-drive the exact effective URLs, the only way to pre-warm them
         // first against the first-hit-uncompressed class.
         nonce: { type: "string" },
         // Same escape as `run` (ADR-0001 addendum N hole 2): a reproduce

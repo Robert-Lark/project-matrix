@@ -1,23 +1,23 @@
 /**
  * The cart storage contract, exercised end-to-end (editorial-build slice A;
- * parametrized over every LIVE editorial variant in slice B — verify-slice
+ * parametrized over every LIVE editorial variant in slice B, verify-slice
  * finding: this was the only JS-on interactive coverage and it was
  * hardcoded to vanilla, so react-next's cart islands had zero automated
  * end-to-end proof despite DIFF-TO-STARTER.md claiming the behavior works).
  * `packages/reference/render/shell.mjs` CART_CONTRACT is the contract of
  * record, and this file asserts each variant's implementation against the
- * imported constant — key, value shape, count semantics, announcement copy,
+ * imported constant, key, value shape, count semantics, announcement copy,
  * the recovery rule, and the load-time repopulation that makes the cart
  * survive a variant swap (ADR-0004 §5, same-origin storage). The canonical
  * classes/attributes this file selects on (`.pm-masthead__cart-count`,
  * `.pm-editorial__feature button.pm-button`, `[data-pm-status]`, ...) are
  * exactly what the drift gate holds every variant's markup to, so the same
- * selectors apply unchanged across variants — no per-variant branching.
+ * selectors apply unchanged across variants, no per-variant branching.
  *
  * Deliberately JS-ON: this is the one client enhancement the surface
  * carries, not the gate (the gate stays JS-off; the canonical SERVED state
  * is empty and populated-cart divergence is policed when the JS-on gate
- * pass lands — ADR-0008 §7). Fresh browser context per test: each starts
+ * pass lands, ADR-0008 §7). Fresh browser context per test: each starts
  * from clean storage.
  */
 import { dirname, join } from "node:path";
@@ -65,11 +65,11 @@ afterAll(async () => {
 /**
  * Open the editorial page with the beacon route intercepted. These are
  * JS-on loads of a REAL measured surface, and the post-deploy smoke runs
- * them against the production plane — without interception every goto and
+ * them against the production plane, without interception every goto and
  * reload here would land synthetic RUM (e.g. variant=vanilla,
  * surface=editorial) in the production collector, unmarked (the
  * bench-runner interception precedent, collect.ts). chrome.browser.test.ts
- * deliberately lets its placeholder beacons land — that suite proves the
+ * deliberately lets its placeholder beacons land, that suite proves the
  * collector; this one proves the cart.
  */
 async function openCartPage(context: BrowserContext, pageUrl: string): Promise<Page> {
@@ -89,7 +89,7 @@ const waitForCount = (page: Page, value: string) =>
   );
 
 // Fenced exhibits serve the same cart contract (the fence excludes NUMBERS,
-// not function — FINDINGS §4): the cart must survive a swap to and from
+// not function, FINDINGS §4): the cart must survive a swap to and from
 // remix3 exactly like any core variant, so the whole parametrized battery
 // covers it too. Derived from the arrays, never typed (slice F).
 const CART_VARIANTS = [
@@ -101,7 +101,7 @@ for (const variant of CART_VARIANTS) {
   const PAGE = `${ORIGIN}/${variant}/editorial/`;
 
   describe(`the cart contract at /${variant}/editorial/`, () => {
-    it("served empty; an add writes the contract value, count, and announcement — twice increments one entry", async () => {
+    it("served empty; an add writes the contract value, count, and announcement, twice increments one entry", async () => {
       const context = await browser.newContext();
       const page = await openCartPage(context, PAGE);
 
@@ -120,7 +120,7 @@ for (const variant of CART_VARIANTS) {
         contract.announce(featured.title, 1),
       );
       // …and the cart anchor's accessible name carries the count (the badge
-      // span is aria-hidden — masthead.css names this duty; contract Label).
+      // span is aria-hidden, masthead.css names this duty; contract Label).
       expect(await page.locator(".pm-masthead__cart").getAttribute("aria-label")).toBe(
         contract.cartLabel(1),
       );
@@ -141,11 +141,11 @@ for (const variant of CART_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("a 10+ cart renders the capped badge while the label carries the exact count — and the geometry holds", async () => {
-      // The slot reserves min-width 2.4ch (masthead.css) — the badge cap is
+    it("a 10+ cart renders the capped badge while the label carries the exact count, and the geometry holds", async () => {
+      // The slot reserves min-width 2.4ch (masthead.css), the badge cap is
       // what keeps "population never shifts layout" true for ANY cart size.
       // BOTH halves are asserted: the cap (string) AND the reserved width
-      // (bounding box) — a tokens-tier edit that shrank the slot would
+      // (bounding box), a tokens-tier edit that shrank the slot would
       // otherwise ship client-manufactured CLS the JS-off gate can never see
       // (masters and variants both serve the EMPTY slot).
       const context = await browser.newContext();
@@ -169,7 +169,7 @@ for (const variant of CART_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("a reload repopulates the masthead count from storage — the swap-survival mechanism", async () => {
+    it("a reload repopulates the masthead count from storage, the swap-survival mechanism", async () => {
       const context = await browser.newContext();
       const page = await openCartPage(context, PAGE);
       await page.click(BUTTON);
@@ -181,7 +181,7 @@ for (const variant of CART_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("a FAILED add changes nothing — not even in memory (contract: storage off/quota)", async () => {
+    it("a FAILED add changes nothing, not even in memory (contract: storage off/quota)", async () => {
       // CART_CONTRACT: "A failed `setItem` (quota, storage off) changes nothing
       // and announces nothing." react-next violated the in-memory half: its
       // `readCart()` returned the module-level EMPTY_CART and `addToCart`
@@ -191,7 +191,7 @@ for (const variant of CART_VARIANTS) {
       //
       // The WARM-UP click is not optional. A resumable variant loads its click
       // handler lazily, so overriding `setItem` and clicking immediately races
-      // the chunk fetch — that ordering made an earlier version of this probe
+      // the chunk fetch, that ordering made an earlier version of this probe
       // accuse qwik of a bug it does not have. One real click first guarantees
       // the handler is resident before storage is broken.
       const context = await browser.newContext();
@@ -235,7 +235,7 @@ for (const variant of CART_VARIANTS) {
       // (editorial-build slice D). react-next shipped a real CLS bug here: the
       // front Worker injects the switcher/HUD into `#pm-chrome-slot` by
       // rewriting the HTTP stream in transit, so the browser's initial parse
-      // has children the framework's own vdom does not — and react-dom's
+      // has children the framework's own vdom does not, and react-dom's
       // hydration-mismatch recovery silently re-rendered that subtree EMPTY.
       // It was invisible on a fast machine (resolved within one paint frame)
       // and first appeared as a CI-only flake, which is why this runs under a
@@ -261,7 +261,7 @@ for (const variant of CART_VARIANTS) {
       // Non-vacuity: the chrome must BE here, or the rest proves nothing.
       expect(await chrome.count(), "chrome was never injected").toBe(1);
 
-      // Let any deferred startup work land — this is the window in which the
+      // Let any deferred startup work land. This is the window in which the
       // react-next bug destroyed the subtree.
       await page.waitForLoadState("networkidle");
       expect(await chrome.count(), "chrome vanished after startup settled").toBe(1);
@@ -281,7 +281,7 @@ for (const variant of CART_VARIANTS) {
         contract.key,
       );
       await page.reload({ waitUntil: "load" });
-      // Schema-failing value → empty cart: the slot stays empty, no crash —
+      // Schema-failing value → empty cart: the slot stays empty, no crash,
       // and the executable contract is TOTAL at 0 (a downstream consumer
       // calling it directly must never render a "0" badge or a 0-count label).
       expect(contract.badge(0)).toBe("");

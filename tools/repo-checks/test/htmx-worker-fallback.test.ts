@@ -1,14 +1,14 @@
 /**
  * The htmx Worker's branded-fallback boundary (editorial-build slice E;
  * verify-slice finding, correctness + anti-rigging lenses). The Worker's
- * whole promise is "never an unbranded stack page": a data-plane failure —
- * OR a render-time throw on a malformed-but-200 tray — must answer 503
+ * whole promise is "never an unbranded stack page": a data-plane failure,
+ * OR a render-time throw on a malformed-but-200 tray, must answer 503
  * INSIDE the store's own shell, chrome slot included, because an exception
  * that escapes the service binding surfaces as pm-front's plain-text 502.
  * Before this file, that branch had zero coverage anywhere (the origin
  * suite cannot make a healthy local edge fail on demand).
  *
- * Pure in-process: the Worker module is framework-neutral (globals only —
+ * Pure in-process: the Worker module is framework-neutral (globals only,
  * Request/Response/URL, all present in Node 24), so its `fetch` is driven
  * directly with stub EDGE bindings. The happy path renders from the
  * COMMITTED fixture trays through the variant's own snapshot policy, so
@@ -69,7 +69,7 @@ describe("the htmx Worker's branded 503 boundary", () => {
   it("a malformed-but-200 detail tray is caught by the SAME boundary (the render is inside the guard)", async () => {
     // /api/snapshot answers the real committed manifest, /api/pdp/{id}
     // answers 200 with a structurally degenerate tray (no images, no
-    // cover) — before the fix this threw during template interpolation
+    // cover), before the fix this threw during template interpolation
     // and escaped the Worker as pm-front's unbranded plain-text 502.
     const manifest = readJson("manifest.json");
     const featured = readJson("curation.json").featured as number;

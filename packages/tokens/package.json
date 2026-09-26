@@ -2,7 +2,7 @@
   "name": "@pm/tokens",
   "version": "0.1.0",
   "private": true,
-  "description": "The zero-bias design system (ADR-0003): two-tier CSS custom-property tokens, per-component style modules, and the self-hosted placeholder font. CSS + assets only — deliberately no runtime.",
+  "description": "The zero-bias design system (ADR-0003): two-tier CSS custom-property tokens, per-component style modules, and the self-hosted placeholder font. CSS + assets only, deliberately no runtime.",
   "type": "module",
   "exports": {
     "./css/*": "./css/*",

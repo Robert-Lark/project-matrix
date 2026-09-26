@@ -1,12 +1,12 @@
 /* ============================================================ Sleeve & Shelf
  * The blog's one stylesheet (build-log Phase 9). Register: record-sleeve
- * typography — every post carries a SPINE (the sleeve edge, colored by the
+ * typography, every post carries a SPINE (the sleeve edge, colored by the
  * per-post accent knob) and a mono catalog line; the contents page is the
  * shelf, year numerals down the page. Zero inheritance from the store.
  *
  * Faces: Fraunces (display, variable opsz/wght) · Literata (body, variable,
  * real italics) · Fragment Mono (catalog lines, code).
- * Accent discipline: text is ALWAYS ink — accents live in spines, marks,
+ * Accent discipline: text is ALWAYS ink, accents live in spines, marks,
  * and underlines, so an arbitrary per-post accent can never break AA.
  * ========================================================================= */
 
@@ -247,7 +247,7 @@ a:hover {
   position: relative;
 }
 
-/* The spine tick — the sleeve edge on the shelf. */
+/* The spine tick, the sleeve edge on the shelf. */
 .entry::before {
   content: "";
   position: absolute;
@@ -399,7 +399,7 @@ a:hover {
   text-wrap: pretty;
 }
 
-/* Header treatments — the header_style knob. */
+/* Header treatments, the header_style knob. */
 .post-head--display h1 {
   font-size: clamp(2.6rem, 7vw, 4.2rem);
   font-weight: 640;
@@ -428,7 +428,7 @@ a:hover {
   font-size: 2rem;
 }
 
-/* The mood knob. Register is carried by SCALE and WEIGHT, never color — an
+/* The mood knob. Register is carried by SCALE and WEIGHT, never color, an
  * arbitrary per-post accent on title text could fail AA (a light accent →
  * invisible heading), so loud is bigger/bolder, not accent-inked. The
  * accent stays where it can never break contrast: the spine. */
@@ -547,7 +547,7 @@ a:hover {
   color: var(--muted);
 }
 
-/* Code — Everforest via Shiki inline styles; the shell is ours. */
+/* Code, Everforest via Shiki inline styles; the shell is ours. */
 .post-body pre {
   font-family: var(--mono);
   font-size: 0.82rem;
@@ -567,7 +567,7 @@ a:hover {
   border-radius: 4px;
 }
 
-/* Directive blocks — the typographic range. */
+/* Directive blocks, the typographic range. */
 .bp-aside {
   font-size: 0.9rem;
   line-height: 1.6;
@@ -663,7 +663,7 @@ a:hover {
   inline-size: 100%;
 }
 
-/* Photo posts: the contemplative register — images breathe, captions hug. */
+/* Photo posts: the contemplative register, images breathe, captions hug. */
 .post--photo .post-body figure,
 .post--photo .post-body p:has(> img) {
   margin-block: 2.75rem 0.65rem;
@@ -718,7 +718,7 @@ a:hover {
 }
 
 /* The hover-popover (notes.js progressive enhancement). Text stays ink on
- * paper — the accent has no business inside a note. */
+ * paper, the accent has no business inside a note. */
 .fn-popover {
   position: absolute;
   z-index: 20;
@@ -814,8 +814,8 @@ a:hover {
 
 /* --------------------------------------------- wide screens: margin asides */
 
-/* 84rem: the -18rem pull needs a ≥18rem gutter — (84rem − 42rem col) / 2 =
- * 21rem — or the aside would poke past the viewport (observed at 74rem). */
+/* 84rem: the -18rem pull needs a ≥18rem gutter, (84rem − 42rem col) / 2 =
+ * 21rem, or the aside would poke past the viewport (observed at 74rem). */
 @media (min-width: 84rem) {
   .bp-aside {
     float: inline-end;

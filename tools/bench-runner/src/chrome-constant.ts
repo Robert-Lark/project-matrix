@@ -3,8 +3,8 @@
  * cost on timing metrics, measured with/without the chrome on the SAME page
  * under ONE profile and published as a stated constant on the methodology
  * page. Byte-stripping (ADR-0001 §6) removes the chrome from measured KB; it
- * cannot remove the chrome's parse/style/layout/font/script work — or its
- * subresource contention on a throttled network — from FCP/LCP/CLS. This
+ * cannot remove the chrome's parse/style/layout/font/script work, or its
+ * subresource contention on a throttled network, from FCP/LCP/CLS. This
  * probe states that cost instead of letting it ride silently. ADR-0008 §5
  * binds the re-measure to the redesigned strip, before any publication.
  *
@@ -17,19 +17,19 @@
  *    locally, so the interception hop cancels out of the delta; the
  *    "without" condition strips exactly the three injected regions the byte
  *    accounting strips (the chrome subtree, its /_pm/ head links, the
- *    measurement script tag — decomposeDocument's own boundaries), before
+ *    measurement script tag, decomposeDocument's own boundaries), before
  *    the browser ever parses them.
  *  - The without-condition replaces each stripped region with an inert HTML
  *    comment of EQUAL byte length (stripChromeEqualBytes), so the document
- *    transfer term is identical in both conditions and cancels — the delta
+ *    transfer term is identical in both conditions and cancels, the delta
  *    is the chrome's processing cost, and its wire cost is reported as a
  *    separate calibrated figure. Re-compressing is not available: Playwright's
  *    route.fulfill ignores a declared content-encoding, and serving one
  *    condition decoded would put ~8 KB of uncompressed markup on a throttled
- *    wire where the plane puts low-single-digit KB compressed — the delta
+ *    wire where the plane puts low-single-digit KB compressed, the delta
  *    would be an artifact of the probe (verify-slice, anti-rigging lens).
  *  - Paint/shift metrics come from the browser's own performance timeline
- *    via an init-script observer, IDENTICALLY in both conditions — the
+ *    via an init-script observer, IDENTICALLY in both conditions, the
  *    injected ruler cannot measure its own absence, so neither condition
  *    uses it (the constant is about the ruler, not from it).
  *  - Conditions are round-robin interleaved (with, without, with, …) so a
@@ -63,7 +63,7 @@ import { median } from "./receipt";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-/** Strip exactly the injected instrumentation regions — the same three
+/** Strip exactly the injected instrumentation regions, the same three
  *  boundaries decomposeDocument attributes to `instrumentation`. */
 export function stripChrome(body: string): string {
   return body
@@ -78,18 +78,18 @@ export function stripChrome(body: string): string {
  * size on the wire.
  *
  * Why this instead of re-compressing: the plane sends one brotli stream, and
- * the two conditions differ by exactly the chrome's bytes — so serving both
+ * the two conditions differ by exactly the chrome's bytes, so serving both
  * DECODED would put ~8 KB of extra uncompressed markup on a throttled wire
  * in the with-condition only, and a large part of the measured delta would
  * be an artifact of the probe rather than a property of the chrome
  * (verify-slice, anti-rigging lens). Fulfilling a pre-compressed body is not
  * available: Playwright's route.fulfill does not honour a declared
- * content-encoding, and the browser receives a corrupt document (measured —
+ * content-encoding, and the browser receives a corrupt document (measured,
  * 3,660 bytes and no chrome node, against 18,146 and a chrome node for a
  * plain fulfil).
  *
  * Padding makes the document transfer term IDENTICAL and therefore cancel,
- * so what the delta measures is the chrome's PROCESSING cost — tokenizing,
+ * so what the delta measures is the chrome's PROCESSING cost, tokenizing,
  * styling, laying out, and its own subresources (chrome.css, the instrument
  * mono, measure.js), which are still real requests to the real plane and
  * still compressed normally. The document bytes the chrome would add on the
@@ -99,7 +99,7 @@ export function stripChrome(body: string): string {
 export function stripChromeEqualBytes(body: string): string {
   const pad = (region: string) => {
     // "<!--" + "-->" is 7 bytes; a region shorter than that cannot be padded
-    // to length (none is — the smallest is a /_pm/ link tag).
+    // to length (none is, the smallest is a /_pm/ link tag).
     const inner = Buffer.byteLength(region, "utf8") - 7;
     return inner >= 0 ? `<!--${" ".repeat(inner)}-->` : "";
   };
@@ -121,7 +121,7 @@ interface ProbeMetrics {
  * scales with what it renders: the EMPTY state (30 em-dash cells, no fit
  * sentence) is ~3 KB smaller than the POPULATED state (30 receipt anchors +
  * the derived fit line). Measuring against a plane that carries no
- * publication would state a constant for a chrome that no longer ships —
+ * publication would state a constant for a chrome that no longer ships,
  * so the probe records what it measured, and the front build re-renders the
  * fragment from `renderContext` and REFUSES when the sha256 differs
  * (ADR-0001 addendum N hole 1: `populated` alone let a stale constant ride,
@@ -134,7 +134,7 @@ export interface MeasuredChrome {
   populated: boolean;
   /**
    * What the chrome costs ON THE WIRE: brotli of the served document minus
-   * brotli of the same document with the instrumentation regions removed —
+   * brotli of the same document with the instrumentation regions removed,
    * a leave-one-out marginal, the same attribution principle the byte
    * ruler's decomposeDocument uses (ADR-0001 §3 addendum, 2026-08-15). The
    * timing delta deliberately excludes this (both conditions are padded to
@@ -153,7 +153,7 @@ export interface MeasuredChrome {
   calibrationResidualBytes: number | null;
   documentBytesUncompressed: number;
   /**
-   * The exact renderChrome() inputs the measured fragment renders under —
+   * The exact renderChrome() inputs the measured fragment renders under,
    * variant/surface/location read from the fragment's own data attributes,
    * pathname/search from the probed target. The front build re-renders the
    * fragment from these against the lab bundle it just built; a hash
@@ -224,11 +224,11 @@ function measuredChromeOf(
 ): MeasuredChrome {
   const fragment = chromeFragmentOf(body);
   if (fragment === "") {
-    throw new Error("no chrome fragment in the served target — nothing to measure");
+    throw new Error("no chrome fragment in the served target. Nothing to measure");
   }
   // Wire-quality calibration (the decomposeDocument principle): scan q0–q11
   // for the whole-document size closest to the observed compressed body.
-  // A plane serving identity (local dev) cannot calibrate — the q11
+  // A plane serving identity (local dev) cannot calibrate, the q11
   // fallback is recorded as uncalibrated, and the deployed-plane re-measure
   // replaces it (the addendum-L/N cycle, now visible in the artifact).
   const calibrated = wire.contentEncoding === "br";
@@ -293,7 +293,7 @@ async function probeVisit(
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) probe.lcp = e.startTime;
       }).observe({ type: "largest-contentful-paint", buffered: true });
-      // CLS by the SESSION-WINDOW MAXIMUM — the definition web-vitals (the
+      // CLS by the SESSION-WINDOW MAXIMUM, the definition web-vitals (the
       // site's one ruler) applies, not the superseded running total: a
       // window closes after a 1 s gap or 5 s of duration, and CLS is the
       // largest window's sum. A total would print a number that no session
@@ -322,7 +322,7 @@ async function probeVisit(
         for (const e of list.getEntries()) probe.longTaskMs += e.duration;
       }).observe({ type: "longtask", buffered: true });
     });
-    // Lab/field isolation: the with-condition's chrome sends beacons — they
+    // Lab/field isolation: the with-condition's chrome sends beacons. They
     // are captured here and never reach the RUM collector.
     await page.route("**/api/beacon", (route) => route.fulfill({ status: 204 }));
     // Document interception, BOTH conditions (the hop cancels out of the
@@ -333,7 +333,7 @@ async function probeVisit(
     // dispatch has no path to reject the awaited navigation with a
     // user-handler error, so a throw here is at best an unhandled rejection
     // and at worst a silently-continuing probe (verify-slice, this unit).
-    // Both conditions record it — the upstream body still carries the
+    // Both conditions record it, the upstream body still carries the
     // chrome before the strip below, and the LAST without-visit of the
     // probe would otherwise be the one visit a mid-probe deploy could slip
     // past.
@@ -348,7 +348,7 @@ async function probeVisit(
       // Equal document bytes in both conditions (see stripChromeEqualBytes):
       // the transfer term cancels, so the delta is the chrome's processing
       // cost. route.fetch() yields the DECODED body, so content-encoding
-      // must go — Playwright will not serve a pre-compressed one.
+      // must go, Playwright will not serve a pre-compressed one.
       delete headers["content-encoding"];
       const served =
         condition === "without" ? stripChromeEqualBytes(body) : body;
@@ -361,7 +361,7 @@ async function probeVisit(
     // removed from collect.ts: no navigation happens between them, so the
     // second call hit the already-fired fast path and returned in a
     // microtask. The comment below promised "one more quiet check" and there
-    // was none — the probe read `window.__pmProbe` immediately after the idle
+    // was none, the probe read `window.__pmProbe` immediately after the idle
     // callback, with no quiet window at all (verify-slice, correctness lens).
     // It matters more here than almost anywhere: this probe mints the
     // published chrome constant, and late paint/shift entries are exactly
@@ -371,14 +371,14 @@ async function probeVisit(
       if (!(await network.wait(NETWORK_QUIET_MS, LOAD_QUIET_CAP_MS))) {
         throw new Error(
           `chrome-constant: the network never went quiet for ${NETWORK_QUIET_MS} ms within ` +
-            `${LOAD_QUIET_CAP_MS} ms ${where} (${url}, condition "${condition}") — the probe has no honest ` +
+            `${LOAD_QUIET_CAP_MS} ms ${where} (${url}, condition "${condition}"), the probe has no honest ` +
             `degraded mode: both arms must get the identical settle or the delta is not a delta`,
         );
       }
     };
     await page.goto(url, { waitUntil: "load" });
     await quiet("of load");
-    // Settle late paint/shift entries the same way in both conditions —
+    // Settle late paint/shift entries the same way in both conditions,
     // bounded idle, then a REAL quiet window.
     await page.evaluate(
       () =>
@@ -393,7 +393,7 @@ async function probeVisit(
     const raw = await page.evaluate(() => window.__pmProbe ?? null);
     if (!raw) throw new Error("probe init script did not run");
     // The with-condition must actually have carried the chrome, and the
-    // without-condition must actually not — otherwise the delta is a lie.
+    // without-condition must actually not, otherwise the delta is a lie.
     const chromeCount = await page.evaluate(
       () => document.querySelectorAll("#pm-chrome").length,
     );
@@ -401,7 +401,7 @@ async function probeVisit(
       throw new Error(`with-condition page carries ${chromeCount} chrome nodes, expected 1`);
     }
     if (condition === "without" && chromeCount !== 0) {
-      throw new Error(`without-condition page still carries the chrome — strip failed`);
+      throw new Error(`without-condition page still carries the chrome, strip failed`);
     }
     return {
       FCP: raw.fcp,
@@ -461,7 +461,7 @@ async function main(): Promise<number> {
   const targetUrl = new URL(values.target, values.origin);
   const url = targetUrl.toString();
 
-  // Origin provenance BEFORE anything measures (hole 2 — the probe is
+  // Origin provenance BEFORE anything measures (hole 2, the probe is
   // bound by the same rule as a batch).
   const commit = commitPin(repoRoot);
   const originCommit: OriginCommit | null = await verifyOriginCommit(
@@ -494,7 +494,7 @@ async function main(): Promise<number> {
       // ABBA pair ordering: a fixed with-then-without order puts every
       // with-sample systematically half a pair EARLIER than its partner, so
       // a monotonic environment trend (thermal ramp, drifting network) does
-      // not cancel out of the delta of medians the way random noise does —
+      // not cancel out of the delta of medians the way random noise does,
       // alternating the pair order cancels first-order drift too
       // (verify-slice, this unit; ~2 ms/visit drift visible in the
       // bootstrap artifact's own runs).
@@ -502,12 +502,12 @@ async function main(): Promise<number> {
         run % 2 === 0 ? ["with", "without"] : ["without", "with"];
       for (const condition of order) {
         const { fragmentSha, ...metrics } = await probeVisit(browser, profile, url, condition);
-        // Judged HERE, after the visit resolves, for BOTH conditions —
+        // Judged HERE, after the visit resolves, for BOTH conditions,
         // see probeVisit's route-handler note for why.
         if (fragmentSha !== measuredChrome.sha256) {
           throw new Error(
             `the served chrome changed mid-probe (${measuredChrome.sha256.slice(0, 12)} → ` +
-              `${fragmentSha === null ? "no document intercepted" : fragmentSha.slice(0, 12)}) — ` +
+              `${fragmentSha === null ? "no document intercepted" : fragmentSha.slice(0, 12)}), ` +
               `the delta would mix two fragments`,
           );
         }
@@ -520,7 +520,7 @@ async function main(): Promise<number> {
   // Re-fetched AFTER the last visit, UNCONDITIONALLY (the batch runner's
   // mid-run rule): a deploy landing mid-probe would otherwise leave early
   // visits measuring one plane and late ones another. Any transition
-  // refuses — including null→non-null, a deploy that ADDS attestation
+  // refuses, including null→non-null, a deploy that ADDS attestation
   // (this unit's own merge is that deploy); null→null stays genuinely
   // undetectable and the artifact already says so. The fragment sha above
   // binds every DOCUMENT to one chrome; this binds the SUBRESOURCES the
@@ -536,7 +536,7 @@ async function main(): Promise<number> {
         (after.sha !== originCommit.sha || after.dirty !== originCommit.dirty));
     if (moved) {
       throw new Error(
-        `the origin's attested build changed mid-probe (${label(originCommit)} → ${label(after)}) — ` +
+        `the origin's attested build changed mid-probe (${label(originCommit)} → ${label(after)}), ` +
           `re-run in a quiet deploy window`,
       );
     }
@@ -551,7 +551,7 @@ async function main(): Promise<number> {
     date: new Date().toISOString(),
     commit,
     // What the origin attested it was serving (hole 2; null = it did not
-    // attest and the cross-tree escape was passed — visibly unattested).
+    // attest and the cross-tree escape was passed, visibly unattested).
     originCommit,
     origin: values.origin,
     target: values.target,
@@ -562,12 +562,12 @@ async function main(): Promise<number> {
     // fragment's size and hash, and whether it was the populated state.
     measuredChrome,
     method: [
-      "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag — decomposeDocument's own instrumentation boundaries — with inert HTML comments of EQUAL byte length, before parse",
-      "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources — chrome.css, the instrument mono, measure.js — which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in: a leave-one-out brotli marginal (full body minus chrome-stripped body) at the quality calibrated against the plane's own compressed serving of the target (measuredChrome.wireQuality; q11 fallback, flagged uncalibrated, when the plane served identity) — the same attribution principle decomposeDocument uses (ADR-0001 §3 addendum 2026-08-15). Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding — measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
+      "both conditions intercept the document response and re-fulfill it locally (the hop cancels out of the delta); the without-condition replaces exactly the injected chrome subtree, its /_pm/ head links, and the measurement script tag, decomposeDocument's own instrumentation boundaries, with inert HTML comments of EQUAL byte length, before parse",
+      "the document transfer term is therefore IDENTICAL in both conditions and cancels: this delta is the chrome's PROCESSING cost (tokenize/style/layout, plus its own real subresources, chrome.css, the instrument mono, measure.js, which are fetched from the real plane and compressed normally). What the chrome adds to the document ON THE WIRE is reported separately as measuredChrome.wireBytesBrotli rather than blended in: a leave-one-out brotli marginal (full body minus chrome-stripped body) at the quality calibrated against the plane's own compressed serving of the target (measuredChrome.wireQuality; q11 fallback, flagged uncalibrated, when the plane served identity), the same attribution principle decomposeDocument uses (ADR-0001 §3 addendum 2026-08-15). Serving both bodies decoded would have put the chrome's ~8 KB of uncompressed markup on the throttled wire in one condition only; fulfilling a pre-compressed body is not possible (Playwright's route.fulfill ignores a declared content-encoding, measured: a corrupt 3,660-byte document with no chrome node, against 18,146 bytes for a plain fulfil)",
       "measuredChrome.renderContext records the exact renderChrome() inputs the measured fragment renders under; the front build re-renders the fragment from them against the lab bundle it builds and REFUSES when the sha256 differs (ADR-0001 addendum N hole 1: the constant must describe the chrome that ships, and 'populated' alone cannot tell a current fragment from a stale one)",
-      "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions — the injected ruler cannot measure its own absence",
+      "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions, the injected ruler cannot measure its own absence",
       "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
-      "conditions pair-interleaved in ALTERNATING order (with/without, then without/with — ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
+      "conditions pair-interleaved in ALTERNATING order (with/without, then without/with, ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
       "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality",
     ],
     conditions: {

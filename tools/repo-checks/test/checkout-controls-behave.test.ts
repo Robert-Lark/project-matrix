@@ -1,11 +1,11 @@
 /**
- * The checkout's controls DO something — driven, not inspected.
+ * The checkout's controls DO something, driven, not inspected.
  *
  * `pdp-controls-wired.test.ts` proves the enhancement can REACH every control
  * the master renders. Its own header is candid that this is the cheap half:
  * "this one would pass a script that mentions a class and does nothing with
  * it". For the PDP the expensive half is `pdp-controls.browser.test.ts` in the
- * origin suite — which needs a live plane, and therefore cannot gate a merge.
+ * origin suite, which needs a live plane, and therefore cannot gate a merge.
  *
  * Checkout's browser leg is `tools/origin-suite/suite/checkout.browser.test.ts`
  * (checkout-measure-prep, 2026-09-24; until then the surface had none, which
@@ -14,7 +14,7 @@
  * merge, with no plane and no ports. It is in turbo's task list, so it blocks
  * a merge; the browser leg is the half it cannot be.
  *
- * What it CANNOT do, stated rather than implied — this is a DOM emulation, not
+ * What it CANNOT do, stated rather than implied. This is a DOM emulation, not
  * a browser, and three gaps matter:
  *  1. No layout, so nothing here says anything about CLS, focus rings, or the
  *     reserved geometry `cart-summary.css` provides.
@@ -24,7 +24,7 @@
  *     `:checked` matches the ATTRIBUTE rather than the checkedness property
  *     (verified in this session). The first two are shimmed below and the
  *     shims are declared; the third is why `checkout.js` reads each radio's
- *     `.checked` instead of selecting `:checked` — both are correct in a
+ *     `.checked` instead of selecting `:checked`. Both are correct in a
  *     browser, but only one of them is provable here.
  */
 import { readFileSync } from "node:fs";
@@ -47,7 +47,7 @@ let enhancement: string;
 let catalogue: { v: number; items: Record<string, CatalogueEntry> };
 
 beforeAll(async () => {
-  // The SERVED document, from the variant's own renderer — the same call
+  // The SERVED document, from the variant's own renderer, the same call
   // `build.mjs` makes. Not a fixture written by hand: a hand-written copy is
   // the thing that silently stops matching what ships.
   const vanilla = await import(
@@ -152,7 +152,7 @@ const pricedIds = (): number[] =>
     .map(Number);
 
 describe("the checkout's controls do what the markup says they do", () => {
-  it("the card number formats as you type — the field's own hint promises it", () => {
+  it("the card number formats as you type, the field's own hint promises it", () => {
     const env = run();
     const card = $(env, "#card") as HTMLInputElement;
     card.value = "4242424242424242";
@@ -195,7 +195,7 @@ describe("the checkout's controls do what the markup says they do", () => {
 
   it("an untouched field is not accused on blur", () => {
     // Tabbing through a form must not turn it red. The rule is deliberately
-    // narrow — a field that has already failed IS re-checked, so a correction
+    // narrow, a field that has already failed IS re-checked, so a correction
     // clears immediately.
     const env = run();
     const name = $(env, "#name") as HTMLInputElement;
@@ -206,7 +206,7 @@ describe("the checkout's controls do what the markup says they do", () => {
 
   it("an invalid submit renders the error summary and MOVES FOCUS to it", () => {
     // ADR-0008 §7's checkout contract, in full: "the error-summary region
-    // (heading + links to each invalid field) renders and RECEIVES FOCUS —
+    // (heading + links to each invalid field) renders and RECEIVES FOCUS,
     // identical DOM + focus work in every paradigm, so the flagship INP
     // comparison compares like work". Each clause is a line below.
     const env = run();
@@ -243,7 +243,7 @@ describe("the checkout's controls do what the markup says they do", () => {
   it("a valid submit clears the summary and names the address the hint promised", () => {
     const env = run();
     // The email hint scopes what the address is for: "Used only to render the
-    // demo confirmation in this page — nothing is ever sent." A confirmation
+    // demo confirmation in this page. Nothing is ever sent." A confirmation
     // that never names it would make the hint false.
     const filled: Record<string, string> = {
       email: "rob@example.com", name: "Rob Lark", address1: "1 Long Decay Rd",
@@ -276,7 +276,7 @@ describe("the checkout's controls do what the markup says they do", () => {
     const shown = () => $(env, "[data-pm-cart-total]").textContent;
     expect(shown()).toBe(`$${subtotal.toFixed(2)}`);
 
-    // The shipping group is a REAL choice — it is the only surviving consumer
+    // The shipping group is a REAL choice. It is the only surviving consumer
     // of format-switch.css (ADR-0008 addendum A), and what makes it real is
     // that the total moves. Exactly $12.00, the number the option label states.
     const express = $(env, '.pm-format__input[value="express"]') as HTMLInputElement;
@@ -302,7 +302,7 @@ describe("the checkout's controls do what the markup says they do", () => {
   it("an id the served snapshot has lost states the absence instead of a wrong total", async () => {
     // Reachable without anyone misbehaving: the cart is same-origin storage
     // and outlives a crate re-freeze, so an id can simply stop existing. The
-    // rule every unpublished number here follows applies — state the absence,
+    // rule every unpublished number here follows applies, state the absence,
     // never show a number-shaped hole.
     const env = run({ v: 1, items: [{ id: 999_999_999, qty: 1 }] }, catalogue);
     await env.settle();
@@ -310,7 +310,7 @@ describe("the checkout's controls do what the markup says they do", () => {
     const total = $(env, "[data-pm-cart-total]");
     expect(total.textContent).toContain("Total unavailable");
     // Named, not bare: a lone em dash announces as "em dash" or as silence.
-    expect(total.querySelector('[aria-hidden="true"]')?.textContent).toBe("—");
+    expect(total.querySelector('[aria-hidden="true"]')?.textContent).toBe("–");
     expect(total.querySelector(".pm-sr-only")).not.toBeNull();
   });
 

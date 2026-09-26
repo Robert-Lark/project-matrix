@@ -12,7 +12,7 @@ pnpm bench run --targets /placeholder-static/sample/,/placeholder-ssr/sample/ \
 pnpm bench reproduce tools/bench-runner/receipts/receipt-….json --local-cpu
 ```
 
-Receipts land in `tools/bench-runner/receipts/` (gitignored — published
+Receipts land in `tools/bench-runner/receipts/` (gitignored, published
 numbers ship as dated snapshots downstream, ADR-0001 §9).
 
 ## What a batch holds constant (ADR-0001 §4)
@@ -22,29 +22,29 @@ interleaved** so a noisy moment hits every variant equally. Cache state is
 the two **columns** inside the batch: `cold` puts `?cache=cold` on the page
 URL; `warm` makes one unmeasured priming visit, then measures. A `?run=`
 nonce keys this batch's warm state away from every other run's. Environment
-flips are separate batches by construction — the spec admits exactly one
+flips are separate batches by construction, the spec admits exactly one
 profile and one n.
 
 **What the cold column measures depends on the target.** The edge Worker
 keys its KV bypass on the *tray* request's own `cache=cold`
 (`workers/edge/src/index.js` `serveData`), not the page URL the runner
 drives. The knob reaches the data plane only through a tray fetch that
-forwards it — today the PLP tray fetches (react-next `plpApiPath`, htmx
+forwards it, today the PLP tray fetches (react-next `plpApiPath`, htmx
 `PLP_KNOBS`). So:
 
 - **Request-time pages on editorial and PDP** (react-next, qwik; htmx on
   editorial) fetch `/api/pdp/{id}` server-side with no query string
   (`variants/react-next/src/lib/edge.ts`, `variants/qwik/src/lib/edge.ts`,
-  `variants/htmx/src/index.js`) — that fetch reads the canonical KV key in
+  `variants/htmx/src/index.js`), that fetch reads the canonical KV key in
   *both* columns, and `/api/snapshot` sits outside the warm tier in both.
 - **Build-time pages (vanilla, astro)** make no runtime data fetch at all:
   cold ≡ warm by construction.
 - The only browser-issued `/api/` data fetch on those surfaces is the live-price
-  button's — fenced from every number, and no scripted interaction drives it.
+  button's, fenced from every number, and no scripted interaction drives it.
 
 Net: on editorial and PDP the cold column exercises the edge data tier for
 **no** target, and ADR-0002 §8's cold=R2 intent is **unmeasured** there. The
-same limit applies to the `?run=` nonce — it isolates only fetches that carry
+same limit applies to the `?run=` nonce. It isolates only fetches that carry
 it. The receipt's `methodNotes` state this per target class.
 
 ## Where every number comes from (never estimated)
@@ -53,18 +53,18 @@ it. The receipt's `methodNotes` state this per target class.
   (`Network.emulateNetworkConditions` with the spec's blessed
   `kbpsToBytesPerSecond`, `Emulation.setCPUThrottlingRate`, viewport/DPR/
   mobile from the versioned spec). The receipt records the exact applied
-  values and mechanism — publish the arithmetic.
+  values and mechanism, publish the arithmetic.
 - **Web vitals** come from the injected chrome's own pinned `web-vitals`
   build (THE one ruler, §2): the runner intercepts the chrome's
   `POST /api/beacon`, records the payload, and fulfills it locally with a
-  204 — so **lab runs never pollute the field data** (§1) and a page with no
+  204, so **lab runs never pollute the field data** (§1) and a page with no
   chrome honestly reports null, never an invented number.
 - **KB** is compressed transfer size from resource timing (§6), bucketed
   HTML/JS/CSS/fonts/images/data (§3) with initial JS as the headline and a
   per-interaction byte cost (the scripted interaction is a registry id,
   reproducible from the receipt). Every `/_pm/*` and `/api/beacon` byte is
   stripped per the instrumentation-boundary contract
-  ([packages/switcher/README.md](../../packages/switcher/README.md)) —
+  ([packages/switcher/README.md](../../packages/switcher/README.md)),
   stripped but *reported*, so the exclusion is visible and non-vacuous.
 - **TTFB** decomposes into travel vs server think-time from the
   navigation-timing sub-phases (§5), raw timestamps kept in the receipt.
@@ -72,34 +72,34 @@ it. The receipt's `methodNotes` state this per target class.
   attributes these sub-phases BENEATH applied CDP throttling (demonstrated:
   a 500ms emulated latency delivers on the wall clock while `responseStart`
   still reads ~1ms), so the decomposition reflects the plane's *real*
-  serving — compare it across variants; don't read it against the emulated
+  serving, compare it across variants; don't read it against the emulated
   RTT. Paint/interaction metrics (FCP/LCP/INP) are wall-clock and do carry
   the applied profile.
 - **Every run is a fresh browser context** (a first-time visitor): the
-  browser HTTP cache is a held-constant, not a measured axis — deployed
+  browser HTTP cache is a held-constant, not a measured axis, deployed
   assets ship `immutable`/etags, and a shared context would silently zero
   later runs' transfer sizes. The cache columns measure the *edge* tier.
-- **The measured resource profile** (§7 — what the cost calculator
+- **The measured resource profile** (§7. What the cost calculator
   consumes): bytes + requests from the runner's own resource-timing
   accounting; **CPU-ms per visit** from a real V8 CPU profile of every
   Worker on the plane, captured over the workerd inspectors `wrangler dev`
-  exposes (CDP `Profiler`, 100µs sampling, `(idle)` excluded — verified
+  exposes (CDP `Profiler`, 100µs sampling, `(idle)` excluded, verified
   live against the edge Worker's cold path: `handlePlp`/`computeFacets`
-  attribution — a *measured sampling profile*, named as such, not a
+  attribution, a *measured sampling profile*, named as such, not a
   platform counter). Against the deployed origin no inspector exists: the
-  field is an honest **null naming the armed-path source** — Workers
+  field is an honest **null naming the armed-path source**, Workers
   observability's per-invocation `$workers.cpuTimeMs`, harvestable via the
   telemetry query API (`POST /accounts/{id}/workers/observability/telemetry/query`)
   with an API token; `observability.enabled` is already on for every plane
   Worker, so the harvest activates with the deploy leg (all verified
-  against Cloudflare docs + workerd/workers-sdk source, 2026-07-09 — OSS
+  against Cloudflare docs + workerd/workers-sdk source, 2026-07-09, OSS
   workerd hardcodes trace cpuTime to 0, so there is genuinely no other
   local source). Every field carries its `source` string in the receipt.
 
 ## Reproduce (§9)
 
-`pnpm bench reproduce <receipt>` rebuilds the batch from the receipt — same
-URLs, profile, run count, interactions — refuses version-skewed receipts
+`pnpm bench reproduce <receipt>` rebuilds the batch from the receipt, same
+URLs, profile, run count, interactions, refuses version-skewed receipts
 (profile-spec pin), runs it as one batch, and emits a **new** receipt (fresh
 date, fresh nonce, current SHA). Receipts from a dirty tree say so
 (`commit.dirty`).
@@ -108,7 +108,7 @@ date, fresh nonce, current SHA). Receipts from a dirty tree say so
 measures, `run`, `reproduce`, and the chrome-constant probe fetch the
 plane's own attestation at `/_pm/build.json` and record it in the artifact
 as `originCommit` beside the local pin. An origin whose attested SHA
-disagrees with the checkout — or one that does not attest — is REFUSED, so
+disagrees with the checkout, or one that does not attest, is REFUSED, so
 a reproduce cannot silently measure a different tree than the receipt
 names. `--allow-cross-tree` is the explicit escape for deliberate
 cross-tree measurement; the artifact then carries the disagreement (or the

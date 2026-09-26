@@ -1,6 +1,6 @@
 ---
 /**
- * The whole PDP document, from props — the one render entry point (the
+ * The whole PDP document, from props, the one render entry point (the
  * EditorialDocument precedent, for the same reason: the pre-merge identity
  * guard drives it through Astro's Container API for BOTH committed
  * snapshots, catching crate-flavored drift before merge, since CI's browser
@@ -27,15 +27,15 @@ const CSS = [
 ];
 ---
 
-<Shell title={`${detail.title} — ${detail.artist} — Long Decay Records`} current="plp" css={CSS}>
+<Shell title={`${detail.title} · ${detail.artist} · Long Decay Records`} current="plp" css={CSS}>
   <PdpArticle detail={detail} />
   {/*
-    The paradigm's client enhancement and the data it needs — the
+    The paradigm's client enhancement and the data it needs, the
     EditorialDocument pattern exactly: a bundled <script> (deliberately NOT
-    an island — an <astro-island> element has no master equivalent), with
+    an island, an <astro-island> element has no master equivalent), with
     the release riding a JSON script element (delivery, not contract;
     ADR-0008's freedoms name `script`). mountPdp is SELF-CONTAINED rather
-    than importing scripts/cart.ts — see its header: a module shared between
+    than importing scripts/cart.ts, see its header: a module shared between
     two page entries is a candidate for chunk extraction, which could change
     how EDITORIAL's inlined bundle is delivered, and editorial's published
     initial-JS cell is pinned at its measurement SHA.

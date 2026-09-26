@@ -35,7 +35,7 @@ export function Document(handle: Handle<DocumentProps>) {
             3 (<code>3.0.0-beta.5</code>), a pre-release framework. It is
             shown as a preview of a coming paradigm and is{' '}
             <strong>excluded from every benchmark number</strong> on this
-            site — pre-release software can change or break week to week.
+            site, pre-release software can change or break week to week.
           </aside>
 
           {children}

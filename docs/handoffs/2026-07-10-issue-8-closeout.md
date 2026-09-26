@@ -1,4 +1,4 @@
-# Handoff — issue #8 (cost calculator) + foundation close-out
+# Handoff: issue #8 (cost calculator) + foundation close-out
 
 > Paste everything below the rule into the fresh session as its opening
 > prompt. Committed per the decision-map convention (handoffs are part of
@@ -14,7 +14,7 @@ build.
 WHERE THINGS STAND (2026-07-10):
 - Read docs/decision-map.md first (canonical state), then docs/build-log.md
 Phase 2 (per-slice narrative; read the #6 and #7 entries and ALL the
-methodology notes — the verification-resilience note governs how you
+methodology notes, the verification-resilience note governs how you
 verify). Vocabulary: CONTEXT.md. ADRs 0001–0004 are the rationale of
 record.
 - Issues #2–#7 are landed and closed (commits da8fec5 → f7f8ef2, plus
@@ -29,10 +29,10 @@ chrome):
     Every variant page is checked against the reference render (normalized
     DOM + pixels × 3 profiles) through the composed origin with chrome
     injected; a deliberate-drift fixture proves both checks catch drift.
-  - The BENCH RUNNER (#7): tools/bench-runner — `pnpm bench run` /
+  - The BENCH RUNNER (#7): tools/bench-runner, `pnpm bench run` /
     `pnpm bench reproduce`. Profiled batches over composed-origin URLs
     emitting SHA-pinned receipts. THE RECEIPT CONTRACT IS YOUR INPUT:
-    tools/bench-runner/src/receipt.ts — each target×column carries
+    tools/bench-runner/src/receipt.ts. Each target×column carries
     resourceProfile {cpuMs, bytes, requests}, every field {value, source}
     with value:null allowed only when the named source genuinely can't
     account it here (CPU-ms is null against the deployed origin until the
@@ -42,35 +42,35 @@ chrome):
     back-to-back before committing.
 - THE ONE ROB-GATED ITEM (unchanged): the deploy leg. No CLOUDFLARE_*
 secrets, CI's deploy job skips loudly. Arming runbook in workers/README.md.
-Don't block on it — flag it in your handoff back.
+Don't block on it, flag it in your handoff back.
 
 YOUR TASK: issue #8 (cost calculator), then the foundation close-out.
-1. `gh issue view 8` in full — acceptance criteria are the definition of
+1. `gh issue view 8` in full, acceptance criteria are the definition of
    done. Read ADR-0001 §7 (and §9) closely: cost model = measured resource
-   profile (from bench receipts — never estimated) × dated, swappable rate
+   profile (from bench receipts, never estimated) × dated, swappable rate
    card; report BOTH an architecture-only number (one card for all) and a
    real-world number (each variant on its actual host); normalize to $/1M
    visits at a stated cache-hit ratio and region; show actual charge to
    date (honestly ≈$0, free tiers) + grounded extrapolation; publish the
    full arithmetic so a skeptic can swap inputs and re-run. The ADR's rate
    figures (CF $0.30/1M req + $0.02/1M CPU-ms; Vercel $0.60/1M invocations
-   + ~$0.13/CPU-hr + ~$0.15/GB egress) were verified 2026-07-06 — RE-VERIFY
+   + ~$0.13/CPU-hr + ~$0.15/GB egress) were verified 2026-07-06, RE-VERIFY
    against the live pricing pages at build time per the web-research rules
    and DATE the card; rate cards drift by design.
-2. When #8 lands: the foundation build closes out against issue #1's PRD —
+2. When #8 lands: the foundation build closes out against issue #1's PRD,
    re-verify the whole skeleton against the PRD's "done" paragraph, update
    docs/decision-map.md (foundation-build status) + build-log, and hand the
    map back to Rob for the next phase (snapshot-capture,
    aesthetic-direction, home-surface, a11y-section, data-strategy-lab,
-   remix3-frontier are the open tickets waiting on it). PAUSE there — do
+   remix3-frontier are the open tickets waiting on it). PAUSE there, do
    not start next-phase tickets.
 
 STANDING RULES FOR THIS REPO:
-- ADR wins on any conflict with issue/PRD text — flag it, never silently
+- ADR wins on any conflict with issue/PRD text, flag it, never silently
   resolve (see the #6 closing comment for the pattern).
 - Rob has standing best-judgment authorization; don't block on questions
   you can decide from the ADRs.
-- No unit tests of Worker internals — the composed-origin seam is the
+- No unit tests of Worker internals, the composed-origin seam is the
   contract. Tools packages have no `test` script (origin-suite precedent);
   pure-function tests are fine where the repo already has them.
 - Dev servers/watchers ALWAYS run_in_background, never foreground.
@@ -79,7 +79,7 @@ STANDING RULES FOR THIS REPO:
   commit, push, `gh run watch` until green, close the issue with an
   AC→evidence comment.
 
-VERIFICATION — LIMIT-RESILIENT, THE NEW STANDING PATTERN (this exists
+VERIFICATION, LIMIT-RESILIENT, THE NEW STANDING PATTERN (this exists
 because three verification fan-outs died on session limits; the full story
 is in the build-log methodology notes):
 - Verify pre-commit with the SAVED workflow:
@@ -90,18 +90,18 @@ is in the build-log methodology notes):
   every finder streams confirmed findings to
   <scratchDir>/findings-<lens>.md AS IT GOES.
 - Run it in the background and do inline empirical probing in the
-  foreground meanwhile — probes and code-reading lenses catch different
+  foreground meanwhile, probes and code-reading lenses catch different
   defect classes (probes found #7's two realest defects).
 - Refute findings INLINE yourself; adopt/fix pre-commit.
 - If a limit death happens anyway: the failure list is the truth (a
-  workflow summary can be hollow — `findings: []` from a dead stage means
+  workflow summary can be hollow, `findings: []` from a dead stage means
   nothing ran, not nothing found). Read the run journal
   (~/.claude/.../workflows/<run>/journal.jsonl) + the findings-*.md files,
   refute what landed, and RESUME after the reset with
   Workflow({name: "verify-slice", args: <same>, resumeFromRunId: "<id>"})
-  — completed lenses replay from cache. Never abandon a run.
+ , completed lenses replay from cache. Never abandon a run.
 - Budget-shape: launch the verification workflow EARLY in your window (not
-  at the tail of a heavy build leg), and keep durable state on disk — the
+  at the tail of a heavy build leg), and keep durable state on disk, the
   tree, docs, and issue comments survive a dead session; conversation
   doesn't.
 
@@ -110,34 +110,34 @@ ENVIRONMENT GOTCHAS (all learned the hard way; the new ones are #7's):
   `corepack enable --install-directory ~/.local/bin pnpm`.
 - `hoist: false` MUST stay in pnpm-workspace.yaml; public npm registry
   pinned in .npmrc; allowBuilds covers esbuild/sharp/workerd.
-- Playwright's CDN is blocked locally by org TLS interception — browser
+- Playwright's CDN is blocked locally by org TLS interception, browser
   code falls back to system Chrome (channel:"chrome"); CI installs
   bundled Chromium (cached).
 - Leaked wrangler/workerd trees poison later runs; the orchestrator
   pre-flights ports 8787-8790/9230-9233 and fails loudly. `pkill -f
-  "wrangler dev"` does NOT reliably kill workerd grandchildren — find them
+  "wrangler dev"` does NOT reliably kill workerd grandchildren, find them
   with `lsof -nP -iTCP:<port> -sTCP:LISTEN` and `kill -9` by PID, then
   re-check every port.
 - Single-process `wrangler dev -c a -c b` is forbidden (breaks
   assets-through-bindings).
 - The wrangler inspector proxy (ports 9230-9233) rejects websocket
-  handshakes without an Origin header — Node's undici WebSocket takes a
+  handshakes without an Origin header, Node's undici WebSocket takes a
   non-standard {headers:{origin:...}} option (see bench-runner/src/cpu.ts).
-- In JS-disabled pages, requestAnimationFrame NEVER fires — an async
+- In JS-disabled pages, requestAnimationFrame NEVER fires, an async
   in-page evaluate awaiting it dies with "execution context was
   destroyed". Poll with sync evaluates from Node instead (drift-gate).
 - document.fonts.status reads "loaded" VACUOUSLY before layout triggers the
-  font fetch — force layout first (see drift-gate/src/gate.ts).
+  font fetch, force layout first (see drift-gate/src/gate.ts).
 - Chromium REBASES navigation-timing sub-phases beneath applied CDP
   throttling (500ms emulated latency delivers on the wall clock while
-  responseStart reads ~1ms) — bench receipts state this in methodNotes;
+  responseStart reads ~1ms), bench receipts state this in methodNotes;
   don't "fix" it, it's a measured property.
 - Local `wrangler dev` serves identity encoding (no Brotli); the deployed
   smoke sets PM_EXPECT_BROTLI=1.
 
 HOUSEKEEPING:
 - A `caffeinate -is` process (PID 69347, 8h auto-expiry) is keeping Rob's
-  machine awake for this work — when you finish the close-out, run
+  machine awake for this work, when you finish the close-out, run
   `kill 69347` (ignore errors if already expired).
 - Scratchpad files are disposable; the repo, issues, and docs are
   canonical.

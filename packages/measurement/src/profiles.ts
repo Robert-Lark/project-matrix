@@ -1,5 +1,5 @@
 /**
- * The versioned test-profile spec — the ONE definition of the three published
+ * The versioned test-profile spec, the ONE definition of the three published
  * test profiles (ADR-0001 §4). Every consumer reads THIS spec:
  *
  *   - the HUD's `?profile=` snapshot-selector ids (ADR-0004 §6)
@@ -7,7 +7,7 @@
  *   - the drift gate's pixel-diff viewports (issue #6)
  *   - the receipt's `profile` field (ADR-0001 §9)
  *
- * so "three published profiles applied identically" holds by construction —
+ * so "three published profiles applied identically" holds by construction,
  * there is no second copy to drift.
  *
  * Deliberately dependency-free: the HUD ships this to the browser.
@@ -18,13 +18,13 @@
  * `screenEmulationMetrics` in GoogleChrome/lighthouse core/config/constants.js
  * and the Lantern simulation constants); the fast-wifi profile is
  * PROJECT-DEFINED because no widely-published preset exists (WebPageTest's
- * connectivity.ini has no WiFi profile — checked). Values are lab targets for
+ * connectivity.ini has no WiFi profile, checked). Values are lab targets for
  * the automation layer; note Lighthouse's DevTools-applied throttling adjusts
- * these (rtt ×3.75, throughput ×0.9) — whether the runner uses simulated or
+ * these (rtt ×3.75, throughput ×0.9), whether the runner uses simulated or
  * applied throttling is the bench runner's decision (issue #7), but the
  * TARGET characteristics are pinned here.
  *
- * Bump PROFILE_SPEC_VERSION on ANY value change — published receipts cite the
+ * Bump PROFILE_SPEC_VERSION on ANY value change, published receipts cite the
  * version they ran under, so numbers stay tied to the exact conditions.
  */
 
@@ -40,7 +40,7 @@ export interface ProfileNetwork {
   rttMs: number;
   /**
    * Download throughput target, kilobits per second, where
-   * **1 Kbps = 1024 bits/s** (the Lighthouse convention — the pinned values
+   * **1 Kbps = 1024 bits/s** (the Lighthouse convention, the pinned values
    * are n×1024). CDP `Network.emulateNetworkConditions` takes bytes/sec:
    * use {@link kbpsToBytesPerSecond} (×128), never ×1000/8 (a silent ~2.4%
    * deviation from the pinned conditions).
@@ -74,7 +74,7 @@ export interface TestProfile {
   /** Main-thread slowdown multiplier applied at the automation layer. */
   cpuMultiplier: number;
   viewport: ProfileViewport;
-  /** Where these numbers come from — part of the anti-rigging receipt trail. */
+  /** Where these numbers come from, part of the anti-rigging receipt trail. */
   provenance: string;
 }
 
@@ -111,7 +111,7 @@ export const PROFILES: Readonly<Record<ProfileId, TestProfile>> = {
 export const PROFILE_IDS = Object.keys(PROFILES) as readonly ProfileId[];
 
 /** Lookup that tolerates arbitrary strings (e.g. a raw `?profile=` value).
- *  Object.hasOwn: a bare record lookup resolves prototype keys —
+ *  Object.hasOwn: a bare record lookup resolves prototype keys,
  *  `?profile=constructor` returned the inherited Object constructor (truthy)
  *  and crashed the chrome renderer into a 502 on every variant HTML page
  *  (verify-slice correctness lens, 2026-07-17). */

@@ -3,7 +3,7 @@
 // a controlled constant; the origin suite's font-leg test compares served
 // bytes to these sources directly). Deliberately NOT `import`ed as regular
 // CSS: Next's bundler would hash/process the files, breaking byte identity
-// with @pm/tokens — the placeholder-static mold every static-delivery
+// with @pm/tokens, the placeholder-static mold every static-delivery
 // variant follows, adapted to Next's public/ convention (vanilla's build.mjs
 // is the same idea via cpSync into its own dist).
 import { cpSync, mkdirSync } from "node:fs";

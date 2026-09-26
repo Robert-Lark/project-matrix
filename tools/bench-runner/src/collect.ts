@@ -1,17 +1,17 @@
 /**
  * One measured visit (ADR-0001 §2, §3, §5, §6): drive a composed-origin URL
  * in a real Chromium under an applied profile, and account for everything
- * the receipt needs — from the browser's own accounting, never estimates.
+ * the receipt needs, from the browser's own accounting, never estimates.
  *
  *  - Web vitals come from the injected chrome's own pinned web-vitals build
  *    (THE one ruler, §2), harvested by intercepting `POST /api/beacon`: the
  *    payload is recorded and the request is fulfilled locally with a 204,
  *    so LAB traffic never reaches the RUM collector (§1: lab and field have
- *    split roles — a bench run must not pollute field data).
+ *    split roles, a bench run must not pollute field data).
  *  - Bytes are compressed transfer sizes from resource timing (§6), bucketed
  *    HTML/JS/CSS/fonts/images/data (§3), with every /_pm/* and /api/beacon
  *    byte stripped (the instrumentation-boundary contract,
- *    packages/switcher/README.md) — stripped but REPORTED, so the exclusion
+ *    packages/switcher/README.md), stripped but REPORTED, so the exclusion
  *    is visible and provably non-vacuous.
  *  - TTFB decomposes into travel vs server think-time from the navigation-
  *    timing sub-phases (§5), raw timestamps kept (§9: publish the arithmetic).
@@ -35,14 +35,14 @@ export const INTERACTIONS: Readonly<
 > = {
   none: async () => {},
   /** The trivial interaction (issue #7: placeholders exercise it trivially):
-   *  a real click on the page body — enough for the event-timing pipeline
+   *  a real click on the page body, enough for the event-timing pipeline
    *  (INP) and a zero-byte per-interaction cost on static placeholders. */
   "body-click": async (page) => {
     await page.locator("main h1").first().click();
   },
   /** The editorial surface's ONE designed interaction (ADR-0008 §8): the
-   *  featured release's Add to cart. Selected by accessible role + name —
-   *  the canonical markup contract every variant must serve identically —
+   *  featured release's Add to cart. Selected by accessible role + name,
+   *  the canonical markup contract every variant must serve identically,
    *  and clicked with NO warm-up click before it, so the first click's
    *  latency is what the receipt records.
    *
@@ -51,7 +51,7 @@ export const INTERACTIONS: Readonly<
    *  (ADR-0001 addendum I, so the initial/interaction byte split is
    *  deterministic). A paradigm that defers handler FETCHING to idle has
    *  therefore finished fetching by click time, and this number measures
-   *  what remains at that moment — resolving and running the handler — not
+   *  what remains at that moment, resolving and running the handler, not
    *  the download. The event-timing entry the INP pipeline needs exists
    *  either way, since the event registers regardless of when the handler
    *  resolves. */
@@ -60,13 +60,13 @@ export const INTERACTIONS: Readonly<
   },
   /** The PDP's headline interaction (ADR-0008 §8; the pdp-build ticket names
    *  it "the interaction this surface genuinely owns, where the paradigms
-   *  differ most — DOM swap vs state re-render vs resumed handler"): switch
+   *  differ most, DOM swap vs state re-render vs resumed handler"): switch
    *  the gallery stage to another image.
    *
    *  `.nth(1)`, and the index is load-bearing. Thumb 0 is ALREADY the
    *  selected one (the master renders `aria-current="true"` on it and the
    *  stage carries `images[0]`), so clicking it re-assigns the same `src`,
-   *  changes no state, and fetches nothing — while still recording a real
+   *  changes no state, and fetches nothing, while still recording a real
    *  INP entry, because the event registers regardless of what the handler
    *  does. That is a plausible-looking, meaningless cell, which is worse
    *  than a missing one.
@@ -84,15 +84,15 @@ export const INTERACTIONS: Readonly<
    *  a URL the load never requested because the thumb carries the 160 px
    *  `.thumb.avif` derivative (ADR-0008 §11). Measured on the deployed
    *  plane 2026-08-28: image 2 of release 896191 is 24,894 B, and the URL
-   *  is byte-identical across all four paradigms — so this cell's bytes are
+   *  is byte-identical across all four paradigms, so this cell's bytes are
    *  IMAGE MASS, invariant by construction, and are never a paradigm
    *  difference. The INP half is the paradigm difference. */
   "pdp-gallery-switch": async (page) => {
     const thumbs = page.locator(".pm-gallery__thumb");
     const count = await thumbs.count();
     if (count < 2) {
-      // `.nth(1)` OPTS OUT of Playwright's strict mode — strictness fires on
-      // more than one match, never on zero — so a release with no thumb strip
+      // `.nth(1)` OPTS OUT of Playwright's strict mode, strictness fires on
+      // more than one match, never on zero, so a release with no thumb strip
       // does not fail loudly here; it waits out the 30 s action timeout and
       // reports a locator problem instead of the real constraint. 90 of the
       // crate's 500 releases render exactly one image and therefore no strip
@@ -107,7 +107,7 @@ export const INTERACTIONS: Readonly<
     }
     await thumbs.nth(1).click();
   },
-  /** The PDP's add-to-cart — the controlled cross-surface twin of
+  /** The PDP's add-to-cart, the controlled cross-surface twin of
    *  `editorial-add-to-cart` (same paradigm, same interaction, different
    *  surface), and the PDP's zero-fetch interaction: the handler writes
    *  `localStorage` and updates two slots, so nothing crosses the wire.
@@ -117,13 +117,13 @@ export const INTERACTIONS: Readonly<
    *  unpriced master (707725) renders the same button reading "None for
    *  sale" and disabled (pdp.mjs:117), so a name-based locator resolves ZERO
    *  nodes there. `.pm-pdp__buy button.pm-button` matches exactly one node
-   *  on every master — the fenced live-origin plaque's button is a
+   *  on every master, the fenced live-origin plaque's button is a
    *  `pm-button--secondary` OUTSIDE `.pm-pdp__buy`.
    *
    *  **The class locator resolves on every master; it is only CLICKABLE on a
    *  priced one.** `pdp.mjs:117` renders that same button `disabled` when the
    *  release is sold out, and Playwright's actionability check then retries
-   *  the enabled state until the 30 s default action timeout and throws — a
+   *  the enabled state until the 30 s default action timeout and throws, a
    *  batch pointed at the unpriced master would burn half an hour before
    *  saying anything useful, and the message it finally gave would name a
    *  locator timeout rather than the real constraint. So the constraint is
@@ -140,29 +140,29 @@ export const INTERACTIONS: Readonly<
       throw new Error(
         `pdp-add-to-cart cannot be driven on this release: its buy button is disabled, which is what ` +
           `packages/reference/render/pdp.mjs renders when numForSale is 0 ("None for sale"). Bench a ` +
-          `PRICED release, or drive pdp-gallery-switch — do not wait for the actionability timeout to ` +
+          `PRICED release, or drive pdp-gallery-switch, do not wait for the actionability timeout to ` +
           `report this as a locator problem`,
       );
     }
     await button.click();
   },
   /** Checkout's three ids (ADR-0008 Consequences names them; owner: this
-   *  file — checkout-measure-prep, 2026-09-24; definitions in ADR-0001
+   *  file, checkout-measure-prep, 2026-09-24; definitions in ADR-0001
    *  addendum V). What every one of them is designed around is the RULER's
    *  gate: the chrome's pinned web-vitals build observes `event` entries at
    *  its default `durationThreshold` of 40 ms plus the `first-input` entry,
    *  always. So an interaction under 40 ms is invisible to INP unless it is
-   *  the visit's FIRST input — and on a fast paradigm the cell IS that first
+   *  the visit's FIRST input, and on a fast paradigm the cell IS that first
    *  input. Each entry therefore makes its first input the interaction its
    *  name promises, and nothing before it is an input at all.
    *
    *  `checkout-type-card`: the card field's own hint promises "Formats as you
-   *  type — that formatting is part of what this page measures". The field
+   *  type, that formatting is part of what this page measures". The field
    *  is focused PROGRAMMATICALLY (no pointer event, so no first input), then
    *  sixteen REAL keystrokes go in, one interaction each; the first keystroke
    *  is the visit's first input and any later one that reaches 40 ms also
    *  counts. The first draft clicked the field first, and the cell was that
-   *  click — 24 ms of an interaction that runs no handler, every keystroke
+   *  click, 24 ms of an interaction that runs no handler, every keystroke
    *  under the gate (measured on the held plane before this comment). Every
    *  checkout variant re-implements the formatter; the keystroke is the
    *  like-for-like unit. Settles on the formatted value, the handler's own
@@ -179,7 +179,7 @@ export const INTERACTIONS: Readonly<
   /** Checkout's contract interaction (ADR-0008 §7): "Place order" on the
    *  pristine form. The enhancement checks ten rules, writes `aria-invalid`
    *  and an error paragraph per field, renders the error summary with ten
-   *  links at the top of the form and MOVES FOCUS to it — identical DOM +
+   *  links at the top of the form and MOVES FOCUS to it, identical DOM +
    *  focus work in every paradigm, which is what makes the INP cell
    *  like-for-like. One click, one interaction, the visit's first input.
    *  Settles on the focus move, the last thing the handler does.
@@ -192,11 +192,11 @@ export const INTERACTIONS: Readonly<
    *  and never before. Measured on the held plane 2026-09-24: 1,212 B body,
    *  1,512 B `transferSize` (the spec's 300-octet header constant, ADR-0001
    *  addendum U). Every variant serves the identical file from its own
-   *  copied tokens tree, so this cell's bytes are GLYPH MASS — invariant by
+   *  copied tokens tree, so this cell's bytes are GLYPH MASS, invariant by
    *  construction, the `pdp-gallery-switch` shape. The fit template is keyed
    *  by SURFACE and publishes ONE interaction (ADR-0001 addendum T): if this
-   *  is the one checkout publishes — the recommendation, since it is the §7
-   *  contract interaction — its declaration is `interactionFetch: { kind:
+   *  is the one checkout publishes, the recommendation, since it is the §7
+   *  contract interaction. Its declaration is `interactionFetch: { kind:
    *  "constant" }`. The INP half is the paradigm difference. */
   "checkout-submit-invalid": async (page) => {
     await page.getByRole("button", { name: "Place order" }).click();
@@ -209,11 +209,11 @@ export const INTERACTIONS: Readonly<
    *  submit that succeeds. Two REAL clicks, and what the cell measures under
    *  the ruler's gate is stated rather than implied: the first click (the
    *  invalid submit) is the visit's first input and always counts; the second
-   *  (the successful submit — ten fields re-checked, ten error states
+   *  (the successful submit, ten fields re-checked, ten error states
    *  cleared, the summary removed, the order announced) counts only when it
    *  reaches 40 ms. So on a fast paradigm this cell reads the same click
    *  `checkout-submit-invalid` does, and it separates from that id only
-   *  where the recovery's handler is slow enough to be seen — which is the
+   *  where the recovery's handler is slow enough to be seen, which is the
    *  condition this surface's spotlight names (INP under main-thread load).
    *  The fills between the clicks are Playwright's `fill` (CDP
    *  `Input.insertText`): `input` events, no key events, no event-timing
@@ -222,11 +222,11 @@ export const INTERACTIONS: Readonly<
    *  A programmatic prefix was tried and REJECTED on measurement: making the
    *  invalid submit with `form.requestSubmit()` so the one real click would be
    *  the successful submit produced CLS 0.099. The shift is the summary's
-   *  render — a layout shift no input precedes, so the metric counts it,
+   *  render, a layout shift no input precedes, so the metric counts it,
    *  where a real click excludes it under the 500 ms recent-input rule. (The
    *  fills' blur clean-ups are NOT the reason: each fill's trusted `change`
-   *  event is itself an excluding input — Layout Instability's list names
-   *  `change` — so they never count either way.) The instrument must never
+   *  event is itself an excluding input, Layout Instability's list names
+   *  `change`, so they never count either way.) The instrument must never
    *  manufacture the CLS it reports (ADR-0008 §1), so the priming is a real
    *  click. Settles on the
    *  announcement the email hint promises. Fetches the same one-glyph ⚠ face
@@ -252,8 +252,8 @@ export const INTERACTIONS: Readonly<
 
 /**
  * What the checkout entries type. Every value is a deliberately fake
- * fixture — 4242 4242 4242 4242 is the public test PAN every payment sandbox
- * documents — and by the master's own rule no field but the shipping radio
+ * fixture, 4242 4242 4242 4242 is the public test PAN every payment sandbox
+ * documents, and by the master's own rule no field but the shipping radio
  * carries a `name`, so none of it could leave the page even if the form
  * submitted (packages/reference/render/checkout.mjs rule 1). The ten keys are
  * the ten ids `checkout.js` RULES validates; the linkedom behaviour test
@@ -276,7 +276,7 @@ export const CHECKOUT_FILL: Readonly<
   expiry: "1226",
   cvc: "123",
 };
-/** The formatter's output for CHECKOUT_FILL.card — the settle marker for
+/** The formatter's output for CHECKOUT_FILL.card, the settle marker for
  *  `checkout-type-card`, spelled here so the wait is on the handler's own
  *  result rather than on a keystroke count. */
 export const CHECKOUT_FORMATTED_CARD = "4242 4242 4242 4242";
@@ -290,7 +290,7 @@ export interface ApplyResult {
 }
 
 /**
- * Apply the profile's network/CPU axes at the automation layer via CDP —
+ * Apply the profile's network/CPU axes at the automation layer via CDP,
  * the pinned TARGET characteristics applied directly (the profile spec
  * documents that Lighthouse's own applied-throttling multipliers are its
  * business, not the spec's). Returns what was actually sent to the browser.
@@ -318,7 +318,7 @@ export async function applyProfile(
   return applied;
 }
 
-/** Browser-context options for a profile's viewport axis — JS ON (the
+/** Browser-context options for a profile's viewport axis, JS ON (the
  *  measurement client must run; contrast the drift gate's JS-off contexts). */
 export function profileContextOptions(profile: TestProfile) {
   return {
@@ -357,64 +357,64 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
 /**
  * The document response is ONE compressed stream, so its wire cost
  * (`transferSize`) cannot be split into per-part compressed sizes by
- * measurement — brotli is applied over the whole body at once. It is instead
+ * measurement, brotli is applied over the whole body at once. It is instead
  * ATTRIBUTED across four parts (ADR-0001 §3 addendum superseding addendum G,
  * 2026-08-15): `transferSize` stays the authority on the LEVEL, and the
  * between-part RATIOS come from leave-one-out brotli marginals at a
- * wire-calibrated quality — see the estimator note below. Three parts are
+ * wire-calibrated quality, see the estimator note below. Three parts are
  * carved out of what would otherwise all land in the HTML bucket:
  *
  *  - INLINE EXECUTABLE `<script>` (no `src`, JS/module type) → the JS bucket
  *    and the initial-JS headline. Without this an inlined bundle (Astro inlines
- *    its ~1.2 KB cart module) reports "0 KB JS" against the no-runtime control —
+ *    its ~1.2 KB cart module) reports "0 KB JS" against the no-runtime control,
  *    the defect the 2026-08-01 addendum settled (issue #16 defect 1).
  *  - INLINE NON-EXECUTABLE `<script>` (a `type` the browser will not run:
  *    application/json, qwik/json, importmap, …) → the DATA bucket. These are
  *    serialized payloads a paradigm ships (Astro's cart-item JSON, Qwik's
- *    resumability state) — data, not executable JS and not prose HTML.
+ *    resumability state), data, not executable JS and not prose HTML.
  *    Attributing them to JS would inflate the headline a hostile reader is
  *    meant to trust (serialized state is not runtime); leaving them in HTML
  *    hides them in the prose cell.
- *  - INJECTED INSTRUMENTATION MARKUP — the front Worker's chrome subtree
+ *  - INJECTED INSTRUMENTATION MARKUP, the front Worker's chrome subtree
  *    (`<aside id="pm-chrome">…`), its `/_pm/*` head links, and the measurement
- *    `<script src="/_pm/…">` tag — → instrumentation, STRIPPED from every
+ *    `<script src="/_pm/…">` tag, → instrumentation, STRIPPED from every
  *    bucket like the `/_pm/*` subresource PAYLOADS already are (ADR-0001 §6,
  *    packages/switcher/README.md). The document byte bucket must not carry the
  *    instrument's own markup (audit 2026-08-01, collect.ts:303).
  *
  * Which paradigm delivers its script inline vs external, executable vs
- * serialized data, IS the render-axis variable (ADR-0003 §2) — this split is
+ * serialized data, IS the render-axis variable (ADR-0003 §2). This split is
  * what makes that variable visible instead of hidden in the HTML total.
  *
  * THE ESTIMATOR (bench-instrumentation-dilution; supersedes addendum G's
  * uncompressed-share rule). Uncompressed share is exact only if every part
  * compresses at the document's average ratio, and the injected chrome
  * violates that hardest: it compresses far better than average, so it was
- * over-attributed and every OTHER bucket under-attributed — measured at
+ * over-attributed and every OTHER bucket under-attributed, measured at
  * 40–47% on the smallest published JS cells, with the bias growing with the
  * chrome (astro's published cell moved 0.42→0.37 KB on a chrome-only
  * change). The rule now is:
  *
  *  1. LEVEL: the four parts still sum EXACTLY to `transferSize`
  *     (largest-remainder apportionment, unchanged).
- *  2. RATIOS: each part's weight is its leave-one-out marginal — the bytes
+ *  2. RATIOS: each part's weight is its leave-one-out marginal, the bytes
  *     the compressed document LOSES when exactly that part's regions are
- *     removed — computed with THE WIRE'S OWN CODEC at the setting that best
+ *     removed, computed with THE WIRE'S OWN CODEC at the setting that best
  *     reproduces the observed wire body (`encodedBodySize`; scan the
  *     codec's range, pick the minimum absolute residual, record it).
  *     Measured on the deployed plane: brotli q4 reproduces the br wire
  *     within 0.1–0.3% on all three delivery shapes (2026-08-15), and zstd
  *     level 2 reproduces the zstd wire Chromium actually negotiates within
  *     0.08% (2026-08-16). The calibration is re-derived per document rather
- *     than hard-coded, so the ruler follows the CDN — in codec as well as
+ *     than hard-coded, so the ruler follows the CDN, in codec as well as
  *     in setting.
- *  3. IDENTITY: a document served uncompressed needs no estimate — per-part
+ *  3. IDENTITY: a document served uncompressed needs no estimate, per-part
  *     wire cost IS the uncompressed size, and the rule degrades to exact
  *     truth (uncompressed share).
  *
  * Stated bias, so nobody re-derives it wrong: disjoint parts' marginals do
  * not sum to the whole (redundancy shared BETWEEN parts is saved only when
- * the second part goes, so it belongs to no single marginal) — the shortfall
+ * the second part goes, so it belongs to no single marginal), the shortfall
  * measured 0.94–0.95× on the three real shapes, so normalisation scales
  * every part up ~×1.05–1.06, slightly over-crediting parts that share more
  * context than average. Validated against the two failure modes that killed
@@ -438,27 +438,27 @@ export interface DocumentAttribution {
     | "uncompressed-share-fallback"
     | "degraded-all-html";
   /**
-   * The compression model the ratios were computed with — THE WIRE'S OWN
+   * The compression model the ratios were computed with, THE WIRE'S OWN
    * CODEC, selected from the response's content-encoding. The first
    * attested batch (2026-08-16) proved why this cannot be hard-coded:
    * Chromium negotiates zstd and Cloudflare serves it, while curl-shaped
-   * br-only requests still get brotli — a brotli model fitted to that zstd
+   * br-only requests still get brotli, a brotli model fitted to that zstd
    * wire was caught by the publication gate on its first real run. zstd
    * level 2 reproduces Cloudflare's zstd wire within 0.08% (measured; the
    * body is committed in the estimator lab).
    */
   codec: "brotli" | "zstd" | "gzip" | "deflate" | null;
-  /** Calibrated codec setting — brotli quality / zstd level / zlib level
+  /** Calibrated codec setting, brotli quality / zstd level / zlib level
    *  (loo-wire-normalised only, else null). */
   quality: number | null;
-  /** The calibration target itself — the compressed body the model was
-   *  fitted against — so the residual is judgeable from the artifact alone
+  /** The calibration target itself, the compressed body the model was
+   *  fitted against, so the residual is judgeable from the artifact alone
    *  (a residual without its denominator is not a bound). */
   calibrationTargetBytes: number | null;
   /** WHAT the target was: the compressed body (the honest fit) or the
    *  headers-included transferSize fallback when the browser exposed no
    *  encodedBodySize. A fallback fit is labeled so the publication gate can
-   *  refuse it — a header-padded target is not a body fit (loo only). */
+   *  refuse it, a header-padded target is not a body fit (loo only). */
   calibrationTargetSource: "encoded-body" | "transfer-size" | null;
   /** model(body, quality) − the calibration target, in bytes (loo only). */
   calibrationResidualBytes: number | null;
@@ -473,7 +473,7 @@ export interface DocumentBytes {
   js: number;
   data: number;
   instrumentation: number;
-  /** How these four numbers were derived — recorded, never assumed. */
+  /** How these four numbers were derived, recorded, never assumed. */
   attribution: DocumentAttribution;
 }
 
@@ -495,7 +495,7 @@ const EXECUTABLE_SCRIPT_TYPES = new Set([
  * A proper tokenizer, not a per-name regex scan: a `\b${name}` or even a
  * whitespace-anchored scan can match a namespaced/hyphenated attribute
  * (`q:type`, `data-type`) or the same token appearing INSIDE another
- * attribute's quoted value — Qwik really emits
+ * attribute's quoted value, Qwik really emits
  * `<script type="module" q:type="preload">`, and a wrong `type` read there
  * misbooks executable JS as data. Consuming each quoted value atomically makes
  * a value that contains `type=` inert. First occurrence of a name wins.
@@ -594,7 +594,7 @@ const BROTLI_MODEL: CodecModel = {
  * calibration principle ("the setting that reproduces the observed wire")
  * only holds when the MODEL is the wire's codec: Chromium negotiates zstd
  * and Cloudflare serves it, so the bench browser's documents ride a zstd
- * wire while br-only clients still get brotli — a brotli model fitted to
+ * wire while br-only clients still get brotli, a brotli model fitted to
  * the zstd byte count mislabels its own ratios (caught by the publication
  * gate on the first attested batch, 2026-08-16). Unknown encodings fall
  * back to the brotli model; the codec field then shows the mismatch and
@@ -641,10 +641,10 @@ const compressedBytes = (model: CodecModel, text: string, quality: number): numb
   text.length === 0 ? 0 : model.compress(text, quality);
 
 /** The codec setting whose whole-document output best reproduces the
- *  observed wire bytes — scanned over the model's full range, smallest
+ *  observed wire bytes, scanned over the model's full range, smallest
  *  absolute residual wins (first winner on a tie, so the pick is
  *  deterministic). Calibrated per document rather than hard-coded so the
- *  ruler follows the CDN — in codec as well as in setting. */
+ *  ruler follows the CDN, in codec as well as in setting. */
 function calibrateQuality(
   model: CodecModel,
   body: string,
@@ -665,8 +665,8 @@ function calibrateQuality(
  * html/js/data/instrumentation (see the block comment above): level from
  * `transferSize`, ratios from leave-one-out brotli marginals at the quality
  * calibrated against `encodedBodySize` (the compressed body the browser
- * actually received; falls back to `transferSize` — headers included, and
- * the recorded residual then shows it — when the caller has no body size).
+ * actually received; falls back to `transferSize`, headers included, and
+ * the recorded residual then shows it, when the caller has no body size).
  * `body` is the exact decoded bytes the browser received (chrome injection
  * already applied). An identity-encoded response (no compression on the
  * wire) uses uncompressed share, which is exact there, not an estimate.
@@ -705,7 +705,7 @@ export function decomposeDocument(
   // well-compressed document the fallback target can exceed docBytes and
   // would otherwise mislabel a compressed response as identity-encoded with
   // no recorded residual (verify-slice, this unit). Without encodedBodySize
-  // the split still runs — labeled as the fallback it is, never as identity.
+  // the split still runs, labeled as the fallback it is, never as identity.
   const hasEncoded = encodedBodySize !== undefined && encodedBodySize > 0;
   const target = hasEncoded ? encodedBodySize : transferSize;
   let weights: number[];
@@ -737,7 +737,7 @@ export function decomposeDocument(
     const model = modelForEncoding(contentEncoding);
     const { quality, compressed } = calibrateQuality(model, body, target);
     // Leave-one-out marginal per part: what the compressed document loses
-    // when that part's regions are removed (in document order — the
+    // when that part's regions are removed (in document order, the
     // carve-outs are non-contiguous). Clamped at 0: a codec can in
     // principle shrink when bytes are ADDED back, and a negative weight
     // would be a negative byte attribution.
@@ -761,7 +761,7 @@ export function decomposeDocument(
       };
     } else {
       // Every marginal vanished (a degenerate document): fall back to the
-      // uncompressed share rather than divide by zero — and say so.
+      // uncompressed share rather than divide by zero, and say so.
       weights = PART_ORDER.map((p) => uncompressed[p]);
       attribution = {
         estimator: "uncompressed-share-fallback",
@@ -807,17 +807,17 @@ async function resourceEntries(page: Page): Promise<ResourceEntry[]> {
 export interface VisitSpec {
   effectiveUrl: string;
   interactionId: string;
-  /** Upper bound (ms) for the signal-based settle waits — see
+  /** Upper bound (ms) for the signal-based settle waits, see
    *  {@link SETTLE_CAP_MS}. Not a fixed wait. */
   settleMs?: number;
 }
 
 /**
- * The CEILING on the runner's signal-based settle waits — the interaction
+ * The CEILING on the runner's signal-based settle waits, the interaction
  * byte boundary (network-idle) and the vitals-beacon flush (delivery
  * quiesces). It is a hang-guard, never the boundary itself: the boundary is
  * always the real signal (a fetch completing, a beacon arriving), and this cap
- * only bounds how long the runner waits for a signal that may never come —
+ * only bounds how long the runner waits for a signal that may never come,
  * which then surfaces honestly as absent bytes / a null vital for the suite to
  * judge, exactly as ADR-0001 §9 and tools/drift-gate/README.md's "wait for the
  * real signal, never a proxy" require. Replaces the former fixed 400 ms settle
@@ -826,7 +826,7 @@ export interface VisitSpec {
 export const SETTLE_CAP_MS = 3000;
 
 /**
- * The quiet window that defines "the network went idle" — 500 ms with nothing
+ * The quiet window that defines "the network went idle", 500 ms with nothing
  * in flight, the same window Playwright's own `networkidle` names, kept so the
  * boundary's DEFINITION is unchanged. Only the mechanism that measures it
  * changes (see {@link armNetworkQuiescence}).
@@ -836,7 +836,7 @@ export const NETWORK_QUIET_MS = 500;
 /**
  * Ceiling for the PRE-interaction quiescence waits (the initial byte
  * boundary). Deliberately far larger than {@link SETTLE_CAP_MS}: capping the
- * INITIAL side early would move `initialJsBytes` — the published headline —
+ * INITIAL side early would move `initialJsBytes`, the published headline,
  * whereas capping the interaction side only records `interactionSettled:
  * false`, which refuses publication instead of corrupting a number. Matches
  * the effective bound the superseded `waitForLoadState("networkidle")` calls
@@ -849,14 +849,14 @@ export const LOAD_QUIET_CAP_MS = 30_000;
  * A GENUINE network-quiescence measurement, armed once per visit and awaited
  * wherever a boundary needs the network to be quiet.
  *
- * **Why this exists — `page.waitForLoadState("networkidle")` cannot do this
+ * **Why this exists, `page.waitForLoadState("networkidle")` cannot do this
  * job, and the way it fails is silent.** It is a document-load-lifecycle
  * LATCH, not a measurement. Playwright's own typings say so:
  * "If the state has been already reached while loading current document, the
  * method resolves immediately" (playwright-core 1.61.1
  * `types/types.d.ts:5020`), and they mark `networkidle` **DISCOURAGED**. Once
- * the current document has reached networkidle — which the pre-interaction
- * settle loop below GUARANTEES — every later call on that document returns at
+ * the current document has reached networkidle, which the pre-interaction
+ * settle loop below GUARANTEES, every later call on that document returns at
  * once, forever. No navigation happens across a scripted interaction, so the
  * post-click call could never observe anything.
  *
@@ -864,31 +864,31 @@ export const LOAD_QUIET_CAP_MS = 30_000;
  * post-click call returned in **24–49 ms**, where any real 500 ms quiet window
  * cannot resolve in under 500 ms. So `pdp-gallery-switch`'s own 25,194 B image
  * fetch was still in flight at the boundary snapshot and landed in NEITHER
- * `interactionBytes` NOR `totalBytes` — while `interactionSettled` recorded
+ * `interactionBytes` NOR `totalBytes`, while `interactionSettled` recorded
  * `true`, asserting that zero as VERIFIED. That is the precise failure
  * `interactionSettled` was added to make impossible (ADR-0001 addendum M), and
  * it defeated it: the flag proved only that a latch was already closed.
  *
- * The same latch made the pre-interaction loop's trailing wait vacuous too —
+ * The same latch made the pre-interaction loop's trailing wait vacuous too,
  * its comment claimed the wait "bridges the import + the preload cascade",
  * which it never did. That one turned out to cost nothing: measured across all
  * five editorial and all four PDP variants, a genuine quiescence wait after
  * the loop surfaces **0 new entries and 0 byte change**, because the
  * requestIdleCallback passes plus the entry-count stability check already give
- * the cascade its time. Recorded rather than assumed — it is why this fix
+ * the cascade its time. Recorded rather than assumed. It is why this fix
  * moves no published byte cell, and the claim is re-derivable by re-running
  * that probe.
  *
  * The mechanism: track in-flight requests from the page's OWN request/response
  * events, armed before the navigation so nothing is missed, and resolve only
- * after `quietMs` has elapsed with nothing in flight — measured from the call,
+ * after `quietMs` has elapsed with nothing in flight, measured from the call,
  * so each boundary gets a fresh window. Returns whether that window was
  * actually observed, so a cap-out is recorded rather than disguised.
  *
  * Stated limit, unchanged from the 500 ms convention it keeps: a request the
  * page starts MORE than `quietMs` after the last activity lands outside the
- * window. The measured margin is wide — the interaction fetch is dispatched
- * within ~30 ms of the click on every variant — but it is a bound, not a
+ * window. The measured margin is wide, the interaction fetch is dispatched
+ * within ~30 ms of the click on every variant, but it is a bound, not a
  * proof, and it is the same bound `networkidle` always carried.
  */
 export function armNetworkQuiescence(page: Page): {
@@ -897,7 +897,7 @@ export function armNetworkQuiescence(page: Page): {
   let inFlight = 0;
   let lastActivity = Date.now();
   // A routed-and-fulfilled request (the beacon) still emits request +
-  // requestfinished, so it is accounted like any other — instrumentation is
+  // requestfinished, so it is accounted like any other, instrumentation is
   // stripped from the BYTES by known path, never from the quiescence signal.
   const onRequest = () => {
     inFlight += 1;
@@ -939,27 +939,27 @@ export function armNetworkQuiescence(page: Page): {
  * that was done with a `page.route` glob over the beacon path. Playwright's
  * own typings state the price: "Enabling routing disables http cache"
  * (playwright-core 1.61.1 `types/types.d.ts:4063`). The routing is not
- * URL-scoped at the browser — every request is paused so the glob can be
- * matched in JS — so one beacon route took the HTTP cache away from the whole
+ * URL-scoped at the browser, every request is paused so the glob can be
+ * matched in JS, so one beacon route took the HTTP cache away from the whole
  * visit, on every run this project has ever published.
  *
  * **That is a measurement defect, and it was measured, not reasoned.** Qwik's
  * PDP gallery re-writes `src` on all five thumbs with the value each already
  * has (9 mutations against react-next's 4; the nodes survive, so it is a
  * re-render, not a replacement). With the browser cache ON those writes are
- * served from memory and the click costs **25,194 B** — the stage image
+ * served from memory and the click costs **25,194 B**, the stage image
  * alone, byte-identical to vanilla, react-next and astro. With the cache OFF
  * the same five no-op writes become five real downloads and the click reads
  * **52,032 B**. One variable, `page.route` on/off, reproduced on the local
  * crate plane and on the deployed plane (probe, 2026-08-28). The instrument
  * was manufacturing a 26,838 B paradigm difference no visitor can experience
- * — a number that would have published as qwik's cost.
+ *, a number that would have published as qwik's cost.
  *
  * **The replacement pauses ONLY the beacon URL**, at the browser, through
  * CDP's own pattern filter, so every other request is served the way a real
  * first-time visitor's is: from a fresh context whose cache behaves normally.
  * That is what ADR-0001's "the browser HTTP cache is a held-constant" always
- * meant — held at what a first-time visitor has, not held at OFF, which is
+ * meant, held at what a first-time visitor has, not held at OFF, which is
  * no visitor at all. Verified to capture all five metrics
  * (TTFB/FCP/LCP/CLS/INP) and to leave the gallery switch at 25,194 B on all
  * four variants.
@@ -970,7 +970,7 @@ export function armNetworkQuiescence(page: Page): {
  * mechanism cannot move `instrumentationBytes` or the instrumentation
  * request count.
  *
- * Stated limit: `chrome-constant.ts` still routes, and must — it SERVES a
+ * Stated limit: `chrome-constant.ts` still routes, and must. It SERVES a
  * prefetched fragment, which needs interception by construction. Its figures
  * are a within-run A/B delta with the cache-off condition held identical in
  * both arms, and it never re-touches an already-loaded URL, so the artifact
@@ -986,7 +986,7 @@ export async function armBeaconCapture(
     try {
       // `postDataEntries` FIRST, `postData` only as a fallback. CDP's
       // `Request.postData` is deprecated and Chromium omits it for bodies it
-      // did not inline (setting `hasPostData` instead) — Playwright itself
+      // did not inline (setting `hasPostData` instead), Playwright itself
       // reads the entries. Reading only the deprecated field would drop the
       // beacon silently: nothing throws, the request is still fulfilled, and
       // every vital in the run records as null while the arrival loop burns
@@ -1002,11 +1002,11 @@ export async function armBeaconCapture(
           : event.request.postData;
       if (typeof body === "string" && body.length > 0) beacons.push(JSON.parse(body));
     } catch {
-      /* malformed payload — the assertion surface is the suite, not here */
+      /* malformed payload, the assertion surface is the suite, not here */
     }
     // ALWAYS fulfil, whatever the parse did: a paused request never emits
     // `requestfinished`, so leaving one paused would wedge the quiescence
-    // tracker that defines every byte boundary in this file — the failure
+    // tracker that defines every byte boundary in this file, the failure
     // would surface as a cap-out on an unrelated measurement.
     void cdp
       .send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: 204 })
@@ -1022,7 +1022,7 @@ export async function armBeaconCapture(
  *
  * Every visit gets a FRESH browser context: the browser HTTP cache is a
  * confound, not a measured axis (the cache columns measure the EDGE tier,
- * ADR-0002 §8) — on the deployed plane assets ship `immutable`/etags, so a
+ * ADR-0002 §8), on the deployed plane assets ship `immutable`/etags, so a
  * shared context would silently zero run 2+'s transfer sizes. A fresh
  * context makes every run a first-time visitor by construction.
  */
@@ -1049,7 +1049,7 @@ export async function measureVisit(
     // and no boundary can be judged against a counter that started mid-flight
     // (arming after `goto` would read "nothing in flight" while the page's own
     // subresources were still loading). One tracker serves every boundary
-    // below; it is deliberately never detached — it must outlive the first
+    // below; it is deliberately never detached. It must outlive the first
     // wait to serve the interaction boundary, and it dies with the page.
     const network = armNetworkQuiescence(page);
 
@@ -1063,7 +1063,7 @@ export async function measureVisit(
     // a non-brotli compressed wire must be visible in the artifact.
     const docContentEncoding = response?.headers()["content-encoding"] ?? null;
     // The exact decoded document bytes the browser received (chrome injection
-    // already applied) — the raw material for the byte decomposition below. A
+    // already applied), the raw material for the byte decomposition below. A
     // body that can't be retrieved degrades to "" (all document bytes stay in
     // the HTML bucket, the pre-decomposition behaviour), never throws.
     let servedBody = "";
@@ -1072,10 +1072,10 @@ export async function measureVisit(
     } catch {
       servedBody = "";
     }
-    // Whether this page carries the instrument chrome — derived from the LIVE
+    // Whether this page carries the instrument chrome, derived from the LIVE
     // DOM, NOT from servedBody: a body-read failure must degrade ONLY the byte
     // decomposition (to all-HTML), never silently skip the vitals-beacon flush
-    // below and null the run's web-vitals — the two concerns were wrongly
+    // below and null the run's web-vitals, the two concerns were wrongly
     // coupled through servedBody (verify-slice, correctness + seams lenses).
     const hasChrome = await page.evaluate(
       () => document.getElementById("pm-chrome") !== null,
@@ -1088,7 +1088,7 @@ export async function measureVisit(
     // The cap is a budget for the WHOLE pre-interaction phase, not for each
     // call in it. Six calls can run before the click (the post-goto quiesce
     // plus up to five in the rIC loop), and a per-call cap made the worst case
-    // 6 x 30 s = three minutes for one visit — reachable now that these waits
+    // 6 x 30 s = three minutes for one visit, reachable now that these waits
     // actually wait, where the superseded latch returned instantly and hid it
     // (verify-slice, this slice's own second pass).
     const loadQuietDeadline = Date.now() + LOAD_QUIET_CAP_MS;
@@ -1098,7 +1098,7 @@ export async function measureVisit(
         throw new Error(
           `the network never went quiet for ${NETWORK_QUIET_MS} ms within this visit's ${LOAD_QUIET_CAP_MS} ms ` +
             `pre-interaction budget ` +
-            `(${spec.effectiveUrl}) — the initial byte boundary would be arbitrary, so the visit refuses ` +
+            `(${spec.effectiveUrl}), the initial byte boundary would be arbitrary, so the visit refuses ` +
             `rather than mint a sample whose initial/interaction split is undefined`,
         );
       }
@@ -1106,7 +1106,7 @@ export async function measureVisit(
     await quietAfterLoad();
     // Defect 4 (issue #16): Qwik's preloader is the only post-load fetching
     // among the live variants, and it runs inside requestIdleCallback(…,
-    // {timeout: 2000}) — under a throttled profile or on a loaded runner it can
+    // {timeout: 2000}), under a throttled profile or on a loaded runner it can
     // be starved PAST the quiescence above, so the byte boundary would fall in
     // the MIDDLE of it and the same build would yield two different receipts.
     // Settle post-load idle work onto the INITIAL byte side before the snapshot.
@@ -1116,11 +1116,11 @@ export async function measureVisit(
     // triggers the next wave), so THAT wait is load-bearing, not redundant. Loop
     // rIC→quiesce until a pass surfaces no new resource-timing entries, so a
     // cascade gap wider than one quiet window cannot end the snapshot
-    // mid-cascade — bounded so a page that never settles cannot hang here.
+    // mid-cascade, bounded so a page that never settles cannot hang here.
     //
     // Until 2026-08-28 the trailing wait here was
     // `waitForLoadState("networkidle")`, which is a document-lifecycle LATCH
-    // and returned immediately every time (see armNetworkQuiescence) — so the
+    // and returned immediately every time (see armNetworkQuiescence), so the
     // "bridges the cascade" claim above described a mechanism that did not
     // exist. It cost nothing, and that is measured, not assumed: a genuine
     // quiescence wait after this loop surfaces 0 new entries and 0 byte change
@@ -1146,16 +1146,16 @@ export async function measureVisit(
     const initialEntries = await resourceEntries(page);
 
     await interaction(page);
-    // Interaction byte boundary (ADR-0001 §3): wait for the real signal — the
-    // network going quiet — so an interaction-triggered fetch of ANY duration
+    // Interaction byte boundary (ADR-0001 §3): wait for the real signal, the
+    // network going quiet, so an interaction-triggered fetch of ANY duration
     // is captured, not a fixed proxy window (a fetch slower than the old 400 ms
     // vanished from interactionBytes AND totalBytes). Bounded by settleCapMs so
     // a request wedged in flight surfaces as absent interaction bytes for the
     // suite to judge instead of hanging or being disguised.
     // Whether that wait actually reached idle, RECORDED. A timeout here and
     // a genuinely quiet interaction both yield zero interaction bytes, so
-    // "nothing was fetched for the click" — the strongest empirical claim
-    // the published fit line makes — was indistinguishable from "the runner
+    // "nothing was fetched for the click", the strongest empirical claim
+    // the published fit line makes, was indistinguishable from "the runner
     // stopped waiting" in the artifact. It is a real distinction: requests
     // still in flight never appear in resource timing at all (verify-slice,
     // anti-rigging lens).
@@ -1171,16 +1171,16 @@ export async function measureVisit(
     const afterEntries = await resourceEntries(page);
 
     // Wait for the interaction's own event-timing entry to EXIST before
-    // flushing, or INP is silently lost — a false-FAIL (and worse, a null
+    // flushing, or INP is silently lost, a false-FAIL (and worse, a null
     // metric in a published receipt) traced to web-vitals' own source rather
     // than guessed:
     //
     //  - `initMetric` starts INP at -1 (initMetric.js: `value = -1`), and
-    //    `bindReporter` gates every emission — INCLUDING a forced one — behind
+    //    `bindReporter` gates every emission, INCLUDING a forced one, behind
     //    `if (metric.value >= 0)`. So an INP that was never computed is not
     //    reported as 0; nothing is sent at all and the run records null.
     //  - INP is only computed once an entry reaches the InteractionManager,
-    //    and that hop runs inside `whenIdleOrHidden` — a requestIdleCallback
+    //    and that hop runs inside `whenIdleOrHidden`, a requestIdleCallback
     //    while the page is still visible.
     //  - The `event` observer cannot supply that entry here: it uses
     //    web-vitals' default `durationThreshold: 40`, and a trivial click on a
@@ -1192,12 +1192,12 @@ export async function measureVisit(
     // machine (a CI runner, or a dev box running anything else) the browser
     // can still be producing the entry when the window elapses, and the visit
     // records INP: null with no error anywhere. Waiting on the entry itself is
-    // deterministic — `first-input` IS retained in the performance timeline
+    // deterministic, `first-input` IS retained in the performance timeline
     // (which is what makes web-vitals' `buffered: true` work), so it can be
     // polled directly.
     //
     // Placement is deliberate: AFTER the byte accounting above, so nothing
-    // measured moves — this only widens the window the vitals flush gets. A
+    // measured moves. This only widens the window the vitals flush gets. A
     // timeout is swallowed on purpose: if no interaction entry ever appears,
     // that is a real finding for the suite's assertions to report as
     // INP: null, not something to disguise by failing the visit here.
@@ -1205,7 +1205,7 @@ export async function measureVisit(
     // half is the part that actually starves. web-vitals' observer callback
     // does not compute INP inline: it defers into `whenIdleOrHidden`, i.e. a
     // `requestIdleCallback`. Meanwhile the ONLY emission that can ever fire is
-    // the forced `report(true)` inside INP's own visibility-hidden handler — a
+    // the forced `report(true)` inside INP's own visibility-hidden handler, a
     // non-forced `report()` with the default `reportAllChanges: false` emits
     // nothing at all (`bindReporter`: the inner `if (forceReport ||
     // reportAllChanges)`). And that forced report runs BEFORE the deferred
@@ -1249,15 +1249,15 @@ export async function measureVisit(
       });
       document.dispatchEvent(new Event("visibilitychange"));
     });
-    // Wait for the beacons to ARRIVE — not a fixed window, and NOT mere
+    // Wait for the beacons to ARRIVE, not a fixed window, and NOT mere
     // quiescence. web-vitals sends each metric as its OWN sendBeacon, and on a
     // loaded runner the later ones (CLS/INP) can land >150 ms after the early
     // ones (TTFB/FCP/LCP), so a "no new beacon for a slice" check exits in that
-    // gap and drops them — the exact null-vitals-shrinks-the-median failure this
+    // gap and drops them, the exact null-vitals-shrinks-the-median failure this
     // wait exists to prevent (audit 2026-08-01, collect.ts:254; CI-confirmed).
     // Wait until every EXPECTED metric has arrived, bounded by settleCapMs so a
     // genuinely absent one still surfaces as null for the suite to judge rather
-    // than hanging. A chromeless page fires no beacon by design — skip the wait.
+    // than hanging. A chromeless page fires no beacon by design, skip the wait.
     if (hasChrome) {
       const expected = ["TTFB", "FCP", "LCP", "CLS"];
       if (spec.interactionId !== "none") expected.push("INP");
@@ -1292,7 +1292,7 @@ export async function measureVisit(
         responseStart: e.responseStart,
         responseEnd: e.responseEnd,
         transferSize: e.transferSize,
-        // The compressed body the browser received — the calibration target
+        // The compressed body the browser received, the calibration target
         // for the document byte attribution (decomposeDocument).
         encodedBodySize: e.encodedBodySize,
       };
@@ -1324,7 +1324,7 @@ export async function measureVisit(
       buckets[bucketOf(entry.name)] += entry.transferSize;
     }
     // The document itself: decomposed from its single compressed transferSize
-    // into html/js/data plus STRIPPED instrumentation markup — level from
+    // into html/js/data plus STRIPPED instrumentation markup, level from
     // transferSize, ratios from wire-calibrated leave-one-out brotli
     // marginals (decomposeDocument). Counted as one request.
     const doc = decomposeDocument(
@@ -1340,7 +1340,7 @@ export async function measureVisit(
     counted += 1;
 
     // Initial JS is the external initial-snapshot JS PLUS the document's own
-    // inline executable script (present at load) — which is why an inlined
+    // inline executable script (present at load), which is why an inlined
     // bundle no longer reads as zero (issue #16 defect 1).
     const initialJsBytes =
       doc.js +
@@ -1348,7 +1348,7 @@ export async function measureVisit(
         .filter((e) => !isInstrumentation(e.name) && bucketOf(e.name) === "js")
         .reduce((sum, e) => sum + e.transferSize, 0);
     // Resource-timing entries are append-only: everything past the initial
-    // snapshot's length was fetched because of the interaction — including
+    // snapshot's length was fetched because of the interaction, including
     // RE-fetches of URLs the page already loaded (a name-keyed diff would
     // hide those and underreport the interaction cost).
     const interactionBytes = afterEntries
@@ -1390,7 +1390,7 @@ export async function measureVisit(
         instrumentationBytes,
         totalBytes: Object.values(buckets).reduce((a, b) => a + b, 0),
         // Which estimator split the document's wire bytes, at what calibrated
-        // quality, with what residual — the attribution is part of the
+        // quality, with what residual, the attribution is part of the
         // receipt, never assumed (ADR-0001 §3 addendum, 2026-08-15).
         docAttribution: doc.attribution,
       },

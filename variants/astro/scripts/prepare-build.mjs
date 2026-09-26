@@ -1,12 +1,12 @@
 // Everything `astro build` needs that Astro itself cannot produce
 // (editorial-build slice C).
 //
-// Runs before every BUILD — and deliberately NOT before deploy. `deploy` is
+// Runs before every BUILD, and deliberately NOT before deploy. `deploy` is
 // bare `wrangler deploy` on purpose: CI's "Deploy service-bound Workers" step
 // runs `pnpm --filter … run deploy` outside turbo and does NOT set
 // PM_SNAPSHOT (that env is scoped to the earlier "Build worker dists" step),
 // so re-running this script there would resolve `fixture` from the default
-// below and overwrite the crate-baked output moments before upload —
+// below and overwrite the crate-baked output moments before upload,
 // publishing the fixture's "the fixture never leaves CI" prose to the crate
 // plane. Do not "align" this with slice B's deploy shape: react-next needed
 // that because its token copy was an undeclared, git-ignored INPUT a turbo
@@ -17,7 +17,7 @@
 // Two jobs:
 //
 //  1. Copy @pm/tokens' css + fonts into public/assets/pm. Astro serves
-//     public/ verbatim — unprocessed, unhashed — which is what ADR-0003 §8
+//     public/ verbatim, unprocessed, unhashed, which is what ADR-0003 §8
 //     requires: the font files must arrive byte-identical to the @pm/tokens
 //     sources and the canonical loading markup must ship as written. Astro's
 //     other CSS route (importing stylesheets so Vite bundles them) would
@@ -26,7 +26,7 @@
 //     dependency, the placeholder-static/react-next mold.
 //
 //  2. Bake the snapshot. PM_SNAPSHOT (the selector minted by slice A) picks
-//     which committed snapshot the page renders from — `fixture` by default
+//     which committed snapshot the page renders from, `fixture` by default
 //     (the CI build, always), `crate` on the deploy job so the plane serves
 //     pages baked from the snapshot it actually serves (ADR-0002 §7 /
 //     ADR-0008 §9). The resolved payload is written where a component can
@@ -63,7 +63,7 @@ mkdirSync(dataDir, { recursive: true });
 writeFileSync(join(dataDir, "snapshot.json"), `${JSON.stringify(data, null, 2)}\n`);
 // The second generated module (pdp-variants slice 2): every detail tray, for
 // getStaticPaths over the whole catalogue. Same cache-hit trap as
-// snapshot.json — it MUST be in @pm/astro#build's turbo outputs or a cache
+// snapshot.json. It MUST be in @pm/astro#build's turbo outputs or a cache
 // hit restores dist/ without it and `astro check` fails ts(2307).
 writeFileSync(
   join(dataDir, "pdp.json"),

@@ -2,7 +2,7 @@
 // ~90 lines against APPNOTE.TXT instead of a dependency: entries are stored
 // uncompressed (markdown and JSON this size gain nothing from DEFLATE and
 // the reader-side is "unzip anywhere"), names are flagged UTF-8, and there
-// is no zip64 — a personal blog's words fit in 4 GB with room for a life's
+// is no zip64, a personal blog's words fit in 4 GB with room for a life's
 // work; the guard below makes an overflow loud, not corrupt.
 
 const CRC_TABLE = (() => {

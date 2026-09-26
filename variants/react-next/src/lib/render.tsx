@@ -1,15 +1,15 @@
-// The react-next editorial page — this variant's OWN re-implementation of
+// The react-next editorial page. This variant's OWN re-implementation of
 // the canonical markup (ADR-0003 §1: a component is a spec, re-implemented
 // per paradigm; ADR-0008: packages/reference/surfaces/editorial/ is the
 // contract of record). Essay copy is re-typed as variant-owned content, not
 // imported from @pm/reference at build time (the slice-A precedent,
-// DIFF-TO-STARTER.md) — the drift gate polices textual identity, and here
+// DIFF-TO-STARTER.md), the drift gate polices textual identity, and here
 // the identity check has no browser to wait for: this module is plain
 // framework-neutral React, callable with `react-dom/server` directly by the
 // pre-merge guard (tools/repo-checks), exactly as it is by the live route.
 //
 // Framework-neutral by design: no Next-specific imports here (those live in
-// app/editorial/page.tsx) — only React, the data-contract types, and this
+// app/editorial/page.tsx), only React, the data-contract types, and this
 // variant's own client islands. Relative imports throughout (not the `@/*`
 // alias): tools/repo-checks' pre-merge guard imports this file directly,
 // from outside this workspace's tsconfig path mapping.
@@ -20,7 +20,7 @@ import { AddToCartButton } from "../components/AddToCartButton";
 import { CartCount } from "../components/CartCount";
 import { CartStatus } from "../components/CartStatus";
 
-/** Designated hosts (spec of record; SURFACE_CONTROLS carries them too) —
+/** Designated hosts (spec of record; SURFACE_CONTROLS carries them too),
  *  packages/reference/render/shell.mjs HOSTS, ported verbatim. */
 export const HOSTS = {
   plp: "/react-next/plp/plain/",
@@ -40,7 +40,7 @@ interface Essay {
   kicker: string;
   title: string;
   dek: string;
-  /** The opening paragraph — the one block carrying an `<em>` — kept as JSX
+  /** The opening paragraph, the one block carrying an `<em>`, kept as JSX
    *  rather than a template string so React's own escaping applies. */
   opening: (featured: ReleaseDetail) => React.ReactNode;
   body: (featured: ReleaseDetail) => EssayBlock[];
@@ -50,19 +50,19 @@ interface Essay {
 const CRATE_ESSAY: Essay = {
   kicker: "Staff pick",
   title: "The price of stillness",
-  dek: "A drone record from 2007 has become the most expensive thing in our crate — without a single loud moment on it.",
+  dek: "A drone record from 2007 has become the most expensive thing in our crate, without a single loud moment on it.",
   // Each side of the <em> is ONE template-literal string, not JSX text
   // interleaved with expressions: JSX splits `text {expr} text` into
   // separate DOM text nodes joined by empty comment markers (React's
   // hydration-boundary convention), which measurably (if imperceptibly)
   // shifts sub-pixel text shaping versus the master's single continuous
-  // text node — caught by the zero-tolerance pixel gate (comparePixels'
+  // text node, caught by the zero-tolerance pixel gate (comparePixels'
   // own doc: same-run determinism means ANY difference counts). A single
   // combined string per side is one text node, matching the master's shape
   // exactly; React's normal text-child escaping still applies.
   opening: (d) => (
     <>
-      {`There are records you put on and records you put up — and ${d.artist}'s `}
+      {`There are records you put on and records you put up, and ${d.artist}'s `}
       <em>{d.title}</em>
       {` has spent nearly two decades being both. Two hours of tape-saturated strings and horns that barely move, released on ${d.labels[0]?.name ?? "Kranky"} in ${d.year}, it is the kind of album whose fans describe it in architectural terms: a room, a horizon, a place they go.`}
     </>
@@ -70,12 +70,12 @@ const CRATE_ESSAY: Essay = {
   body: (d) => [
     {
       kind: "p",
-      content: `It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer — ${formatPrice(d.priceFrom)} at the freeze, to be exact — and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
+      content: `It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer, ${formatPrice(d.priceFrom)} at the freeze, to be exact, and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
     },
     {
       kind: "blockquote",
       content:
-        "Stillness scales badly. You can stream it anywhere, but the people who want this record want the object — the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.",
+        "Stillness scales badly. You can stream it anywhere, but the people who want this record want the object, the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.",
     },
     {
       kind: "p",
@@ -85,11 +85,11 @@ const CRATE_ESSAY: Essay = {
     {
       kind: "p",
       content:
-        "We are not in the appreciation business — this is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.",
+        "We are not in the appreciation business. This is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.",
     },
   ],
   featureNote: () =>
-    "The pressing described above, as captured in the frozen snapshot — price and availability are the real aggregate at the freeze.",
+    "The pressing described above, as captured in the frozen snapshot, price and availability are the real aggregate at the freeze.",
 };
 
 const FIXTURE_ESSAY: Essay = {
@@ -99,7 +99,7 @@ const FIXTURE_ESSAY: Essay = {
   opening: (d) => (
     <>
       <em>{d.title}</em>
-      {` by ${d.artist} is not a real record — it is release ${d.id} of the synthesized fixture crate, pressed on ${d.labels[0]?.name ?? "a placeholder label"} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`}
+      {` by ${d.artist} is not a real record. It is release ${d.id} of the synthesized fixture crate, pressed on ${d.labels[0]?.name ?? "a placeholder label"} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`}
     </>
   ),
   body: (d) => [
@@ -110,7 +110,7 @@ const FIXTURE_ESSAY: Essay = {
     {
       kind: "blockquote",
       content:
-        "If you can read this in a published benchmark screenshot, the wrong snapshot is being served — the fixture never leaves CI.",
+        "If you can read this in a published benchmark screenshot, the wrong snapshot is being served. The fixture never leaves CI.",
     },
     {
       kind: "p",
@@ -120,11 +120,11 @@ const FIXTURE_ESSAY: Essay = {
     {
       kind: "p",
       content:
-        "The real essay ships wherever the real crate is served, with the same shape and the same rules — numbers from trays, dates from the manifest, verdicts from nowhere.",
+        "The real essay ships wherever the real crate is served, with the same shape and the same rules: numbers from trays, dates from the manifest, verdicts from nowhere.",
     },
   ],
   featureNote: () =>
-    "The fixture's featured release, rendered from its tray — same contract as the real crate's.",
+    "The fixture's featured release, rendered from its tray, same contract as the real crate's.",
 };
 
 /** `crateName` is the served SnapshotManifest's `crate` field. */
@@ -153,7 +153,7 @@ function ReleaseCard({ release }: { release: ReleaseDetail }) {
         <p className="pm-release-card__artist">{release.artist}</p>
         <p className="pm-release-card__meta">{metaLine(release)}</p>
         <div className="pm-release-card__foot">
-          <span className="pm-release-card__price">{price ?? (<><span aria-hidden="true">—</span><span className="pm-sr-only">No price listed</span></>)}</span>
+          <span className="pm-release-card__price">{price ?? (<><span aria-hidden="true">–</span><span className="pm-sr-only">No price listed</span></>)}</span>
           <span className="pm-release-card__stock">{stockLine(release.numForSale)}</span>
         </div>
       </div>
@@ -162,7 +162,7 @@ function ReleaseCard({ release }: { release: ReleaseDetail }) {
 }
 
 /** The article: prose plus exactly one interaction (ADR-0008). `capturedAt`
- *  is the served manifest's freeze date — the dateline is always tool
+ *  is the served manifest's freeze date, the dateline is always tool
  *  output, never typed. */
 export function EditorialArticle({
   essay,
@@ -197,11 +197,11 @@ export function EditorialArticle({
             loading="lazy"
             decoding="async"
           />
-          {/* One combined template literal, not several interpolations —
+          {/* One combined template literal, not several interpolations,
               avoids extra comment-node text-splitting (see the essay
               opening's comment above). */}
           <figcaption>
-            {`${featured.artist} — ${featured.title} (${featured.labels[0]?.name ?? ""}${catno ? ` · ${catno}` : ""}), from the frozen snapshot.`}
+            {`${featured.artist}, ${featured.title} (${featured.labels[0]?.name ?? ""}${catno ? ` · ${catno}` : ""}), from the frozen snapshot.`}
           </figcaption>
         </figure>
         {essay.body(featured).map((block, i) =>
@@ -226,7 +226,7 @@ export function EditorialArticle({
             disabled={featured.numForSale === 0}
           />
           <p className="pm-editorial__feature-note">
-            The only interactive element on this page — that&apos;s the experiment.
+            The only interactive element on this page. That&apos;s the experiment.
           </p>
         </div>
       </aside>
@@ -236,7 +236,7 @@ export function EditorialArticle({
 
 /** The shared shell (packages/reference/render/shell.mjs `shell()`, ported):
  *  skip link, chrome slot, masthead · main · status · footer. `current`
- *  marks which masthead link (if any) is the surface being viewed —
+ *  marks which masthead link (if any) is the surface being viewed,
  *  "editorial" there, "plp" on the PDP (the master pins that deliberately:
  *  there is no PDP entry in the store nav), omitted on pages off the nav
  *  (the PDP group's not-found). */
@@ -253,13 +253,13 @@ export function Shell({
         Skip to content
       </a>
       {/* The front Worker injects chrome into this div by rewriting the HTTP
-       *  stream in transit — React's own vdom for it has zero children, so
+       *  stream in transit, React's own vdom for it has zero children, so
        *  on hydration React's mismatch recovery discards the injected chrome
        *  and re-renders it empty (invisible when hydration is fast; a real
        *  CLS bug under slow-CPU loads, caught via a CI-only flake). A
        *  dangerouslySetInnerHTML with a non-null __html is what makes
        *  react-dom's hydration skip that subtree's child-matching walk
-       *  entirely — suppressHydrationWarning alone does not. */}
+       *  entirely, suppressHydrationWarning alone does not. */}
       <div id="pm-chrome-slot" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: "" }} />
       <div className="pm-page">
         <header className="pm-masthead">
@@ -288,7 +288,7 @@ export function Shell({
         <CartStatus />
         <footer className="pm-footer">
           <p className="pm-footer__fiction">
-            A working store on frozen Discogs data — nothing ships, checkout is simulated.
+            A working store on frozen Discogs data. Nothing ships. Checkout is simulated.
           </p>
           <nav className="pm-footer__nav" aria-label="About this site">
             <a href="/">What is this?</a>

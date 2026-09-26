@@ -1,26 +1,26 @@
 /**
  * The `?page=` KV ceiling (2026-08-29 audit, priority 3 step 0).
  *
- * `handlePlp` floors `page` at 1 and — until this commit — applied no
+ * `handlePlp` floors `page` at 1 and, until this commit, applied no
  * ceiling, folded the raw integer into the KV key, and wrote every miss
  * through with no TTL. So `for p in $(seq 1 1000000)` minted one immortal
  * entry per integer: the attacker pays nothing, the project pays KV writes
  * ($5/M) and storage (~10 KB × forever) on the surface whose thesis is
- * pricing infrastructure honestly. (`?page=1e15` did NOT mint — `parseInt`
- * stops at `1` — but every plain digit string did.)
+ * pricing infrastructure honestly. (`?page=1e15` did NOT mint, `parseInt`
+ * stops at `1`, but every plain digit string did.)
  *
  * The fix is on the way OUT, not the way in: a page past `totalPages` is
  * still served as the honest empty 200 every arm renders as "0" (the
  * contract `plp-arms-agree.test.ts` and `data-plane.test.ts` pin), but it is
  * never written through and says so (`x-pm-cache-state: none`). Applying the
  * ceiling BEFORE the KV lookup would need `totalPages`, which needs the
- * snapshot, which needs R2 — putting ~400 ms of origin on every warm hit and
+ * snapshot, which needs R2, putting ~400 ms of origin on every warm hit and
  * erasing the edge-cache cell (ADR-0005 §6 cell 3). Lookup-first keeps the
  * hit path a single KV read; a past-the-end key can never hit because it is
  * never written.
  *
- * Driven in-process with stub bindings — the same shape the react-next
- * identity guard uses to drive this Worker — over the committed fixture
+ * Driven in-process with stub bindings, the same shape the react-next
+ * identity guard uses to drive this Worker, over the committed fixture
  * snapshot, reached through this workspace's own declared dependency.
  */
 import { readFileSync } from "node:fs";
@@ -73,7 +73,7 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(lastPage).toBeGreaterThan(1);
   });
 
-  it("a page past the end is the honest empty 200 the arms render as '0' — and it is NOT a warm-tier resource", async () => {
+  it("a page past the end is the honest empty 200 the arms render as '0', and it is NOT a warm-tier resource", async () => {
     const { env, puts } = stubEnv();
     const res = await get(env, `/api/plp?page=${lastPage + 1}`);
     expect(res.status).toBe(200);
@@ -93,7 +93,7 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
       expect(res.headers.get("x-pm-cache-state"), `page=${page}`).toBe("none");
     }
     expect(puts).toEqual([]);
-    // And a second visit to the same past-the-end page is still not a hit —
+    // And a second visit to the same past-the-end page is still not a hit,
     // there is nothing to hit.
     const again = await get(env, `/api/plp?page=${lastPage + 1}`);
     expect(again.headers.get("x-pm-cache-state")).toBe("none");
@@ -123,7 +123,7 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(puts.map((p) => p.key)).toEqual([`v2:/api/plp?n=240&page=${pagesAt240}`]);
   });
 
-  it("cold bypass past the end is still `bypass` — the visitor asked for R2 and got it", async () => {
+  it("cold bypass past the end is still `bypass`, the visitor asked for R2 and got it", async () => {
     const { env, puts } = stubEnv();
     const res = await get(env, `/api/plp?page=${lastPage + 1}&cache=cold`);
     expect(res.status).toBe(200);
@@ -139,13 +139,13 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(puts.map((p) => p.key)).toEqual(["v2:/api/plp?n=24&page=1"]);
   });
 
-  it("a page of 400 digits is still a finite, contract-valid empty page — never `page: null`", async () => {
+  it("a page of 400 digits is still a finite, contract-valid empty page, never `page: null`", async () => {
     // `parseInt` of 309+ digits is Infinity, which JSON writes as null: the
     // first draft served a tray the PlpPage contract rejects, the htmx arm
     // answered a false "data plane didn't answer" 503, and react-next held
     // page Infinity against a Worker that read `page=Infinity` as page 1
     // (verify-slice, 2026-09-18). Capped at MAX_SAFE_INTEGER: past the end,
-    // empty, `none`, never stored — the ceiling's own semantics.
+    // empty, `none`, never stored, the ceiling's own semantics.
     const { env, puts } = stubEnv();
     const res = await get(env, `/api/plp?page=${"9".repeat(400)}`);
     expect(res.status).toBe(200);
@@ -158,13 +158,13 @@ describe("the ?page= ceiling: a page past the end is served but never stored", (
     expect(puts).toEqual([]);
     // The spelling react-next would have sent before its clamp was fixed is
     // junk to the Worker, not a silent page 1 under a URL that says otherwise:
-    // parseInt("Infinity") is NaN, so it IS page 1 — pinned so the two
+    // parseInt("Infinity") is NaN, so it IS page 1, pinned so the two
     // clamps' agreement (react-next identity guard) is what keeps that
     // shape from ever being requested.
     expect((await (await get(env, "/api/plp?page=Infinity")).json()).page).toBe(1);
   });
 
-  it("junk and sub-floor pages collapse to page 1 — one key, not one per spelling", async () => {
+  it("junk and sub-floor pages collapse to page 1, one key, not one per spelling", async () => {
     const { env, puts } = stubEnv();
     for (const raw of ["0", "-3", "abc", "", "01", "1.9", "1abc"]) {
       const res = await get(env, `/api/plp?page=${encodeURIComponent(raw)}`);

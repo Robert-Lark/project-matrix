@@ -12,7 +12,7 @@
 // from the runner's receipt shape; derived, the one BASE is held to the
 // runner's own Zod schema by tools/bench-runner's test, and each row names
 // exactly what it broke. The rows carry the expected message too, so the
-// mutation and the refusal it must produce sit on one line — a row whose
+// mutation and the refusal it must produce sit on one line, a row whose
 // mutation stops producing its message is the test going red.
 //
 // Shapes mirror a real committed receipt (lab/receipts/editorial-*.json)
@@ -33,7 +33,7 @@ export const INTERACTION = "pdp-gallery-switch";
 /** Every run in every column fetches exactly this much: the gallery's
  *  full-size AVIF, image mass in all four paradigms (FIT.pdp). */
 const INTERACTION_BYTES = 25194;
-/** initial-JS per variant: [run 0, run 1, run 2] — four bands that do not
+/** initial-JS per variant: [run 0, run 1, run 2], four bands that do not
  *  overlap, so the valid control publishes a sentence. THREE runs, so a
  *  median can hide one stray run (the mechanism two refusal classes are
  *  about) while staying the honest median of its own runs. */
@@ -110,7 +110,7 @@ function column(variant, name, profileId) {
   };
 }
 
-/** The VALID receipt for one profile — the control every row starts from. */
+/** The VALID receipt for one profile, the control every row starts from. */
 export function baseReceipt(profileId = "avg-broadband-desktop") {
   return {
     kind: "pm-bench-receipt",
@@ -135,7 +135,7 @@ export function baseReceipt(profileId = "avg-broadband-desktop") {
     environment: { n: 24, runNonce: `fixture-${profileId}` },
     runsPerUrl: RUNS_PER_URL,
     harness: { browser: "chromium", browserVersion: "fixture", settleMs: 500, quiescence: "in-flight-tracked" },
-    methodNotes: ["fixture receipt for the publication gate's refusal tests — never minted, never published"],
+    methodNotes: ["fixture receipt for the publication gate's refusal tests, never minted, never published"],
     targets: VARIANTS.map((variant) => ({
       path: `/${variant}/pdp/fixture-release/`,
       variant,
@@ -160,7 +160,7 @@ export const CC_CONTEXT = {
 };
 const sha256Hex = (text) => createHash("sha256").update(text).digest("hex");
 
-/** The VALID chrome constant — its sha256 is the stand-in renderer's own
+/** The VALID chrome constant. Its sha256 is the stand-in renderer's own
  *  output for CC_CONTEXT with a populated lab. */
 export function baseChromeConstant() {
   const fragment = fixtureFragment({ ...CC_CONTEXT, lab: {} });
@@ -193,7 +193,7 @@ const everyRun = (receipt, f) => {
  *             through assertBatchIntegrity
  *  - chrome-constant: chrome-constants/<id>.json through admitChromeConstant
  *  - fit:     the VALID receipt through admitReceipt with `fit` mutating
- *             FIT.pdp (a template is code — its malformation lives here)
+ *             FIT.pdp (a template is code. Its malformation lives here)
  *  - registry: labSurfacesOf over `registry`
  * `outcome` rows do not throw: the gate answers with a refused-to-publish
  * bundle shape instead (the band rule), asserted by `check`.
@@ -242,15 +242,15 @@ export const CASES = [
   { id: "unsettled-run", kind: "receipt", site: "unsettled-run", mutate: (r) => { r.targets[0].columns.cold.runs[1].interactionSettled = false; }, expect: /did not record reaching network quiescence/ },
   // ABSENT is unverified, not true: the runner's schema makes the flag
   // optional and says absent means unrecorded (receipt.ts), so the gate's
-  // `!== true` must refuse it — a `=== false` would admit (skeptic lens).
+  // `!== true` must refuse it, a `=== false` would admit (skeptic lens).
   { id: "unsettled-run-absent", kind: "receipt", site: "unsettled-run", mutate: (r) => { delete r.targets[0].columns.cold.runs[1].interactionSettled; }, expect: /interactionSettled=undefined/ },
   { id: "missing-interaction-median", kind: "receipt", site: "missing-interaction-median", mutate: (r) => { r.targets[2].columns.cold.medians.interactionBytes = null; }, expect: /has no interaction-byte median for astro\/cold/ },
   { id: "none-but-fetched", kind: "fit", site: "none-but-fetched", fit: (f) => ({ ...f, interactionFetch: "none" }), expect: /declares interactionFetch "none", but vanilla\/warm run 0 measured 25194 B/ },
   { id: "constant-spread", kind: "receipt", site: "constant-spread", mutate: (r) => { const c = r.targets[3].columns.warm; for (const run of c.runs) run.kb.interactionBytes += 65; c.medians.interactionBytes += 65; }, expect: /but the batch spans 65 B/ },
-  { id: "constant-zero", kind: "receipt", site: "constant-zero", mutate: (r) => { everyRun(r, (run) => { run.kb.interactionBytes = 0; }); for (const t of r.targets) { t.columns.warm.medians.interactionBytes = 0; t.columns.cold.medians.interactionBytes = 0; } }, expect: /measured 0 B everywhere — declare "none"/ },
+  { id: "constant-zero", kind: "receipt", site: "constant-zero", mutate: (r) => { everyRun(r, (run) => { run.kb.interactionBytes = 0; }); for (const t of r.targets) { t.columns.warm.medians.interactionBytes = 0; t.columns.cold.medians.interactionBytes = 0; } }, expect: /measured 0 B everywhere, declare "none"/ },
   { id: "constant-stray-run", kind: "receipt", site: "constant-stray-run", mutate: (r) => { r.targets[1].columns.warm.runs[0].kb.interactionBytes = 0; }, expect: /individual runs do not: react-next\/warm run 0 measured 0 B/ },
   // A null run value is a receipt the runner cannot mint (its schema says
-  // number) — a hand-edited artifact, flagged so the schema leg expects it.
+  // number), a hand-edited artifact, flagged so the schema leg expects it.
   { id: "incomplete-run-set", kind: "receipt", site: "incomplete-run-set", mutate: (r) => { r.targets[0].columns.warm.runs[1].kb.initialJsBytes = null; }, expect: /has 2 usable initial-JS samples but the batch ran 3/, schemaValid: false },
   // astro's third warm run lands inside qwik's band; astro's median (its
   // middle run) is unchanged, so the receipt stays the honest median of its
@@ -287,7 +287,7 @@ export const CASES = [
 ];
 
 /** Receipt JSON with every LEAF object (all-primitive values: a run's
- *  webVitals, its docAttribution, a commit pin) on one line — the receipts'
+ *  webVitals, its docAttribution, a commit pin) on one line, the receipts'
  *  two-space shape without one number per line, so a fixture reads as a
  *  receipt and a diff reads as its one changed field. */
 const isLeaf = (o) =>

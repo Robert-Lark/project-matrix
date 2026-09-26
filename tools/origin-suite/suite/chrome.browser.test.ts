@@ -1,6 +1,6 @@
 /**
  * The browser leg of the chrome checks (issue #5), still at the composed-
- * origin seam — a real Chromium drives the page:
+ * origin seam, a real Chromium drives the page:
  *  - JS enabled → the HUD live readout populates from the pinned web-vitals
  *    build, and the beacon lands in the collector on visibility-hidden.
  *  - JS disabled → the page and the switcher anchors stay fully functional
@@ -17,7 +17,7 @@ beforeAll(async () => {
     browser = await chromium.launch();
   } catch {
     // No bundled Chromium (e.g. a dev machine whose TLS interception blocks
-    // the Playwright CDN) — drive the system Chrome instead. CI always
+    // the Playwright CDN), drive the system Chrome instead. CI always
     // installs the bundled build.
     browser = await chromium.launch({ channel: "chrome" });
   }
@@ -39,7 +39,7 @@ describe("HUD live readout (JS on)", () => {
     });
 
     await page.goto(`${ORIGIN}/placeholder-ssr/sample/`);
-    // TTFB reports as soon as the page settles (panel slot — the collapsed
+    // TTFB reports as soon as the page settles (panel slot, the collapsed
     // bar's mini readout carries LCP + CLS only).
     await page.waitForFunction(
       () =>
@@ -54,13 +54,13 @@ describe("HUD live readout (JS on)", () => {
 
     // Finalize LCP with a TRUSTED interaction: the pinned web-vitals build
     // (5.3.0) reports LCP only on a keydown/click/visibilitychange whose
-    // `isTrusted` is true — the synthetic hidden dispatch below can never
+    // `isTrusted` is true, the synthetic hidden dispatch below can never
     // finalize it (only our own flush listener, which doesn't gate on
     // isTrusted). Playwright input rides CDP, so it IS trusted.
     await page.keyboard.press("Shift");
 
-    // The redesigned chrome carries LCP twice — the collapsed bar's mini
-    // readout + the panel's full set — and measure.js updates every slot
+    // The redesigned chrome carries LCP twice, the collapsed bar's mini
+    // readout + the panel's full set, and measure.js updates every slot
     // (querySelectorAll, the panel's one-line deliverable). BOTH slots must
     // populate with the same rendered value.
     await expect
@@ -111,7 +111,7 @@ describe("HUD live readout (JS on)", () => {
   }, 60_000);
 });
 
-describe("home surface HUD (ADR-0007 §5 — the live half, in-page)", () => {
+describe("home surface HUD (ADR-0007 §5, the live half, in-page)", () => {
   it("populates the visitor's own web-vitals and beacons them tagged singleton/home", async () => {
     const page = await browser.newPage();
     const beaconResponses: number[] = [];
@@ -148,7 +148,7 @@ describe("home surface HUD (ADR-0007 §5 — the live half, in-page)", () => {
 
     // Home is a singleton off the matrix: variant/surface identify it; the
     // env/cache/location knobs honestly report unknown (no injected chrome
-    // to tag them — ADR-0007 §5).
+    // to tag them, ADR-0007 §5).
     const event = JSON.parse(beaconBodies[0]!) as {
       tags: Record<string, string>;
     };
@@ -160,7 +160,7 @@ describe("home surface HUD (ADR-0007 §5 — the live half, in-page)", () => {
   }, 60_000);
 });
 
-describe("the collapsed strip at 320px (ADR-0008 §1 — one line, switching reachable)", () => {
+describe("the collapsed strip at 320px (ADR-0008 §1, one line, switching reachable)", () => {
   it("keeps the bar one fixed line and the switcher anchors reachable", async () => {
     const context = await browser.newContext({
       viewport: { width: 320, height: 720 },
@@ -173,7 +173,7 @@ describe("the collapsed strip at 320px (ADR-0008 §1 — one line, switching rea
     // One line: the bar's rendered height equals its fixed block-size (44px).
     expect(box!.height).toBeLessThanOrEqual(44.5);
     // Switching stays reachable: the other variant's anchor exists, is in the
-    // a11y tree (not display:none), and is keyboard-focusable — the mobile
+    // a11y tree (not display:none), and is keyboard-focusable, the mobile
     // contract scrolls the row instead of hiding it (verify-slice).
     const swap = page.locator('a.pm-chrome__cell[href^="/placeholder-ssr/"]');
     expect(await swap.count()).toBe(1);
@@ -192,7 +192,7 @@ describe("JS-off functionality (ADR-0004 §7)", () => {
     await expect
       .poll(() => page.locator("h1").first().textContent())
       .toBe("Sample surface");
-    // The chrome rendered server-side — no JS involved.
+    // The chrome rendered server-side, no JS involved.
     expect(await page.locator("#pm-chrome").count()).toBe(1);
     expect(await page.locator('[data-pm-hud-lab]').textContent()).toContain(
       "No published runs yet",

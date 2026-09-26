@@ -17,7 +17,7 @@ import {
 import { dirname, join } from "node:path";
 
 export interface Dirs {
-  /** Working state — gitignored (raw responses, originals, tombstones). */
+  /** Working state, gitignored (raw responses, originals, tombstones). */
   capture: string;
   /** The frozen output in the fixture snapshot layout; img/ is gitignored. */
   crate: string;

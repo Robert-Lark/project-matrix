@@ -1,16 +1,16 @@
-// Assemble the vanilla variant's dist: static HTML, no runtime — the build
+// Assemble the vanilla variant's dist: static HTML, no runtime, the build
 // script IS the paradigm (a hand-rolled static site generator over the frozen
-// trays). Snapshot-parameterized via PM_SNAPSHOT (fixture default — the CI
+// trays). Snapshot-parameterized via PM_SNAPSHOT (fixture default, the CI
 // build, always; the deploy job sets `crate` so the plane serves pages baked
 // from the snapshot it actually serves, ADR-0002 §7 / ADR-0008 §9). The
 // selector and the tray files are declared to turbo (env + inputs on
-// @pm/vanilla#build) — an undeclared selector would replay the origin job's
+// @pm/vanilla#build), an undeclared selector would replay the origin job's
 // fixture-flavored dist straight onto the crate plane (turbo.json documents
 // the failure mode).
 //
 // Copying @pm/tokens into the variant's own assets is the paradigm's
 // delivery model (ADR-0003 §2), resolved through this package's own declared
-// dependency — the placeholder-static mold.
+// dependency, the placeholder-static mold.
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
@@ -49,7 +49,7 @@ const snapshot = {
 
 // The featured release: the fixture's curation.json names it; the crate's
 // frozen curation predates the field, so the crate pick is a design constant
-// (ADR-0008 §9: editorial 953800 — a curated choice, like the crate itself).
+// (ADR-0008 §9: editorial 953800, a curated choice, like the crate itself).
 const featuredId =
   name === "crate" ? 953800 : read("curation.json").featured;
 if (featuredId == null) throw new Error(`${name}: no featured release id`);
@@ -78,7 +78,7 @@ writeFileSync(
 // only the handful of releases the bench measures would be rigging the
 // variant to fit the instrument (the rejected assetsInlineLimit precedent).
 //
-// The URL is slug-keyed — /vanilla/pdp/{id}-{artist}-{title}/ — which every
+// The URL is slug-keyed, /vanilla/pdp/{id}-{artist}-{title}/, which every
 // variant's release card already links to. A non-canonical slug 404s here by
 // construction (no file), and the request-time variants match that
 // deliberately rather than redirecting: a 301 they can serve and this one
@@ -91,9 +91,9 @@ for (const detail of snapshot.details) {
   writeFileSync(join(dir, "index.html"), renderPdpPage(snapshot, detail, { depth: 2 }));
   pdpCount += 1;
 }
-// The checkout, one static page (checkout-vanilla). Data-free by contract —
+// The checkout, one static page (checkout-vanilla). Data-free by contract,
 // `renderCheckout` takes no snapshot (packages/reference/render/build.mjs:78
-// discards it) — so unlike editorial and the PDP this page is byte-identical
+// discards it), so unlike editorial and the PDP this page is byte-identical
 // under both snapshots.
 mkdirSync(join(dist, "checkout"), { recursive: true });
 writeFileSync(
@@ -125,14 +125,14 @@ for (const rel of Object.keys(A11Y_PAGES)) {
 }
 
 // The cart catalogue: id → what the order summary needs to render a line
-// (cart-summary.css pins the shape — thumb, title × qty, price). Cart is
+// (cart-summary.css pins the shape, thumb, title × qty, price). Cart is
 // localStorage, so no paradigm can SERVE cart contents (ADR-0008 §7) and
 // every checkout variant has to resolve the ids client-side. A separate
 // asset rather than an inline payload, and fetched only when the cart is
 // non-empty: the canonical served state IS the empty cart, so the page the
 // instrument measures pays nothing for this. Inlining it would have put
 // tens of kilobytes of catalogue on the flagship INP page for a state the
-// measurement never enters — a manufactured paradigm cost, which is the
+// measurement never enters, a manufactured paradigm cost, which is the
 // defect PR #35 had just finished removing from the ruler.
 mkdirSync(join(dist, "assets"), { recursive: true });
 const catalogue = Object.fromEntries(

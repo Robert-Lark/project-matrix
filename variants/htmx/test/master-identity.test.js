@@ -2,7 +2,7 @@
  * The htmx PLP's pre-merge guards (the PLP build, 2026-08-28).
  *
  * WHY THIS FILE IS HERE AND NOT IN tools/repo-checks. htmx's OTHER
- * master-identity guard — the editorial one — lives in
+ * master-identity guard, the editorial one, lives in
  * `tools/repo-checks/test/variant-master-identity.test.ts`, and
  * `variants/README.md` records that placement deliberately (the renderer is
  * plain JS, so the shared guard workspace can drive it without hosting a
@@ -10,7 +10,7 @@
  * legitimate; this one exists because `tools/repo-checks` belongs to a
  * different unit's file boundary in the parallel build that produced this
  * surface, and a guard nobody may edit is worse than a guard in a second
- * home. **htmx's guards are now split across two directories** — consolidating
+ * home. **htmx's guards are now split across two directories**, consolidating
  * them is a judgment call for whoever integrates the four PLP branches, and
  * this comment is the flag for it.
  *
@@ -24,12 +24,12 @@
  * variant its defining property.
  *
  * The three things these legs prove, in order of what they would catch:
- *  1. The re-implementation is BYTE-faithful to `renderPlp` — the vanilla
+ *  1. The re-implementation is BYTE-faithful to `renderPlp`, the vanilla
  *     mechanism, the strictest available, because this renderer is the same
  *     species as the reference's (plain template literals, importable with
  *     no runtime).
  *  2. The `^hx-` registration in `PERMITTED_NOISE` is EXACTLY what makes the
- *     served DOM equal the master — proven in both directions, so a
+ *     served DOM equal the master, proven in both directions, so a
  *     registration that had stopped doing work would fail here rather than
  *     sit in the registry as decoration.
  *  3. The Worker actually serves it: routing, the knob forwarding the
@@ -37,7 +37,7 @@
  *     the branded-503 boundary.
  *
  * DISCLOSED LIMITS:
- *  - The `/api/plp` payload is assembled here by `applyPlpQuery` — the
+ *  - The `/api/plp` payload is assembled here by `applyPlpQuery`, the
  *    reference package's OWN query module, which the edge Worker imports
  *    and serves from (2026-09-04). Until then the payload was RE-TYPED here
  *    and the limit read: "if the edge Worker's facet comparator ever
@@ -60,7 +60,7 @@ import { parseHTML } from "linkedom";
 import { NO_NOISE, PAGE_NORMALIZE, PERMITTED_NOISE, firstDomDivergence } from "@pm/drift-gate";
 import { renderEditorialPage, renderPlpFragment, renderPlpPage } from "../src/render.mjs";
 // The spec's query module and the REAL edge Worker, by relative path: neither
-// is a dependency this variant declares or may declare (ADR-0004 §2 — a
+// is a dependency this variant declares or may declare (ADR-0004 §2, a
 // paradigm never ships the spec), and a guard reaching them by path is the
 // react-next identity guard's precedent for exactly this seam.
 import { applyPlpQuery } from "../../../packages/reference/render/plp-query.mjs";
@@ -69,7 +69,7 @@ import edgeWorker from "../../../workers/edge/src/index.js";
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
 
 /** The registration this surface earns, read from the registry rather than
- *  re-typed — every leg below is written against whatever is registered. */
+ *  re-typed, every leg below is written against whatever is registered. */
 const HTMX_NOISE = PERMITTED_NOISE["htmx"];
 
 const SNAPSHOTS = ["fixture", "crate"];
@@ -85,7 +85,7 @@ async function reference() {
 }
 
 /**
- * The edge Worker's `/api/plp` payload for a condition — built by the SAME
+ * The edge Worker's `/api/plp` payload for a condition, built by the SAME
  * function the Worker serves from (`applyPlpQuery`, the reference's query
  * module), so it is the served tray by construction, not a re-typing of it.
  * `query` takes the five ADR-0005 §5 params plus `n`/`page`; `q` must be
@@ -105,7 +105,7 @@ function plpPayload(snapshot, { n = 24, page = 1, ...query } = {}) {
 }
 
 /** The real edge Worker over a committed snapshot, in-process with stub
- *  bindings — the react-next guard's `stubEnv`/`servedTray` shape. */
+ *  bindings, the react-next guard's `stubEnv`/`servedTray` shape. */
 async function servedTray(snapshot, params = {}) {
   const warm = new Map();
   const env = {
@@ -161,8 +161,8 @@ function restoredConditions(snapshot) {
   ];
 }
 
-/** The ADR-0008 delivery freedoms the byte-strict legs tolerate — the head
- *  subtree, script elements, the chrome slot — then ASCII whitespace
+/** The ADR-0008 delivery freedoms the byte-strict legs tolerate, the head
+ *  subtree, script elements, the chrome slot, then ASCII whitespace
  *  collapsed. Copied from the shape `tools/repo-checks`'s editorial guard
  *  uses, so both htmx surfaces are held to one policy. */
 function stripDelivery(html) {
@@ -186,7 +186,7 @@ function sheets(html) {
 }
 
 /**
- * Every distinct htmx attribute NAME the markup carries, sorted — the WHOLE
+ * Every distinct htmx attribute NAME the markup carries, sorted, the WHOLE
  * mechanism family, not just valued `hx-foo=` attributes.
  *
  * The narrow `\s(hx-[a-z-]+)=` shape was written here first and the
@@ -197,7 +197,7 @@ function sheets(html) {
  * (`htmx.js:2752`); `hx-disable`, which is VALUELESS (`htmx.js:206`); and
  * the documented `data-hx-*` prefix form, which `getAttributeValue` falls
  * back to (`htmx.js:418`). All three are live mechanisms a narrow regex
- * reports as absent — so the "exactly three attributes" and "no anchor is
+ * reports as absent, so the "exactly three attributes" and "no anchor is
  * touched" legs below would have passed with a fourth on an anchor.
  */
 function hxAttributeNames(html) {
@@ -207,7 +207,7 @@ function hxAttributeNames(html) {
 
 /** The mechanism removed, same family as `hxAttributeNames` (valued or
  *  valueless). Paired with the leg below that pins WHICH names appear and
- *  proves each is covered by a registered pattern — so this cheap strip
+ *  proves each is covered by a registered pattern, so this cheap strip
  *  provably removes exactly the registered noise and nothing else. */
 function stripHx(html) {
   return html.replace(
@@ -219,7 +219,7 @@ function stripHx(html) {
 /**
  * `PAGE_NORMALIZE` is written to run INSIDE a driven browser: self-contained
  * by construction, reading `document`/`Node` as globals. linkedom supplies
- * same-shape globals for a plain HTML string — the slice-B/C precedent.
+ * same-shape globals for a plain HTML string, the slice-B/C precedent.
  */
 function normalizeHtml(html, spec) {
   const { document, Node } = parseHTML(html);
@@ -256,7 +256,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
       expect(variant).toBe(master);
     });
 
-    it(`${name}: and at n=240 — the other end of the nKnob`, async () => {
+    it(`${name}: and at n=240, the other end of the nKnob`, async () => {
       const { lib, plp } = await reference();
       const snapshot = lib.loadSnapshot(name);
       const master = stripDelivery(plp.renderPlp(snapshot, { origin: "", n: 240 }));
@@ -266,7 +266,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
   }
 
   for (const name of SNAPSHOTS) {
-    it(`${name}: and at every RESTORED condition — a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
+    it(`${name}: and at every RESTORED condition, a facet, a rare style, a search, a sort, a deep page with every knob`, async () => {
       const { lib, plp } = await reference();
       const snapshot = lib.loadSnapshot(name);
       for (const { label, query, carry } of restoredConditions(snapshot)) {
@@ -286,7 +286,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
     // Closes the limit the first PLP build disclosed ("if the edge Worker's
     // facet comparator ever diverged from the reference's, these legs would
     // still pass"): the Worker now imports the reference's query module, and
-    // this proves its PLUMBING — parsing, clamping, validation — hands that
+    // this proves its PLUMBING, parsing, clamping, validation, hands that
     // module the same query the helper does.
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
@@ -295,7 +295,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
       expect(status, label).toBe(200);
       expect(tray, label).toEqual(plpPayload(snapshot, { n: 24, ...query }));
     }
-    // And the served tray FILTERS — the fact the retired tripwire guarded
+    // And the served tray FILTERS, the fact the retired tripwire guarded
     // against pretending: fewer releases, every one carrying the facet.
     const { genre } = restoredConditions(snapshot)[0].query;
     const { tray } = await servedTray(snapshot, { genre, n: 240 });
@@ -320,7 +320,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
     // Cascade order is a rendering property, not an ADR-0008 freedom.
     expect(master.length, "the master links no stylesheets").toBeGreaterThan(5);
     expect(variant).toEqual(master);
-    // The surface's own sheets, not editorial's — and the rail's sheet is
+    // The surface's own sheets, not editorial's, and the rail's sheet is
     // back with the rail (2026-09-04).
     expect(variant).toContain("css/surfaces/plp.css");
     expect(variant).toContain("css/components/facets.css");
@@ -329,7 +329,7 @@ describe("htmx's PLP equals the master, both snapshots (pre-merge)", () => {
 });
 
 describe("the ^hx- registration is exactly what makes the served DOM equal the master", () => {
-  it("the registry entry is mechanism only — no residue, no dropped elements", () => {
+  it("the registry entry is mechanism only, no residue, no dropped elements", () => {
     expect(HTMX_NOISE, "htmx must be registered for this surface").toBeDefined();
     expect(HTMX_NOISE.behaviorAttrPatterns).toEqual(["^hx-"]);
     expect(HTMX_NOISE.attrPatterns).toEqual([]);
@@ -343,7 +343,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
     const names = hxAttributeNames(html);
     expect(names).toEqual(["hx-boost", "hx-swap", "hx-target"]);
     // The registration is `^hx-`, which does NOT match `data-hx-` (htmx's
-    // other documented spelling) — so the page must not use it, or the
+    // other documented spelling), so the page must not use it, or the
     // deployed gate would read a real mechanism as content drift. Pinned
     // here rather than trusted: the same narrowness is recorded in
     // normalize.ts, DIFF-TO-STARTER.md and the handoff.
@@ -361,7 +361,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
   it("hx-target/hx-swap ride the root; hx-boost rides the FOUR navigation containers and never the root or a card", async () => {
     const { lib } = await reference();
     const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
-    // The root carries the swap contract only — `hx-boost` on the root would
+    // The root carries the swap contract only, `hx-boost` on the root would
     // boost every descendant same-origin anchor, INCLUDING the 24 card links
     // to /vanilla/pdp/…, and a click on a record title would swap the whole
     // PDP document into the grid (design critique, kill finding).
@@ -372,7 +372,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
     // Exactly four boosted containers: the rail, both forms, the pagination.
     const boosted = [...html.matchAll(/<(nav|form) class="([^"]+)"[^>]*\shx-boost="true"/g)].map((m) => m[2]);
     expect(boosted.sort()).toEqual(["pm-facets", "pm-pagination", "pm-toolbar__search", "pm-toolbar__sort"]);
-    // And nothing else carries any hx-* — not the grid, not a card, not an anchor.
+    // And nothing else carries any hx-*, not the grid, not a card, not an anchor.
     const stripped = html
       .replace(root, "")
       .replace(/<(nav|form) class="[^"]+"[^>]*\shx-boost="true"[^>]*>/g, "");
@@ -396,7 +396,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
     expect(variant).toBe(master);
   });
 
-  it("and NOT under NO_NOISE — so the registration is load-bearing, not decoration", async () => {
+  it("and NOT under NO_NOISE, so the registration is load-bearing, not decoration", async () => {
     const { lib, plp } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const master = normalizeHtml(plp.renderPlp(snapshot, { origin: "", n: 24 }), NO_NOISE);
@@ -408,7 +408,7 @@ describe("the ^hx- registration is exactly what makes the served DOM equal the m
   });
 });
 
-describe("page > 1 — the condition the reference renderer cannot render", () => {
+describe("page > 1, the condition the reference renderer cannot render", () => {
   it("serves the right slice, moves the current marker, and states the right range", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
@@ -433,7 +433,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
    * invisible:
    *   - the page window was a literal copy of the reference's
    *     `1..min(totalPages, 5)`, so from page 6 on NO element carried
-   *     `aria-current="page"` and there was no route past 5 — six clicks
+   *     `aria-current="page"` and there was no route past 5, six clicks
    *     from the front page, on both snapshots;
    *   - an out-of-range page rendered its range BACKWARDS ("Showing 241–240
    *     of 240"), which src/plp.js would then announce to a screen reader
@@ -482,7 +482,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
    * fixed. `renderPlp`'s comment (plp.mjs:60-62) claims its pagination hrefs
    * "preserve the WHOLE condition (URL-as-receipt, ADR-0004 §5)"; they carry
    * `page` and `n` and nothing else, and a query-only relative reference
-   * replaces the whole query (RFC 3986 §5.3) — so `cache`, `run` and
+   * replaces the whole query (RFC 3986 §5.3), so `cache`, `run` and
    * `profile` are dropped by every page-flip. From this arm's own preset
    * (`/htmx/plp/?cache=cold`) that silently moves the visit onto the warm
    * tier while the chrome still reads cold.
@@ -492,7 +492,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
    * `plp.mjs` starts threading the condition through, this fails and the
    * variant is updated in the same change.
    */
-  it("pagination hrefs are the master's shape exactly — and they CARRY cache, run and profile now", async () => {
+  it("pagination hrefs are the master's shape exactly, and they CARRY cache, run and profile now", async () => {
     // This leg used to pin the opposite: the master's hrefs dropped the
     // three knobs and this arm reproduced the drop so the fix could not
     // land on one side only. The fix landed in the reference (2026-09-04,
@@ -507,7 +507,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
 
     const carry = { cache: "cold", run: "bench-7", profile: "slow-4g-mid-phone" };
     const carried = hrefs(plp.renderPlp(snapshot, { origin: "", n: 24, page: 3, ...carry }));
-    // Every knob, canonical order, on every flip — from this arm's own
+    // Every knob, canonical order, on every flip, from this arm's own
     // preset a click on "2" used to land on the WARM tier under a chrome
     // still reading cold. (`n` is omitted at its default, so it is absent here.)
     // The "1" link omits `page` (default) but carries the rest; only the
@@ -520,12 +520,12 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
     expect(junk[0]).toBe("?page=2");
   });
 
-  it("Next is gated on a real next page — and the contract now says so too", async () => {
+  it("Next is gated on a real next page, and the contract now says so too", async () => {
     const { lib, plp } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     // This leg used to pin the OPPOSITE. `renderPlp` emitted `rel="next"`
-    // unconditionally, so at n=240 — where the fixture is a single page of
-    // 240 — the master linked a page with zero releases, and this arm
+    // unconditionally, so at n=240, where the fixture is a single page of
+    // 240, the master linked a page with zero releases, and this arm
     // reproduced it rather than diverge from the contract at a condition the
     // identity guard actually compares. The reference fix in this unit's
     // handoff note has landed: `renderPlp` takes `page` and gates on
@@ -555,7 +555,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
     expect(ninth).toContain('rel="next"');
   });
 
-  it("the fragment is the swap target alone — no document, no shell", async () => {
+  it("the fragment is the swap target alone, no document, no shell", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const fragment = renderPlpFragment(plpPayload(snapshot, { n: 24, page: 2 }));
@@ -577,7 +577,7 @@ describe("page > 1 — the condition the reference renderer cannot render", () =
 });
 
 /* ── The Worker: the module production actually executes. Driven in-process
-      with stub EDGE bindings, the `htmx-worker-fallback` precedent — the
+      with stub EDGE bindings, the `htmx-worker-fallback` precedent, the
       entry is framework-neutral (Request/Response/URL globals only). ───── */
 
 async function workerFetch(env, path, init) {
@@ -628,7 +628,7 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
     // Without this, a shared cache may serve a bare fragment to a cold
-    // navigation — the same URL has two representations.
+    // navigation, the same URL has two representations.
     expect(res.headers.get("vary")).toBe("HX-Request, HX-History-Restore-Request");
     const body = await res.text();
     expect(
@@ -659,15 +659,15 @@ describe("the Worker serves /htmx/plp/", () => {
    *
    * htmx's Back button restores from a sessionStorage cache; on a MISS
    * (storage blocked, quota shed, or evicted past `historyCacheSize` = 10)
-   * it re-fetches the URL and swaps the answer into `getHistoryElement()` —
-   * `document.body`, since this page declares no `[hx-history-elt]` — with
+   * it re-fetches the URL and swaps the answer into `getHistoryElement()`,
+   * `document.body`, since this page declares no `[hx-history-elt]`, with
    * `swapStyle: 'innerHTML'`. It sends that request with `HX-Request: true`,
    * because `historyRestoreAsHxRequest` defaults to true
    * (`htmx.org@2.0.10/dist/htmx.js:281`). A server branching on `HX-Request`
    * alone answers a full-page restore with the bare `.pm-plp` block and htmx
    * writes it over the whole body: skip link, chrome slot, masthead, footer
    * and every script gone. htmx's own config doc names this exact trap at
-   * `htmx.js:277` — "This should always be disabled when using HX-Request
+   * `htmx.js:277`, "This should always be disabled when using HX-Request
    * header to optionally return partial responses".
    */
   it("a history-restore re-fetch gets the WHOLE document, not the partial", async () => {
@@ -680,7 +680,7 @@ describe("the Worker serves /htmx/plp/", () => {
     const body = await res.text();
     expect(
       body.startsWith("<!doctype html>"),
-      `a history restore swaps into document.body — a partial here erases the shell; got: ${body.slice(0, 80)}`,
+      `a history restore swaps into document.body, a partial here erases the shell; got: ${body.slice(0, 80)}`,
     ).toBe(true);
     expect(body).toContain('<div id="pm-chrome-slot"></div>');
     expect(body).toContain('class="pm-masthead"');
@@ -690,8 +690,8 @@ describe("the Worker serves /htmx/plp/", () => {
 
   /**
    * The partial DECLARES itself, so the front Worker need not re-derive
-   * htmx's request semantics. Inert until that Worker honours the header —
-   * `workers/front/**` is another unit's boundary — but the declaration is
+   * htmx's request semantics. Inert until that Worker honours the header,
+   * `workers/front/**` is another unit's boundary, but the declaration is
    * this side's half, and without it the composed origin logs
    * `chrome-slot-count` as an ERROR on every single page-flip: a partial has
    * no `div#pm-chrome-slot` by design, and the slot-cardinality check treats
@@ -706,7 +706,7 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(partial.headers.get("x-pm-partial")).toBe("1");
     const document_ = await workerFetch(recordingEdge(payload).env, "/htmx/plp/");
     expect(document_.headers.get("x-pm-partial")).toBeNull();
-    // The fragment really has no slot — which is why the header is needed.
+    // The fragment really has no slot, which is why the header is needed.
     expect(await partial.text()).not.toContain('id="pm-chrome-slot"');
   });
 
@@ -717,7 +717,7 @@ describe("the Worker serves /htmx/plp/", () => {
    * runner sets it on every cold-column visit
    * (tools/bench-runner/src/batch.ts:78-80, which also sets `n` and `run`).
    * If the Worker dropped it, the edge would serve the KV warm tier under a
-   * column labelled cold and this paradigm would read faster than it is —
+   * column labelled cold and this paradigm would read faster than it is,
    * rigging in the flattering direction, which ADR-0001 §9 refuses in both
    * directions. `run` is the batch's cache-isolation nonce; dropped, the
    * warm column inherits every previous run's KV state.
@@ -785,14 +785,14 @@ describe("the Worker serves /htmx/plp/", () => {
     expect(res.headers.get("x-pm-cache-state")).toBeNull();
   });
 
-  it("forwards nothing else — junk is not invented, and `profile` (the chrome's knob) never reaches the data plane", async () => {
+  it("forwards nothing else, junk is not invented, and `profile` (the chrome's knob) never reaches the data plane", async () => {
     const { lib } = await reference();
     const { env, seen } = recordingEdge(plpPayload(lib.loadSnapshot("fixture")));
     await workerFetch(env, "/htmx/plp/?genre=Jazz&nonsense=1&profile=slow-4g-mid-phone&x=y");
     expect([...seen[0].searchParams.keys()]).toEqual(["genre"]);
   });
 
-  it("the URL's cache, run and profile reach the rendered hrefs — through the Worker, not only the renderer", async () => {
+  it("the URL's cache, run and profile reach the rendered hrefs, through the Worker, not only the renderer", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const genre = snapshot.summaries[0].genres[0];
@@ -810,13 +810,13 @@ describe("the Worker serves /htmx/plp/", () => {
   });
 
   /**
-   * A tray 400 is a facet or sort value the snapshot does not hold — the
+   * A tray 400 is a facet or sort value the snapshot does not hold, the
    * plane ANSWERED. Until 2026-09-04 every non-2xx fell into the branded 503,
    * so a hand-typed `?genre=jazz` told the visitor the data plane was down
-   * (false) — and the two arms disagreed for one URL, since react-next
+   * (false), and the two arms disagreed for one URL, since react-next
    * rendered its error boundary instead (design critique).
    */
-  it("a tray 400 is a branded 404 — 'No such filter' — never the data-plane-down 503", async () => {
+  it("a tray 400 is a branded 404, 'No such filter', never the data-plane-down 503", async () => {
     const env = {
       EDGE: {
         fetch: () =>
@@ -852,7 +852,7 @@ describe("the Worker serves /htmx/plp/", () => {
   /**
    * FOUND BY THE VERIFICATION PASS: the branded fallback marked the
    * MASTHEAD'S EDITORIAL LINK as the current page, so a screen-reader user
-   * whose PLP failed was told the current page is Editorial — a wrong ARIA
+   * whose PLP failed was told the current page is Editorial, a wrong ARIA
    * state, served deliberately. Editorial's own 503 must stay byte-identical
    * (its receipts were measured against it), which is why `current` is a
    * parameter with a default rather than a rewrite.
@@ -885,7 +885,7 @@ describe("the Worker serves /htmx/plp/", () => {
    * does not throw on a bad payload, it interpolates. Measured before the
    * fix: a payload identical to `handlePlp`'s but with `perPage` renamed
    * rendered a **200** page carrying "Showing NaN–NaN of 240 releases" and
-   * every href as `?page=N&n=undefined` — which `plp.js` would then announce
+   * every href as `?page=N&n=undefined`, which `plp.js` would then announce
    * to a screen reader, and which the edge silently clamps back to n=24, so
    * a visitor on ?n=240 is reset by clicking "2". No gate could see it: the
    * identity legs assemble this payload themselves, so they pass by
@@ -902,7 +902,7 @@ describe("the Worker serves /htmx/plp/", () => {
       ["facets missing a bucket", { ...good, facets: { genres: [], styles: [] } }],
       ["facets absent", { ...good, facets: undefined }],
       ["totalPages NaN", { ...good, totalPages: Number.NaN }],
-      // A pre-`v2:` tray — the shape before `applied` — must be a 503 at the
+      // A pre-`v2:` tray, the shape before `applied`, must be a 503 at the
       // boundary, not a TypeError inside the template.
       ["applied absent", { ...good, applied: undefined }],
     ];
@@ -924,7 +924,7 @@ describe("the Worker serves /htmx/plp/", () => {
    * The contract driven DIRECTLY, and the reason that is not redundant with
    * the leg above: through `fetch`, the facets clauses are invisible.
    * Every malformed-`facets` payload also throws during interpolation, so
-   * the route answers 503 either way — a sabotage deleting those clauses
+   * the route answers 503 either way, a sabotage deleting those clauses
    * produced NO failure at all. Reached directly, each clause is provable.
    */
   it("the tray contract rejects each malformed shape at the boundary, and accepts the real one", async () => {
@@ -971,14 +971,14 @@ describe("the Worker serves /htmx/plp/", () => {
       PDP that let two advertised controls ship dead on ~500 pages because
       "no pre-merge check read pdp.js at all". This workspace now has a test
       script, so its enhancement is read pre-merge. The REAL source is
-      evaluated against a linkedom document — what is under test is the bytes
+      evaluated against a linkedom document. What is under test is the bytes
       that ship, not a twin. ────────────────────────────────────────────── */
 
 /** Evaluate src/plp.js against `doc` exactly as a browser would: the file is
  *  an IIFE closing over the `document` and `window` globals, so binding them
  *  as parameters is a faithful stand-in. `win` is the per-page object that
- *  carries the re-entrancy flag — one per document, as a browsing context
- *  has one per page — so passing the SAME `win` twice models an htmx history
+ *  carries the re-entrancy flag, one per document, as a browsing context
+ *  has one per page, so passing the SAME `win` twice models an htmx history
  *  restore re-executing the file. */
 function loadEnhancement(doc, win = {}) {
   const src = readFileSync(join(repoRoot, "variants", "htmx", "src", "plp.js"), "utf8");
@@ -1002,7 +1002,7 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
    * history restore: `cleanInnerHtmlForHistory` (htmx.js:3237-3248) keeps
    * `<script>` elements in the snapshot, `allowScriptTags` defaults true
    * (:160), and `duplicateScript` (:549) builds a node the browser executes.
-   * `document` survives the body swap, so its listeners accumulate — one
+   * `document` survives the body swap, so its listeners accumulate, one
    * Back press and every later flip announces the range TWICE into a
    * role="status" region and focuses twice, growing with each Forward/Back
    * cycle. The file whose whole job is a11y parity would degrade the
@@ -1050,11 +1050,11 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
     return { document, swap };
   }
 
-  it("the SERVED page carries no tabindex — the focus stop is script-only state", async () => {
+  it("the SERVED page carries no tabindex, the focus stop is script-only state", async () => {
     const { lib } = await reference();
     const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
     // A rendered tabindex would be a focus stop that does nothing with JS
-    // off — the pm-pdp__scroll defect — and it would be DOM drift besides.
+    // off, the pm-pdp__scroll defect, and it would be DOM drift besides.
     expect(html).not.toContain("tabindex");
   });
 
@@ -1098,7 +1098,7 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
   /**
    * FOUND BY THE VERIFICATION PASS. htmx maps a 4xx/5xx to
    * `{ swap: false, error: true }` (`htmx.org@2.0.10/dist/htmx.js:267`), so
-   * when the data plane is down a boosted click changes NOTHING — old grid,
+   * when the data plane is down a boosted click changes NOTHING, old grid,
    * URL not pushed, no message. With JS off the same click is a navigation
    * and the visitor gets the branded 503 shell. Without this listener the
    * ENHANCED path is the worse of the two, which is the one direction a
@@ -1113,7 +1113,7 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
       expect(
         document.querySelector("[data-pm-status]").textContent,
         `${type} left the visitor with no cue at all`,
-      ).toBe("Couldn't load that page — the list is unchanged.");
+      ).toBe("Couldn't load that page. The list is unchanged.");
     }
   });
 
@@ -1127,20 +1127,20 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
   });
 
   /**
-   * FOUND BY SABOTAGE, not by reading — the gap this leg closes was open
+   * FOUND BY SABOTAGE, not by reading, the gap this leg closes was open
    * until a sabotage that added plp.js to EDITORIAL_SCRIPTS produced NO test
    * failure at all.
    *
    * Why it matters more than it looks: editorial is the one surface on this
    * variant with PUBLISHED byte receipts, and a `<script>` element is
-   * invisible to every identity guard there is — the drift normalizer drops
+   * invisible to every identity guard there is, the drift normalizer drops
    * script elements as delivery (ADR-0003 §2) and the byte-strict editorial
    * guard's own stripDelivery removes them before comparing. So a stray
    * script on editorial changes a published number and passes every existing
    * check silently. The scripts a surface serves are measured bytes even
    * when they are not contract markup, so the list is pinned per surface.
    */
-  it("editorial ships exactly its own two scripts — no PLP enhancement leaks onto a surface with published numbers", async () => {
+  it("editorial ships exactly its own two scripts, no PLP enhancement leaks onto a surface with published numbers", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const policy = await import(
@@ -1162,7 +1162,7 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
    *
    * The script-list leg above exists because a sabotage adding `plp.js` to
    * `EDITORIAL_SCRIPTS` passed every check. `<link rel="stylesheet">`
-   * elements are invisible to exactly the same three checks — the
+   * elements are invisible to exactly the same three checks, the
    * repo-checks editorial guard's `stripDelivery` deletes the whole `<head>`
    * before comparing, the drift normalizer drops `link` elements AND the
    * head subtree, and the origin suite's only head check for this page is a
@@ -1171,13 +1171,13 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
    * `SHELL_CSS` + `EDITORIAL_CSS` so a third surface could share the base.
    *
    * So: one added entry in `SHELL_CSS`, or two of its five reordered, and
-   * editorial silently gains a request or a different cascade — on the ONE
+   * editorial silently gains a request or a different cascade, on the ONE
    * htmx surface with published byte receipts. The PLP got this leg
    * immediately; the surface with the receipts did not, which is the
    * standard applied backwards. (Verified byte-neutral today: the refactor
    * produces the same nine sheets in the same order.)
    */
-  it("editorial links exactly ITS master's stylesheets, in order — the <link> twin of the script leg", async () => {
+  it("editorial links exactly ITS master's stylesheets, in order, the <link> twin of the script leg", async () => {
     const { lib } = await reference();
     const snapshot = lib.loadSnapshot("fixture");
     const editorial = await import(
@@ -1202,12 +1202,12 @@ describe("the PLP enhancement restores what the partial swap takes away", () => 
     expect(variant).not.toContain("css/components/facets.css");
   });
 
-  it("every page ships the cart enhancement — the masthead badge is the shell's contract, not editorial's", async () => {
+  it("every page ships the cart enhancement, the masthead badge is the shell's contract, not editorial's", async () => {
     const { lib } = await reference();
     const html = renderPlpPage(plpPayload(lib.loadSnapshot("fixture")));
     // CART_CONTRACT (shell.mjs): "On every shell page load the enhancement
     // populates each [data-pm-cart-count] slot". Without cart.js here the
-    // PLP's badge would be permanently empty — a dead control the shell
+    // PLP's badge would be permanently empty, a dead control the shell
     // promises works on every surface.
     expect(html).toContain("data-pm-cart-count");
     expect(html).toContain('<script src="/htmx/assets/cart.js" defer></script>');
@@ -1223,7 +1223,7 @@ describe("the served surface is honest about what it can do", () => {
    * `components/facets.css` were ABSENT, and read `workers/edge/src/index.js`
    * from disk to fail the day a param was wired through without the UI
    * coming back. The params are wired and the UI is back, so the tripwire
-   * has done its job and is retired — replaced by the honest inverse,
+   * has done its job and is retired, replaced by the honest inverse,
    * proven by REQUEST rather than by grep: every restored control is served,
    * and the data plane it navigates to actually filters.
    */
@@ -1256,11 +1256,11 @@ describe("the served surface is honest about what it can do", () => {
     const searched = (await servedTray(snapshot, { n: 240, q: word })).tray;
     expect(searched.total).toBeLessThan(base.total);
     expect(searched.total).toBeGreaterThan(0);
-    // And junk is a 400 from the plane — which the Worker turns into the 404 above.
+    // And junk is a 400 from the plane, which the Worker turns into the 404 above.
     expect((await servedTray(snapshot, { genre: "Junk" })).status).toBe(400);
   });
 
-  it("the default sort is labelled for what it is — committed order — never 'Popularity'", async () => {
+  it("the default sort is labelled for what it is, committed order, never 'Popularity'", async () => {
     // snapshot-capture normalize.ts: rows are id-ascending, "the one
     // neutral, deterministic order that is not a presentation choice". The
     // pre-2026-08-29 master called that option "Popularity", which it is not.

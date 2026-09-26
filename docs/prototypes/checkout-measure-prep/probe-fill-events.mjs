@@ -1,7 +1,7 @@
 // Does Playwright's fill() (CDP Input.insertText) register as an INTERACTION
 // in Event Timing? If it does, checkout-fix-and-submit's INP would include the
 // ten fills; if not, the cell is the worse of the two submit clicks. Measured,
-// not assumed — the registry comment states whichever this prints.
+// not assumed, the registry comment states whichever this prints.
 import { createRequire } from "node:module";
 const require = createRequire(new URL("../../../tools/origin-suite/package.json", import.meta.url));
 const { chromium } = require("playwright");

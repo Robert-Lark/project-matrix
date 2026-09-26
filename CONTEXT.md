@@ -1,8 +1,8 @@
-# Project Matrix — Context
+# Project Matrix: Context
 
 The ubiquitous language for the project: a live-benchmarking portfolio built as one
 Discogs vinyl store across several rendering paradigms. This file is a glossary and
-nothing else — no implementation detail. Rationale lives in `docs/adr/`; planning
+nothing else, no implementation detail. Rationale lives in `docs/adr/`; planning
 state in `docs/decision-map.md`.
 
 ## Language
@@ -10,14 +10,14 @@ state in `docs/decision-map.md`.
 ### The store & its evidence
 
 **Canonical store**:
-The default store every visitor sees — real Discogs data captured once and frozen,
+The default store every visitor sees, real Discogs data captured once and frozen,
 served the way production serves cacheable data. It is the rigorous, reproducible
 measurement, and needs no qualifying label.
 _Avoid_: "static mode", "frozen mode", "the fake one".
 
 **Live-origin demonstration**:
 An on-demand action (scoped to the PDP) that fetches from the live Discogs API to
-expose the real cost of a dynamic origin. Deliberately fenced — never fed into the
+expose the real cost of a dynamic origin. Deliberately fenced, never fed into the
 benchmark numbers, because it cannot be reproduced run-to-run.
 _Avoid_: "live mode" (implies the canonical store is not real).
 
@@ -28,7 +28,7 @@ _Avoid_: "framework", "stack" (we compare paradigms, not framework collections).
 
 **Surface**:
 One of the store's seven pages (Home gateway, Editorial, PDP, PLP, Checkout,
-the A11y section, "How it was built") — the spine/spotlight surfaces each
+the A11y section, "How it was built"), the spine/spotlight surfaces each
 prove a distinct tradeoff; Home and "How it was built" are singletons off the
 benchmarked matrix.
 _Avoid_: "lab", "page type".
@@ -41,15 +41,15 @@ Tied to a capture date + commit SHA.
 _Avoid_: "cache", "dump", "mirror".
 
 **Catalog data**:
-The immutable slice — title, artist, year, tracklist, cover art. Legitimately
+The immutable slice, title, artist, year, tracklist, cover art. Legitimately
 pre-computable in production, so freezing it is real-world-faithful.
 
 **Commerce data**:
-The mutable slice — price, availability. The only genuinely dynamic data; the only
+The mutable slice, price, availability. The only genuinely dynamic data; the only
 thing the live-origin demonstration shows changing.
 
 **Crate**:
-The curated snapshot scope — one coherent slice of records (e.g. a genre or era),
+The curated snapshot scope, one coherent slice of records (e.g. a genre or era),
 ~500 releases, chosen for a realistic facet distribution. Heavy on purpose.
 _Avoid_: "dataset", "corpus".
 
@@ -58,7 +58,7 @@ The small normalized payload for a PLP grid card (cover, title, artist, price,
 facets). One of the two "trays".
 
 **Release detail**:
-The full normalized payload for a PDP — the summary plus tracklist, images, labels,
+The full normalized payload for a PDP, the summary plus tracklist, images, labels,
 formats. The other "tray".
 
 **Tray**:
@@ -73,23 +73,23 @@ measured variable, not a bias.
 ### Serving
 
 **Origin**:
-Cloudflare R2 — the single source of truth holding the frozen JSON + self-hosted
+Cloudflare R2, the single source of truth holding the frozen JSON + self-hosted
 images.
 
 **Warm tier**:
-Cloudflare KV — the edge cache tier that makes a "warm" read reproducible **at a
+Cloudflare KV, the edge cache tier that makes a "warm" read reproducible **at a
 stated location**: KV caches where it is read, so warm means warm where it was
 primed, and receipts carry the location label. Contrast **cold**: bypass the
 edge and read the origin.
 _Avoid_: "reproducible everywhere" (KV replication is demand-pulled, not global
-push — ADR-0002 addendum).
+push, ADR-0002 addendum).
 
 **Canonical plane**:
 The single Cloudflare host every variant deploys to, co-located with the origin.
-Holding the host constant makes it a fairness control, not a benchmark variable — a
+Holding the host constant makes it a fairness control, not a benchmark variable, a
 latency gap can only be the paradigm. A variant may also appear on its native host
 (e.g. Next on Vercel) as a fenced "real-world host" exhibit, excluded from the numbers.
-_Avoid_: "the server", "prod" — there is one shared plane, not a per-variant server.
+_Avoid_: "the server", "prod". There is one shared plane, not a per-variant server.
 
 **Product interactivity**:
 The genuine client-side interaction on a PDP (image gallery/zoom, add-to-cart with
@@ -97,13 +97,13 @@ cart state, quantity). Distinct from commerce-backend fidelity, and kept rich
 because the render-axis thesis depends on it. **Format switch was removed from
 this set on 2026-08-15** (ADR-0008 addendum A): a Discogs `formats` array is the
 composition of one physical release, not a menu of things to buy, and the tray
-carries one price and one stock count for the whole release — so the control
+carries one price and one stock count for the whole release, so the control
 could only have been wired by inventing per-format prices.
 
 ### Data strategies (PLP)
 
 **Data strategy**:
-Where a page's data layer lives — nowhere (**cold**: fetch fresh every time),
+Where a page's data layer lives, nowhere (**cold**: fetch fresh every time),
 the **browser** (client cache, TanStack Query), the **server** (loaders +
 progressive enhancement), or the **edge** (KV warm tier). The PLP's measured
 axis; each strategy is one idiomatic exemplar differing from cold by exactly
@@ -114,7 +114,7 @@ libraries at all).
 
 **Client warmth**:
 The state of a data strategy's in-page cache. It exists only *within* a
-session — a hard navigation resets it — so it is never a URL knob: it is
+session, a hard navigation resets it, so it is never a URL knob: it is
 produced by a **priming interaction** prefix and measured on the step after,
 exactly as edge warmth is produced by one unmeasured priming request.
 _Avoid_: "warm client cache column" (it is a sequence property, not a page
@@ -129,7 +129,7 @@ cache can help.
 
 **Applied query**:
 The five ADR-0005 §5 params the data plane actually applied to produce a
-tray — `PlpPage.applied`, `null` for an unapplied knob. Every renderer draws
+tray, `PlpPage.applied`, `null` for an unapplied knob. Every renderer draws
 the rail's selected facet, the sort select's chosen option and the search
 box's value from it, never from the URL, so a client-cache arm showing the
 previous page while a new one is in flight cannot show one condition's
@@ -139,7 +139,7 @@ the request; `applied` is the answer).
 **Facet recount**:
 How the rail's counts are computed under a filter: each group over the items
 passing every applied filter except that group's own, so a count is always
-what the click would return — switching within the selected group, adding
+what the click would return, switching within the selected group, adding
 in the others. Unfiltered it is the whole-crate count. _Avoid_: "global
 counts" for a filtered page (a count that does not predict the click is the
 dead-control falsehood in numbers).
@@ -149,13 +149,13 @@ A PLP condition the KV warm tier may hold: no search (`q`), `n` at one of the
 two published knob values, page within the filtered set. Everything else is
 served from R2 and marked `x-pm-cache-state: none`. One derivation
 (`plpWarmable`, @pm/measurement) decides it for the Worker and for the RUM
-`cacheState` tag. _Avoid_: "cacheable" without saying by whom — the browser
+`cacheState` tag. _Avoid_: "cacheable" without saying by whom, the browser
 and the client-cache arms have their own caches.
 
 **Misapplication exhibit**:
 The fenced fifth PLP option: the same page built with a tool that is wrong
 for this data shape (Apollo Client on REST), measured with the same harness.
-Its claim is "the wrong tool works — you pay in bytes and machinery," never
+Its claim is "the wrong tool works. You pay in bytes and machinery," never
 a deliberately broken UX. Fenced like the live-origin demonstration: labeled
 on-surface, excluded from the four-strategy cells.
 _Avoid_: "the Apollo strawman", "the bad variant" (it must stay idiomatic
@@ -164,27 +164,27 @@ and fair to be evidence).
 ### Presentation
 
 **Canonical markup contract**:
-The shared, paradigm-neutral definition of a component's rendered DOM — exact
-elements, nesting, and class names — that every variant must emit identically.
+The shared, paradigm-neutral definition of a component's rendered DOM, exact
+elements, nesting, and class names, that every variant must emit identically.
 There is no shared component *runtime*; each paradigm re-implements the markup
 (JSX, Astro, Qwik, HTMX partial, vanilla template) but the DOM it produces is
 identical. Together with the shared style rules, this makes pixels identical *by
-construction* — so "that variant is slow because its components were written
+construction*, so "that variant is slow because its components were written
 differently" is never a valid excuse.
-_Avoid_: "shared component library" (implies shared runtime code — there is none).
+_Avoid_: "shared component library" (implies shared runtime code. There is none).
 
 **Presentation zero-bias**:
 The design-system counterpart to the data zero-bias guarantee. The *control* is
 the declared style rules + the rendered DOM (identical everywhere). The *measured
-variable* is how each paradigm delivers and optimizes that CSS — scoping,
-code-splitting, critical-CSS inlining, unused-CSS elimination — because those are
+variable* is how each paradigm delivers and optimizes that CSS, scoping,
+code-splitting, critical-CSS inlining, unused-CSS elimination, because those are
 genuine paradigm capabilities whose payoff is part of the verdict. "Same styles,
 not same delivery," mirroring data's "same data, not same access."
 
 **Semantic token**:
 The aliased design token a component actually consumes (`--color-text`,
 `--color-surface`, `--space-inset`), one level above the raw primitive scale. The
-single seam through which theming and forced-colors are applied — reassign the
+single seam through which theming and forced-colors are applied, reassign the
 semantic token once and every component adapts.
 
 **Reference render**:
@@ -194,7 +194,7 @@ drift-proof **golden master** every variant is diffed against in CI (normalized-
 equivalence + pixel screenshot). Never shipped to a visitor.
 
 **Matched pair**:
-An a11y-relevant component shipped in two forms — the compliant **DS-on** default and
+An a11y-relevant component shipped in two forms, the compliant **DS-on** default and
 a **DS-off** (stripped) counterpart, byte-identical except the accessibility
 treatment. The pair makes a side-by-side comparison differ *only* in accessibility;
 the DS-off form is what a rushed team ships without the design system.
@@ -205,7 +205,7 @@ block (kicker · name · claim) in the store's quiet register. The **fenced**
 form adds `data-pm-fenced="true"` and the exclusion rule line, and is reserved
 for true number-exclusions (Remix 3, the misapplication exhibit, the
 live-origin demonstration, the a11y DS-off exhibits). Checkout's simulation
-notice is a base plaque — checkout is measured.
+notice is a base plaque, checkout is measured.
 _Avoid_: "banner", "warning" (a plaque states a boundary; it never alarms).
 
 **Designated host**:
@@ -218,10 +218,10 @@ arrival offers the swap. Recorded per surface in the switcher config.
 
 **Contextual switcher** (or just **switcher**):
 The live control that swaps the architecture serving the current route by a **hard
-navigation** to the target variant's URL — never a soft, in-place swap (there is no
+navigation** to the target variant's URL, never a soft, in-place swap (there is no
 shared runtime to swap). "Contextual" because its control-set is a function of the
 surface: render-swap on the spine, data-strategy-swap on the PLP, device/CPU on
-Checkout, a11y-mode toggles on the A11y section. Its options are **sparse** — only the
+Checkout, a11y-mode toggles on the A11y section. Its options are **sparse**, only the
 variants a surface is actually built in.
 _Avoid_: "toggle" (it navigates, it doesn't flip in place), "framework picker".
 
@@ -230,14 +230,14 @@ The constant heads-up display of measurement, present on every surface: the sele
 profile's published lab snapshot shown alongside the visitor's own live web-vitals.
 
 **Chrome**:
-The switcher + HUD together — project **instrumentation**, edge-injected identically
+The switcher + HUD together, project **instrumentation**, edge-injected identically
 into every variant and deliberately **excluded from each variant's measured KB**. Not
 part of any paradigm's own bytes.
-_Avoid_: "the UI", "the shell" — chrome is instrumentation, not the store itself.
+_Avoid_: "the UI", "the shell", chrome is instrumentation, not the store itself.
 
 **Measurement condition**:
 The full set of variables that define one reproducible measurement, carried entirely
-in the **URL** — path (variant / surface / entity-id) + query (data-volume, cache-
+in the **URL**, path (variant / surface / entity-id) + query (data-volume, cache-
 warmth, and the profile snapshot-selector). Because the condition lives in the URL, a
 URL *is* a shareable receipt for a measurement. Contrast the **cart**, which is
 application state (same-origin storage), not a measurement condition.
@@ -246,6 +246,6 @@ application state (same-origin storage), not a measurement condition.
 
 **Real-world fidelity**: a finding is worthless if a working engineer could not
 reproduce it in a real production setting. Every design choice is checked against
-this — normalization, freezing, and forced cold/warm are all adopted specifically
+this, normalization, freezing, and forced cold/warm are all adopted specifically
 because they map to real production patterns, and the one thing freezing hides
 (dynamic-origin cost) is surfaced honestly via the live-origin demonstration.

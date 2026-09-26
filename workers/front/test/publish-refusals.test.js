@@ -2,14 +2,14 @@
  * The publication gate's refusals, each proven by a committed malformed
  * fixture (workers-hardening, 2026-09-25; 2026-08-29 audit priority 5, task
  * 2). Until this file the gate was enforced only by the one-time sabotage
- * proofs the decision map records — fourteen of them, none re-run — and
+ * proofs the decision map records, fourteen of them, none re-run, and
  * the repo had already met the failure class once: a guard was REMOVED
  * because "an unfireable guard advertises coverage it lacks". A refactor
  * that inverts one condition used to ship silently; now its fixture fails.
  *
  * The fixtures are GENERATED from one valid receipt by a table with one row
- * per refusal class (fixtures/publish/generate.mjs) — the row is the
- * mutation AND the message it must produce — and the committed files are
+ * per refusal class (fixtures/publish/generate.mjs), the row is the
+ * mutation AND the message it must produce, and the committed files are
  * held byte-identical to that table's output, so a fixture cannot be edited
  * by hand into something the table does not describe.
  *
@@ -17,10 +17,10 @@
  * empty fixture list is the exact anti-pattern it exists to kill:
  *  - the table is not empty, and every file on disk is one of its rows
  *    (a row deleted from the table with its file left behind, or the
- *    reverse, is a failure — the set equality is asserted both ways);
+ *    reverse, is a failure, the set equality is asserted both ways);
  *  - every `throw new Error(` in lab/publish.mjs carries a `// refusal:
  *    <site>` marker and the marker set equals the rows' `site` set in BOTH
- *    directions (read from the module's source, never typed here) — a map,
+ *    directions (read from the module's source, never typed here), a map,
  *    not a count: a new throw without its row, a row without its throw, or
  *    a label reused for a throw it does not sit on all go red (verify-slice,
  *    skeptic lens: the first draft counted labels, and 19 of 29
@@ -50,7 +50,7 @@ const fixtureDir = join(here, "fixtures", "publish");
 const read = (rel) => JSON.parse(readFileSync(join(fixtureDir, rel), "utf8"));
 const sha256Hex = (text) => createHash("sha256").update(text).digest("hex");
 
-/** The real gate configuration — the same objects build.mjs hands in. */
+/** The real gate configuration, the same objects build.mjs hands in. */
 const LAB_SURFACES = labSurfacesOf(SURFACE_CONTROLS);
 const realDeps = { labSurfaces: LAB_SURFACES, surfaceControls: SURFACE_CONTROLS, fit: FIT, fencedPathOf };
 const VALID_FILE = `${SURFACE}-avg-broadband-desktop.json`;
@@ -97,7 +97,7 @@ describe("non-vacuity: the table, the files and the module agree", () => {
     }
   });
 
-  it("every throw site in lab/publish.mjs carries a `// refusal: <site>` marker, and the marker set IS the rows' site set — a map, not a count", () => {
+  it("every throw site in lab/publish.mjs carries a `// refusal: <site>` marker, and the marker set IS the rows' site set, a map, not a count", () => {
     const source = readFileSync(join(here, "..", "lab", "publish.mjs"), "utf8");
     const throwSites = (source.match(/throw new Error\(/g) ?? []).length;
     const markers = [...source.matchAll(/\/\/ refusal: ([\w-]+)\n\s*throw new Error\(/g)].map((m) => m[1]);
@@ -109,7 +109,7 @@ describe("non-vacuity: the table, the files and the module agree", () => {
   });
 });
 
-describe("CONTROL — what must pass", () => {
+describe("CONTROL. What must pass", () => {
   it("the valid fixture admits under the real registry and publishes a sentence with bands", () => {
     const { surface, bundle } = admitReceipt(VALID_FILE, read("receipts/valid.json"), realDeps);
     expect(surface).toBe(SURFACE);
@@ -134,7 +134,7 @@ describe("CONTROL — what must pass", () => {
     expect(() => admitChromeConstant(read("chrome-constants/valid.json"), ccDeps)).not.toThrow();
   });
 
-  /** The plane's committed receipts, admitted — and their bundles in the
+  /** The plane's committed receipts, admitted, and their bundles in the
    *  shape build.mjs writes and the Worker serves ({surface, profile, ...}). */
   const realPublication = () => {
     const receiptsDir = join(here, "..", "lab", "receipts");
@@ -159,7 +159,7 @@ describe("CONTROL — what must pass", () => {
     }
   });
 
-  it("CONTROL: a chrome constant minted from the REAL renderer over the plane's own bundles admits with build.mjs's deps — and a fragment the build does not ship is refused", () => {
+  it("CONTROL: a chrome constant minted from the REAL renderer over the plane's own bundles admits with build.mjs's deps, and a fragment the build does not ship is refused", () => {
     // No lab/chrome-constant.json is committed today (removed by #35 on
     // 2026-08-28), so nothing else runs admitChromeConstant against the real
     // renderChrome/chromeFragmentOf; the fixture rows use a stand-in
@@ -195,19 +195,19 @@ describe("CONTROL — what must pass", () => {
     expect(() => admitChromeConstant(constant({ ...rc, surface: "pdp", pathname: "/vanilla/pdp/x/" }), deps)).toThrow(/describes a fragment this build does not ship/);
   });
 
-  it("CONTROL: an upper-case content-coding token is the same wire (RFC 9110 §8.4.1) — a legitimate \"ZSTD\" admits", () => {
+  it("CONTROL: an upper-case content-coding token is the same wire (RFC 9110 §8.4.1), a legitimate \"ZSTD\" admits", () => {
     const receipt = read("receipts/valid.json");
     receipt.targets[1].columns.warm.runs[0].kb.docAttribution.contentEncoding = "ZSTD";
     expect(() => admitReceipt(VALID_FILE, receipt, realDeps)).not.toThrow();
   });
 
-  it("build.mjs still calls every gate function — the composer cannot bypass the gate", () => {
+  it("build.mjs still calls every gate function, the composer cannot bypass the gate", () => {
     // The fixtures prove the GATE; nothing above proves the BUILD still
     // runs it. A composer that dropped one call would publish everything and
     // pass every row (sabotage row A11, 2026-09-25). Lexical, like the
     // pdp-controls-wired state leg, and stated as such: it asks whether
     // build.mjs names each function as a call, not whether the call is on
-    // the path — the dist byte-identity check at refactor time was the
+    // the path, the dist byte-identity check at refactor time was the
     // one-time proof of the path, and this holds the names.
     const build = readFileSync(join(here, "..", "build.mjs"), "utf8");
     for (const fn of ["labSurfacesOf", "admitReceipt", "assertBatchIntegrity", "admitChromeConstant"]) {

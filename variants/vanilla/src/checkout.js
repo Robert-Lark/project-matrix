@@ -1,14 +1,14 @@
-// The vanilla checkout's enhancement (checkout-vanilla) — order summary,
+// The vanilla checkout's enhancement (checkout-vanilla), order summary,
 // shipping method, card/expiry formatting, per-field validation, and the
 // invalid-submit error summary. This is the surface whose measured question
 // is INP under main-thread load, so every behavior here is work a real
 // checkout genuinely does; none of it is padding added to make a number.
 //
 // The canonical SERVED state is what the drift gate sees (JS-off, ADR-0008
-// §7): a pristine form and an EMPTY order summary with reserved geometry —
+// §7): a pristine form and an EMPTY order summary with reserved geometry,
 // cart-summary.css gives the lines a FIXED grid track the empty copy and the
 // list share, so populating it moves nothing outside it. Everything below is
-// enhancement — with JS off the fields, labels, hints and the browser's own
+// enhancement, with JS off the fields, labels, hints and the browser's own
 // constraint validation still work, which is what the page says on itself.
 //
 // The cart storage contract (packages/reference/render/shell.mjs
@@ -31,7 +31,7 @@
   /* ── The cart contract (CART_CONTRACT) ───────────────────────────────── */
 
   // Contract recovery rule: a missing, unparseable, or schema-failing value
-  // is the EMPTY cart — the next successful add overwrites it.
+  // is the EMPTY cart, the next successful add overwrites it.
   const read = () => {
     try {
       const cart = JSON.parse(localStorage.getItem(KEY) ?? "");
@@ -69,7 +69,7 @@
   };
   const announce = (text) => {
     const status = document.querySelector("[data-pm-status]");
-    // textContent, never HTML — catalogue titles are tray data.
+    // textContent, never HTML, catalogue titles are tray data.
     if (status) status.textContent = text;
   };
 
@@ -78,7 +78,7 @@
 
   /** Canonical price formatting (lib.mjs rules of record), re-implemented:
    *  "$" + two decimals + "," thousands for USD. `Intl.NumberFormat` is
-   *  deliberately not used — the reference rules are what every surface
+   *  deliberately not used, the reference rules are what every surface
    *  renders, and Intl drifts on the first four-digit total. */
   const formatUsd = (amount) => {
     const [int, frac] = amount.toFixed(2).split(".");
@@ -87,12 +87,12 @@
 
   /* ── The order summary ────────────────────────────────────────────────
      Cart is localStorage, so NO paradigm can serve cart contents (ADR-0008
-     §7) — every checkout variant has to look the ids up client-side. This
+     §7), every checkout variant has to look the ids up client-side. This
      one fetches a build-time index of the served snapshot, and ONLY when
      the cart is non-empty: the canonical served state is the empty cart,
      which is the state the instrument measures, so the measured page pays
      nothing for this. Baking the index INTO the page was rejected for
-     exactly that reason — 38,968 B of crate catalogue on the flagship INP
+     exactly that reason, 38,968 B of crate catalogue on the flagship INP
      page, spent on a state the measurement never enters, would have
      manufactured a paradigm cost the way the routed vitals capture
      manufactured qwik's (PR #35).
@@ -149,7 +149,7 @@
       // a re-freeze), so this arm is reachable without anyone misbehaving.
       what.textContent = entry
         ? `${entry.title} × ${item.qty}`
-        : `Release ${item.id} × ${item.qty} — no longer in this crate`;
+        : `Release ${item.id} × ${item.qty}, no longer in this crate`;
       const price = document.createElement("span");
       price.className = "pm-cart__price";
       if (entry && typeof entry.price === "number") {
@@ -162,7 +162,7 @@
         incomplete = true;
         const glyph = document.createElement("span");
         glyph.setAttribute("aria-hidden", "true");
-        glyph.textContent = "—";
+        glyph.textContent = "–";
         const named = document.createElement("span");
         named.className = "pm-sr-only";
         named.textContent = "No price listed";
@@ -176,14 +176,14 @@
     totalSlot.textContent = "";
     if (incomplete) {
       // State the absence rather than publish a total that silently omits
-      // an unpriced line — the same rule every unpublished number here
+      // an unpriced line, the same rule every unpublished number here
       // follows.
       const glyph = document.createElement("span");
       glyph.setAttribute("aria-hidden", "true");
-      glyph.textContent = "—";
+      glyph.textContent = "–";
       const named = document.createElement("span");
       named.className = "pm-sr-only";
-      named.textContent = "Total unavailable — an item in this cart has no price";
+      named.textContent = "Total unavailable: an item in this cart has no price";
       totalSlot.append(glyph, named);
     } else {
       totalSlot.textContent = formatUsd(subtotal + shippingCost());
@@ -206,7 +206,7 @@
   /* ── Shipping method ──────────────────────────────────────────────────
      A real choice, and the surviving consumer of format-switch.css
      (ADR-0008 addendum A). The browser owns the exclusive selection; what
-     this owes is the consequence — the total moves. With an empty cart the
+     this owes is the consequence, the total moves. With an empty cart the
      recompute is correctly a no-op: there is no order to price yet. */
   for (const radio of document.querySelectorAll(".pm-format__input")) {
     radio.addEventListener("change", renderSummary);
@@ -219,18 +219,18 @@
   // The served markup carries NO `novalidate`, deliberately: JS-off, native
   // constraint validation is the real behavior the page claims
   // (checkout.mjs:9-12). This is the hydration moment where this paradigm's
-  // own validation takes over, so the attribute goes on now — never in the
+  // own validation takes over, so the attribute goes on now, never in the
   // master, where it would disable the JS-off behavior the page states.
   //
   // This line is what lets the master carry `required`/`pattern` at all: they
   // would otherwise fire BEFORE the submit handler below and the error
-  // summary would never render. Order matters — this runs before the card
+  // summary would never render. Order matters. This runs before the card
   // formatter binds below (bindFormatter), so the spaced value it produces
   // ("4111 1111 1111 1111") is never measured against `pattern="\d{13,19}"`.
   form.setAttribute("novalidate", "");
 
   /* ── Card and expiry formatting ───────────────────────────────────────
-     The card field's own hint promises this ("Formats as you type — that
+     The card field's own hint promises this ("Formats as you type, that
      formatting is part of what this page measures"), so it is contract, not
      decoration. The caret is recomputed from the DIGIT count before it, not
      parked at the end: typing into the middle of a saved card number is the
@@ -250,7 +250,7 @@
       if (next === el.value) return;
       el.value = next;
       // Walk forward past separators until `digitsBefore` digits are behind
-      // the caret — the position the same number of keystrokes would reach.
+      // the caret, the position the same number of keystrokes would reach.
       let seen = 0;
       let at = 0;
       while (at < next.length && seen < digitsBefore) {
@@ -267,7 +267,7 @@
      Rules are the enhancement's, and the served markup now expresses the
      SAME set: every id below carries `required` in the master, and the three
      with a shape test (card, expiry, cvc) carry the matching `pattern`. So
-     JS-off validation is this list, not a thinner cousin of it — the earlier
+     JS-off validation is this list, not a thinner cousin of it, the earlier
      asymmetry (email's shape and nothing else) was the page claiming "native
      validation" while gating nothing, and it is gone.
 
@@ -278,7 +278,7 @@
 
      The error state styles off `[aria-invalid]` and never off a class
      (field.css:7-8), so the visual defect cannot exist without the
-     programmatic one — which makes `aria-invalid` the script-only state
+     programmatic one, which makes `aria-invalid` the script-only state
      this surface owes, exactly as `aria-pressed` was the PDP's. */
   const RULES = [
     { id: "email", message: "Enter an email address", test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
@@ -316,7 +316,7 @@
   };
 
   /** Point the control's description at its error while one stands, and put
-   *  the hint back when it clears — a field with a hint has both to say. */
+   *  the hint back when it clears, a field with a hint has both to say. */
   const describedBy = (input, errorId) => {
     const hint = document.getElementById(`${input.id}-hint`) ? `${input.id}-hint` : null;
     const parts = [hint, errorId].filter(Boolean);
@@ -355,7 +355,7 @@
     if (!rule) continue;
     input.addEventListener("blur", () => {
       // Only re-check a field the visitor has actually filled or already
-      // failed — blurring an untouched field should not accuse it.
+      // failed, blurring an untouched field should not accuse it.
       if (input.value.trim() !== "" || input.getAttribute("aria-invalid") === "true") {
         checkField(rule);
       }
@@ -406,14 +406,14 @@
     }
     document.querySelector(".pm-error-summary")?.remove();
     // The email field's own hint promises this and scopes it: "Used only to
-    // render the demo confirmation in this page — nothing is ever sent." So
+    // render the demo confirmation in this page. Nothing is ever sent." So
     // the address has to actually appear here, and it has to stay in the
     // page. textContent, never HTML: this is the one string on the surface
     // built from something a visitor typed.
     const to = document.getElementById("email")?.value.trim() ?? "";
     const method = selectedShipping() === "express" ? "Express" : "Standard";
     announce(
-      `Order placed — a demonstration, so nothing ships and nothing was sent. ` +
+      `Order placed (a demonstration), so nothing ships and nothing was sent. ` +
         `${method} shipping; a confirmation would go to ${to}.`,
     );
   });

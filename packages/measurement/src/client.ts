@@ -1,14 +1,14 @@
 /**
- * The measurement client (ADR-0001 §2, §8) — bundled to /_pm/measure.js and
+ * The measurement client (ADR-0001 §2, §8), bundled to /_pm/measure.js and
  * injected identically into every variant by the front Worker. THE one ruler:
  * every variant's TTFB/FCP/LCP/CLS/INP come from this exact pinned
  * web-vitals build, and the bytes live on the known /_pm/* path so the
  * harness strips them from measured KB (ADR-0001 §6).
  *
  * Behavior: metrics stream into the HUD's live readout as they settle
- * (progressive enhancement — the page never depends on this script), and the
+ * (progressive enhancement, the page never depends on this script), and the
  * final values flush to the collector via `sendBeacon` when the page goes
- * hidden — the web-vitals library's own recommended reporting pattern.
+ * hidden, the web-vitals library's own recommended reporting pattern.
  * Tags come from the injected chrome's data attributes; the tag spelling is
  * the shared BEACON_TAG_KEYS contract.
  */
@@ -35,7 +35,7 @@ function display(metric: Metric): string {
 function record(metric: Metric): void {
   pending.set(metric.name, metric);
   // querySelectorAll: the redesigned chrome carries each vital twice (the
-  // collapsed bar's mini readout + the panel's full set) — every slot updates.
+  // collapsed bar's mini readout + the panel's full set), every slot updates.
   const slots = chrome?.querySelectorAll(`[data-pm-hud-live="${metric.name}"]`) ?? [];
   for (const slot of slots) slot.textContent = display(metric);
 }
@@ -58,7 +58,7 @@ onLCP(record);
 onCLS(record);
 onINP(record);
 
-// Listen on document — visibilitychange TARGETS document, so this works for
+// Listen on document, visibilitychange TARGETS document, so this works for
 // the real event and for synthetic dispatches alike (bubbling not assumed).
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") flush();

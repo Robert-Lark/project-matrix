@@ -1,19 +1,19 @@
 /**
- * /vanilla/editorial/ — the first REAL variant page through the composed
+ * /vanilla/editorial/, the first REAL variant page through the composed
  * origin (editorial-build slice A). Same seam as composed-origin.test.ts:
  * plain HTTP, outside-in. What this file pins:
  *
  *  - the canonical shell order (skip link FIRST, then the chrome slot,
  *    then .pm-page) and the master's absolute designated-host cross-surface
- *    links — WITHOUT dereferencing the targets that 404 until their builds
+ *    links, WITHOUT dereferencing the targets that 404 until their builds
  *    land (the PRD forbids requiring them to resolve);
  *  - content renders from the RESOLVED snapshot's committed trays
- *    (issue-#11 pattern) — the same assertions hold for the fixture in CI
+ *    (issue-#11 pattern), the same assertions hold for the fixture in CI
  *    and the crate on the deployed plane;
  *  - fonts as the controlled constant (ADR-0003 §8): the canonical loading
  *    markup verbatim modulo base path, files byte-identical to @pm/tokens;
  *  - the chrome stamped for this page, the serving cell aria-current, and
- *    every count recounted from SURFACE_CONTROLS' own arrays — never typed;
+ *    every count recounted from SURFACE_CONTROLS' own arrays, never typed;
  *  - vanilla as the permitted-noise registry's NO_NOISE control (nothing
  *    registered; the drift leg compares under NO_NOISE);
  *  - the cart enhancement served and carrying the CART_CONTRACT key (the
@@ -40,7 +40,7 @@ const count = (haystack: string, needle: string) =>
  * content-encoding as the wire carries it (composed-origin.test.ts helper).
  *
  * On the DEPLOYED plane a brand-new URL's first hit is a cache MISS, and
- * Cloudflare serves that MISS **uncompressed** — so a variant's first-ever
+ * Cloudflare serves that MISS **uncompressed**, so a variant's first-ever
  * deploy would measure cache state instead of transport configuration. Slice C
  * failed its deploy on exactly this: `/astro/editorial/` reported `''` seconds
  * after pm-astro's first-ever deploy and `br` once warm, with response headers
@@ -71,7 +71,7 @@ function wireEncoding(path: string): string {
 }
 
 /** The reference renderer's escaping, for tray values asserted in raw HTML
- *  (vanilla re-implements this exact form — packages/reference/render/lib.mjs
+ *  (vanilla re-implements this exact form, packages/reference/render/lib.mjs
  *  esc(), variants/vanilla/render.mjs esc()). */
 const esc = (value: string) =>
   value
@@ -81,13 +81,13 @@ const esc = (value: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-/** React's OWN text escaping (react-dom-server's escapeTextForBrowser) —
+/** React's OWN text escaping (react-dom-server's escapeTextForBrowser),
  *  identical to `esc` except the apostrophe: hex `&#x27;`, not decimal
  *  `&#39;` (verified against the installed react-dom source; both decode to
  *  the same character, so the drift gate's DOM-parsed comparisons are
  *  unaffected, but a RAW STRING .toContain() check on react-next's fetched
  *  body must match what React actually emits, not vanilla's hand-rolled
- *  form — verify-slice finding, editorial-build slice B). */
+ *  form, verify-slice finding, editorial-build slice B). */
 const reactEsc = (value: string) =>
   value
     .replace(/&/g, "&amp;")
@@ -112,12 +112,12 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     expect(body).toContain('role="status" data-pm-status');
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
     const body = await (await get("/vanilla/editorial/")).text();
-    // The dateline IS the manifest's freeze date (ADR-0008 §8) — asserted
+    // The dateline IS the manifest's freeze date (ADR-0008 §8), asserted
     // from the resolved committed manifest, never a literal.
     expect(body).toContain(
       `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
@@ -128,7 +128,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
 
   it("cross-surface links are the master's absolute designated-host targets (never dereferenced here)", async () => {
     const body = await (await get("/vanilla/editorial/")).text();
-    // Unbuilt targets 404 by design until their builds land — the assertion
+    // Unbuilt targets 404 by design until their builds land, the assertion
     // is the HREF, deliberately not the response (editorial-build PRD).
     expect(body).toContain('href="/react-next/plp/plain/"');
     expect(body).toContain('href="/vanilla/editorial/" aria-current="page"');
@@ -149,13 +149,13 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     expect(body).toContain('data-pm-variant="vanilla"');
     expect(body).toContain('data-pm-surface="editorial"');
     expect(body).toContain('aria-current="page">vanilla<');
-    // "Served by N of M" recounts from the config's own arrays (chrome.ts) —
+    // "Served by N of M" recounts from the config's own arrays (chrome.ts),
     // this expectation recounts them the same way, so nothing here is typed.
     const live = controls.variants.length;
     const planned = live + (controls.plannedVariants?.length ?? 0);
     expect(body).toContain(`Served by ${live} of ${planned} planned variants today.`);
     // Unbuilt cells stay disclosures: dead labeled headers in the reading
-    // table, never switcher anchors. Scoped to the switcher row — the
+    // table, never switcher anchors. Scoped to the switcher row, the
     // masthead's designated-host links (e.g. Records → /react-next/plp/…)
     // legitimately anchor to a planned variant's OTHER surface. The anchor
     // set is DERIVED from the arrays (live variants render as anchors by
@@ -166,7 +166,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // Fenced exhibits are anchors too (tagged in the control, slice F),
     // still array-derived, never typed.
     const otherLive = [
       ...controls.variants.filter((v) => v !== "vanilla"),
@@ -215,7 +215,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
       expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
     }
     // tokens.css AND fonts.css: the loading half of "fonts are a controlled
-    // constant" (ADR-0003 §8) — an edited fonts.css copy (font-display, a
+    // constant" (ADR-0003 §8), an edited fonts.css copy (font-display, a
     // widened unicode-range) would pass the file checks above and the
     // settled-pixels gate both, so it is byte-pinned here.
     for (const sheet of ["tokens.css", "fonts.css"]) {
@@ -246,7 +246,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
 
   it("vanilla is the NO_NOISE control: nothing registered in PERMITTED_NOISE", () => {
     // The drift leg (drift.browser.test.ts) compares this page under
-    // NO_NOISE — zero stripping — which is what makes the control real;
+    // NO_NOISE, zero stripping, which is what makes the control real;
     // this pins the registry side of the same fact.
     expect(PERMITTED_NOISE["vanilla"]).toBeUndefined();
   });
@@ -262,7 +262,7 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
     expect(cartJs).toContain(`"${shell.CART_CONTRACT.key}"`);
 
     const body = await (await get("/vanilla/editorial/")).text();
-    // Both hooks are script elements — delivery, not contract (ADR-0008
+    // Both hooks are script elements, delivery, not contract (ADR-0008
     // freedoms), so the canonical DOM stays clean.
     expect(body).toContain('<script type="application/json" id="pm-cart-item">');
     expect(body).toContain('<script src="../assets/cart.js" defer></script>');
@@ -274,14 +274,14 @@ describe("the vanilla editorial page (canonical shell + composition)", () => {
 });
 
 /**
- * /react-next/editorial/ — the second real variant, on the OpenNext
+ * /react-next/editorial/, the second real variant, on the OpenNext
  * Cloudflare adapter (editorial-build slice B). Same duties as the vanilla
  * block above, adapted for a request-time SSR paradigm: fonts/CSS verbatim
- * modulo base path (absolute here, not relative — DIFF-TO-STARTER.md), the
+ * modulo base path (absolute here, not relative, DIFF-TO-STARTER.md), the
  * registered noise actually observed in raw served HTML (the
  * composed-origin.test.ts placeholder-ssr precedent), and the cart
  * contract's key found in the page's own JS chunks (idiomatic React state,
- * not a script-tag data hook — there is no vanilla-style data hook here).
+ * not a script-tag data hook. There is no vanilla-style data hook here).
  */
 describe("the react-next editorial page (canonical shell + composition)", () => {
   it("serves 200 with the shell in canonical order: skip link, chrome slot, page", async () => {
@@ -300,7 +300,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     expect(body).toContain('data-pm-status');
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
@@ -342,7 +342,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // Fenced exhibits are anchors too (tagged in the control, slice F),
     // still array-derived, never typed.
     const otherLive = [
       ...controls.variants.filter((v) => v !== "react-next"),
@@ -360,7 +360,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
       join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
       "utf8",
     );
-    // Absolute base path here (DIFF-TO-STARTER.md point 8) — vanilla's own
+    // Absolute base path here (DIFF-TO-STARTER.md point 8), vanilla's own
     // markup is relative, since only the base path is free to differ.
     const lines = canonical
       .split("\n")
@@ -374,10 +374,10 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     for (const line of lines) {
       // Two tolerated JSX-renderer differences, neither a content change:
       // (1) React always serializes a bare boolean-ish attribute with an
-      // explicit `=""` (`crossorigin` -> `crossorigin=""`) — DOM-equivalent
+      // explicit `=""` (`crossorigin` -> `crossorigin=""`), DOM-equivalent
       // to the canonical file's bare form (both parse to an empty-string
       // attribute value). (2) React self-closes void elements
-      // (`<link .../>` not `<link ...>`) — also DOM-equivalent. Neither is
+      // (`<link .../>` not `<link ...>`), also DOM-equivalent. Neither is
       // raw-text equality a JSX renderer can produce for a hand-typed HTML
       // file, so the search string drops the closing `>` entirely (matches
       // whether what follows is `>` or `/>`).
@@ -412,7 +412,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
 
   it("transport parity: react-next's editorial page matches the placeholder baseline (ADR-0001 §6)", () => {
     // Redundant with editorial.test.ts's generic "every LIVE editorial
-    // variant" assertion (auto-extends via SURFACE_CONTROLS) — pinned here
+    // variant" assertion (auto-extends via SURFACE_CONTROLS), pinned here
     // too because this specific parity was a real local-dev gotcha
     // (DIFF-TO-STARTER.md point 16: `localhost` vs `127.0.0.1`), and this
     // suite always runs against `run-local.mjs`'s `127.0.0.1` origin.
@@ -433,8 +433,8 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     expect(body).toContain("<!--$--><!--/$-->");
     // Content-aware, not just positional (verify-slice finding): this
     // wrapper is Next's App Router streaming-metadata boundary (any
-    // `generateMetadata()` output that doesn't auto-hoist to <head> — an
-    // icon, an alternate link — renders INSIDE it). The registered
+    // `generateMetadata()` output that doesn't auto-hoist to <head>, an
+    // icon, an alternate link, renders INSIDE it). The registered
     // dropElementSelectors excuses it only because it is EMPTY today (this
     // page's metadata is title-only, and <title> auto-hoists regardless of
     // tree position); the exact-substring match below fails loudly the
@@ -449,7 +449,7 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
     );
     const body = await (await get("/react-next/editorial/")).text();
     // No vanilla-style script-tag data hook here (idiomatic React state,
-    // DIFF-TO-STARTER.md point 10) — the contract key lives in whichever
+    // DIFF-TO-STARTER.md point 10), the contract key lives in whichever
     // JS chunk bundles src/lib/cart.ts; chunk names are build hashes, so
     // discover them from the served page rather than hardcoding one.
     const chunkPaths = [...body.matchAll(/src="(\/react-next\/_next\/static\/chunks\/[^"]+)"/g)]
@@ -474,23 +474,23 @@ describe("the react-next editorial page (canonical shell + composition)", () => 
 });
 
 /**
- * /astro/editorial/ — the third real variant: the islands paradigm, static
+ * /astro/editorial/, the third real variant: the islands paradigm, static
  * output, no adapter (editorial-build slice C). Same duties as the two blocks
  * above, with the differences this paradigm actually has:
  *
  *  - fonts/CSS verbatim modulo base path, ABSOLUTE like react-next's (the base
  *    is `/astro/`, derived from astro.config.mjs via `import.meta.env.BASE_URL`)
- *    — but unlike react-next, byte-exact: Astro renders a bare `crossorigin`
+ *   , but unlike react-next, byte-exact: Astro renders a bare `crossorigin`
  *    and does not self-close void elements, so the canonical lines match as
  *    written rather than needing JSX-shaped tolerances;
  *  - the SAME `esc` vanilla uses, not a second escaper: Astro escapes through
  *    `html-escaper`, which is byte-identical to the reference renderer's own
- *    `esc()` (apostrophe included — `&#39;`, decimal, where React emits
+ *    `esc()` (apostrophe included, `&#39;`, decimal, where React emits
  *    `&#x27;`);
  *  - NO permitted-noise registration at all, which is a MEASURED fact about
  *    this page and is asserted as such (see the drift leg for the raw-bytes
  *    half of the same proof);
- *  - the cart contract's key in the page's own bundled module script — Astro
+ *  - the cart contract's key in the page's own bundled module script, Astro
  *    processes a bare `<script>` (TypeScript, imports, `type="module"`), and
  *    the release it adds rides a JSON script element, both of which are
  *    delivery rather than contract (ADR-0008's freedoms name `script`).
@@ -511,12 +511,12 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     expect(body).toContain('role="status" data-pm-status');
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
     const body = await (await get("/astro/editorial/")).text();
-    // The dateline IS the manifest's freeze date (ADR-0008 §8) — asserted from
+    // The dateline IS the manifest's freeze date (ADR-0008 §8), asserted from
     // the resolved committed manifest, never a literal. Astro emits the
     // lowercase `datetime` attribute the master has (React's JSX prop is
     // `dateTime`, which is why slice B's version of this assertion differs).
@@ -557,7 +557,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // Fenced exhibits are anchors too (tagged in the control, slice F),
     // still array-derived, never typed.
     const otherLive = [
       ...controls.variants.filter((v) => v !== "astro"),
@@ -575,7 +575,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
       join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
       "utf8",
     );
-    // Absolute base path, like react-next's — but matched VERBATIM, no
+    // Absolute base path, like react-next's, but matched VERBATIM, no
     // renderer-shaped tolerances: Astro emits `crossorigin` bare and does not
     // self-close void elements, so these lines survive byte-for-byte.
     const lines = canonical
@@ -626,7 +626,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     // so this variant's own prefix is its own responsibility: `base: "/astro"`
     // in astro.config.mjs must agree with `outDir: "./dist/astro"` or every
     // Astro-generated URL 404s while the HTML still serves 200. That includes
-    // the bundled module script, whose name is a build hash — so the set is
+    // the bundled module script, whose name is a build hash, so the set is
     // DERIVED from the served page, not hardcoded.
     const body = await (await get("/astro/editorial/")).text();
     const refs = [
@@ -648,7 +648,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     if (EXPECT_BROTLI) expect(encoding).toBe("br");
   });
 
-  it("astro registers NO permitted noise — a measured result, and non-vacuously so", async () => {
+  it("astro registers NO permitted noise, a measured result, and non-vacuously so", async () => {
     // Both of Astro's noise species are opt-in and this page opts into
     // neither: `data-astro-cid-*` scoping attributes appear only on components
     // that carry a `<style>` block (the design system arrives as plain <link>s
@@ -669,7 +669,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     const body = await (await get("/astro/editorial/")).text();
 
     // Astro processes a bare <script> into a `type="module"` bundle, and
-    // inlines it when it is small enough — so the contract key is either in
+    // inlines it when it is small enough, so the contract key is either in
     // the page itself or in a module file the page references. Discover which
     // from the served bytes rather than assuming either shape. The quote
     // character is the minifier's call (esbuild emits backticks here), so all
@@ -691,7 +691,7 @@ describe("the astro editorial page (canonical shell + composition)", () => {
     }
     expect(found, "no served JS carries the CART_CONTRACT key").toBe(true);
 
-    // The release the button adds rides a JSON script element — delivery, not
+    // The release the button adds rides a JSON script element, delivery, not
     // contract (ADR-0008 freedoms), so the canonical DOM stays clean. Astro
     // leaves a <script> with any attribute other than `src` untouched, which
     // is what keeps this a plain data hook rather than a bundled module.
@@ -711,23 +711,23 @@ describe("the astro editorial page (canonical shell + composition)", () => {
 });
 
 /**
- * /qwik/editorial/ — the fourth real variant: resumability, on the official
+ * /qwik/editorial/, the fourth real variant: resumability, on the official
  * `cloudflare-workers` integration (editorial-build slice D). REQUEST-TIME
  * like react-next (trays through this variant's own pm-edge service binding),
  * with the differences this paradigm actually has:
  *
  *  - the SAME `esc` vanilla uses, not react-next's second escaper: Qwik's JSX
- *    escaping is byte-identical to the reference renderer's (measured — all
+ *    escaping is byte-identical to the reference renderer's (measured, all
  *    five characters, apostrophe decimal `&#39;`);
  *  - the canonical font markup matches VERBATIM modulo base path (bare
- *    `crossorigin`, no self-closed void elements — the astro shape, not
+ *    `crossorigin`, no self-closed void elements, the astro shape, not
  *    react-next's), with ONE tolerance: Qwik appends a `q:head` marker
  *    attribute to every element it manages in `<head>`, so the search drops
  *    the canonical line's closing `>`;
  *  - attribute ORDER: Qwik emits `class` after an element's other attributes,
  *    so raw-substring assertions spanning a class are written in Qwik's order.
  *    The drift gate is unaffected (its normalizer sorts attributes);
- *  - noise that is ALL mechanism — `q:*`, `on:*`, `on-document:*` — asserted
+ *  - noise that is ALL mechanism, `q:*`, `on:*`, `on-document:*`, asserted
  *    against the raw served bytes and derived from the registry, not hand-typed;
  *  - a cart contract carried in the very chunk the button's own `on:click`
  *    attribute names, which is the resumability mechanism made checkable.
@@ -745,7 +745,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     expect(page).toBeGreaterThan(slot);
     expect(count(body, 'id="pm-chrome-slot"')).toBe(1);
     // Qwik stamps a `q:key` on every component$ host element, and <article> is
-    // one — so this is the open tag without its closing bracket, not a
+    // one, so this is the open tag without its closing bracket, not a
     // loosened match: the class attribute and its value are still exact.
     expect(body).toContain('<article class="pm-editorial"');
     expect(body).toContain('role="status" data-pm-status');
@@ -755,7 +755,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     expect(body).toMatch(/<html lang="en" [^>]*q:container="paused"/);
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
@@ -767,7 +767,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     expect(body).toContain(
       `frozen <time datetime="${snap.manifest.capturedAt}">${snap.manifest.capturedAt}</time>`,
     );
-    // vanilla's escaper, unchanged — Qwik's own escaping matches it byte for
+    // vanilla's escaper, unchanged, Qwik's own escaping matches it byte for
     // byte, apostrophes included.
     expect(body).toContain(esc(featured.title));
     expect(body).toContain(esc(featured.artist));
@@ -802,7 +802,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // Fenced exhibits are anchors too (tagged in the control, slice F),
     // still array-derived, never typed.
     const otherLive = [
       ...controls.variants.filter((v) => v !== "qwik"),
@@ -834,8 +834,8 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
       // Qwik appends `q:head` to every element it manages inside <head>, so the
       // canonical line's closing `>` is dropped from the search string (the
       // react-next precedent, for a different renderer quirk). Everything
-      // before it — attribute order, the bare `crossorigin`, the unclosed void
-      // element — matches as written, which is why fonts.css is authored beside
+      // before it, attribute order, the bare `crossorigin`, the unclosed void
+      // element, matches as written, which is why fonts.css is authored beside
       // the preloads rather than inside the stylesheet list that Qwik reorders
       // (variants/qwik/src/root.tsx records that measurement).
       const marked = line.slice(0, -1);
@@ -860,7 +860,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
       const source = readFileSync(join(repoRoot, "packages", "tokens", "fonts", font));
       expect(Buffer.from(await res.arrayBuffer()).equals(source), `${font} differs`).toBe(true);
     }
-    // public/ is the one delivery route vite leaves untouched — importing the
+    // public/ is the one delivery route vite leaves untouched, importing the
     // sheets so it bundled them would hash the files and rewrite fonts.css's
     // own @font-face URLs, failing both halves of ADR-0003 §8 at once.
     for (const sheet of ["tokens.css", "fonts.css"]) {
@@ -875,8 +875,8 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
   it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
     // The front Worker forwards the ORIGINAL request and never rewrites paths,
     // so the prefix is this variant's own responsibility. Qwik derives all of
-    // it from one `base` — the router's basePathname, the client's on-disk
-    // output directory, `q:base`, and these asset URLs — but "derived from one
+    // it from one `base`, the router's basePathname, the client's on-disk
+    // output directory, `q:base`, and these asset URLs, but "derived from one
     // place" is a claim about the framework, so it is checked rather than
     // trusted: every /qwik/… URL the page references must resolve, and the
     // build-chunk names are content hashes, so the set is DERIVED from the
@@ -896,7 +896,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     // The other half of the prefix proof, and the failure mode it guards is
     // specific: qwik-city normalizes to a trailing slash with a 301, and a
     // router that did not know its own basePathname would send visitors to
-    // `/editorial/` — a path the front Worker does not route to any variant.
+    // `/editorial/`, a path the front Worker does not route to any variant.
     // `redirect: "manual"` because fetch would otherwise follow it and hide
     // the Location header this is actually about.
     const res = await fetch(`${ORIGIN}/qwik/editorial`, { redirect: "manual" });
@@ -904,7 +904,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     expect(res.headers.get("location")).toBe("/qwik/editorial/");
 
     // An unbuilt path under this variant's own prefix is a clean 404, not a
-    // 500 — the request-time router is reached and answers.
+    // 500, the request-time router is reached and answers.
     for (const path of ["/qwik/", "/qwik/nope/"]) {
       expect((await get(path)).status, path).toBe(404);
     }
@@ -920,7 +920,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
   it("qwik's registered noise is real, and every registered pattern is earning its place", async () => {
     // The composed-origin placeholder-ssr precedent: a registration must be
     // provably non-vacuous against the RAW served bytes. Both directions are
-    // checked — every registered pattern matches something served, and the
+    // checked, every registered pattern matches something served, and the
     // classes that are deliberately EMPTY stay empty, so widening the policy
     // can never happen by accident.
     const spec = PERMITTED_NOISE["qwik"];
@@ -932,12 +932,12 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
 
     const raw = await (await get("/qwik/editorial/")).text();
     // Attribute names as they appear in the raw bytes, matched against the
-    // registered patterns themselves rather than a hand-typed copy — but with
+    // registered patterns themselves rather than a hand-typed copy, but with
     // the open tags of elements the normalizer DELETES removed first. Qwik City
     // emits a `<script on-document:qcinit=… on-document:qinit=…>`
     // unconditionally, so scanning the whole body would let `^on-document:`
     // satisfy this check while stripping nothing the drift gate ever compares
-    // (a verify-slice finding — the same vacuity the browser leg now guards
+    // (a verify-slice finding, the same vacuity the browser leg now guards
     // against, and the reason both legs mirror normalize.ts's DROP_ELEMENTS).
     const body = raw.replace(/<(script|style|link|template)\b[^>]*>/g, "");
     const attrNames = new Set(
@@ -968,7 +968,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
 
     // Resumability, made checkable: each `on:*` value is "<chunk>#<symbol>", so
     // no listener is attached at load and the BINDING is deferred. It does NOT
-    // mean the bytes are — measured, a JS-on load of this page fetches the
+    // mean the bytes are, measured, a JS-on load of this page fetches the
     // click chunk already (the load-time cart read's QRL statically imports it),
     // and the click itself fetches nothing. The assertion below is about the
     // wire format and the contract key, not about deferred download; the
@@ -989,7 +989,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     // Pin the measured eager-load fact so the record cannot rot into the
     // flattering version. The chunk behind the load-time cart read
     // (`on-document:qinit`, which the cart contract forces on every page load)
-    // statically imports the chunk named by `on:click` — which is WHY a JS-on
+    // statically imports the chunk named by `on:click`, which is WHY a JS-on
     // load already has the click handler and the click fetches nothing. If a
     // future Qwik or rollup version stops co-locating them, this fails and the
     // slice's published numbers get revisited deliberately instead of quietly
@@ -1002,7 +1002,7 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
     const qinitJs = await (await get(`/qwik/build/${qinitChunk}`)).text();
     expect(
       qinitJs.includes(`"./${clickChunk}"`),
-      `the load-time (${qinitChunk}) chunk no longer imports the click chunk (${clickChunk}) — ` +
+      `the load-time (${qinitChunk}) chunk no longer imports the click chunk (${clickChunk}), ` +
         `re-measure the eager-load bytes in DIFF-TO-STARTER.md point 12`,
     ).toBe(true);
 
@@ -1024,28 +1024,28 @@ describe("the qwik editorial page (canonical shell + composition)", () => {
 });
 
 /**
- * /htmx/editorial/ — the fifth real variant, completing the surface: the
+ * /htmx/editorial/, the fifth real variant, completing the surface: the
  * hypermedia paradigm, server-rendered HTML from a hand-written Worker
  * (editorial-build slice E). REQUEST-TIME like react-next/qwik (trays
  * through its own pm-edge service binding), with the differences this
  * paradigm actually has:
  *
  *  - the SAME `esc` vanilla uses (the renderer is hand-written template
- *    literals mirroring the master's serialization — decimal `&#39;`), so
+ *    literals mirroring the master's serialization, decimal `&#39;`), so
  *    every raw-string assertion is the strict form;
  *  - the canonical font markup matches VERBATIM modulo base path (absolute,
- *    `/htmx/assets/pm`) — no renderer-shaped tolerances at all, like
+ *    `/htmx/assets/pm`), no renderer-shaped tolerances at all, like
  *    vanilla's and astro's;
  *  - the PINNED htmx runtime is VENDORED into the variant's own assets and
  *    served same-origin (a CDN include would fail the drift leg's request
- *    tracker) — asserted byte-identical to the lockfile-installed package,
+ *    tracker), asserted byte-identical to the lockfile-installed package,
  *    resolved through the variant's OWN dependency graph (isolation-honest);
  *  - NO permitted-noise registration, which like astro's is a MEASURED fact:
  *    zero `hx-*` attributes on the served page (editorial's one interaction
- *    is client cart state, which hypermedia does not own — ISSUE E's honest
+ *    is client cart state, which hypermedia does not own, ISSUE E's honest
  *    hypermedia statement); the drift leg holds the raw-bytes half;
  *  - the cart contract's key in the page's own plain enhancement script,
- *    with a vanilla-style JSON data hook (both script elements — delivery,
+ *    with a vanilla-style JSON data hook (both script elements, delivery,
  *    not contract).
  */
 describe("the htmx editorial page (canonical shell + composition)", () => {
@@ -1064,12 +1064,12 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     expect(body).toContain('role="status" data-pm-status');
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
     const body = await (await get("/htmx/editorial/")).text();
-    // The dateline IS the manifest's freeze date (ADR-0008 §8) — asserted
+    // The dateline IS the manifest's freeze date (ADR-0008 §8), asserted
     // from the resolved committed manifest, never a literal. `datetime`
     // lowercase, exactly as the master serves it (hand-written markup, no
     // JSX prop-name mapping in the path).
@@ -1092,7 +1092,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
 
   it("chrome injected: stamped for this page, serving cell current, counts from the arrays", async () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
-    // The registration move is part of this build's definition of done —
+    // The registration move is part of this build's definition of done,
     // and slice E COMPLETES the surface: nothing stays planned-but-unbuilt.
     expect(controls.variants).toContain("htmx");
     expect(controls.plannedVariants ?? []).toEqual([]);
@@ -1110,7 +1110,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     const anchorTargets = [...switcherRow.matchAll(/href="\/([^/"]+)\//g)]
       .map((m) => m[1])
       .sort();
-    // Fenced exhibits are anchors too (tagged in the control, slice F) —
+    // Fenced exhibits are anchors too (tagged in the control, slice F),
     // still array-derived, never typed.
     const otherLive = [
       ...controls.variants.filter((v) => v !== "htmx"),
@@ -1127,7 +1127,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
       join(repoRoot, "packages", "tokens", "fonts", "loading-markup.html"),
       "utf8",
     );
-    // Absolute base path, matched VERBATIM — the renderer is hand-written
+    // Absolute base path, matched VERBATIM, the renderer is hand-written
     // template literals, so the canonical lines survive byte-for-byte (the
     // vanilla/astro form, no JSX- or marker-shaped tolerances).
     const lines = canonical
@@ -1171,7 +1171,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
 
   it("the htmx runtime is vendored: referenced by the page, served same-origin, byte-identical to the pinned package", async () => {
     // ISSUE E's install contract: htmx's documented install IS a script tag,
-    // vendored into the variant's own assets — never a CDN include (the drift
+    // vendored into the variant's own assets, never a CDN include (the drift
     // leg's request tracker fails any request off the composed origin; this
     // pins the delivery half from the raw bytes). The comparison source is
     // resolved through the VARIANT'S own dependency graph (the build script's
@@ -1183,7 +1183,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     // quote/case-sensitive byte regex (verify-slice finding, anti-rigging
     // lens: a single-quoted or protocol-relative third-party src would slip
     // a `src="https?://` match, and the drift leg's request tracker cannot
-    // see script fetches at all — its contexts are JS-off, and a JS-off
+    // see script fetches at all. Its contexts are JS-off, and a JS-off
     // browser never requests <script src>). Every subresource element's URL
     // must resolve INTO the composed origin; <a> hrefs are navigation, not
     // subresources, and stay out. JS-INJECTED subresources remain outside
@@ -1215,7 +1215,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
 
   it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
     // The front Worker forwards the ORIGINAL request and never rewrites
-    // paths, so the /htmx/ prefix is this variant's own duty — every URL the
+    // paths, so the /htmx/ prefix is this variant's own duty, every URL the
     // page references must resolve, derived from the served page.
     const body = await (await get("/htmx/editorial/")).text();
     const refs = [...body.matchAll(/(?:href|src)="(\/htmx\/[^"]+)"/g)].map((m) => m[1]!);
@@ -1229,7 +1229,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
 
   it("the Worker's own redirect keeps the prefix; unknown paths 404; non-GET is refused", async () => {
     // The request-time router half of the prefix proof (the qwik-block
-    // precedent): the slashless form 301s WITH the prefix — a redirect that
+    // precedent): the slashless form 301s WITH the prefix, a redirect that
     // dropped it would strand the visitor on a path the front Worker routes
     // nowhere. `redirect: "manual"` so the Location header itself is
     // asserted, not followed.
@@ -1241,7 +1241,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
       expect((await get(path)).status, path).toBe(404);
     }
 
-    // The render path is GET/HEAD only — a POST is refused, not rendered.
+    // The render path is GET/HEAD only, a POST is refused, not rendered.
     const post = await fetch(`${ORIGIN}/htmx/editorial/`, { method: "POST" });
     expect(post.status).toBe(405);
     expect(post.headers.get("allow")).toBe("GET, HEAD");
@@ -1265,7 +1265,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     // prediction coming true, not a regression.
     //
     // The registry entry is asserted by SHAPE rather than absence, so this
-    // still fails if someone widens it — `attrPatterns` must stay empty:
+    // still fails if someone widens it, `attrPatterns` must stay empty:
     // registering a plain attribute class would let real markup drift past
     // the gate, which is the thing the entry must never become.
     expect(PERMITTED_NOISE["htmx"]).toEqual({
@@ -1279,16 +1279,16 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     // entry could not have loosened this surface's comparison even in
     // principle. Editorial's one interaction is client cart state, which
     // hypermedia does not own, so the served page idiomatically carries no
-    // hx- at all — ISSUE E's honest hypermedia statement, still true.
+    // hx- at all, ISSUE E's honest hypermedia statement, still true.
     const body = await (await get("/htmx/editorial/")).text();
     // The WHOLE mechanism family, not just valued hx-foo= attributes:
     // htmx 2.0.10 also processes `hx-on:*`/`hx-on::*` (colon in the name),
     // bare valueless attributes (`hx-disable`), and the `data-hx-*` prefix
-    // form — a narrower regex passed on all three while they attached live
+    // form, a narrower regex passed on all three while they attached live
     // behavior (verify-slice finding, conformance lens). Any
     // whitespace-preceded (data-)hx- token fails; the served page carries
     // zero such bytes (measured), so there is nothing here to
-    // false-positive on — a loud stop is the point.
+    // false-positive on, a loud stop is the point.
     expect(body).not.toMatch(/\s(?:data-)?hx-/i);
   });
 
@@ -1303,7 +1303,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
     expect(cartJs).toContain(`"${shell.CART_CONTRACT.key}"`);
 
     const body = await (await get("/htmx/editorial/")).text();
-    // Both hooks are script elements — delivery, not contract (ADR-0008
+    // Both hooks are script elements, delivery, not contract (ADR-0008
     // freedoms), so the canonical DOM stays clean.
     expect(body).toContain('<script type="application/json" id="pm-cart-item">');
     expect(body).toContain('<script src="/htmx/assets/cart.js" defer></script>');
@@ -1319,7 +1319,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
   });
 });
 
-/** Remix 3's OWN text escaping (@remix-run/ui's escapeTextContent — read
+/** Remix 3's OWN text escaping (@remix-run/ui's escapeTextContent, read
  *  from the installed dist): `&`/`<`/`>` only; quotes stay raw in TEXT
  *  (attribute values get the full form). Raw-string assertions on the
  *  remix3 body must match what the serializer actually emits (the
@@ -1327,7 +1327,7 @@ describe("the htmx editorial page (canonical shell + composition)", () => {
 const remixEsc = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () => {
+describe("the remix3 editorial page (fenced frontier exhibit, slice F)", () => {
   // The one pin of record: the variant's own manifest (the lockfile pins the
   // sub-packages behind it). Everything below that names a version derives
   // from this, never a literal.
@@ -1352,9 +1352,9 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(body).toContain('role="status" data-pm-status');
   });
 
-  it("labeling layer 1 — the on-surface plaque: fenced hook, exact installed version, the exclusion rule (FINDINGS §7(c)1)", async () => {
+  it("labeling layer 1, the on-surface plaque: fenced hook, exact installed version, the exclusion rule (FINDINGS §7(c)1)", async () => {
     const body = await (await get("/remix3/editorial/")).text();
-    // Exactly TWO fenced subtrees: the plaque and the frames demo — the
+    // Exactly TWO fenced subtrees: the plaque and the frames demo, the
     // count is the anti-rigging pin (nothing else may ride the fence).
     expect(count(body, 'data-pm-fenced="true"')).toBe(2);
     // The DS plaque component's canonical fenced form (plaque.css).
@@ -1362,13 +1362,13 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(body).toContain(">Fenced exhibit</p>");
     // The exact version, tool-derived on both sides: the page renders it
     // from the variant's own package.json; this test re-derives it from the
-    // same file — nothing typed.
+    // same file. Nothing typed.
     expect(body).toContain(`<code>${remixPin}</code>`);
     expect(body).toContain(`pre-release ${remixPin} · excluded from every benchmark number`);
-    // The plaque's own stylesheet is LINKED — the one class of plaque
+    // The plaque's own stylesheet is LINKED, the one class of plaque
     // breakage no comparison can surface: every DOM/pixel leg drops
     // [data-pm-fenced] subtrees, so an unstyled boundary label would ship
-    // silently forever (verify-slice finding, conformance lens — the first
+    // silently forever (verify-slice finding, conformance lens, the first
     // draft linked only the core editorial list, which has no plaque).
     const head = body.slice(0, body.indexOf("</head>"));
     expect(head).toContain('href="/remix3/assets/pm/css/components/plaque.css"');
@@ -1377,7 +1377,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(await plaqueCss.text()).toContain(".pm-plaque--fenced");
   });
 
-  it("labeling layer 2 — the chrome: fenced cell current with the pin's tag, no reading-table column, RUM-only note (FINDINGS §7(c)2)", async () => {
+  it("labeling layer 2, the chrome: fenced cell current with the pin's tag, no reading-table column, RUM-only note (FINDINGS §7(c)2)", async () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
     // remix3 is a fenced exhibit, NEVER a live/planned variant: the counts
     // and columns derive from those arrays and must not move.
@@ -1385,7 +1385,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(controls.plannedVariants ?? []).not.toContain("remix3");
     const fenced = controls.fencedExhibits ?? [];
     expect(fenced.map((f) => f.variant)).toEqual(["remix3"]);
-    // The config's typed tag is cross-checked against the installed pin —
+    // The config's typed tag is cross-checked against the installed pin,
     // a bump that forgot the chrome would fail here.
     expect(fenced[0]!.tag).toBe(`pre-release ${remixPin}`);
 
@@ -1397,7 +1397,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(switcherRow).toContain('aria-current="page">remix3<');
     expect(switcherRow).toContain(`pre-release ${remixPin}`);
     expect(switcherRow).toContain("pm-chrome__cell--fenced");
-    // Counts stay the five live variants' — the exhibit is not a sixth.
+    // Counts stay the five live variants', the exhibit is not a sixth.
     const live = controls.variants.length;
     expect(body).toContain(`Served by ${live} of ${live} planned variants today.`);
     // Never a reading-table column (ADR-0005 §7 / ADR-0008 §3): the lab
@@ -1410,7 +1410,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(body).toContain('data-pm-hud-live="LCP"');
   });
 
-  it("every core editorial page carries NO fenced element — the fence cannot hide core drift (the scoped-drop complement)", async () => {
+  it("every core editorial page carries NO fenced element, the fence cannot hide core drift (the scoped-drop complement)", async () => {
     const controls = SURFACE_CONTROLS["editorial"]!;
     for (const v of controls.variants) {
       const body = await (await get(`/${v}/editorial/`)).text();
@@ -1420,7 +1420,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     }
   });
 
-  it("renders the RESOLVED snapshot's content — dateline and feature from committed trays", async () => {
+  it("renders the RESOLVED snapshot's content, dateline and feature from committed trays", async () => {
     const snap = await loadServedSnapshot();
     const featured = snap.details.find((d) => d.id === editorialFeaturedId(snap));
     if (!featured) throw new Error("resolved snapshot lost its featured release");
@@ -1461,7 +1461,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
       // to the canonical file (the react-next precedent): (1) remix/ui's
       // crossorigin type admits only the named states, and per the HTML spec
       // bare `crossorigin`, `""`, and `"anonymous"` all select the same
-      // Anonymous CORS state — the served form is `crossorigin="anonymous"`;
+      // Anonymous CORS state, the served form is `crossorigin="anonymous"`;
       // (2) voids self-close (`/>`), so the search string drops the closing
       // `>` entirely.
       const remixLine = line.replace("crossorigin>", 'crossorigin="anonymous"').slice(0, -1);
@@ -1495,7 +1495,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
 
   it("the frames partial serves standalone at its own URL and passes through the front Worker UNTOUCHED (no chrome, no page contract)", async () => {
     // The paradigm's wire format (FINDINGS §2): a frame reload fetches
-    // server HTML from rmx-src. A partial is not a page — the front Worker
+    // server HTML from rmx-src. A partial is not a page, the front Worker
     // passes it through byte-identical (the q-data.json precedent), so no
     // chrome is injected and no slot contract applies.
     const res = await get("/remix3/editorial/frames/demo?pick=1");
@@ -1518,7 +1518,7 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
 
   it("every asset the page references resolves through the composed origin (the prefix proof)", async () => {
     // FINDINGS §8's named seam: route mapping, frame src/rmx-src, anchor
-    // hrefs, asset URLs — all prefix-aware, all derived from the served
+    // hrefs, asset URLs, all prefix-aware, all derived from the served
     // page (the (?:href|src) shape also matches rmx-src, deliberately).
     const body = await (await get("/remix3/editorial/")).text();
     const refs = [...body.matchAll(/(?:href|src)="(\/remix3\/[^"]+)"/g)].map((m) => m[1]!);
@@ -1551,17 +1551,17 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     if (EXPECT_BROTLI) expect(encoding).toBe("br");
   });
 
-  it("remix3 registers NO permitted noise — a measured result, scoped to compared content", async () => {
+  it("remix3 registers NO permitted noise, a measured result, scoped to compared content", async () => {
     expect(PERMITTED_NOISE["remix3"]).toBeUndefined();
     const body = await (await get("/remix3/editorial/")).text();
-    // The mechanism DOES exist in the raw page — inside the fenced demo
-    // (rmx-target/rmx-src on its anchor) and as rmx:f comments — so the
+    // The mechanism DOES exist in the raw page, inside the fenced demo
+    // (rmx-target/rmx-src on its anchor) and as rmx:f comments, so the
     // scoping below strips something real, not nothing (the slice-D
     // non-vacuity lesson).
     expect(body).toContain("rmx-target");
     expect(body).toContain("<!-- rmx:f");
     // Scope to what the gate COMPARES: drop the two fenced subtrees, then
-    // comments and delivery elements (script/style/link/template — the
+    // comments and delivery elements (script/style/link/template, the
     // normalizer's DROP_ELEMENTS). What remains must carry no rmx-shaped
     // byte: no rmx-* attribute, no rmxc-* class, no data-rmx marker.
     const compared = body
@@ -1586,13 +1586,13 @@ describe("the remix3 editorial page (fenced frontier exhibit — slice F)", () =
     expect(cartJs).toContain(`"${shell.CART_CONTRACT.key}"`);
 
     const body = await (await get("/remix3/editorial/")).text();
-    // Both hooks are script elements — delivery, not contract (ADR-0008
+    // Both hooks are script elements, delivery, not contract (ADR-0008
     // freedoms). The JSON hook rides the serializer's typed innerHTML
     // escape hatch (script content is RAWTEXT; entity-escaped children
     // would corrupt the JSON).
     expect(body).toContain('<script type="application/json" id="pm-cart-item">');
     expect(body).toContain('<script src="/remix3/assets/cart.js" defer></script>');
-    // Canonical served state: the masthead count slot is EMPTY (§7) — in
+    // Canonical served state: the masthead count slot is EMPTY (§7), in
     // remix's attribute order (class serializes last), same DOM.
     expect(body).toContain(
       '<span data-pm-cart-count aria-hidden="true" class="pm-masthead__cart-count"></span>',

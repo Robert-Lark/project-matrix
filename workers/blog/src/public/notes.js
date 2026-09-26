@@ -1,4 +1,4 @@
-// Footnote hover-popovers — progressive enhancement inside the single-digit
+// Footnote hover-popovers, progressive enhancement inside the single-digit
 // KB budget (ADR-0009 §7), served only on pages that carry footnotes. The
 // anchor keeps working exactly as before; the popover mirrors content the
 // reader can already reach at the anchor's target, so it stays aria-hidden

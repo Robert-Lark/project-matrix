@@ -1,10 +1,10 @@
 // The one rendering pipeline (ADR-0009 §3). The admin live preview, the
 // published page, the preview-link page, and the RSS body all call
-// renderMarkdown — the preview cannot drift from the blog because they are
+// renderMarkdown, the preview cannot drift from the blog because they are
 // the same function.
 //
 // Order matters: raw HTML is parsed then SANITIZED (defense-in-depth against
-// a stolen-session author — ADR-0009 §5 abuse case), and Shiki highlighting
+// a stolen-session author, ADR-0009 §5 abuse case), and Shiki highlighting
 // runs AFTER sanitize, so its inline-styled spans are generated output, not
 // author input.
 
@@ -43,7 +43,7 @@ const THEMES = { light: "everforest-light", dark: "everforest-dark" };
 
 // Checked as JS (tsconfig.json `checkJs`). The syntax trees are unified's
 // (mdast in, hast out); the two typedefs below name exactly the node
-// fields these plugins touch, structurally — the blog declares the unified
+// fields these plugins touch, structurally, the blog declares the unified
 // packages it imports and nothing else (pnpm isolation), so the `hast` and
 // `mdast` type packages are not on its path to name by import.
 /**
@@ -117,10 +117,10 @@ function directiveBlocks() {
             dataLayout: attributes.layout ?? "grid",
           };
           // Hoist images out of shared paragraphs so each becomes a grid
-          // cell — adjacent image lines parse as ONE paragraph, which
+          // cell, adjacent image lines parse as ONE paragraph, which
           // otherwise collapses the grid to a single overflowing child.
           // Anything ELSE in that paragraph (caption words, links) survives
-          // as its own trailing paragraph — never silently dropped.
+          // as its own trailing paragraph, never silently dropped.
           node.children = (node.children ?? []).flatMap((child) => {
             if (child.type !== "paragraph") return [child];
             const inline = child.children ?? [];
@@ -175,9 +175,9 @@ schema.attributes = {
 };
 
 // Sanitize's id-clobbering stays ON (author raw-HTML ids get the
-// user-content- prefix — the DOM-clobbering defense §5 leans on), but
+// user-content- prefix, the DOM-clobbering defense §5 leans on), but
 // remark-rehype's footnote ids arrive already prefixed, so sanitize doubles
-// them while hrefs keep one layer — broken anchors (observed). Collapse the
+// them while hrefs keep one layer, broken anchors (observed). Collapse the
 // double prefix instead of disabling the protection.
 function rehypeCollapseClobberPrefix() {
   /** @param {TreeNode} tree */
@@ -208,7 +208,7 @@ function codeText(node) {
 // Syntax themes ship pastel tokens that fail 4.5:1 (measured: everforest
 // light's orange at 2.48). Instead of trusting any theme, every token color
 // is nudged toward its scheme's pole (dark text darker, light text lighter)
-// until it clears AA against the code background. Render-time only — the
+// until it clears AA against the code background. Render-time only, the
 // result is cached in body_html.
 
 /** @typedef {[number, number, number]} Rgb */
@@ -356,7 +356,7 @@ export async function renderMarkdown(md, { mediaLookup = null } = {}) {
   const highlighter = await getHighlighter();
   // The plugin chain is typed by unified as a chain of transformer
   // signatures over its own tree types; the four local plugins read the
-  // structural TreeNode above, so the chain is composed untyped here — the
+  // structural TreeNode above, so the chain is composed untyped here, the
   // ONE `any` in this module, at the seam between unified's generics and
   // plain functions, stated.
   const pipeline = /** @type {any} */ (unified());

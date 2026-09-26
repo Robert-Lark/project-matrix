@@ -1,11 +1,11 @@
 /*
- * Component module — prose. The editorial reading experience: the surface
+ * Component module, prose. The editorial reading experience: the surface
  * whose thesis is that excellent prose needs almost nothing. The measure,
- * rhythm, and one figure treatment ARE the design — "just use HTML" must be
+ * rhythm, and one figure treatment ARE the design, "just use HTML" must be
  * a felt conclusion (surface-design brief).
  *
  * Canonical markup: a <div class="pm-prose"> (or <article>) wrapping plain
- * HTML — h2/h3, p, figure > img + figcaption, blockquote, ul/ol, a. No
+ * HTML, h2/h3, p, figure > img + figcaption, blockquote, ul/ol, a. No
  * classes inside; the module styles elements in scope. The article H1 sits
  * outside in the surface's header (kicker + h1 + dek pattern, styled by the
  * surface composition).

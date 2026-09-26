@@ -5,7 +5,7 @@ import { HOSTS } from "../lib/hosts";
 /**
  * The masthead cart anchor + count slot.
  *
- * Server-rendered with count 0 — empty slot, no `aria-label` — which is the
+ * Server-rendered with count 0, empty slot, no `aria-label`, which is the
  * canonical served state (ADR-0008 §7) and, on this variant, is guaranteed
  * rather than arranged: nothing in this component runs on the server, and the
  * store it reads is initialised to 0 by `Shell`.

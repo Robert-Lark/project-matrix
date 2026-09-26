@@ -50,7 +50,7 @@ for (const file of process.argv.slice(2)) {
     ["danger / surface",        t("--pm-danger-600"),  surface, 4.5, true],
     ["focus-ring / surface (non-text)", t("--pm-accent-500"), surface, 3.0, true],
     ["muted / surface-sunk (advisory)",  t("--pm-neutral-600"), sunk, 4.5, false],
-    ["accent / surface-sunk — chrome cells (advisory)", t("--pm-accent-500"), sunk, 4.5, false],
+    ["accent / surface-sunk, chrome cells (advisory)", t("--pm-accent-500"), sunk, 4.5, false],
     ["danger / surface-sunk (advisory)", t("--pm-danger-600"), sunk, 4.5, false],
     ["border / surface (advisory, visibility)", t("--pm-neutral-200"), surface, 1.3, false],
   ];

@@ -1,6 +1,6 @@
-// Seed a frozen snapshot into R2. Default source: the synthesized fixture —
+// Seed a frozen snapshot into R2. Default source: the synthesized fixture,
 // the CI seed, always (issue #9: CI never depends on the real crate or the
-// Discogs API). `--dir <path>` seeds any other snapshot-layout directory —
+// Discogs API). `--dir <path>` seeds any other snapshot-layout directory,
 // the real captured crate rides in via `pnpm capture seed`.
 //
 // Object layout mirrors the URL space: the contract's image paths ARE the R2
@@ -9,7 +9,7 @@
 // LOCAL mode seeds through a throwaway seed Worker (one `wrangler dev`
 // sharing this project's persist dir, all objects streamed over HTTP):
 // concurrent `wrangler r2 object put --local` processes were probed to
-// corrupt state (3 of 8 objects byte-mismatched — miniflare persistence is
+// corrupt state (3 of 8 objects byte-mismatched, miniflare persistence is
 // not multi-process-safe), and serial per-object puts cost ~0.7s each, which
 // the fixture's few dozen objects tolerate but the crate's thousands (600px
 // derivatives + their .thumb.avif twins) do not. One workerd process = one
@@ -45,11 +45,11 @@ const snapDir = dirArg
     );
 
 // Clobber guard (issue #9): once the REAL crate has been seeded into remote
-// R2 (a manual, credentialed step — its image bytes are deliberately not in
+// R2 (a manual, credentialed step. Its image bytes are deliberately not in
 // git, so CI cannot re-seed it), an armed CI deploy re-seeding the DEFAULT
 // fixture must not overwrite it. FAIL-CLOSED: only a positively-identified
-// missing manifest (fresh bucket) proceeds; any other failure — transient
-// API error, auth trouble, unparseable output — refuses, because "couldn't
+// missing manifest (fresh bucket) proceeds; any other failure, transient
+// API error, auth trouble, unparseable output, refuses, because "couldn't
 // tell" must never read as "safe to overwrite".
 const sourceCrate = JSON.parse(readFileSync(join(snapDir, "manifest.json"), "utf8")).crate;
 if (remote && !dirArg) {
@@ -66,10 +66,10 @@ if (remote && !dirArg) {
     const text = `${err.stdout ?? ""}\n${err.stderr ?? ""}\n${err.message ?? ""}`;
     // wrangler surfaces a missing key as R2 "does not exist" (error 10007).
     if (/does not exist|10007/i.test(text)) {
-      remoteCrate = null; // fresh bucket — first seed proceeds
+      remoteCrate = null; // fresh bucket, first seed proceeds
     } else {
       console.error(
-        "could not read the remote snapshot manifest — refusing to seed over an " +
+        "could not read the remote snapshot manifest, refusing to seed over an " +
           "unknown bucket state (fail-closed). Fix the read, or seed an explicit --dir.",
       );
       process.exit(1);
@@ -77,7 +77,7 @@ if (remote && !dirArg) {
   }
   if (remoteCrate !== null && remoteCrate !== sourceCrate) {
     console.log(
-      `remote R2 already holds crate "${remoteCrate}" — refusing to overwrite it with the ` +
+      `remote R2 already holds crate "${remoteCrate}", refusing to overwrite it with the ` +
         `fixture. (Re-seed the crate via \`pnpm capture seed --remote\`; to deliberately ` +
         `reset the bucket to the fixture, seed it with an explicit --dir.)`,
     );
@@ -86,7 +86,7 @@ if (remote && !dirArg) {
 }
 
 // Dotfiles (.DS_Store) and atomic-write leftovers (*.tmp) are not snapshot
-// assets — never seed them.
+// assets, never seed them.
 const imgFiles = readdirSync(join(snapDir, "img"))
   .filter((f) => !f.startsWith(".") && !f.endsWith(".tmp"))
   .sort();
@@ -136,13 +136,13 @@ if (remote) {
     }).trim();
     if (holders) {
       console.error(
-        `port ${PORT} is already held (pids ${holders.replaceAll("\n", ", ")}) — a leaked ` +
+        `port ${PORT} is already held (pids ${holders.replaceAll("\n", ", ")}), a leaked ` +
           `seed worker? Kill it and re-run (workers/README.md port discipline).`,
       );
       process.exit(1);
     }
   } catch {
-    // lsof exits nonzero when nothing listens — the port is free.
+    // lsof exits nonzero when nothing listens, the port is free.
   }
   const tmp = mkdtempSync(join(tmpdir(), "pm-seed-"));
   writeFileSync(
@@ -179,7 +179,7 @@ if (remote) {
   const teardown = () => {
     dev.kill("SIGTERM");
     // wrangler's workerd grandchildren are not reliably killed by the parent
-    // signal — find the port's listeners and kill by pid (workers/README).
+    // signal, find the port's listeners and kill by pid (workers/README).
     try {
       const out = execFileSync("lsof", ["-nP", `-iTCP:${PORT}`, "-sTCP:LISTEN", "-t"], {
         encoding: "utf8",
@@ -192,7 +192,7 @@ if (remote) {
         }
       }
     } catch {
-      /* nothing listening — clean */
+      /* nothing listening, clean */
     }
     rmSync(tmp, { recursive: true, force: true });
   };

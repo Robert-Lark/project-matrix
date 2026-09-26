@@ -1,9 +1,9 @@
 /*
- * Methodology page — composition (ADR-0001 §9; first editorial bench batch).
+ * Methodology page, composition (ADR-0001 §9; first editorial bench batch).
  * ----------------------------------------------------------------------------
  * A static singleton off the benchmarked matrix, home-surface precedent
  * (ADR-0007 §6): render-critical CSS inlined at build, canonical font markup,
- * no injected chrome. Consumes the shared semantic tokens only — no literal
+ * no injected chrome. Consumes the shared semantic tokens only, no literal
  * color anywhere, no new primitive (ADR-0006 §1; ADR-0007 §7 precedent for
  * page-level compositions reaching shared tokens directly).
  */

@@ -1,9 +1,9 @@
 // Minimal image dimension sniffing at upload time (PNG/JPEG/GIF/WebP/AVIF)
-// so every <img> the editor inserts carries width/height — zero CLS by
+// so every <img> the editor inserts carries width/height, zero CLS by
 // construction, the same discipline the store holds itself to.
 
 // --- AVIF (ISOBMFF) ---------------------------------------------------------
-// The displayed size lives in the PRIMARY item's `ispe` property — an AVIF
+// The displayed size lives in the PRIMARY item's `ispe` property, an AVIF
 // with an alpha channel carries a second ispe for the auxiliary alpha item,
 // so "first ispe wins" is wrong on exactly the files that have one. Walk
 // meta → pitm (primary item id) → iprp/ipma (item→property associations)
@@ -115,7 +115,7 @@ function avifDimensions(bytes, view) {
   }
 
   // Fall back to "every property" only when there is no association map to
-  // consult — then the first ispe is the best available answer.
+  // consult, then the first ispe is the best available answer.
   const mine = indices
     ? indices.map((i) => properties[i - 1]).filter((p) => p !== undefined)
     : properties;
@@ -133,9 +133,9 @@ function avifDimensions(bytes, view) {
  * Sniff the FORMAT and the dimensions from the bytes: `{ type, width,
  * height }` for the five formats the blog accepts, `null` for anything the
  * sniffer cannot read. The upload path keys the stored type off THIS and
- * never off the client's `file.type` (security floor, 2026-09-18 — 2026-08-29
+ * never off the client's `file.type` (security floor, 2026-09-18, 2026-08-29
  * audit priority 4, task 3): a client can declare any type it likes, and a
- * `null` here is a 400 at upload, not a media row with null dimensions —
+ * `null` here is a 400 at upload, not a media row with null dimensions,
  * which silently forfeited the zero-CLS rule this file exists to keep.
  * @param {Uint8Array} bytes
  * @returns {{ type: string, width: number, height: number } | null}
@@ -145,14 +145,14 @@ export function sniffImage(bytes) {
   // A sniff that names a type must have read the WHOLE signature and a real
   // box (verify-slice, skeptic lens, 2026-09-18): the three-byte "GIF" test
   // this replaced named a text file starting "GIF…" image/gif with a
-  // 21057 × 8260 box — the zero-CLS rule forfeited in the other direction —
+  // 21057 × 8260 box, the zero-CLS rule forfeited in the other direction,
   // and a 0 × 0 IHDR passed as an image. Every branch now returns through
   // `sized`, which refuses a zero dimension.
   if (
     bytes.length >= 24 &&
     view.getUint32(0) === 0x89504e47 && // \x89PNG
-    view.getUint32(4) === 0x0d0a1a0a && // \r\n\x1a\n — the full 8-byte signature
-    view.getUint32(12) === 0x49484452 // "IHDR" — always the first chunk
+    view.getUint32(4) === 0x0d0a1a0a && // \r\n\x1a\n, the full 8-byte signature
+    view.getUint32(12) === 0x49484452 // "IHDR", always the first chunk
   ) {
     return sized("image/png", view.getUint32(16), view.getUint32(20));
   }
@@ -162,7 +162,7 @@ export function sniffImage(bytes) {
   }
   if (bytes.length >= 4 && view.getUint16(0) === 0xffd8) {
     // JPEG: walk markers to the first SOF. ITU T.81 B.1.1.2 allows any
-    // number of 0xFF fill bytes before a marker — skip them, or a legal file
+    // number of 0xFF fill bytes before a marker, skip them, or a legal file
     // an encoder padded is a 400 here that used to upload (skeptic lens).
     let at = 2;
     while (at + 9 < bytes.length) {
@@ -200,7 +200,7 @@ export function sniffImage(bytes) {
     }
   }
   if (bytes.length >= 16 && view.getUint32(4) === 0x66747970) {
-    // "ftyp" at offset 4 — an ISOBMFF container; AVIF if the brands say so.
+    // "ftyp" at offset 4, an ISOBMFF container; AVIF if the brands say so.
     try {
       const dims = avifDimensions(bytes, view);
       return dims ? sized("image/avif", dims.width, dims.height) : null;
@@ -222,7 +222,7 @@ function ascii(bytes, start, length) {
   return String.fromCharCode(...bytes.subarray(start, start + length));
 }
 
-/** Dimensions alone — the sniff without the type.
+/** Dimensions alone, the sniff without the type.
  *  @param {Uint8Array} bytes */
 export function imageDimensions(bytes) {
   const image = sniffImage(bytes);

@@ -3,7 +3,7 @@
  * collect.ts:303; estimator superseded by bench-instrumentation-dilution,
  * ADR-0001 §3 addendum 2026-08-15), unit-tested directly. `decomposeDocument`
  * splits one served HTML document's single compressed transferSize into
- * html/js/data plus STRIPPED instrumentation markup — the LEVEL from
+ * html/js/data plus STRIPPED instrumentation markup, the LEVEL from
  * `transferSize`, the RATIOS from leave-one-out brotli marginals at the
  * quality calibrated against the observed compressed body. No browser: pure
  * string → attribution, so the accounting rules are pinned deterministically
@@ -94,7 +94,7 @@ describe("decomposeDocument partitions the compressed document (ADR-0001 §3/§6
     }
   });
 
-  it("inline EXECUTABLE script counts as JS — Astro's inlined bundle is not 0 KB (defect 1)", () => {
+  it("inline EXECUTABLE script counts as JS, Astro's inlined bundle is not 0 KB (defect 1)", () => {
     const withModule = decomposeDocument(
       page("", `<script type="module">import {mountCart} from "/astro/cart.js";mountCart();</script>`),
       T,
@@ -102,7 +102,7 @@ describe("decomposeDocument partitions the compressed document (ADR-0001 §3/§6
     expect(withModule.js).toBeGreaterThan(0);
 
     // Same document WITHOUT the module: the JS bucket collapses to zero and
-    // those bytes land in HTML — i.e. the module is what the JS number reflects.
+    // those bytes land in HTML. I.e. the module is what the JS number reflects.
     const withoutModule = decomposeDocument(page("", ""), T);
     expect(withoutModule.js).toBe(0);
     expect(withoutModule.html).toBeGreaterThan(withModule.html);
@@ -121,7 +121,7 @@ describe("decomposeDocument partitions the compressed document (ADR-0001 §3/§6
     const withChrome = decomposeDocument(page("", ""), T);
     expect(withChrome.instrumentation).toBeGreaterThan(0);
 
-    // A page with NO chrome/instrumentation puts every document byte in HTML —
+    // A page with NO chrome/instrumentation puts every document byte in HTML,
     // so the chrome markup really is being carved out of the HTML bucket.
     const noChrome = decomposeDocument(
       `<!doctype html><html lang="en"><head><title>x</title></head><body><main><h1>h</h1><p>prose</p></main></body></html>`,
@@ -170,7 +170,7 @@ describe("decomposeDocument partitions the compressed document (ADR-0001 §3/§6
     // A near-all-script/chrome document (little prose) compressed to a handful
     // of bytes: a per-bucket round-up with HTML as the remainder would drive
     // HTML negative (verify-slice, anti-rigging lens). Largest-remainder cannot
-    // — and a zero-weight bucket can never receive a leftover unit.
+    //, and a zero-weight bucket can never receive a leftover unit.
     const body =
       `<!doctype html><html><body>` +
       `<script type="module">${"a".repeat(200)}</script>` +
@@ -221,7 +221,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
   it("calibrates with the WIRE'S OWN codec: a zstd wire gets a zstd model, at the level that produced it", () => {
     // The first attested batch was refused for exactly this: Chromium
     // negotiates zstd, so the bench browser's documents ride a zstd wire
-    // while br-only clients still get brotli — a brotli model fitted to
+    // while br-only clients still get brotli, a brotli model fitted to
     // that byte count mislabels its own ratios.
     const encoded = zstdBytes(doc, 2);
     const d = decomposeDocument(doc, encoded + 300, encoded, "zstd");
@@ -243,7 +243,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
   it("the level knobs are ALIVE: distant-level targets calibrate to distinct settings (the dead-knob class)", () => {
     // If a codec's level option went dead (an API change silently ignoring
     // params), every scanned level would produce one size and calibration
-    // would always land on the FIRST candidate — making the ±1 pins above
+    // would always land on the FIRST candidate, making the ±1 pins above
     // pass vacuously against a level-1-flavored target. Distant targets
     // must calibrate apart, or the knob is not turning.
     const zLow = decomposeDocument(doc, zstdBytes(doc, 2), zstdBytes(doc, 2), "zstd");
@@ -254,7 +254,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(gLow.attribution.quality, "gzip level knob is dead").not.toBe(gHigh.attribution.quality);
   });
 
-  it("the transfer-size fallback fit is labeled as such — a header-padded target is not a body fit", () => {
+  it("the transfer-size fallback fit is labeled as such, a header-padded target is not a body fit", () => {
     const wire = brotli(doc, 4);
     const d = decomposeDocument(doc, wire + 700); // no encodedBodySize; headers inflate the target
     expect(d.attribution.estimator).toBe("loo-wire-normalised");
@@ -272,10 +272,10 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(sum(d)).toBe(docBytes + 300);
   });
 
-  it("never claims IDENTITY from the transferSize fallback — headers can outweigh compression on a small doc", () => {
+  it("never claims IDENTITY from the transferSize fallback, headers can outweigh compression on a small doc", () => {
     // transferSize includes response header bytes, so for a small
     // well-compressed document the fallback target can exceed the decoded
-    // size — which must label itself as the fallback it is, never as a
+    // size, which must label itself as the fallback it is, never as a
     // verified identity encoding (verify-slice, this unit).
     const small = `<!doctype html><body><p>tiny</p><script>x()</script></body>`;
     const docBytes = Buffer.byteLength(small, "utf8");
@@ -293,18 +293,18 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(asBr.attribution.contentEncoding).toBe("br");
     const asGzip = decomposeDocument(doc, encoded + 300, encoded, "gzip");
     expect(asGzip.attribution.contentEncoding).toBe("gzip");
-    // A gzip wire gets the gzip model — codec and encoding stay in lockstep
+    // A gzip wire gets the gzip model, codec and encoding stay in lockstep
     // so the publication gate's model-matches-wire rule can hold.
     expect(asGzip.attribution.estimator).toBe("loo-wire-normalised");
     expect(asGzip.attribution.codec).toBe("gzip");
-    // RFC 9110: coding tokens are case-insensitive — "GZIP" selects the
+    // RFC 9110: coding tokens are case-insensitive, "GZIP" selects the
     // same model instead of falling through to brotli-by-accident.
     expect(decomposeDocument(doc, encoded + 300, encoded, "GZIP").attribution.codec).toBe("gzip");
   });
 
-  it("the gzip model honors its level — calibration reproduces a gzip-produced target (the typo'd-options class)", () => {
+  it("the gzip model honors its level, calibration reproduces a gzip-produced target (the typo'd-options class)", () => {
     // gzipSync({ leve: 6 }) would compress at the default with no error and
-    // every scanned "level" would produce one size — this pin makes a dead
+    // every scanned "level" would produce one size. This pin makes a dead
     // level knob fail loudly, the way the zstd pin does for zstd.
     const target = gzipBytes(doc, 6);
     const d = decomposeDocument(doc, target + 300, target, "gzip");
@@ -334,7 +334,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(Math.abs(level2 - entry.wireBytes)).toBeLessThan(entry.wireBytes * 0.01);
     // The "same page" claim is pinned, not assumed: the zstd wire and the
     // brotli wire must decode to the identical document (they were fetched
-    // a day apart, straddling a deploy — verified identical, now asserted).
+    // a day apart, straddling a deploy, verified identical, now asserted).
     const brBody = brotliDecompressSync(
       readFileSync(join(labDir, "bodies", "vanilla-editorial.br")),
     ).toString("utf8");
@@ -342,7 +342,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
   });
 
   it("kills the dilution defect: a chrome-only change no longer drags the JS cell (the 0.42→0.37 shape)", () => {
-    // The same page under a small chrome and a ~4× larger one — the shape of
+    // The same page under a small chrome and a ~4× larger one, the shape of
     // the recorded defect (empty vs populated strip). Under uncompressed
     // share the JS attribution moved ~14% on the real pages; the estimator
     // must hold it within noise. Wire sizes are simulated at one quality on
@@ -357,7 +357,7 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(drift, `js moved ${dSmall.js} → ${dBig.js} on a chrome-only change`).toBeLessThan(0.05);
   });
 
-  it("attributes the repetitive chrome LESS than its uncompressed share — the direction the defect ran", () => {
+  it("attributes the repetitive chrome LESS than its uncompressed share, the direction the defect ran", () => {
     // The chrome compresses far better than the document average, so
     // uncompressed share OVER-attributed it and under-attributed everyone
     // else (the dilution). The marginal estimator must price it below its

@@ -17,7 +17,7 @@ type RouterMiddleware = NonNullable<
 >['middleware']
 
 // One app, two hosts: the host passes only its own serving concerns in
-// (Node: a filesystem static middleware; Workers: nothing — the platform's
+// (Node: a filesystem static middleware; Workers: nothing, the platform's
 // asset layer serves /assets/* before the Worker runs).
 export function createAppRouter(hostMiddleware: NonNullable<RouterMiddleware> = []) {
   const router = createRouter<AppContext>({

@@ -1,7 +1,7 @@
 /**
  * Shared URL-knob plumbing (ADR-0004 §5: query = the measurement condition).
  * Every strategy page forwards the SAME live request modifiers to the data
- * plane — n (volume), cache (edge bypass), run (harness isolation nonce) —
+ * plane, n (volume), cache (edge bypass), run (harness isolation nonce),
  * so the only thing that differs between pages is the access pattern.
  */
 export function readKnobs(search = window.location.search) {

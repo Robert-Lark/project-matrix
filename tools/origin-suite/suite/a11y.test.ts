@@ -6,17 +6,17 @@
  *  - The URLs SERVE: three pages, 200, the canonical shell, the chrome
  *    injected (a variant page, unlike how-it-was-built), the a11y root. Before
  *    this build every store page's footer linked `/vanilla/a11y/` and the
- *    vanilla assets Worker answered 404 (probed 2026-09-03 — the build log).
+ *    vanilla assets Worker answered 404 (probed 2026-09-03, the build log).
  *  - The registration moved WITH the routes (decision map, 2026-08-29):
  *    `SURFACE_CONTROLS.a11y.variants` names vanilla, and the chrome on the
- *    page renders from that — one current cell, no offer, the singleton
+ *    page renders from that, one current cell, no offer, the singleton
  *    reading sentence.
  *  - Strategy-review finding 21's three conditions on the served bytes:
  *    element-demos is `noindex`; every DS-OFF twin is served inside a CLOSED
  *    <details>; label first, compliant twin adjacent.
  *  - The mode demos' honesty caveat is CONTENT, beside every toggle.
  *  - Every page links exactly the master's stylesheets in the master's order
- *    and every linked asset answers 200 from the variant's own tree — the
+ *    and every linked asset answers 200 from the variant's own tree, the
  *    compare and mode-demo sheets included, which no other surface links.
  *  - The footer link resolves from every served variant's editorial page and
  *    from the store's PDP and checkout hosts, and home's PM-005 row links the
@@ -44,7 +44,7 @@ const PAGES: Record<string, number> = {
   "a11y/mode-demos": 2,
 };
 
-/** The master's sheet list, by tail after `/css/` — rendered in-process from
+/** The master's sheet list, by tail after `/css/`, rendered in-process from
  *  the reference renderer (file URL: the drift gate's pattern), never typed. */
 async function masterSheetTails(rel: string): Promise<string[]> {
   const a11y = await import(
@@ -66,7 +66,7 @@ function sheetTails(html: string): string[] {
   });
 }
 
-describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", () => {
+describe("/vanilla/a11y/, the accessibility exhibit, served (ADR-0008 §8)", () => {
   it("the registration shipped with the routes: a11y is served by vanilla, a singleton, nothing planned, no lab", () => {
     const controls = SURFACE_CONTROLS["a11y"]!;
     expect(controls.variants).toEqual(["vanilla"]);
@@ -88,13 +88,13 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
       expect(body).toContain('class="pm-a11y"');
       expect(body).toContain('<a class="pm-skip pm-button" href="#main">Skip to content</a>');
       // The chrome: exactly one, stamped for this page (a variant page, so
-      // unlike how-it-was-built the instrument IS here — ADR-0004 §7 gives a
+      // unlike how-it-was-built the instrument IS here, ADR-0004 §7 gives a
       // singleton no render-switcher, not no chrome).
       expect(count(body, 'data-pm-chrome="1"')).toBe(1);
       expect(body).toContain('data-pm-variant="vanilla"');
       expect(body).toContain('data-pm-surface="a11y"');
       // Singleton chrome: the plain-sentence reading section, no count, one
-      // current cell and NO swap anchor — the switcher can never offer a cell
+      // current cell and NO swap anchor, the switcher can never offer a cell
       // that does not exist.
       expect(body).toContain("No lab snapshot will exist for this page");
       expect(body).not.toContain("Served by ");
@@ -111,7 +111,7 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
 
     it(`/vanilla/${rel}/ links exactly the master's stylesheets, in order, and every linked asset answers 200 from the variant's own tree`, async () => {
       const body = await (await get(`/vanilla/${rel}/`)).text();
-      // The chrome injects its own stylesheet into <head> (/_pm/chrome.css) —
+      // The chrome injects its own stylesheet into <head> (/_pm/chrome.css),
       // instrumentation, excluded by known path (ADR-0001 §6). Everything
       // else must be the master's list, in the master's order.
       const own = sheetTails(body.replace(/<link rel="stylesheet" href="\/_pm\/chrome\.css">/, ""));
@@ -170,9 +170,9 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
     const body = await (await get("/vanilla/a11y/mode-demos/")).text();
     expect(count(body, 'class="pm-mode__toggle" type="button" aria-pressed="false"')).toBe(3);
     expect(body).not.toContain('aria-pressed="true"');
-    expect(count(body, "your OS setting is the real thing — these demos never override it")).toBe(3);
+    expect(count(body, "your OS setting is the real thing. These demos never override it")).toBe(3);
     // The caveat is content (prompt duty 5): it sits in the page body, not in
-    // the injected chrome — assert it survives with the chrome slot removed
+    // the injected chrome, assert it survives with the chrome slot removed
     // from consideration by checking it appears BEFORE each toggle.
     const demos = body.split('<section class="pm-mode"').slice(1);
     expect(demos.length).toBe(3);
@@ -194,7 +194,7 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
     // key on the deployed plane (warm-tier guard, widened 2026-09-04).
     expect(await (await get("/react-next/plp/plain/?cache=cold")).text()).toContain('href="/vanilla/a11y/"');
     // A PDP, actually FETCHED (F-A9): the PDP is the surface behind most of
-    // the footer links on the plane — one page per release, in four variants —
+    // the footer links on the plane, one page per release, in four variants,
     // and vanilla's PDP footer is a THIRD independent re-typed copy of the
     // shell, distinct from the editorial and checkout copies asserted above.
     // The earlier draft named the PDP in this leg's own prose and never
@@ -210,7 +210,7 @@ describe("/vanilla/a11y/ — the accessibility exhibit, served (ADR-0008 §8)", 
     expect(target.status).toBe(200);
   });
 
-  it("the no-slash form redirects TO the slash form (slash normalisation, pinned as measured — the PDP rule)", async () => {
+  it("the no-slash form redirects TO the slash form (slash normalisation, pinned as measured, the PDP rule)", async () => {
     const res = await fetch(`${ORIGIN}/vanilla/a11y`, { redirect: "manual" });
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/vanilla/a11y/");

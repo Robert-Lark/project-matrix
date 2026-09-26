@@ -1,10 +1,10 @@
 /*
- * Component module — form field. The accessible DEFAULT (ADR-0003).
+ * Component module, form field. The accessible DEFAULT (ADR-0003).
  * Its DS-OFF ("stripped") counterpart for the A/B demo lives in the reference
- * render — identical markup and layout MINUS the a11y wiring, so the two boxes
+ * render, identical markup and layout MINUS the a11y wiring, so the two boxes
  * differ ONLY in accessibility.
  *
- * Error state styles off [aria-invalid], never a class — so the visual defect
+ * Error state styles off [aria-invalid], never a class, so the visual defect
  * cannot exist without the programmatic one. Meaning is carried by icon + text
  * in .pm-field__error, never by colour alone (survives forced-colors AND
  * colour-blindness).

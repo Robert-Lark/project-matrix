@@ -4,8 +4,8 @@
  * Trimmed from the starter's version: its `errorOnDuplicatesPkgDeps` guard,
  * which reads `./package.json` at config time and throws if any qwik package
  * sits in `dependencies` rather than `devDependencies`. That guards a REAL
- * constraint — in `dependencies` the SSR build treats the framework as
- * external and the `@qwik-city-plan` virtual module then fails to resolve — so
+ * constraint, in `dependencies` the SSR build treats the framework as
+ * external and the `@qwik-city-plan` virtual module then fails to resolve, so
  * the guard is dropped as config-time scaffolding and the invariant it asserted
  * is recorded here instead: both `@builder.io/*` packages belong in
  * `devDependencies`. An earlier version of this comment justified the removal
@@ -21,7 +21,7 @@
  * tidied away: nothing here imports through the starter's `~/*` alias (relative
  * imports throughout), so the plugin's only effect was to drag in `tsconfck`,
  * which wants `typescript@^5`, into a workspace that pins ^6 like the rest of
- * the repo — an unmet peer warning bought for an alias no file uses. The
+ * the repo, an unmet peer warning bought for an alias no file uses. The
  * `paths` entry left `tsconfig.json` with it, so the alias cannot typecheck
  * green and then fail at build.
  */
@@ -38,11 +38,11 @@ export default defineConfig((): UserConfig => {
     // = viteBasePath`), the optimizer derives the client's public output
     // directory from it (`clientPublicOutDir = path.join(clientOutDir,
     // viteConfig.base)`, dist/optimizer.mjs), and the served container's
-    // `q:base` follows — so routes, on-disk layout, and the lazy-chunk base
+    // `q:base` follows, so routes, on-disk layout, and the lazy-chunk base
     // URL cannot disagree. Verified against a scaffold before this variant
     // was written: `q:base="/qwik/build/"`, chunks resolve at
     // /qwik/build/q-*.js. (Slice C had to keep astro's `base` and `outDir`
-    // in agreement by hand — Qwik does that part itself.)
+    // in agreement by hand, Qwik does that part itself.)
     base: "/qwik/",
     plugins: [qwikCity(), qwikVite()],
     optimizeDeps: {

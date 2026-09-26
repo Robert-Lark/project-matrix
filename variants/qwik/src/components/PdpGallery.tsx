@@ -3,12 +3,12 @@ import type { Image } from "@pm/data-contract";
 import { thumbSrc } from "../lib/pdp-format";
 
 /**
- * The gallery — thumbs switch the stage, zoom is a real toggle. Resumable
+ * The gallery, thumbs switch the stage, zoom is a real toggle. Resumable
  * handlers over two signals; the SERVED state is the master's exactly
  * (selected 0 → first thumb aria-current, zoom not pressed).
  *
  * Two behaviors the contract pins (vanilla's pdp.js is the precedent):
- *  - the stage's width/height attributes STAY the first image's — the stage
+ *  - the stage's width/height attributes STAY the first image's, the stage
  *    is a fixed 1:1 mat, so a switch swaps only src and alt and can never
  *    move the buy panel (ADR-0008 §8, CLS 0 by construction);
  *  - zoom survives a thumb switch: the visitor asked to look closely, and
@@ -52,7 +52,7 @@ export const PdpGallery = component$<{ images: readonly Image[] }>(({ images }) 
                 type="button"
                 // `null`, not `undefined`: at SSR both omit the attribute,
                 // but on a client re-render qwik's diff treats undefined as
-                // "leave unchanged" — the deselected thumb kept its
+                // "leave unchanged", the deselected thumb kept its
                 // aria-current and two thumbs announced selected (caught by
                 // the JS-on browser leg's exactly-one assertion).
                 aria-current={(i === selected.value ? "true" : null) as unknown as "true" | undefined}

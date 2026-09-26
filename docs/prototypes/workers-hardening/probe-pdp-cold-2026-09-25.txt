@@ -1,4 +1,4 @@
-# probe-pdp-cold — 2026-09-25, held local crate plane (PM_SEED_DIR=tools/snapshot-capture/crate PM_HOLD=1), machine load ~4
+# probe-pdp-cold, 2026-09-25, held local crate plane (PM_SEED_DIR=tools/snapshot-capture/crate PM_HOLD=1), machine load ~4
 
 ## edge Worker direct (http://127.0.0.1:8790), run 1
 plane: crate "ambient-melodic-techno-neoclassical-2006-2026" · id 627110 · release payload 1570 B

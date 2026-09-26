@@ -9,12 +9,12 @@ import { CartContext, addToCart, announce } from "../lib/cart";
  * The BYTES are not, on this page, and the earlier version of this comment
  * claimed they were. Measured against the composed origin: a JS-on load of
  * `/qwik/editorial/` fetches 7 files totalling 26.83 kB encoded / 62.16 kB
- * decoded, and clicking this button then fetches **nothing** — the handler is
+ * decoded, and clicking this button then fetches **nothing**, the handler is
  * already down. The cause is a chain worth understanding rather than hiding:
  * the cart contract requires every shell page load to repopulate the masthead
  * count from storage (ADR-0004 §5, swap survival), `CartCount` does that in a
  * `useOnDocument("qinit", …)` QRL, resolving ANY QRL needs the framework core
- * (50,917 B here) — and rollup co-located `src/lib/cart.ts` such that the
+ * (50,917 B here), and rollup co-located `src/lib/cart.ts` such that the
  * qinit chunk statically imports the click chunk too. So resumability defers
  * the binding, and one contractual load-time storage read pulls the rest
  * forward.
@@ -42,7 +42,7 @@ export const AddToCartButton = component$<{
         onClick$={() => {
           const count = addToCart(id);
           // Storage failed (quota, storage off): state unchanged, nothing
-          // announced — the contract's own rule.
+          // announced, the contract's own rule.
           if (count === null) return;
           cart.count = count;
           cart.message = announce(title, count);

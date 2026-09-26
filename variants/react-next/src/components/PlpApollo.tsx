@@ -21,7 +21,7 @@ import {
 } from "../lib/plp-condition";
 
 /**
- * The MISAPPLICATION EXHIBIT — Apollo Client 4 + `apollo-link-rest` over the
+ * The MISAPPLICATION EXHIBIT, Apollo Client 4 + `apollo-link-rest` over the
  * REST tray (ADR-0005 §7). FENCED: labeled on-surface by the plaque the route
  * renders, excluded from the four-strategy cells by
  * `SURFACE_CONTROLS.plp.strategies[4].fenced`, and never a reading-table
@@ -29,13 +29,13 @@ import {
  *
  * It is deliberately the WRONG tool and deliberately NOT a strawman: this is
  * the Apollo ecosystem's own documented REST path, configured the way its docs
- * configure it. It does NOT hold the lead's published window — Apollo ships no
+ * configure it. It does NOT hold the lead's published window, Apollo ships no
  * `staleTime` at all, so its cache is unbounded where the lead's is five
  * published minutes (see APOLLO_CACHE_WINDOW below; an earlier draft of THIS
  * HEADER claimed parity, and a header is the first thing another variant's
- * author reads). What is held equal is the POLICY SHAPE — cache-first, seeded
- * from the server, no hand-rolled TTL on either side — so the comparison is a
- * library one rather than a tuning one. The claim is "the wrong tool works —
+ * author reads). What is held equal is the POLICY SHAPE, cache-first, seeded
+ * from the server, no hand-rolled TTL on either side, so the comparison is a
+ * library one rather than a tuning one. The claim is "the wrong tool works,
  * you pay in bytes and machinery", which is only evidence if the exhibit is
  * fair.
  *
@@ -54,7 +54,7 @@ import {
  * undefined (reading 'utilities')` on import. Its ESM entry (`index.js`, named
  * only by `"module"`) then uses extensionless relative imports (`./restLink`),
  * which Node ESM also refuses. The package is loadable only through a bundler
- * that honours `module` AND resolves extensionless paths — Next's does; plain
+ * that honours `module` AND resolves extensionless paths, Next's does; plain
  * `node` does not, and neither does vitest without `ssr.noExternal`, which is
  * why `vitest.config.ts` carries that one line. ADR-0005 §7 predicted exactly
  * this class ("a pre-1.0 RC whose package entry broke the build once").
@@ -62,7 +62,7 @@ import {
 
 /** The document. `path` is passed whole rather than reassembled from
  *  `{args.n}`/`{args.page}` fragments so this file cannot become a second
- *  opinion about what URL a condition maps to — `plpApiPath` stays the one
+ *  opinion about what URL a condition maps to, `plpApiPath` stays the one
  *  derivation, exactly as it is for the other two strategies. */
 const PLP_QUERY = gql`
   query Plp($path: String!) {
@@ -119,7 +119,7 @@ const PLP_QUERY = gql`
 
 /** Stamp the `__typename`s the normalizing cache needs onto the server's
  *  plain tray. This function exists ONLY because a GraphQL cache is being
- *  pointed at data that was never GraphQL — it is the exhibit's cost made
+ *  pointed at data that was never GraphQL. It is the exhibit's cost made
  *  literal, and it is why the plaque says what it says. */
 function withTypenames(payload: PlpPage): Record<string, unknown> {
   const bucket = (b: { value: string; count: number }) => ({
@@ -155,7 +155,7 @@ function withTypenames(payload: PlpPage): Record<string, unknown> {
         styles: payload.facets.styles.map(bucket),
         formats: payload.facets.formats.map(bucket),
       },
-      // The applied query (ADR-0005 addendum Q2) — one more type the
+      // The applied query (ADR-0005 addendum Q2), one more type the
       // normalizing cache must be told about, one more line of the exhibit.
       applied: { __typename: "PlpApplied", ...payload.applied },
     },
@@ -165,7 +165,7 @@ function withTypenames(payload: PlpPage): Record<string, unknown> {
 /** Build the client the island mounts, with the cache primed for the served
  *  condition. Exported so the pre-merge guard can assert the SEED directly:
  *  the render path keeps `?? initial` as a FLOOR, which would otherwise mask a
- *  cache that never held anything — and "the exhibit's UX matches the lead"
+ *  cache that never held anything, and "the exhibit's UX matches the lead"
  *  (ADR-0005 §7) is a claim about the cache, not about the fallback. */
 export function createSeededApolloClient(
   condition: PlpCondition,
@@ -185,7 +185,7 @@ export function createSeededApolloClient(
     cache,
     // `cache-first` on watched queries too, so the hook and the client agree.
     // NOT "the lead's published window": Apollo ships no staleTime equivalent
-    // (see APOLLO_CACHE_WINDOW below) — this comment claimed parity until the
+    // (see APOLLO_CACHE_WINDOW below). This comment claimed parity until the
     // verification pass caught it, and the difference is now stated rather
     // than asserted away.
     defaultOptions: { watchQuery: { fetchPolicy: "cache-first" } },
@@ -201,7 +201,7 @@ export { PLP_QUERY };
  * The EXACT options the component hands `useQuery`. Same reason as the lead's
  * `plpQueryOptions`: `APOLLO_CACHE_WINDOW` below merely DESCRIBES the policy,
  * and a literal-vs-literal assertion on a description proves nothing about the
- * call — swapping the hook to `network-only` (which would make the exhibit
+ * call, swapping the hook to `network-only` (which would make the exhibit
  * fetch on every render and lose the "the wrong tool still works" claim) passed
  * every assertion until this function existed. Found by sabotage.
  */
@@ -228,7 +228,7 @@ export function PlpApolloInner({
   );
 
   // One seam for every control; the push happens when the DATA lands, not
-  // here — see usePushWhenSettled.
+  // here, see usePushWhenSettled.
   const goTo = useCallback((next: PlpCondition) => setCurrent(next), []);
 
   // The same three duties the lead owes (see usePlpNavigation): restore on
@@ -241,7 +241,7 @@ export function PlpApolloInner({
   // `previousData` is Apollo's own documented equivalent of the lead's
   // `keepPreviousData`: while a genuinely new page is in flight, keep the last
   // grid on screen instead of snapping back. Without it the exhibit would
-  // flash the SERVED page's data mid-navigation while the lead did not — an
+  // flash the SERVED page's data mid-navigation while the lead did not, an
   // asymmetry that would punish the exhibit for something that is not its data
   // layer, which ADR-0005 §7's "not a strawman rig" forbids.
   const payload =
@@ -249,7 +249,7 @@ export function PlpApolloInner({
     (previousData as { plp?: PlpPage } | undefined)?.plp ??
     initial;
 
-  // The address bar moves when the CONTENT does — the cold arm's behaviour,
+  // The address bar moves when the CONTENT does, the cold arm's behaviour,
   // and the third duty of usePlpNavigation. Declared here because it needs
   // `payload`, which is what is actually on screen.
   usePushWhenSettled(current, plpHistoryUrl(current, PER_PAGE), appliedMatches(payload, current));
@@ -283,11 +283,11 @@ export function PlpApollo({
  * strategy's headline win. **Apollo has no such knob.** Verified this session
  * rather than recalled: `grep -rl staleTime` across the installed
  * `@apollo/client@4.2.12` returns NOTHING. Its cache window under
- * `cache-first` is unbounded — the entry lives until something evicts it.
+ * `cache-first` is unbounded, the entry lives until something evicts it.
  *
  * So this exhibit does NOT hold "the same published window"; an earlier draft
  * of this file exported a constant claiming it did, asserted it equal to the
- * lead's, and wired it to nothing — a true statement with no mechanism under
+ * lead's, and wired it to nothing, a true statement with no mechanism under
  * it, which is the exact class this repo keeps paying for.
  *
  * Manufacturing a 5-minute window in Apollo (a `nextFetchPolicy` dance, or
@@ -298,7 +298,7 @@ export function PlpApollo({
  * library's documented default and SAYS the window is different.
  *
  * Consequence for the cells, so nobody has to rediscover it: on the revisit
- * sequence both arms answer from cache, but they are not the same claim — the
+ * sequence both arms answer from cache, but they are not the same claim, the
  * lead's is "free for five minutes, by published config", the exhibit's is
  * "free until eviction, by library default".
  */

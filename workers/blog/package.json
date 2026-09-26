@@ -2,7 +2,7 @@
   "name": "@pm/blog",
   "version": "0.1.0",
   "private": true,
-  "description": "The blog plane (ADR-0009): Rob's writing home + its CMS. A sibling Worker behind pm-front at /blog/* — outside every measurement fence, no Catalogue, no chrome, no receipts.",
+  "description": "The blog plane (ADR-0009): Rob's writing home + its CMS. A sibling Worker behind pm-front at /blog/*, outside every measurement fence, no Catalogue, no chrome, no receipts.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

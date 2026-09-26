@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sample surface — reference render (golden master)</title>
+  <title>Sample surface · reference render (golden master)</title>
 
   <!-- The SURFACE golden master (ADR-0003 §6, issue #6): the sample surface's
        canonical markup composed from the per-component reference renders,
        framework-free, consuming the shared design system through the
        @pm/tokens workspace link. The drift gate compares every variant's
-       served page against THIS page — normalized DOM + pixels — so the page
+       served page against THIS page, normalized DOM + pixels, so the page
        carries no scaffolding of its own: body styling, margins, and layout
        are exactly what a variant page gets (the demo chrome in ../../index.html
        is deliberately absent here; that file remains the per-component demo).
 
        No chrome slot: chrome is instrumentation, not part of the canonical
-       page (packages/switcher/README.md — the gate drops the slot subtree
+       page (packages/switcher/README.md, the gate drops the slot subtree
        from every variant before comparing). -->
   <link rel="preload" href="../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
@@ -29,7 +29,7 @@
     <ul class="pm-grid" role="list">
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="Miles Davis — Kind Of Blue, front cover"
+             alt="Miles Davis, Kind Of Blue, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">Kind Of Blue</h3>
@@ -43,7 +43,7 @@
       </li>
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="John Coltrane — A Love Supreme, front cover"
+             alt="John Coltrane, A Love Supreme, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">A Love Supreme</h3>
