@@ -134,7 +134,20 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     // over 412 KB observed); the next crossing re-observes again. The
     // observing script, its two JSON observation lines and a screenshot
     // are in the unit's record (docs/prototypes/workers-hardening/).
-    const OBSERVED_CEILING_BYTES = 640 * 1024;
+    //
+    // Third observation, 2026-09-26 (decision-map-compaction): moving
+    // sixteen nodes' narrative into this file took it to 723,812 B, past
+    // the 640 KiB pinned above. The same script opened the pushed branch's
+    // code view (commit d4fdfe1) at two anchors, #L4508 ("## Phase 15 — The
+    // instrument was the thing that was wrong") and #L8647 (the unit's own
+    // entry heading): GitHub's header read "8869 lines (7920 loc) · 707 KB",
+    // both lines present reading their headings, both highlighted, no "too
+    // large" notice. Ceiling raised to 768 KiB — the next 128 KiB step, as
+    // the two pins before it; 62 KB of headroom, one more unit's entry, so
+    // the crossing after that re-observes again. The two JSON observation
+    // lines verbatim and a screenshot are in the unit's record
+    // (docs/prototypes/decision-map-compaction/ceiling-2026-09-26.*).
+    const OBSERVED_CEILING_BYTES = 768 * 1024;
     const size = statSync(join(repoRoot, "docs", "build-log.md")).size;
     expect(
       size,
