@@ -16,7 +16,7 @@
 // mutation stops producing its message is the test going red.
 //
 // Shapes mirror a real committed receipt (lab/receipts/editorial-*.json)
-// field for field, with two runs per column and small round numbers. The
+// field for field, with three runs per column and small round numbers. The
 // surface is the PDP (four registered variants, a `constant` interaction
 // declaration) because that surface exercises every clause the editorial
 // `"none"` declaration does not.
@@ -204,6 +204,9 @@ export const CASES = [
   { id: "wrong-kind", kind: "receipt", site: "not-v1", mutate: (r) => { r.kind = "pm-chrome-constant"; }, expect: /is not a v1 pm-bench-receipt/, schemaValid: false },
   { id: "dirty-tree", kind: "receipt", site: "dirty-tree", mutate: (r) => { r.commit.dirty = true; }, expect: /minted from a dirty tree/ },
   { id: "no-origin-commit-after-cutoff", kind: "receipt", site: "no-origin-commit", mutate: (r) => { delete r.originCommit; }, expect: /carries no originCommit/ },
+  // The cutoff DAY itself is inside the rule (`>=`): a receipt dated
+  // 2026-08-16 with no attestation is refused (skeptic lens, mutant `>=` → `>`).
+  { id: "no-origin-commit-on-cutoff-day", kind: "receipt", site: "no-origin-commit", mutate: (r) => { r.date = "2026-08-16T00:00:00.000Z"; delete r.originCommit; }, expect: /is dated 2026-08-16 but carries no originCommit/ },
   { id: "no-doc-attribution-after-cutoff", kind: "receipt", site: "no-doc-attribution", mutate: (r) => { delete r.targets[1].columns.warm.runs[1].kb.docAttribution; }, expect: /carries no docAttribution/ },
   { id: "unattested-origin", kind: "receipt", site: "unattested-origin", mutate: (r) => { r.originCommit = null; }, expect: /did not attest its build/ },
   { id: "dirty-origin", kind: "receipt", site: "dirty-origin", mutate: (r) => { r.originCommit.dirty = true; }, expect: /plane built from a dirty tree/ },
@@ -222,13 +225,25 @@ export const CASES = [
   { id: "no-fit-template", kind: "fit", site: "no-fit-template", fit: () => undefined, expect: /has no FIT\.pdp template/ },
   // ── bundleFromReceipt: the column axis and the template's declarations ─
   { id: "column-axis", kind: "receipt", site: "column-axis", mutate: (r) => { r.targets.pop(); }, expect: /a publication must cover exactly the surface's live variants/ },
+  // EXACT, not subset, in the other direction: a fifth variant the surface
+  // does not register is refused before the band rule can swallow it
+  // (skeptic lens, mutant exact → subset admitted five columns).
+  { id: "column-axis-extra-variant", kind: "receipt", site: "column-axis", mutate: (r) => { const extra = clone(r.targets[0]); extra.variant = "htmx"; extra.path = "/htmx/pdp/fixture-release/"; r.targets.push(extra); }, expect: /this batch measured \[astro, htmx, qwik, react-next, vanilla\] but the surface is registered as serving \[astro, qwik, react-next, vanilla\]/ },
   { id: "no-interaction-timing", kind: "fit", site: "no-interaction-timing", fit: (f) => ({ ...f, interactionTiming: undefined }), expect: /declares no interactionTiming/ },
   { id: "withheld-without-reason", kind: "fit", site: "withheld-without-reason", fit: (f) => ({ ...f, interactionTiming: { publish: false } }), expect: /withholds its INP row but states no reason/ },
   { id: "unusable-interaction-fetch", kind: "fit", site: "unusable-interaction-fetch", fit: (f) => ({ ...f, interactionFetch: { kind: "constant" } }), expect: /declares no usable interactionFetch/ },
+  // A tolerance of Infinity is a number the declaration's type admits and a
+  // check that never fires (`max - min > Infinity` is false for every
+  // spread): refused as unusable, not accepted as loose (skeptic lens).
+  { id: "unusable-interaction-fetch-infinite", kind: "fit", site: "unusable-interaction-fetch", fit: (f) => ({ ...f, interactionFetch: { kind: "constant", toleranceBytes: Number.POSITIVE_INFINITY } }), expect: /declares no usable interactionFetch/ },
   { id: "many-interactions", kind: "receipt", site: "many-interactions", mutate: (r) => { r.targets[3].interactionId = "pdp-add-to-cart"; }, expect: /drove more than one interaction/ },
   { id: "no-interaction-id", kind: "fit", site: "no-interaction-id", fit: (f) => ({ ...f, interactionId: undefined }), expect: /names no interactionId/ },
   { id: "wrong-interaction", kind: "receipt", site: "wrong-interaction", mutate: (r) => { for (const t of r.targets) t.interactionId = "body-click"; }, expect: /but this batch drove "body-click"/ },
   { id: "unsettled-run", kind: "receipt", site: "unsettled-run", mutate: (r) => { r.targets[0].columns.cold.runs[1].interactionSettled = false; }, expect: /did not record reaching network quiescence/ },
+  // ABSENT is unverified, not true: the runner's schema makes the flag
+  // optional and says absent means unrecorded (receipt.ts), so the gate's
+  // `!== true` must refuse it — a `=== false` would admit (skeptic lens).
+  { id: "unsettled-run-absent", kind: "receipt", site: "unsettled-run", mutate: (r) => { delete r.targets[0].columns.cold.runs[1].interactionSettled; }, expect: /interactionSettled=undefined/ },
   { id: "missing-interaction-median", kind: "receipt", site: "missing-interaction-median", mutate: (r) => { r.targets[2].columns.cold.medians.interactionBytes = null; }, expect: /has no interaction-byte median for astro\/cold/ },
   { id: "none-but-fetched", kind: "fit", site: "none-but-fetched", fit: (f) => ({ ...f, interactionFetch: "none" }), expect: /declares interactionFetch "none", but vanilla\/warm run 0 measured 25194 B/ },
   { id: "constant-spread", kind: "receipt", site: "constant-spread", mutate: (r) => { const c = r.targets[3].columns.warm; for (const run of c.runs) run.kb.interactionBytes += 65; c.medians.interactionBytes += 65; }, expect: /but the batch spans 65 B/ },
@@ -241,6 +256,10 @@ export const CASES = [
   // middle run) is unchanged, so the receipt stays the honest median of its
   // own runs and only the BAND rule answers.
   { id: "band-overlap", kind: "receipt", site: null, mutate: (r) => { r.targets[2].columns.warm.runs[2].kb.initialJsBytes = 20050; }, outcome: "bandsOverlap" },
+  // TOUCHING bands overlap too: astro's top run lands exactly on qwik's
+  // bottom run, so the rule's `>=` is the boundary this row holds
+  // (verify-slice, skeptic lens: mutant `>=` → `>` published a ranking).
+  { id: "band-touching", kind: "receipt", site: null, mutate: (r) => { r.targets[2].columns.warm.runs[2].kb.initialJsBytes = 20000; }, outcome: "bandsOverlap" },
   { id: "requires-mismatch", kind: "fit", site: "requires-mismatch", fit: (f) => ({ ...f, requires: ["vanilla", "react-next", "astro"] }), expect: /the fit sentence names \[astro,react-next,vanilla\] but this batch measured/ },
   { id: "unsubstituted-sentence", kind: "fit", site: "unsubstituted-sentence", fit: (f) => ({ ...f, sentence: (kb) => `islands ${kb["solid"]} KB` }), expect: /the fit sentence contains an unsubstituted value/ },
   // ── assertBatchIntegrity: the second receipt of one publication ────────
@@ -254,9 +273,12 @@ export const CASES = [
   { id: "cc-wrong-kind", kind: "chrome-constant", site: "cc-malformed", mutate: (c) => { c.kind = "pm-bench-receipt"; }, expect: /chrome-constant\.json malformed or minted from a dirty tree/ },
   { id: "cc-dirty-tree", kind: "chrome-constant", site: "cc-malformed", mutate: (c) => { c.commit.dirty = true; }, expect: /chrome-constant\.json malformed or minted from a dirty tree/ },
   { id: "cc-nonfinite-delta", kind: "chrome-constant", site: "cc-nonfinite", mutate: (c) => { c.deltaMedians.LCP = null; }, expect: /chrome-constant delta for LCP is not a finite number/ },
+  { id: "cc-nonfinite-longtask", kind: "chrome-constant", site: "cc-nonfinite", mutate: (c) => { c.deltaMedians.longTaskMs = null; }, expect: /chrome-constant delta for longTaskMs is not a finite number/ },
   { id: "cc-cross-tree", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit.sha = OTHER_SHA; }, expect: /an unattested or cross-tree constant is not publishable/ },
+  { id: "cc-dirty-origin", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit.dirty = true; }, expect: /an unattested or cross-tree constant is not publishable/ },
   { id: "cc-unattested", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit = null; }, expect: /an unattested or cross-tree constant is not publishable/ },
   { id: "cc-unpopulated", kind: "chrome-constant", site: "cc-unpopulated", mutate: (c) => { c.measuredChrome.populated = false; }, expect: /measured against an UNPOPULATED chrome/ },
+  { id: "cc-populated-absent", kind: "chrome-constant", site: "cc-unpopulated", mutate: (c) => { delete c.measuredChrome.populated; }, expect: /measured against an UNPOPULATED chrome/ },
   { id: "cc-no-render-context", kind: "chrome-constant", site: "cc-no-render-context", mutate: (c) => { delete c.measuredChrome.renderContext; }, expect: /records no renderContext/ },
   { id: "cc-identity", kind: "chrome-constant", site: "cc-identity", mutate: (c) => { c.measuredChrome.sha256 = "0".repeat(64); }, expect: /describes a fragment this build does not ship/ },
   // ── labSurfacesOf: the registry ────────────────────────────────────────

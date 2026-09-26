@@ -458,8 +458,8 @@ carries only the composition rule it bends.
 §2's layout puts three Cloudflare Workers under `workers/` and every
 package under `packages/` and `tools/` in strict TypeScript
 (`tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`). The 2026-08-29
-audit (priority 5) found the boundary undocumented and unenforced: 4,289
-lines of plain JS across the three Workers with no `@ts-check`, no JSDoc
+audit (priority 5) found the boundary undocumented and unenforced: 4,224
+lines of plain JS under the three Workers' `src/` (`wc -l` at c7ed377) with no `@ts-check`, no JSDoc
 types and no typecheck task — the blog's auth, session, CSRF and SQL code
 among them — while `packages/reference/render/lib.mjs:10-13` records its own
 `.mjs` choice and nothing recorded this one. Decided:
@@ -505,6 +505,18 @@ among them — while `packages/reference/render/lib.mjs:10-13` records its own
   typecheck found that declaration missing `interactionId`, a field the
   template set and the build read since 2026-08-28, and `fit.mjs` is
   `@type`-annotated against it so the two cannot drift again.
+- **Build scripts are outside the program, stated.** `workers/front/build.mjs`
+  — the gate's only production caller — and its `stamp-build.mjs`,
+  `how-built-page.mjs` and `tokens-source.mjs` are node build tooling, not
+  Worker code, and are not in the front's `include`: checking them costs
+  `@types/node` and ~120 annotations, most of them in the reference
+  renderer chain they import (verify-slice, conformance lens, priced
+  read-only). So the deps contract between the composer and the gate is
+  held by the refusal suite's lexical leg (build.mjs names every gate call)
+  and by the refactor-time dist byte-identity — not by `tsc`. A gate
+  dependency added later must be added to the composer by hand, and the
+  four today fail loud when missing. Owed, not done: bring the build
+  scripts into a node-typed program.
 - **The typecheck is a turbo task like any other**, so `pnpm run check`
   grows by the three tasks plus the front's build, which its typecheck
   depends on: the front imports `generated/lab-bundles.js`, the module its

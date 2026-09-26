@@ -7922,7 +7922,8 @@ addendum O's `transferSize` wording; unit 10's Rob-gated items.
 The 2026-08-29 audit put this fifth and gave it no ordering: two structural
 gaps in the part of the repo a sceptical reviewer reads first when the claim
 is "staff-level". Every package is strict TypeScript, and the entire workers
-plane — 4,289 lines across three deployed Workers (`wc -l`), the blog's
+plane — 4,224 lines of `src/**/*.js` across three deployed Workers (`wc -l`
+at c7ed377; the audit's 3,879 was the same set on 2026-08-29), the blog's
 auth, session, CSRF and SQL code among them — was plain JS with no
 `@ts-check`, no JSDoc types, no typecheck task, and no record of why the
 boundary sat there, while `packages/reference/render/lib.mjs` documents its
@@ -7957,13 +7958,14 @@ the only thing that differs in them), and so is the generated
 cannot pass over nothing.** Thirty hand-written malformed receipts would
 drift from each other and from the runner's shape, so there is one VALID
 receipt — the PDP surface, four registered variants, three runs per column,
-every field a real receipt carries — and a table of 52 rows
-(`CASES.length`), each the mutation of one field AND the regex the refusal
+every field a real receipt carries — and a table of 60 rows
+(`CASES.length`; 52 when #48 merged, eight more from the pass below), each
+the mutation of one field AND the regex the refusal
 must throw, on one line, beside its throw site's name. Three runs, not one,
 so a median can honestly hide a stray run (a run that captured nothing
 behind a median that agrees is the mechanism two classes are about) while
-the fixture stays the true median of its own runs. The generator writes 45
-files (36 receipts, 9 chrome constants; 1.3 MB on disk, 61 KB gzipped,
+the fixture stays the true median of its own runs. The generator writes 52
+files (40 receipts, 12 chrome constants; 1.5 MB on disk, 70 KB gzipped,
 `linguist-generated` so GitHub folds them in review) and a leg holds the
 committed files byte-identical to what it produces — a fixture edited by
 hand into something the table does not describe is a red test. The suite
@@ -7975,11 +7977,16 @@ valid constant's sha256 was minted from, so the identity gate is proven
 against a known fragment; the band rule is asserted as the outcome it is
 (`bandsOverlap: true`, no sentence, the interaction figure still on the
 bundle — addendum R's category fix). Non-vacuity: the table is not empty
-and the on-disk set equals it in both directions; every `throw new Error(`
-in the module — the count READ from its source, never typed — is named by a
-row; and the CONTROL rows that must pass: the valid fixtures admit and
-publish a sentence with bands, and the three receipts the plane actually
-publishes admit through the very call `build.mjs` makes. The first run of
+and the on-disk set equals it in both directions; every throw in the
+module carries a `// refusal: <site>` marker and the marker set equals the
+rows' site set in BOTH directions, read from the source — a map, since the
+first commit's COUNT of labels let 19 of 29 condition-level mutants through
+(the pass below); and the CONTROL rows that must pass: the valid fixtures
+admit and publish a sentence with bands, the three receipts the plane
+actually publishes admit through the very call `build.mjs` makes, a chrome
+constant minted from the real renderer over their bundles admits and is
+refused for a fragment the build does not ship, and an upper-case `ZSTD`
+token admits. The first run of
 the suite caught its own table: a batch-shape row whose mutation had become
 a no-op when the base moved from two runs to three passed instead of
 throwing, which is exactly the check a row exists to make. The runner's own
@@ -8029,17 +8036,25 @@ the file's own warning shape, the model its comment already states. None
 moved a served byte.
 
 **The three lines.** The collector answers 400 `value must be a finite
-number` for an absent, null, string, NaN or infinite value and writes
-nothing; before, `doubles: [finite ? value : 0]` recorded a fabricated 0 —
-a dashboard row that never happened, and a p75 over a row of zeros is a
-lie that looks like a finding. The unit legs assert the DATASET through a
-recording stub, with a CONTROL that a measured 0 still writes as 0 (CLS on a
-still page is a real zero), and a suite leg is the HTTP half. The prompt's
+number` for an absent, null, string or infinite value and writes nothing;
+before, `doubles: [finite ? value : 0]` recorded a fabricated 0 — a
+dashboard row that never happened, and a p75 over a row of zeros is a lie
+that looks like a finding. The unit legs assert the DATASET through a
+recording stub, with a CONTROL that a measured 0 still writes as 0 (CLS on
+a still page is a real zero), and a suite leg is the HTTP half. Infinite
+is proven with a RAW `1e999`, which `JSON.parse` reads as Infinity: JSON
+has no NaN or Infinity literal and `JSON.stringify` writes both as `null`,
+so the first commit's legs by those names had sent null and proven the
+`typeof` half twice; NaN cannot arrive over JSON and is asserted to be the
+body-is-not-JSON 400 (the pass below). The prompt's
 cite drifted: `grep -n 'Number('` finds only the PDP id parse; the coercion
 was the ternary. The escaper handles its fifth character (`'` → `&#39;`) as
-the repo's six others do (`grep -l '&#39;'` over the seven files: 6 before,
-7 after); every call site was in a double-quoted attribute or text (`grep
--rnE "='[^']*\$\{"` over `workers/blog/src`: nothing), so this is defence in
+the repo's six others do — the seven are `grep -rlE "function esc|const
+esc ="` over `packages variants workers` with the three extensions, and
+`grep -l '&#39;'` over them read 6 before, 7 after; every call site was in
+a double-quoted attribute or text (`grep -rnE "='[^']*\$\{"` over
+`workers/blog/src`: no template — the one hit is `html.js`'s own comment
+quoting the pattern), so this is defence in
 depth, not a fix for an exposure, and the record says so. The cold PDP read
 is RECORDED, not indexed, and the comment in `handlePdp` says which and why:
 an index written at seed time (`snapshot/details/{id}.json`) is one small R2
@@ -8108,15 +8123,86 @@ handler and here; not indexed, for the reasons above. The collector on the
 same plane: 400 naming `value` for an absent, null or string value; 204
 for `0` and for `1234.5`.
 
-**verify-slice — in flight at this commit, stated rather than waited for.**
-The four lenses were launched after round 1, so no lens read a sabotaged
-file, and were still running when this commit was cut: Rob asked for the
-unit to merge ahead of the pass so unit 9 could start in another worktree.
-Nothing above is a claim about the pass. Its findings, the round-2 sabotage
-over whatever it changes, and the final fixture and crate runs on the
-finished tree land in the completing commit, which rewrites this section —
-and until then the runs recorded here verify THIS tree, not that one. The
-node in the decision map says the same, in its status line.
+**verify-slice.** Four lenses, sequential, launched after round 1 so no
+lens read a sabotaged file; 64 minutes, 225 tool uses. 13 raw findings, 11
+distinct (three lenses converged on the typed numbers), 1 refuted here
+(the conformance lens read PENDING markers mid-pass that the commit had
+already replaced — true when read, gone before it shipped), every other
+one folded, each with a round-2 row. In order of weight:
+
+- The throw-site count leg counted LABELS, not coverage (skeptic): 19 of
+  29 condition-level mutants passed all 63 legs, among them a chrome
+  constant from a DIRTY origin, a tolerance of `Infinity` that turns the
+  constancy check off, an ABSENT `interactionSettled` admitted, a fifth
+  variant admitted by a subset comparison, the cutoff day and touching
+  bands slipping past two `>=`s. Every `throw` now carries a `// refusal:
+  <site>` marker and the leg holds marker set and row set equal in both
+  directions — a map — with eight new rows for the branches named (60
+  rows now) and a CONTROL that an upper-case `ZSTD` token admits (rows
+  R2, R3, R6–R14).
+- The beacon's "NaN" and "Infinity" legs sent `null` on the wire
+  (correctness): JSON has no such literals and `JSON.stringify` writes
+  both as `null`, so the `isFinite` half of the check was proven by
+  nothing. The legs now POST a RAW `1e999` / `-1e999` (which `JSON.parse`
+  turns into ±Infinity) in the unit suite and on the plane, and a raw `NaN`
+  is asserted to be the body-is-not-JSON 400 it is (row R1).
+- No chrome constant is committed today, so the dist byte-identity proof
+  never ran `admitChromeConstant`, and its CONTROL used a stand-in
+  renderer (skeptic): a control now mints a constant from the REAL
+  `renderChrome`/`chromeFragmentOf` over the bundles the plane's own three
+  receipts produce, admits it with build.mjs's deps shape, and is refused
+  for a context whose fragment the build does not ship (row R15).
+- The front's `keyof Env` cast hid a misspelt sibling binding (skeptic):
+  `SIBLINGS` and the `EDGE` literal are typed to `Env` now; the cast covers
+  only the roster-derived half the dispatch test pins (row R4).
+- `PublishedBundle.columns` was keyed by `string` while the chrome
+  iterates the switcher's `ReadingMetric` union (seams): bound to the
+  union at the gate, and the origin suite's third copy of the list replaced
+  by the switcher's export (rows R5, R16).
+- The composer `build.mjs` is outside every typecheck program, so the deps
+  contract with the gate is held by the lexical leg and the dist identity,
+  not by `tsc` (conformance) — stated in the ADR addendum with its price
+  (`@types/node` and ~120 annotations, most in the reference renderer
+  chain), owed.
+- Typed numbers the tree did not reproduce (three lenses): "62 legs"
+  (63 at the time, 85 now), "4,289 lines" (4,224 of `src/**/*.js` at
+  c7ed377, the audit's own set), a `grep` claim of "nothing" that returns
+  `html.js`'s own comment, and "seven escapers" by a command that finds
+  four — each rewritten with the command that yields it.
+- The generator's header said two runs per column where the code writes
+  three (correctness) — fixed; and `readJson` turning a JSON `null`,
+  array or primitive body into `{}` is a fifth behaviour change the first
+  draft did not list (skeptic): a `null` body to the preview route was a
+  500 and is an empty preview now — stated here.
+
+**Sabotage round 2**, over those fixes (the same file, its second table):
+19 rows — 15 caught, 1 control passed as designed, 3 missed. Two were
+stated as MISSED before they ran: an invented field on a fixture (Zod
+strips unknown keys — the real-receipt control and the gate's typedef hold
+field names) and a stale local copy of the reading-table names in the
+origin suite (the local typecheck cannot see a list the suite no longer
+imports; the suite's own leg on a plane is the catcher). The third, R15,
+missed for the row's own reason — the chrome renderer already returns the
+bare fragment, so swapping the fragment extractor for identity changed
+nothing — and R15b, which hashes an UNPOPULATED render while the constant
+claims populated, is refused by the identity gate: caught.
+
+**How this unit shipped, stated.** The first commit (#48, `f66d464`) merged
+with the pass still running, at Rob's request, so unit 9 could start in a
+worktree; its record said so in place of this section. The completing
+commit (branch `workers-hardening-verify` off `f66d464`) folds the pass,
+adds the eight rows, the map leg, the raw-literal legs, the real-renderer
+control and the typed bindings, rewrites the interim paragraphs, and runs
+the final pair below on the finished tree.
+
+**The suite once more, on the final tree — the run that stands.** Fixture
+**670 of 670** in 143.9 s; crate **670 of 670** in 144.2 s — after the pass's
+fixes, round 2 and the record rewrites, with `pnpm run check` 40 of 40
+immediately before them and nothing edited between. Two edits followed
+them, both to the record: the suite-runs table's two final lines and this
+sentence. No leftover process after either teardown; the front log carries
+the recorded eight `chrome-slot-count` 404 shapes and nothing of this
+unit's.
 
 **The ceiling this entry crossed, re-observed rather than guessed.** The
 how-it-was-built master links each build-log phase by line
@@ -8135,9 +8221,11 @@ unit's record directory.
 
 **What this leaves.** The `harness.quiescence` gate — the measurement
 pass's, landing with the receipts that satisfy it; when it does, it is one
-more row and one more throw site the count leg demands. The fixtures'
-1.3 MB on disk, chosen over a leaner gate-shaped fixture so the runner's
-own schema can hold them. For Rob, carried forward unchanged: whether
+more marked throw and one more row the map leg demands. The composer and
+the other front build scripts outside the typecheck program (the ADR
+addendum prices bringing them in). The fixtures' 1.5 MB on disk, chosen
+over a leaner gate-shaped fixture so the runner's own schema can hold
+them. For Rob, carried forward unchanged: whether
 `pm-warm` is on the Free plan; the PDP `not-found.tsx` and
 `lib/plp-error.tsx` docblocks; the bench runner's uncapped CDP `send()`;
 the two post-deploy smokes that failed on one qwik stepper assertion; the

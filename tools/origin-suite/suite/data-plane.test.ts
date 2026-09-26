@@ -338,6 +338,15 @@ describe("beacon collector (ADR-0001 §8)", () => {
       expect(res.status, `value ${label} must 400`).toBe(400);
       expect(await res.text()).toContain("value");
     }
+    // The non-finite half needs a RAW out-of-range literal: JSON.stringify
+    // writes Infinity as null, so an object cannot carry it.
+    const infinite = await get("/api/beacon", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: `{"name":"LCP","value":1e999,"tags":${JSON.stringify(fullEvent.tags)}}`,
+    });
+    expect(infinite.status, "value 1e999 (Infinity) must 400").toBe(400);
+    expect(await infinite.text()).toContain("value");
   });
 
   // The ROSTER (security floor, 2026-09-18): `variant` is the Analytics

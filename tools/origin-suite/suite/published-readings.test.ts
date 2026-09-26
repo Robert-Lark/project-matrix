@@ -29,7 +29,10 @@ import { loadServedSnapshot } from "./snapshot";
 const ORIGIN = (process.env.PM_ORIGIN ?? "http://127.0.0.1:8787").replace(/\/$/, "");
 const get = (path: string) => fetch(`${ORIGIN}${path}`);
 
-const READING_METRICS = ["initial JS", "TTFB", "FCP", "LCP", "CLS", "INP (scripted)"];
+// The row names are the switcher's own (packages/switcher/src/lab.ts), not a
+// third copy: a renamed row would otherwise pass this leg against a stale
+// local list while every cell rendered an em-dash (verify-slice, seams lens).
+import { READING_METRICS } from "@pm/switcher";
 const DEFAULT_PROFILE = "avg-broadband-desktop";
 
 type Reading = {

@@ -18,9 +18,13 @@
  *  - the table is not empty, and every file on disk is one of its rows
  *    (a row deleted from the table with its file left behind, or the
  *    reverse, is a failure — the set equality is asserted both ways);
- *  - every `throw new Error(` in lab/publish.mjs is named by at least one
- *    row's `site` (the count is READ from the module's source, never typed
- *    here, so adding a refusal without its fixture goes red);
+ *  - every `throw new Error(` in lab/publish.mjs carries a `// refusal:
+ *    <site>` marker and the marker set equals the rows' `site` set in BOTH
+ *    directions (read from the module's source, never typed here) — a map,
+ *    not a count: a new throw without its row, a row without its throw, or
+ *    a label reused for a throw it does not sit on all go red (verify-slice,
+ *    skeptic lens: the first draft counted labels, and 19 of 29
+ *    condition-level mutants passed it);
  *  - CONTROL rows that must PASS: the valid fixtures admit and publish a
  *    sentence with bands, and the three receipts the plane actually
  *    publishes admit through the same call build.mjs makes.
@@ -93,12 +97,15 @@ describe("non-vacuity: the table, the files and the module agree", () => {
     }
   });
 
-  it("every throw site in lab/publish.mjs is named by a row — the count is read from the source", () => {
+  it("every throw site in lab/publish.mjs carries a `// refusal: <site>` marker, and the marker set IS the rows' site set — a map, not a count", () => {
     const source = readFileSync(join(here, "..", "lab", "publish.mjs"), "utf8");
     const throwSites = (source.match(/throw new Error\(/g) ?? []).length;
-    const named = new Set(CASES.map((c) => c.site).filter((s) => s !== null));
+    const markers = [...source.matchAll(/\/\/ refusal: ([\w-]+)\n\s*throw new Error\(/g)].map((m) => m[1]);
     expect(throwSites).toBeGreaterThan(0);
-    expect(named.size, "rows name a different number of throw sites than the module has — a refusal without its fixture, or a stale row").toBe(throwSites);
+    expect(markers.length, "a throw with no `// refusal:` marker on the line above it").toBe(throwSites);
+    expect(new Set(markers).size, "two throws share one marker").toBe(markers.length);
+    const sites = [...new Set(CASES.map((c) => c.site).filter((s) => s !== null))].sort();
+    expect(sites, "rows name a site no throw carries, or a throw's site has no row").toEqual([...markers].sort());
   });
 });
 
@@ -127,19 +134,71 @@ describe("CONTROL — what must pass", () => {
     expect(() => admitChromeConstant(read("chrome-constants/valid.json"), ccDeps)).not.toThrow();
   });
 
-  it("the plane's own committed receipts admit through the same call build.mjs makes", () => {
+  /** The plane's committed receipts, admitted — and their bundles in the
+   *  shape build.mjs writes and the Worker serves ({surface, profile, ...}). */
+  const realPublication = () => {
     const receiptsDir = join(here, "..", "lab", "receipts");
     const files = readdirSync(receiptsDir).filter((f) => f.endsWith(".json"));
-    expect(files.length).toBeGreaterThan(0);
     const bySurface = {};
+    const labBundles = {};
     for (const file of files) {
-      const { surface, bundle } = admitReceipt(file, JSON.parse(readFileSync(join(receiptsDir, file), "utf8")), realDeps);
-      expect(bundle.fit?.sentence, file).toBeTruthy();
-      (bySurface[surface] ??= []).push(JSON.parse(readFileSync(join(receiptsDir, file), "utf8")));
+      const receipt = JSON.parse(readFileSync(join(receiptsDir, file), "utf8"));
+      const { surface, bundle } = admitReceipt(file, receipt, realDeps);
+      (bySurface[surface] ??= []).push(receipt);
+      (labBundles[surface] ??= {})[receipt.profile.id] = { surface, profile: receipt.profile.id, ...bundle };
     }
-    for (const [surface, receipts] of Object.entries(bySurface)) {
-      expect(() => assertBatchIntegrity(surface, receipts)).not.toThrow();
+    return { files, bySurface, labBundles };
+  };
+
+  it("the plane's own committed receipts admit through the same call build.mjs makes", () => {
+    const { files, bySurface, labBundles } = realPublication();
+    expect(files.length).toBeGreaterThan(0);
+    for (const surface of Object.keys(bySurface)) {
+      for (const bundle of Object.values(labBundles[surface])) expect(bundle.fit?.sentence, surface).toBeTruthy();
+      expect(() => assertBatchIntegrity(surface, bySurface[surface])).not.toThrow();
     }
+  });
+
+  it("CONTROL: a chrome constant minted from the REAL renderer over the plane's own bundles admits with build.mjs's deps — and a fragment the build does not ship is refused", () => {
+    // No lab/chrome-constant.json is committed today (removed by #35 on
+    // 2026-08-28), so nothing else runs admitChromeConstant against the real
+    // renderChrome/chromeFragmentOf; the fixture rows use a stand-in
+    // (verify-slice, skeptic lens). This is the identity gate on the real
+    // thing: the same deps shape build.mjs wires, the bundles the receipts
+    // above produced, a constant hashed from what that renderer ships.
+    const { labBundles } = realPublication();
+    const deps = {
+      labBundles,
+      renderChrome,
+      chromeFragmentOf,
+      getProfile,
+      defaultProfile: PROFILES["avg-broadband-desktop"],
+      sha256Hex,
+      byteLength: (text) => Buffer.byteLength(text, "utf8"),
+    };
+    const rc = { variant: "vanilla", surface: "editorial", pathname: "/vanilla/editorial/", search: "", location: "local" };
+    const lab = labBundles.editorial?.["avg-broadband-desktop"];
+    expect(lab, "the editorial publication is what the plane serves today").toBeDefined();
+    const fragment = chromeFragmentOf(renderChrome({ ...rc, lab }));
+    const constant = (renderContext) => ({
+      kind: "pm-chrome-constant",
+      commit: { sha: "c".repeat(40), dirty: false },
+      originCommit: { sha: "c".repeat(40), dirty: false },
+      deltaMedians: { FCP: 76, LCP: 76, CLS: 0, longTaskMs: 0 },
+      measuredChrome: { populated: true, sha256: sha256Hex(fragment), bytes: Buffer.byteLength(fragment, "utf8"), renderContext },
+    });
+    expect(() => admitChromeConstant(constant(rc), deps)).not.toThrow();
+    // The populated fragment is larger than the empty one, and a constant
+    // hashed from the populated one is refused for a context with no bundle.
+    const empty = chromeFragmentOf(renderChrome({ ...rc, surface: "pdp", pathname: "/vanilla/pdp/x/", lab: undefined }));
+    expect(fragment.length).toBeGreaterThan(empty.length);
+    expect(() => admitChromeConstant(constant({ ...rc, surface: "pdp", pathname: "/vanilla/pdp/x/" }), deps)).toThrow(/describes a fragment this build does not ship/);
+  });
+
+  it("CONTROL: an upper-case content-coding token is the same wire (RFC 9110 §8.4.1) — a legitimate \"ZSTD\" admits", () => {
+    const receipt = read("receipts/valid.json");
+    receipt.targets[1].columns.warm.runs[0].kb.docAttribution.contentEncoding = "ZSTD";
+    expect(() => admitReceipt(VALID_FILE, receipt, realDeps)).not.toThrow();
   });
 
   it("build.mjs still calls every gate function — the composer cannot bypass the gate", () => {
@@ -196,16 +255,20 @@ describe("every refusal class throws with its own message", () => {
     });
   }
 
-  it("the band rule refuses the SENTENCE, not the bundle: bandsOverlap rides the artifact and no fit is published", () => {
-    const c = CASES.find((x) => x.outcome === "bandsOverlap");
-    expect(c).toBeDefined();
-    const { bundle } = admitReceipt(VALID_FILE, read(`receipts/${c.id}.json`), realDeps);
-    expect(bundle.bandsOverlap).toBe(true);
-    expect(bundle.fit).toBeUndefined();
-    // The interaction figure still travels on the bundle (the addendum-R
-    // fix): the overlap rule is about a RANKING, and a constant is not one.
-    expect(bundle.interactionFetch).toEqual({ bytes: 25194, toleranceBytes: 64 });
+  const overlapRows = CASES.filter((x) => x.outcome === "bandsOverlap");
+  it("there are band-rule outcome rows (overlapping AND touching bands)", () => {
+    expect(overlapRows.map((c) => c.id).sort()).toEqual(["band-overlap", "band-touching"]);
   });
+  for (const c of overlapRows) {
+    it(`the band rule refuses the SENTENCE, not the bundle (${c.id}): bandsOverlap rides the artifact and no fit is published`, () => {
+      const { bundle } = admitReceipt(VALID_FILE, read(`receipts/${c.id}.json`), realDeps);
+      expect(bundle.bandsOverlap).toBe(true);
+      expect(bundle.fit).toBeUndefined();
+      // The interaction figure still travels on the bundle (the addendum-R
+      // fix): the overlap rule is about a RANKING, and a constant is not one.
+      expect(bundle.interactionFetch).toEqual({ bytes: 25194, toleranceBytes: 64 });
+    });
+  }
 
   it("bundleFromReceipt is reachable on its own with the registry's variant list (the composer's call shape)", () => {
     const bundle = bundleFromReceipt(read("receipts/valid.json"), FIT.pdp, "/_pm/lab/receipts/x.json", SURFACE_CONTROLS.pdp.variants);

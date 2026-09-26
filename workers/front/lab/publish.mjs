@@ -16,6 +16,17 @@
 // a hash) arrives as a dependency, so the gate's logic is the same object
 // under both callers and neither can drift from the other.
 //
+// Every throw below sits under a `// refusal: <site>` marker
+// naming the fixture row set that proves it (test/fixtures/publish/
+// generate.mjs, `site`). The test holds the two lists equal in BOTH
+// directions — a throw with no marker, a marker with no row, a row with no
+// marker all fail — so the binding is a map, not a count (verify-slice,
+// skeptic lens: a count of labels let 19 of 29 condition-level mutants
+// through). What the map cannot do, stated: it binds a throw to a label,
+// and the row's regex to the message that throw produces at runtime; a row
+// whose regex proves an OLDER message under a NEW label is review's to
+// catch.
+//
 // Typed with JSDoc and checked by `tsc --checkJs` under the front Worker's
 // tsconfig (ADR-0004 addendum, 2026-09-25): the receipt typedef below names
 // exactly the fields the gate READS — the runner's Zod schema
@@ -80,12 +91,13 @@
  */
 /** @typedef {import("./fit.mjs").FitSpec} FitSpec */
 /** @typedef {import("@pm/switcher").PublishedReading} PublishedReading */
+/** @typedef {import("@pm/switcher").ReadingMetric} ReadingMetric */
 /** @typedef {import("@pm/switcher").LabReceipt} LabReceipt */
 /**
  * What `bundleFromReceipt` returns: a SurfaceLabBundle without the
  * `surface`/`profile` identity fields, which the caller adds.
  * @typedef {object} PublishedBundle
- * @property {Record<string, Partial<Record<string, PublishedReading>>>} columns
+ * @property {Record<string, Partial<Record<ReadingMetric, PublishedReading>>>} columns
  * @property {string} interactionId
  * @property {{ published: true } | { published: false, reason: string }} interactionTiming
  * @property {{ bytes: number, toleranceBytes?: number }} interactionFetch
@@ -170,12 +182,14 @@ export function labSurfacesOf(surfaceControls) {
   // the surface's own pages could never render it (verify-slice).
   for (const surface of labSurfaces) {
     if (surfaceControls[surface]?.singleton === true) {
+      // refusal: registry-singleton
       throw new Error(
         `front lab: surface "${surface}" is both singleton and labBundle — a singleton is off the benchmarked matrix (ADR-0007 §5) and renders a plain sentence, never a lab table, so it can never show the bundle this would publish`,
       );
     }
   }
   if (labSurfaces.length === 0) {
+    // refusal: registry-empty
     throw new Error(
       "front lab: no surface carries labBundle in SURFACE_CONTROLS — the pipeline would publish nothing anywhere, which is a registry accident, not a state",
     );
@@ -207,6 +221,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   const measured = receipt.targets.map((t) => t.variant).sort();
   const registered = [...surfaceVariants].sort();
   if (measured.join(",") !== registered.join(",")) {
+    // refusal: column-axis
     throw new Error(
       `front lab: this batch measured [${measured.join(", ")}] but the surface is registered as serving [${registered.join(", ")}] — a publication must cover exactly the surface's live variants, or the table publishes a column no receipt backs (ADR-0008 §3)`,
     );
@@ -231,6 +246,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
       declared.toleranceBytes >= 0);
   const timing = fitSpec.interactionTiming;
   if (typeof timing?.publish !== "boolean") {
+    // refusal: no-interaction-timing
     throw new Error(
       `front lab: FIT.${surfaceName} declares no interactionTiming — a surface publishes an INP row only ` +
         `by stating that the metric measures the same thing in every one of its columns ` +
@@ -240,6 +256,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     );
   }
   if (timing.publish === false && !timing.reason) {
+    // refusal: withheld-without-reason
     throw new Error(
       `front lab: FIT.${surfaceName} withholds its INP row but states no reason — withheld LOUDLY or not ` +
         `at all; the reason rides the row the reader is looking at`,
@@ -250,6 +267,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     ? { published: true }
     : { published: false, reason: timing.reason };
   if (!declaredOk) {
+    // refusal: unusable-interaction-fetch
     throw new Error(
       `front lab: FIT.${surfaceName} declares no usable interactionFetch (got ${JSON.stringify(declared)}) — ` +
         `a surface publishes an interaction cell only by stating what the click costs on the wire: "none", or ` +
@@ -303,9 +321,12 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     // the cell links carries the cold column beside it.
     const med = target.columns.warm.medians;
     const runs = target.columns.warm.runs;
-    /** @type {Partial<Record<string, PublishedReading>>} */
+    /** @type {Partial<Record<ReadingMetric, PublishedReading>>} */
     const cell = {};
-    /** @param {string} metric @param {PublishedReading | undefined} r */
+    // The row names are the switcher's own `ReadingMetric` union, so a
+    // literal the chrome does not iterate is a typecheck failure here, not
+    // an em-dash on every surface (verify-slice, seams lens).
+    /** @param {ReadingMetric} metric @param {PublishedReading | undefined} r */
     const put = (metric, r) => {
       if (r) cell[metric] = r;
     };
@@ -319,7 +340,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
         bandOf(runs, (r) => r.kb.initialJsBytes, kb),
       ),
     );
-    /** @type {[string, keyof WebVitals][]} */
+    /** @type {[ReadingMetric, keyof WebVitals][]} */
     const timed = [
       ["TTFB", "TTFB"],
       ["FCP", "FCP"],
@@ -328,7 +349,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
       // like-for-like across its columns (ADR-0001 addendum T). Dropped at
       // BUNDLE time rather than hidden at render time: a value that must not
       // be read must not be in the artifact the reader can open either.
-      ...(fitSpec.interactionTiming.publish ? [/** @type {[string, keyof WebVitals]} */ (["INP (scripted)", "INP"])] : []),
+      ...(fitSpec.interactionTiming.publish ? [/** @type {[ReadingMetric, keyof WebVitals]} */ (["INP (scripted)", "INP"])] : []),
     ];
     for (const [metric, key] of timed) {
       const v = med.webVitals[key];
@@ -367,6 +388,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   // pre-rejected. Refused by name instead.
   const interactionIds = [...new Set(receipt.targets.map((t) => t.interactionId))];
   if (interactionIds.length !== 1) {
+    // refusal: many-interactions
     throw new Error(
       `front lab: this batch drove more than one interaction [${interactionIds.join(", ")}] — one receipt ` +
         `publishes one interaction, or the reading table's INP row means a different thing in each column`,
@@ -380,6 +402,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   // row for a heading click under prose describing the page's designed
   // interaction (verify-slice, anti-rigging lens).
   if (typeof fitSpec.interactionId !== "string") {
+    // refusal: no-interaction-id
     throw new Error(
       `front lab: FIT.${surfaceName} names no interactionId — a surface publishes an interaction cell ` +
         `only by declaring WHICH interaction its batch drives, or any registered click can be published ` +
@@ -387,6 +410,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     );
   }
   if (interactionId !== fitSpec.interactionId) {
+    // refusal: wrong-interaction
     throw new Error(
       `front lab: FIT.${surfaceName} declares the interaction "${fitSpec.interactionId}" but this batch ` +
         `drove "${interactionId}" — re-run the batch with the declared interaction, or change the ` +
@@ -403,6 +427,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     for (const column of [t.columns.warm, t.columns.cold]) {
       for (const run of column.runs) {
         if (run.interactionSettled !== true) {
+          // refusal: unsettled-run
           throw new Error(
             `front lab: a ${t.variant} run did not record reaching network quiescence after the click ` +
               `(interactionSettled=${String(run.interactionSettled)}) — its interaction bytes are unverified, ` +
@@ -424,6 +449,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   // looking for the wrong thing.
   const missing = interactionMedians.filter((m) => !Number.isFinite(m.bytes));
   if (missing.length > 0) {
+    // refusal: missing-interaction-median
     throw new Error(
       `front lab: ${surfaceName} has no interaction-byte median for ` +
         `${missing.map((m) => `${m.variant}/${m.column}`).join(", ")} — an absent measurement cannot ` +
@@ -457,6 +483,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     // noise rather than a contradiction of the claim.
     const fetching = perRun().filter((r) => r.bytes !== 0);
     if (fetching.length > 0) {
+      // refusal: none-but-fetched
       throw new Error(
         `front lab: FIT.${surfaceName} declares interactionFetch "none", but ` +
           `${fetching.map((r) => `${r.variant}/${r.column} run ${r.run} measured ${r.bytes} B`).join("; ")} — ` +
@@ -468,6 +495,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     const min = Math.min(...values);
     const max = Math.max(...values);
     if (max - min > declared.toleranceBytes) {
+      // refusal: constant-spread
       throw new Error(
         `front lab: FIT.${surfaceName} declares the interaction a cross-variant constant within ` +
           `${declared.toleranceBytes} B, but the batch spans ${max - min} B (${spread()}) — either the paradigms ` +
@@ -478,6 +506,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     // A constant of zero IS the "none" claim, and declaring it the loose way
     // would quietly retire the site's strongest guard. Refuse the loosening.
     if (max === 0) {
+      // refusal: constant-zero
       throw new Error(
         `front lab: FIT.${surfaceName} declares a constant interaction fetch but the batch measured ` +
           `0 B everywhere — declare "none" and get the stronger check, rather than a constant clause that ` +
@@ -494,6 +523,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
       (r) => !Number.isFinite(r.bytes) || Math.abs(r.bytes - max) > declared.toleranceBytes,
     );
     if (strays.length > 0) {
+      // refusal: constant-stray-run
       throw new Error(
         `front lab: FIT.${surfaceName} declares the interaction a cross-variant constant, and the medians ` +
           `agree — but individual runs do not: ` +
@@ -544,6 +574,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
     // Math.min of nothing is Infinity, which reads as "no overlap" and
     // would publish a verdict backed by no samples at all.
     if (samples.length !== receipt.runsPerUrl) {
+      // refusal: incomplete-run-set
       throw new Error(
         `front lab: ${t.variant} has ${samples.length} usable initial-JS samples but the batch ran ${receipt.runsPerUrl} — refusing to derive a band from an incomplete run set`,
       );
@@ -573,6 +604,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   const have = Object.keys(kb).sort().join(",");
   const want = [...fitSpec.requires].sort().join(",");
   if (have !== want) {
+    // refusal: requires-mismatch
     throw new Error(
       `front lab: the fit sentence names [${want}] but this batch measured [${have}] — rewrite the template rather than publish a sentence about variants it did not measure`,
     );
@@ -588,6 +620,7 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
   // Belt over mechanism: any unsubstituted value reaching the one line the
   // site publishes as a verdict refuses the build.
   if (/undefined|NaN/.test(sentence)) {
+    // refusal: unsubstituted-sentence
     throw new Error(`front lab: the fit sentence contains an unsubstituted value: ${sentence}`);
   }
   return {
@@ -617,11 +650,13 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
 export function admitReceipt(file, receipt, deps) {
   const { labSurfaces, surfaceControls, fit, fencedPathOf } = deps;
   if (receipt.kind !== "pm-bench-receipt" || receipt.receiptVersion !== 1) {
+    // refusal: not-v1
     throw new Error(`front lab: ${file} is not a v1 pm-bench-receipt`);
   }
   // A published receipt must come from a CLEAN checkout — a dirty pin is
   // exactly what a hostile reader flags (ADR-0001 §9).
   if (receipt.commit.dirty !== false) {
+    // refusal: dirty-tree
     throw new Error(`front lab: ${file} was minted from a dirty tree — not publishable`);
   }
   // Origin provenance (ADR-0001 addendum N hole 2): a receipt that RECORDS
@@ -631,6 +666,7 @@ export function admitReceipt(file, receipt, deps) {
   const day = receipt.date.slice(0, 10);
   if (day >= PROVENANCE_CUTOFF) {
     if (receipt.originCommit === undefined) {
+      // refusal: no-origin-commit
       throw new Error(
         `front lab: ${file} is dated ${day} but carries no originCommit — receipts minted after ${PROVENANCE_CUTOFF} must attest their origin (ADR-0001 addendum Q)`,
       );
@@ -639,6 +675,7 @@ export function admitReceipt(file, receipt, deps) {
       for (const column of [target.columns.cold, target.columns.warm]) {
         for (const run of column.runs) {
           if (run.kb.docAttribution === undefined) {
+            // refusal: no-doc-attribution
             throw new Error(
               `front lab: ${file} is dated ${day} but a ${target.variant} run carries no docAttribution — receipts minted after ${PROVENANCE_CUTOFF} record their estimator (ADR-0001 addendum O)`,
             );
@@ -650,14 +687,17 @@ export function admitReceipt(file, receipt, deps) {
   if (receipt.originCommit !== undefined) {
     const oc = receipt.originCommit;
     if (oc === null) {
+      // refusal: unattested-origin
       throw new Error(
         `front lab: ${file} was minted against an origin that did not attest its build (originCommit: null) — not publishable`,
       );
     }
     if (oc.dirty !== false) {
+      // refusal: dirty-origin
       throw new Error(`front lab: ${file} measured a plane built from a dirty tree — not publishable`);
     }
     if (oc.sha !== receipt.commit.sha) {
+      // refusal: cross-tree
       throw new Error(
         `front lab: ${file} measured a plane serving ${oc.sha.slice(0, 12)} but pins ${receipt.commit.sha.slice(0, 12)} — a cross-tree receipt is not publishable`,
       );
@@ -682,6 +722,7 @@ export function admitReceipt(file, receipt, deps) {
           attribution.estimator === "loo-wire-normalised" ||
           attribution.estimator === "uncompressed-share-identity";
         if (!ok) {
+          // refusal: degraded-estimator
           throw new Error(
             `front lab: ${file} has a ${target.variant} run whose document split ran as "${attribution.estimator}" — a degraded or fallback attribution cannot publish (ADR-0001 addendum O)`,
           );
@@ -699,6 +740,7 @@ export function admitReceipt(file, receipt, deps) {
         // says otherwise, and a contradiction does not publish.
         if (attribution.estimator === "uncompressed-share-identity") {
           if (encodingToken && COMPRESSED_ENCODINGS.has(encodingToken)) {
+            // refusal: identity-compressed
             throw new Error(
               `front lab: ${file} has a ${target.variant} run labeled identity-encoded while the wire declared "${attribution.contentEncoding}" — a contradiction cannot publish (ADR-0001 addendum O)`,
             );
@@ -709,6 +751,7 @@ export function admitReceipt(file, receipt, deps) {
             ? CODEC_FOR_ENCODING[/** @type {keyof typeof CODEC_FOR_ENCODING} */ (encodingToken)]
             : undefined;
           if (!wanted || attribution.codec !== wanted) {
+            // refusal: codec-mismatch
             throw new Error(
               `front lab: ${file} has a ${target.variant} run whose "${attribution.codec}" model was fitted to a "${attribution.contentEncoding}" wire — the ratios must be priced by the wire's own codec (ADR-0001 addendum O)`,
             );
@@ -721,6 +764,7 @@ export function admitReceipt(file, receipt, deps) {
             !Number.isFinite(attribution.calibrationTargetBytes) ||
             !Number.isFinite(attribution.calibrationResidualBytes)
           ) {
+            // refusal: missing-calibration
             throw new Error(
               `front lab: ${file} has a ${target.variant} run whose loo attribution omits its calibration target/residual — a fit that cannot be judged cannot publish (ADR-0001 addendum O)`,
             );
@@ -731,6 +775,7 @@ export function admitReceipt(file, receipt, deps) {
           // fallback includes response headers, so its "fit" pads the
           // denominator — honest for dev use, publishable never.
           if (attribution.calibrationTargetSource !== "encoded-body") {
+            // refusal: transfer-size-calibration
             throw new Error(
               `front lab: ${file} has a ${target.variant} run calibrated against "${attribution.calibrationTargetSource}" — only a compressed-body fit publishes (ADR-0001 addendum O)`,
             );
@@ -742,6 +787,7 @@ export function admitReceipt(file, receipt, deps) {
           // bad fit is refused too. Bound: 2% of the recorded target, with
           // a 64 B floor for tiny documents.
           if (Math.abs(residual) > Math.max(64, 0.02 * targetBytes)) {
+            // refusal: calibration-miss
             throw new Error(
               `front lab: ${file} has a ${target.variant} run whose calibration missed its wire by ${residual} B on ${targetBytes} B — ratios computed at a setting the wire disproves cannot publish (ADR-0001 addendum O)`,
             );
@@ -764,17 +810,20 @@ export function admitReceipt(file, receipt, deps) {
     .filter((s) => file.startsWith(`${s}-`))
     .sort((a, b) => b.length - a.length)[0];
   if (!surface) {
+    // refusal: no-lab-surface
     throw new Error(
       `front lab: ${file} names no lab surface — receipts are {surface}-{profile}.json with surface one of: ${labSurfaces.join(", ")} (a new surface registers by setting labBundle in SURFACE_CONTROLS)`,
     );
   }
   if (file !== `${surface}-${receipt.profile.id}.json`) {
+    // refusal: filename-profile
     throw new Error(
       `front lab: ${file} should be named ${surface}-${receipt.profile.id}.json — the filename's profile half must be the receipt's own profile id`,
     );
   }
   for (const target of receipt.targets) {
     if (target.surface !== surface) {
+      // refusal: target-surface
       throw new Error(
         `front lab: ${file} is filed under "${surface}" but its ${target.variant} target measured "${target.surface}" — a receipt cannot publish under a surface its own targets disprove`,
       );
@@ -788,6 +837,7 @@ export function admitReceipt(file, receipt, deps) {
     // cannot reach a table the chrome declares the exhibit excluded from.
     const fenced = fencedPathOf(target.path);
     if (fenced !== null) {
+      // refusal: fenced-target
       throw new Error(
         `front lab: ${file} names ${target.path}, which falls under the fenced exhibit ${fenced} — fenced exhibits are excluded from every benchmark number (ADR-0005 §7; ADR-0008 §3), so a receipt naming one is refused, never published`,
       );
@@ -797,6 +847,7 @@ export function admitReceipt(file, receipt, deps) {
   // addendum C: the sentence is written WITH the surface's first batch,
   // against what that batch actually measured — never ahead of it).
   if (!Object.hasOwn(fit, surface)) {
+    // refusal: no-fit-template
     throw new Error(
       `front lab: ${file} publishes surface "${surface}" but lab/fit.mjs has no FIT.${surface} template — write the fit sentence with this surface's first batch, then publish`,
     );
@@ -832,15 +883,19 @@ export function assertBatchIntegrity(surface, receipts) {
   if (!first) return;
   for (const r of receipts) {
     if (r.commit.sha !== first.commit.sha) {
+      // refusal: batch-sha
       throw new Error(`front lab: published ${surface} receipts span more than one commit SHA`);
     }
     if (r.runsPerUrl !== first.runsPerUrl || r.targets.length !== first.targets.length) {
+      // refusal: batch-shape
       throw new Error(`front lab: published ${surface} receipts disagree on batch shape`);
     }
     if (r.date.slice(0, 10) !== first.date.slice(0, 10)) {
+      // refusal: batch-date
       throw new Error(`front lab: published ${surface} receipts span more than one date`);
     }
     if (r.runLocation.label !== first.runLocation.label) {
+      // refusal: batch-location
       throw new Error(`front lab: published ${surface} receipts span more than one run location`);
     }
     // One surface, ONE interaction, across every profile. `bundleFromReceipt`
@@ -854,6 +909,7 @@ export function assertBatchIntegrity(surface, receipts) {
     const firstTarget = /** @type {Target} */ (first.targets[0]);
     const target = /** @type {Target} */ (r.targets[0]);
     if (target.interactionId !== firstTarget.interactionId) {
+      // refusal: batch-interaction
       throw new Error(
         `front lab: published ${surface} receipts drove different interactions ` +
           `(${first.profile.id} → ${firstTarget.interactionId}, ` +
@@ -888,6 +944,7 @@ export function assertBatchIntegrity(surface, receipts) {
  */
 export function admitChromeConstant(chromeConstant, deps) {
   if (chromeConstant.kind !== "pm-chrome-constant" || chromeConstant.commit.dirty !== false) {
+    // refusal: cc-malformed
     throw new Error("front lab: chrome-constant.json malformed or minted from a dirty tree");
   }
   // A missing measurement must refuse the build exactly as a dirty receipt
@@ -897,6 +954,7 @@ export function admitChromeConstant(chromeConstant, deps) {
   // (verify-slice, correctness lens).
   for (const metric of ["FCP", "LCP", "CLS", "longTaskMs"]) {
     if (!Number.isFinite(chromeConstant.deltaMedians?.[metric])) {
+      // refusal: cc-nonfinite
       throw new Error(
         `front lab: chrome-constant delta for ${metric} is not a finite number — a constant that was never measured cannot publish`,
       );
@@ -907,6 +965,7 @@ export function admitChromeConstant(chromeConstant, deps) {
   if (chromeConstant.commit.sha !== BOOTSTRAP_CONSTANT_COMMIT) {
     const oc = chromeConstant.originCommit;
     if (!oc || oc.dirty !== false || oc.sha !== chromeConstant.commit.sha) {
+      // refusal: cc-provenance
       throw new Error(
         "front lab: the chrome constant's origin attestation is missing, dirty, or names a different tree than its commit pin — an unattested or cross-tree constant is not publishable (ADR-0001 addendum Q)",
       );
@@ -918,6 +977,7 @@ export function admitChromeConstant(chromeConstant, deps) {
   // measured against a plane carrying no publication understates the
   // shipping chrome (verify-slice, anti-rigging lens).
   if (chromeConstant.measuredChrome?.populated !== true) {
+    // refusal: cc-unpopulated
     throw new Error(
       "front lab: the chrome constant was measured against an UNPOPULATED chrome (no published readings in the fragment) — re-measure against a plane serving this publication",
     );
@@ -941,6 +1001,7 @@ export function admitChromeConstant(chromeConstant, deps) {
     typeof mc.sha256 !== "string" ||
     [rc.variant, rc.surface, rc.pathname, rc.search, rc.location].some((v) => typeof v !== "string")
   ) {
+    // refusal: cc-no-render-context
     throw new Error(
       "front lab: the chrome constant records no renderContext, so the fragment it measured cannot be verified against the fragment this build ships (ADR-0001 addendum N hole 1) — re-measure with tools/bench-runner chrome-constant",
     );
@@ -966,6 +1027,7 @@ export function admitChromeConstant(chromeConstant, deps) {
   );
   const builtSha = deps.sha256Hex(fragment);
   if (builtSha !== mc.sha256) {
+    // refusal: cc-identity
     throw new Error(
       `front lab: the chrome constant describes a fragment this build does not ship — the probe hashed ` +
         `${mc.sha256.slice(0, 12)} (${mc.bytes} B) but this build renders ${builtSha.slice(0, 12)} ` +

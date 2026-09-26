@@ -30,12 +30,19 @@ function stubEnv() {
   };
 }
 
-const post = (env, event) =>
+const post = (env, event) => postRaw(env, JSON.stringify(event));
+/** The body as TEXT: JSON has no NaN or Infinity literal, and
+ *  `JSON.stringify` writes both as `null` — so the non-finite half of the
+ *  value check can only be reached with a raw out-of-range literal, which
+ *  `JSON.parse` turns into ±Infinity (verify-slice, correctness lens: the
+ *  first draft's "NaN" and "Infinity" legs sent null on the wire and proved
+ *  the `typeof` half twice). */
+const postRaw = (env, text) =>
   worker.fetch(
     new Request("https://plane.test/api/beacon", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(event),
+      body: text,
     }),
     env,
   );
@@ -166,8 +173,6 @@ describe("the value is a finite number, or the point is refused (workers-hardeni
     ["absent", undefined],
     ["null", null],
     ["a string", "1234"],
-    ["NaN", Number.NaN],
-    ["Infinity", Number.POSITIVE_INFINITY],
     ["an object", { v: 1 }],
   ]) {
     it(`a value that is ${label} is a 400 naming the field, and nothing is written`, async () => {
@@ -180,6 +185,28 @@ describe("the value is a finite number, or the point is refused (workers-hardeni
       expect(points).toHaveLength(0);
     });
   }
+
+  for (const [label, literal] of [
+    ["Infinity (the out-of-range literal 1e999)", "1e999"],
+    ["-Infinity (-1e999)", "-1e999"],
+  ]) {
+    it(`a value that parses to ${label} is a 400 naming the field, and nothing is written`, async () => {
+      const { env, points } = stubEnv();
+      const tags = JSON.stringify(event({}).tags);
+      const res = await postRaw(env, `{"name":"LCP","value":${literal},"tags":${tags}}`);
+      expect(res.status).toBe(400);
+      expect(await res.text()).toContain("value");
+      expect(points).toHaveLength(0);
+    });
+  }
+
+  it("NaN cannot arrive over JSON at all: a raw NaN literal is the body-must-be-JSON 400", async () => {
+    const { env, points } = stubEnv();
+    const res = await postRaw(env, `{"name":"LCP","value":NaN,"tags":${JSON.stringify(event({}).tags)}}`);
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("JSON");
+    expect(points).toHaveLength(0);
+  });
 
   it("CONTROL: zero is a real value — a measured 0 (CLS on a still page) is written as 0", async () => {
     const { env, points } = stubEnv();
