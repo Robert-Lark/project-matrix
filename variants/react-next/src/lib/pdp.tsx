@@ -1,4 +1,4 @@
-// The react-next PDP article — this variant's re-implementation of the
+// The react-next PDP article. This variant's re-implementation of the
 // canonical PDP markup (packages/reference/render/pdp.mjs is the contract of
 // record; the four masters under packages/reference/surfaces/pdp/ are what
 // the drift gate holds it to).
@@ -7,7 +7,7 @@
 // referenced from one server module are grouped into shared client chunks,
 // so when PdpArticle and its islands lived in render.tsx the EDITORIAL page's
 // served chunks grew by 7,984 raw bytes of PDP-only code (measured against
-// the deployed plane, chunk by chunk) — on the variant whose editorial
+// the deployed plane, chunk by chunk), on the variant whose editorial
 // initial-JS cell is published and pinned. Splitting the server entry keeps
 // editorial's chunk set byte-identical to production; the pre-merge guard
 // and the origin suite both consume this module the way the route does.
@@ -24,7 +24,7 @@ import { PdpPurchase } from "../components/PdpPurchase";
 
 /** A glyph standing in for absent data, with the name it needs to be heard
  *  (lib.mjs namedGlyph, ported): the glyph is aria-hidden and a real phrase
- *  rides beside it — a lone "—" announces as "em dash" or as nothing. Both
+ *  rides beside it, a lone "–" announces as "em dash" or as nothing. Both
  *  props are AUTHORED literals, never tray data. */
 function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
   return (
@@ -37,7 +37,7 @@ function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
 
 /** One notes paragraph: the master escapes then turns single newlines into
  *  <br> (renderPdp notesBlock). Interleaving real <br/> elements between the
- *  split lines reproduces that as DOM — strings never sit adjacent, so React
+ *  split lines reproduces that as DOM, strings never sit adjacent, so React
  *  inserts no comment markers and the text nodes match the master's shape. */
 function NotesParagraph({ text }: { text: string }) {
   const lines = text.trim().split("\n");
@@ -47,7 +47,7 @@ function NotesParagraph({ text }: { text: string }) {
 }
 
 /**
- * The PDP article — this variant's re-implementation of the canonical PDP
+ * The PDP article. This variant's re-implementation of the canonical PDP
  * markup (packages/reference/render/pdp.mjs is the contract of record; the
  * four masters under packages/reference/surfaces/pdp/ are what the drift
  * gate holds it to). Interactivity is genuine here (the surface's whole
@@ -57,7 +57,7 @@ function NotesParagraph({ text }: { text: string }) {
  * The degenerate arms are contract too, including the three no committed
  * master gates (lib.mjs pdpRenderClass's recorded gap): an absent notes
  * section, a null track duration (sr-only "No duration listed"), and a null
- * year (named em-dash) — implemented from pdp.mjs source, not from the
+ * year (named em-dash), implemented from pdp.mjs source, not from the
  * masters, precisely because no fixture master takes those arms.
  */
 export function PdpArticle({ detail }: { detail: ReleaseDetail }) {
@@ -77,7 +77,7 @@ export function PdpArticle({ detail }: { detail: ReleaseDetail }) {
           <p className="pm-pdp__artist">{d.artist}</p>
           <p className="pm-pdp__price">
             <span className="pm-pdp__amount">
-              {price ?? <NamedGlyph glyph="—" name="No price listed" />}
+              {price ?? <NamedGlyph glyph="–" name="No price listed" />}
             </span>{" "}
             <span className="pm-pdp__stock">{stockLine(d.numForSale)}</span>
           </p>
@@ -88,7 +88,7 @@ export function PdpArticle({ detail }: { detail: ReleaseDetail }) {
             <dt>Format</dt>
             <dd>{formatComposition(d.formats)}</dd>
             <dt>Year</dt>
-            <dd>{d.year ?? <NamedGlyph glyph="—" name="No year listed" />}</dd>
+            <dd>{d.year ?? <NamedGlyph glyph="–" name="No year listed" />}</dd>
             <dt>Genre</dt>
             <dd>{[...d.genres, ...d.styles].join(", ")}</dd>
           </dl>
@@ -148,7 +148,7 @@ export function PdpArticle({ detail }: { detail: ReleaseDetail }) {
           </p>
           <p className="pm-plaque__claim">
             The price above is real captured data, served the way production serves catalog
-            data. This button asks the live Discogs API for today&apos;s price instead — the
+            data. This button asks the live Discogs API for today&apos;s price instead: the
             real cost of a dynamic origin, on demand. A live call can&apos;t be reproduced
             run-to-run, so what it returns is never fed into a benchmark number.
           </p>

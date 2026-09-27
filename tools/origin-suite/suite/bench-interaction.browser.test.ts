@@ -1,6 +1,6 @@
 /**
  * The interaction byte boundary, driven by an interaction that ACTUALLY
- * FETCHES — the leg whose absence let two ruler defects live in the published
+ * FETCHES, the leg whose absence let two ruler defects live in the published
  * instrument at once.
  *
  * **Why this file exists.** Every `interactionId` any test had ever driven was
@@ -8,7 +8,7 @@
  * asserts `interactionBytes === 0` for them, which a WORKING boundary and a
  * BROKEN one produce identically. So:
  *
- *  1. The post-click settle was `page.waitForLoadState("networkidle")` — a
+ *  1. The post-click settle was `page.waitForLoadState("networkidle")`, a
  *     document-load-lifecycle LATCH that had already closed during load, so it
  *     returned in 24–49 ms and never observed anything. A 25,194 B interaction
  *     fetch was recorded as `interactionBytes: 0` with `interactionSettled:
@@ -23,7 +23,7 @@
  * Neither defect could fail a test, because no test drove an interaction whose
  * result a broken boundary would change. Both fail these two legs.
  *
- * The slug comes from the SERVED snapshot, never a literal — the suite's
+ * The slug comes from the SERVED snapshot, never a literal, the suite's
  * standing rule, and the reason this holds in fixture and crate mode alike.
  * LOCAL-ONLY, matching `bench.browser.test.ts`'s editorial targets: these are
  * heavy variant pages exercising the harness, not plane correctness, and the
@@ -61,7 +61,7 @@ const PDP_VARIANTS = SURFACE_CONTROLS["pdp"]!.variants;
 const pdpFetch = FIT["pdp"]!.interactionFetch;
 if (pdpFetch === "none") {
   throw new Error(
-    "FIT.pdp declares interactionFetch \"none\", but this file asserts a cross-variant CONSTANT — " +
+    "FIT.pdp declares interactionFetch \"none\", but this file asserts a cross-variant CONSTANT, " +
       "the declaration and the leg have to describe the same claim",
   );
 }
@@ -70,7 +70,7 @@ const TOLERANCE_BYTES = pdpFetch.toleranceBytes;
 let receipt: ReceiptT;
 let cartReceipt: ReceiptT;
 let slug: string;
-/** A PRICED release — a different page from `slug`, deliberately. The suite's
+/** A PRICED release, a different page from `slug`, deliberately. The suite's
  *  `pdpDetail` is the first release with >= 2 images and a tracklist, and in the
  *  FIXTURE that is 9000001, which is unpriced and zero-stock, so its CTA ships
  *  `disabled` and `pdp-add-to-cart` cannot be driven on it at all. The
@@ -95,7 +95,7 @@ beforeAll(async () => {
   const forSale = snap.details.find((d) => d.numForSale > 0 && d.priceFrom != null);
   if (!forSale) {
     throw new Error(
-      "[bench-interaction] the served snapshot has no purchasable release — the zero-fetch leg " +
+      "[bench-interaction] the served snapshot has no purchasable release, the zero-fetch leg " +
         "would drive a disabled CTA; the suite fails closed, it never skips",
     );
   }
@@ -118,7 +118,7 @@ beforeAll(async () => {
   // untested: an interaction that must measure ZERO while the tracker
   // genuinely goes quiet. Without it, a regression that made
   // `armNetworkQuiescence` return early would still show non-zero bytes on the
-  // fetching leg and pass — the zero direction is what proves the boundary is
+  // fetching leg and pass, the zero direction is what proves the boundary is
   // measuring rather than merely producing a number (verify-slice,
   // conformance lens). `pdp-add-to-cart` is also the declaration the PDP's
   // sibling surface publishes as "none", so this is the claim under test.
@@ -131,7 +131,7 @@ beforeAll(async () => {
       })),
       profileId: "avg-broadband-desktop",
       // ONE run per column. The claim under test is "zero, with the boundary
-      // attested", which a single run states as completely as seven — and this
+      // attested", which a single run states as completely as seven, and this
       // file already roughly doubles the origin suite's browser work, which
       // cost the pre-existing reproduce leg its 300 s budget on the first full
       // run after these legs landed.
@@ -148,7 +148,7 @@ describe.skipIf(REMOTE)("an interaction that FETCHES is measured as fetching (AD
     // The assertion the latched wait could not survive. Under the latch the
     // post-click call returned in tens of ms while the stage image was still
     // in flight, and a request still in flight never enters resource timing at
-    // all — so every one of these medians read 0.
+    // all, so every one of these medians read 0.
     for (const target of receipt.targets) {
       for (const column of [target.columns.cold, target.columns.warm]) {
         expect(column.medians.interactionBytes).toBeGreaterThan(0);
@@ -162,7 +162,7 @@ describe.skipIf(REMOTE)("an interaction that FETCHES is measured as fetching (AD
   it("attests the boundary it measured: every run reached network quiescence", () => {
     // Zero bytes and "the runner stopped waiting" are the same artifact
     // without this flag, and the flag is only worth anything on a run where
-    // something was actually in flight to wait for — which is this file.
+    // something was actually in flight to wait for, which is this file.
     for (const target of receipt.targets) {
       for (const column of [target.columns.cold, target.columns.warm]) {
         for (const run of column.runs) {
@@ -173,25 +173,25 @@ describe.skipIf(REMOTE)("an interaction that FETCHES is measured as fetching (AD
   });
 });
 
-describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm — it is image mass", () => {
+describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm. It is image mass", () => {
   it("all four variants measure the SAME interaction bytes", () => {
     // Every variant swaps the stage to the same full-size AVIF: vanilla and
     // astro by `stage.src = img.src.replace(/\.thumb\.avif$/, ".avif")`,
     // react-next and qwik by binding `src={current.src}`. Same URL, same
-    // bytes — so a DIFFERENCE here is never a paradigm cost, it is a defect,
+    // bytes, so a DIFFERENCE here is never a paradigm cost, it is a defect,
     // and this leg is what makes that falsifiable instead of assumed.
     //
     // It is the leg that fails when the instrument disables the browser HTTP
     // cache: qwik re-writes `src` on all N thumbs with the value each already
     // holds, which costs nothing when the cache is on and re-downloads every
     // thumb when it is off (measured 2026-08-28: 25,194 B vs 52,032 B on the
-    // 5-image crate master, one variable — `page.route` on or off).
+    // 5-image crate master, one variable, `page.route` on or off).
     const byVariant = new Map<string, number>();
     for (const target of receipt.targets) {
       for (const name of ["cold", "warm"] as const) {
         const bytes = target.columns[name].medians.interactionBytes;
         // A null median is "the batch produced no value here", which must not
-        // collapse into the agreement set as a look-alike — it is a different
+        // collapse into the agreement set as a look-alike. It is a different
         // failure from a disagreement and deserves its own message.
         expect(bytes, `${target.variant}/${name} has no interaction-byte median`).not.toBeNull();
         byVariant.set(`${target.variant}/${name}`, bytes as number);
@@ -201,7 +201,7 @@ describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm —
     expect(
       Math.max(...values) - Math.min(...values),
       `the four paradigms swap the stage to the same URL, so these must agree within the publication's ` +
-        `own ${TOLERANCE_BYTES} B tolerance — got ${JSON.stringify(Object.fromEntries(byVariant))}`,
+        `own ${TOLERANCE_BYTES} B tolerance, got ${JSON.stringify(Object.fromEntries(byVariant))}`,
     ).toBeLessThanOrEqual(TOLERANCE_BYTES);
     // Non-vacuity: the map must actually hold every registered variant in
     // both columns, or "they all agree" would be a statement about one cell.
@@ -225,7 +225,7 @@ describe.skipIf(REMOTE)("the gallery switch costs the same in every paradigm —
 describe.skipIf(REMOTE)("the zero-fetch direction, on an interaction that must measure nothing", () => {
   it("pdp-add-to-cart records ZERO bytes, with the boundary attested, on every variant", () => {
     // The claim `interactionFetch: "none"` makes, driven rather than assumed.
-    // A boundary that stopped waiting would also read zero here — which is why
+    // A boundary that stopped waiting would also read zero here, which is why
     // the settled flag is asserted beside the bytes, and why the FETCHING leg
     // above is the other half of the same proof.
     for (const target of cartReceipt.targets) {
@@ -247,14 +247,14 @@ describe.skipIf(REMOTE)("the zero-fetch direction, on an interaction that must m
 describe.skipIf(REMOTE)("the instrument leaves the browser cache alone (ADR-0001 addendum S)", () => {
   // The MECHANISM, not a variant's side effect. The cross-variant agreement
   // leg above catches today's cache-off symptom only because qwik happens to
-  // re-write identical `src` values; the day that stops — a keyed thumb list,
-  // a Qwik release that skips no-op attribute writes — all four variants agree
+  // re-write identical `src` values; the day that stops, a keyed thumb list,
+  // a Qwik release that skips no-op attribute writes, all four variants agree
   // with the cache ON or OFF and the agreement leg passes either way. Then
   // `page.route` could come back and nothing would notice (verify-slice,
   // anti-rigging lens).
   //
-  // So this drives the runner's OWN setup functions — `applyProfile` and
-  // `armBeaconCapture`, imported, not reimplemented — and asks the only
+  // So this drives the runner's OWN setup functions, `applyProfile` and
+  // `armBeaconCapture`, imported, not reimplemented, and asks the only
   // question that matters: after a page has loaded a cacheable subresource,
   // does requesting it again cost bytes?
   let browser: Browser;
@@ -292,15 +292,15 @@ describe.skipIf(REMOTE)("the instrument leaves the browser cache alone (ADR-0001
       expect(first.length, "the PDP page loaded no images at all").toBeGreaterThan(0);
       expect(
         first.some((e) => e.bytes > 0),
-        "no image cost bytes on a cold visit — this leg cannot tell a cache hit from an empty page",
+        "no image cost bytes on a cold visit. This leg cannot tell a cache hit from an empty page",
       ).toBe(true);
 
       // SECOND visit, same context, so the browser cache is warm exactly as a
       // real visitor's is within a session. `/assets/img/*` is served
       // `public, max-age=31536000, immutable`, so every one of these must now
-      // cost zero. Under Playwright's request routing — which the runner used
+      // cost zero. Under Playwright's request routing, which the runner used
       // until 2026-08-28, and which its own typings say "disables http cache"
-      // — they are all full downloads again.
+      //. They are all full downloads again.
       await page.goto(url, { waitUntil: "load" });
       const second = await page.evaluate(() =>
         (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
@@ -312,7 +312,7 @@ describe.skipIf(REMOTE)("the instrument leaves the browser cache alone (ADR-0001
       expect(
         paid,
         `${paid.length} of ${second.length} immutable images were re-downloaded on a second visit in the ` +
-          `same context — the instrument is disabling the browser HTTP cache, which turns every no-op ` +
+          `same context, the instrument is disabling the browser HTTP cache, which turns every no-op ` +
           `re-request a paradigm makes into a measured download (ADR-0001 addendum S)`,
       ).toEqual([]);
     } finally {

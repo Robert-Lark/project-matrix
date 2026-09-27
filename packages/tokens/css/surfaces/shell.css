@@ -1,5 +1,5 @@
 /*
- * Surface module — the shared shell composition (surface-design session,
+ * Surface module, the shared shell composition (surface-design session,
  * 2026-07-17). Page container + rhythm every store surface shares. Surface
  * modules (editorial/pdp/plp/checkout/a11y/how-built) compose INSIDE this;
  * components never reach outside their own box.
@@ -11,7 +11,7 @@
  * Canonical page skeleton every variant emits (ADR-0003 §1):
  *   <body>
  *     <a class="pm-skip pm-button" href="#main">Skip to content</a>   (FIRST
- *     <div id="pm-chrome-slot"></div>                     focusable — before
+ *     <div id="pm-chrome-slot"></div>                     focusable, before
  *     <div class="pm-page">                               the chrome slot)
  *       <header class="pm-masthead">…</header>
  *       <main id="main">…surface content…</main>
@@ -54,12 +54,12 @@ body {
   letter-spacing: 0.14em;
 }
 
-/* Visually-hidden text — a WHOLE-SYSTEM utility, and it lives in this sheet
+/* Visually-hidden text, a WHOLE-SYSTEM utility, and it lives in this sheet
    because `head()` links it on every surface. Defined in a COMPONENT sheet it
    reached only the pages linking that component, and `namedGlyph`'s text
    rendered visibly everywhere else (ADR-0008 addendum A §4b; guarded by
    repo-checks/master-styles-resolve). clip-path, never display:none or
-   visibility:hidden — both drop the text from the accessibility tree, which
+   visibility:hidden. Both drop the text from the accessibility tree, which
    is the opposite of the point. */
 .pm-sr-only {
   position: absolute;

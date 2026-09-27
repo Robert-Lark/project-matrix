@@ -1,18 +1,18 @@
-// The PLP's progressive enhancement — the half of "loaders + PE" that only
+// The PLP's progressive enhancement, the half of "loaders + PE" that only
 // exists once JavaScript is on, and the half that a partial swap makes
 // NECESSARY rather than optional.
 //
 // With JS off, a page-flip is an ordinary navigation: the browser moves
 // focus to the new document and announces the new page itself. `hx-boost`
 // replaces that navigation with an in-place swap of `.pm-plp`, and in doing
-// so it silently takes both of those away — the anchor the visitor just
+// so it silently takes both of those away, the anchor the visitor just
 // activated is inside the replaced subtree, so it is destroyed and focus
 // falls to `<body>`, and nothing announces that the catalogue changed at
 // all. A sighted mouse user sees new records; a keyboard user is dropped at
 // the top of the document with no idea anything happened, and a screen
 // reader says nothing (WCAG 2.4.3 focus order, 4.1.3 status messages).
 //
-// So this file is not decoration on the mechanism — it is the part of the
+// So this file is not decoration on the mechanism. It is the part of the
 // mechanism that keeps the enhanced path as usable as the unenhanced one.
 // The shell already carries the live region it needs
 // (`<p class="pm-status" role="status" data-pm-status>`, shell.mjs:157), so
@@ -20,7 +20,7 @@
 //
 // `tabindex="-1"` is set HERE rather than rendered, deliberately: it is
 // SCRIPT-ONLY STATE (the pdp-controls precedent). The served DOM must equal
-// the master's, and the master renders no tabindex — a heading that is
+// the master's, and the master renders no tabindex, a heading that is
 // programmatically focusable only matters once the thing that focuses it
 // exists, and with JS off it would be a focus stop that does nothing, which
 // is the `pm-pdp__scroll` defect exactly.
@@ -28,7 +28,7 @@
 (() => {
   /**
    * RE-ENTRANCY. This file runs a second time on every htmx history restore,
-   * and its listeners are on `document`, which survives — so without this
+   * and its listeners are on `document`, which survives, so without this
    * flag they accumulate.
    *
    * The chain, read from the pinned runtime rather than assumed:
@@ -43,7 +43,7 @@
    * later page-flip announces the range TWICE into a `role="status"` region
    * and calls `focus()` twice. Each Forward/Back cycle adds another. A file
    * whose entire job is a11y parity would then make the enhanced path worse
-   * than the unenhanced one — the one direction this must never fail in.
+   * than the unenhanced one, the one direction this must never fail in.
    *
    * A `window` flag rather than a DOM attribute, so it stays script-only
    * state and the served markup is untouched.
@@ -56,13 +56,13 @@
   const COUNT = ".pm-plp .pm-toolbar__count";
 
   /**
-   * Restore what the swap removed. Exported through nothing — the pre-merge
+   * Restore what the swap removed. Exported through nothing, the pre-merge
    * guard evaluates this file's real source against a linkedom document, so
    * what is tested is the bytes that ship, not a twin.
    */
   function afterSwap() {
     const block = document.querySelector(BLOCK);
-    if (!block) return; // not our swap, or the swap failed — say nothing
+    if (!block) return; // not our swap, or the swap failed, say nothing
 
     const heading = document.querySelector(HEADING);
     if (heading) {
@@ -88,7 +88,7 @@
    * URL is not pushed, and nothing says the click failed. With JavaScript
    * OFF the same click is a full navigation and the visitor gets the branded
    * 503 shell. ADR-0005 §1's "(works JS-off)" is a claim about parity, and
-   * without this listener the enhanced path is the WORSE of the two — which
+   * without this listener the enhanced path is the WORSE of the two, which
    * is the one direction a progressive enhancement must never fail in.
    *
    * `htmx:sendError` covers the network-level failure the response handler
@@ -97,7 +97,7 @@
    */
   function announceFailure() {
     const status = document.querySelector("[data-pm-status]");
-    if (status) status.textContent = "Couldn't load that page — the list is unchanged.";
+    if (status) status.textContent = "Couldn't load that page. The list is unchanged.";
   }
 
   document.addEventListener("htmx:afterSwap", afterSwap);

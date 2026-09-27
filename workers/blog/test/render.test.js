@@ -1,4 +1,4 @@
-// The one pipeline (ADR-0009 §3) — unit contract. What these prove: the
+// The one pipeline (ADR-0009 §3), unit contract. What these prove: the
 // directive vocabulary renders, sanitize keeps XSS dead even from a
 // stolen-session author, footnote anchors pair, Shiki highlights the
 // curated set and degrades to plain <pre> outside it.
@@ -110,10 +110,10 @@ describe("excerptText", () => {
     expect(excerptText(`<p>${"x".repeat(400)}</p>`, 20).length).toBeLessThanOrEqual(20);
   });
 
-  it("returns true plain text — entities decoded, ready for re-escaping", async () => {
+  it("returns true plain text, entities decoded, ready for re-escaping", async () => {
     // Consumers wrap the excerpt in esc(); encoded entities would render
     // double-escaped in entry titles, meta descriptions, and RSS titles.
-    const html = await renderMarkdown("Fish & chips <3 — the best.");
-    expect(excerptText(html)).toBe("Fish & chips <3 — the best.");
+    const html = await renderMarkdown("Fish & chips <3, the best.");
+    expect(excerptText(html)).toBe("Fish & chips <3, the best.");
   });
 });

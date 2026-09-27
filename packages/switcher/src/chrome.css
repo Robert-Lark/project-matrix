@@ -1,24 +1,24 @@
 /*
  * Chrome styles (ADR-0004 §7; redesigned by the surface-design session,
- * 2026-07-17) — served from /_pm/chrome.css, head-appended by the front
+ * 2026-07-17), served from /_pm/chrome.css, head-appended by the front
  * Worker into every variant identically, EXCLUDED from measured KB by its
  * known path.
  *
  * The instrument register (ADR-0006 §1 reserved it for exactly this): the
  * deadwax band home established, extended to every surface as a compact
- * strip. The etch grammar is the signature — uppercase, letterspaced,
- * interpunct-separated, hairline rules, radius-0, nothing floats — set in
+ * strip. The etch grammar is the signature, uppercase, letterspaced,
+ * interpunct-separated, hairline rules, radius-0, nothing floats, set in
  * the chrome-owned instrument mono served from /_pm/fonts/ (the excluded
  * path; the store's --pm-font-metric is untouched, ADR-0006 §3 honored).
  *
  * Geometry rules (panel kill, hostile lens): the collapsed strip is
- * GEOMETRICALLY INERT — fixed block-size, fixed-width live-value slots — so
+ * GEOMETRICALLY INERT, fixed block-size, fixed-width live-value slots, so
  * no post-load mutation (streamed vitals, font swap) can shift the store
  * below. The expanded panel is a positioned overlay: opening it occludes,
  * never reflows, the specimen.
  *
  * Color rule (home §7 precedent): every chrome color is a color-mix()
- * derivation of the poured neutrals — no literal hex — so a re-pour of the
+ * derivation of the poured neutrals, no literal hex, so a re-pour of the
  * primitive tier moves the instrument with it. The semantic accent is NOT
  * used on the dark ground (it fails contrast there: 2.71:1, audited);
  * paper-white ink carries links and focus.
@@ -99,7 +99,7 @@
   font-size: 0.9em;
 }
 
-/* The switcher: etched matrix-number grammar — caps, tracking, interpunct
+/* The switcher: etched matrix-number grammar, caps, tracking, interpunct
    separators, no boxes, no radius. The anchors stay ≥24px targets via
    padding (WCAG 2.5.8) without visual chrome. */
 .pm-chrome__switch {
@@ -150,7 +150,7 @@ a.pm-chrome__cell:hover {
   padding-inline: var(--pm-space-2);
 }
 
-/* Live vitals: fixed-width value slots — the swap/stream cannot move a pixel */
+/* Live vitals: fixed-width value slots, the swap/stream cannot move a pixel */
 .pm-chrome__mini {
   display: flex;
   align-items: baseline;
@@ -172,7 +172,7 @@ a.pm-chrome__cell:hover {
 
 .pm-chrome__vital-value {
   display: inline-block;
-  /* 7ch: a floor is only inert if it covers the worst value — "12345ms" on a
+  /* 7ch: a floor is only inert if it covers the worst value, "12345ms" on a
      throttled load is 7ch, and a growing slot would shift the bar it lives
      in (verify-slice: the chrome must not manufacture the CLS it reports). */
   min-inline-size: 7ch;
@@ -254,7 +254,7 @@ a.pm-chrome__cell:hover {
 .pm-chrome__vow { font-weight: 700; }
 
 /* Prose/receipt links live in the PANEL; the bar's etched cells manage their
-   own underline (hover + the current marker) — scoping here keeps the id
+   own underline (hover + the current marker), scoping here keeps the id
    selector from flattening that distinction (caught on the live probe). */
 .pm-chrome__panel a {
   color: var(--pm-chrome-ink);
@@ -371,7 +371,7 @@ a.pm-chrome__cell:hover {
 }
 
 /* ── One line at 320px (asserted in the origin suite's browser leg): the
-      bar keeps its fixed height; the switcher SCROLLS instead of hiding —
+      bar keeps its fixed height; the switcher SCROLLS instead of hiding,
       display:none anchors would make variant switching unreachable to
       mobile, keyboard, and AT users (verify-slice, a11y direction). */
 

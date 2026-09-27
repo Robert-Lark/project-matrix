@@ -12,7 +12,7 @@ export function EditorialPage(handle: Handle<EditorialPageProps>) {
     const current = handle.props.pick
 
     return (
-      <Document title="Editorial — Remix 3 frontier spike">
+      <Document title="Editorial, Remix 3 frontier spike">
         <main class="pm-editorial">
           <h1 class="pm-editorial__title">This week in the crate</h1>
           <p class="pm-editorial__standfirst">
@@ -22,7 +22,7 @@ export function EditorialPage(handle: Handle<EditorialPageProps>) {
           </p>
           <p class="pm-editorial__body">
             The box below is a Remix 3 <code>&lt;Frame&gt;</code>. On the
-            server it is resolved inline — view source and the pick is
+            server it is resolved inline, view source and the pick is
             already there. In the browser, the &ldquo;next pick&rdquo; link
             reloads <em>only the frame</em> over the wire as HTML; with
             JavaScript disabled the same link falls back to a full-page
@@ -32,7 +32,7 @@ export function EditorialPage(handle: Handle<EditorialPageProps>) {
 
           <Frame name="picks" src={`/frames/staff-pick?pick=${current}`} />
 
-          <CounterButton label="Island check — clicks:" />
+          <CounterButton label="Island check, clicks:" />
         </main>
       </Document>
     )

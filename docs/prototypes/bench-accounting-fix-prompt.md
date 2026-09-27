@@ -7,7 +7,7 @@
 ```
 Continue work on Project Matrix (a live-benchmarking portfolio: one
 Discogs-powered vinyl store built across several rendering paradigms,
-instrumented to show real perf/UX/infra-cost tradeoffs — docs/decision-map.md
+instrumented to show real perf/UX/infra-cost tradeoffs, docs/decision-map.md
 is the state of record, docs/adr/ is the rationale of record and wins every
 conflict, docs/build-log.md is the narrative, CONTEXT.md owns the vocabulary).
 
@@ -26,9 +26,9 @@ HARD-BLOCKS the first editorial bench batch, and it runs BEFORE editorial
 slices E (htmx) and F (remix3). Do not start a variant build instead.
 
 Read first, in this order:
-  1. docs/prototypes/finish-line-handoff-prompt.md — the running progress log,
+  1. docs/prototypes/finish-line-handoff-prompt.md, the running progress log,
      more current than this file. Read its LAST entries.
-  2. docs/decision-map.md, the `bench-accounting-fix` ticket — it restates all
+  2. docs/decision-map.md, the `bench-accounting-fix` ticket. It restates all
      FOUR defects in full ("artifacts are the memory"), including one added by
      slice D.
   3. GitHub issue #16.
@@ -50,8 +50,8 @@ follow-up commit `b08b662` ("Wait for image decode before the pixel shot") is
 what fixed the second. Both are worth knowing before you touch the harness:
 
   (a) A 30s `page.goto` TIMEOUT in `bench.browser.test.ts` against
-      `/placeholder-static/sample/` — a months-old page, nothing to do with the
-      slice — while 218 assertions passed; the same URL served in 0.22s from a
+      `/placeholder-static/sample/`, a months-old page, nothing to do with the
+      slice, while 218 assertions passed; the same URL served in 0.22s from a
       workstation immediately after. Has NOT recurred, so nothing was changed
       for it. **It is a live design question for YOUR unit:** a post-deploy gate
       that runs a performance batch will periodically go red for reasons that
@@ -61,37 +61,37 @@ what fixed the second. Both are worth knowing before you touch the harness:
   (b) `pixels-slow-4g-mid-phone-vanilla-editorial`: 421,656 differing pixels at
       identical dimensions. Root cause: `settleImages` waited for
       `img.complete` (bytes arrived) and `captureStablePixels` waits for FONTS
-      then screenshots — nothing waited for a frame to be DECODED, and the
+      then screenshots. Nothing waited for a frame to be DECODED, and the
       article figure carries `decoding="async"`, which permits painting before
       decode. Fixed with `img.decode()`, the real paintable signal. Measured:
       decode still needed 1.3-2.3 ms per image AFTER `complete` on a fast
       workstation; unbounded on a loaded runner.
       A WRONG first diagnosis is recorded in that commit because you will reach
-      for it too: it is NOT the mobile profile's throttling —
+      for it too: it is NOT the mobile profile's throttling,
       `profileContextOptions` (tools/drift-gate/src/gate.ts) applies only the
       VIEWPORT axis and runs JS-off.
 
 If a deploy fails on you: probe the live origin directly with a browser UA and
 DOWNLOAD THE `smoke-dev-logs` ARTIFACT (it carries the actual/expected/diff
-screenshots) BEFORE concluding anything. Do not rerun twice hoping — two
+screenshots) BEFORE concluding anything. Do not rerun twice hoping, two
 different failures means two different causes. And never buy green by loosening
 a zero-tolerance assertion.
 
 **Read `tools/drift-gate/README.md`'s new "Settling: wait for the real signal,
 never a proxy" section before changing any wait in the harness.** Your defect 4
-is the third instance of that exact pattern — a network-quiet heuristic standing
-in for "idle work finished" — so the rule is already written for you.
+is the third instance of that exact pattern, a network-quiet heuristic standing
+in for "idle work finished", so the rule is already written for you.
 
 ── FIRST ACTIONS ──
 git fetch origin --prune; git log --oneline -5 origin/main;
 gh run list --branch main --limit 3. Confirm main is green INCLUDING the
 deploy job (it is a separate job and has failed while the live origin was
-healthy — check its own conclusion, and curl the deployed origin with a
+healthy, check its own conclusion, and curl the deployed origin with a
 browser UA if unsure: workers.dev edge 1010-blocks python-urllib).
 Then branch fresh from origin/main in a NEW worktree (several stale ones
-exist; do not reuse a merged branch — after a --rebase PR merge the remote
+exist; do not reuse a merged branch, after a --rebase PR merge the remote
 branch keeps its pre-rebase SHA and a plain push is rejected).
-pnpm install, then pnpm exec turbo run lint typecheck test — expect 28/28 —
+pnpm install, then pnpm exec turbo run lint typecheck test, expect 28/28,
 so you know green-before is real.
 
 ── THE FOUR DEFECTS (all four must be resolved before any bench publishes) ──
@@ -101,13 +101,13 @@ so you know green-before is real.
    resource-timing entries classified by URL EXTENSION, so an inline <script>
    contributes zero and its bytes are absorbed into buckets.html. Astro inlines
    its cart bundle (1,247 B), so the render axis would publish "astro: 0 KB
-   initial JS" against vanilla — the NO-RUNTIME control — at ~1 KB, for the
+   initial JS" against vanilla, the NO-RUNTIME control, at ~1 KB, for the
    byte-identical enhancement, on the surface whose whole thesis is how much
    machinery prose needs. Also discontinuous: past Vite's inline threshold the
    number jumps with no change in the paradigm. The fix is in the HARNESS
    (count inline script bytes as JS, stop counting them as HTML) and must
    settle DOUBLE-COUNTING. Rigging the variant (assetsInlineLimit: 0) was
-   already considered and rejected — it invents a request the paradigm would
+   already considered and rejected. It invents a request the paradigm would
    not make.
 
 2. LOCAL CPU ATTRIBUTION OMITS EVERY REAL VARIANT. cpu.ts's
@@ -118,7 +118,7 @@ so you know green-before is real.
    compared against ARE sampled. NOT a one-line fix: CdpConnection.open throws
    on an absent inspector, so the port list and its failure tolerance must be
    decided together (hard error vs recorded gap). pm-blog (8791/9234) stays
-   OUT — ADR-0009 puts it outside every measurement fence.
+   OUT, ADR-0009 puts it outside every measurement fence.
 
 3. "CSS ITS NATIVE WAY" IS NOMINAL. Needs an ADR-0003 §2 addendum. All FOUR
    editorial variants ship the shared component/surface stylesheets as raw
@@ -126,22 +126,22 @@ so you know green-before is real.
    Astro's, Next's and Vite's bundling pipelines all appear to buy nothing. §8
    forces this for the FONT files and fonts.css ONLY; the other eight sheets
    are raw by CHOICE, for cross-variant comparability. Whether each variant
-   should deliver them its own way — and how the byte-identity assertions adapt
-   if so — is a cross-variant question, which is why no slice decided it.
+   should deliver them its own way, and how the byte-identity assertions adapt
+   if so, is a cross-variant question, which is why no slice decided it.
 
 4. QWIK'S POST-LOAD IDLE WINDOW MAKES THE BYTE BOUNDARY NON-DETERMINISTIC
    (added by slice D). Qwik is the only live variant that fetches anything
    after the `load` event: its preloader runs inside
    requestIdleCallback(…, {timeout: 2000}). collect.ts snapshots initialEntries
    after waitForLoadState("networkidle") (500 ms of quiet) and computes
-   interactionBytes as a POSITIONAL slice past that snapshot's length — so
+   interactionBytes as a POSITIONAL slice past that snapshot's length, so
    under the bench's own CPU-throttled profiles, or on a loaded runner, the
    idle callback can be starved past networkidle and the SAME page/build yields
    two different receipts: initialJsBytes under-reporting qwik's load cost
    while interactionBytes over-reports the cost of one localStorage write, with
    nothing failing. The fix that removes the CLASS rather than this instance:
-   await an in-page requestIdleCallback before the initialEntries snapshot —
-   the same trick collect.ts already uses (~:233-242) for the INP flush — so
+   await an in-page requestIdleCallback before the initialEntries snapshot,
+   the same trick collect.ts already uses (~:233-242) for the INP flush, so
    any framework's post-load idle work lands on the load side by construction.
 
 ── GROUND TRUTH TO CHECK YOUR FIX AGAINST ──
@@ -161,11 +161,11 @@ Three genuinely different delivery shapes is exactly why this unit was
 scheduled here: vanilla = one external file, astro = inlined, qwik = many
 external files. If your fix only handles one shape it is not done. Note astro's
 0 is the defect reproducing independently, and note that NO variant fetches
-anything on the click — so a receipt showing interaction bytes for editorial is
+anything on the click, so a receipt showing interaction bytes for editorial is
 a symptom of defect 4, not a finding.
 
 ── WHAT THIS UNIT IS NOT ──
-No variant changes to make numbers nicer (that is rigging — the north star).
+No variant changes to make numbers nicer (that is rigging, the north star).
 No bench PUBLICATION: this unit fixes the ruler; the first batch, the lab
 bundles at /_pm/lab/{surface}.json, the methodology page and the home tense
 flips are the NEXT arc step. No new surfaces. No spec-layer redesign.
@@ -177,10 +177,10 @@ flips are the NEXT arc step. No new surfaces. No spec-layer redesign.
   own middleware. Read the source.
 - Run the saved verify-slice workflow in the background while probing inline in
   the foreground: Workflow({name:"verify-slice", args:{issue, scratchDir,
-  context, repoDir}}) — args are JSON, not a string; `issue` may be a
+  context, repoDir}}), args are JSON, not a string; `issue` may be a
   non-numeric ticket name; repoDir is your worktree. Four sequential lenses,
   ~2h wall clock. On slice D it returned 20 findings and FOURTEEN were false or
-  unqualified claims in that session's own comments and receipt — the class
+  unqualified claims in that session's own comments and receipt, the class
   that survives review and then gets quoted into a published number. Expect the
   same of yourself. Adopt or refute every finding AGAINST SOURCE, never on
   authority, and prove new assertions non-vacuous BY SABOTAGE. If a lens
@@ -196,7 +196,7 @@ flips are the NEXT arc step. No new surfaces. No spec-layer redesign.
   bring-up (anything but tools/origin-suite/run-local.mjs) serves whatever
   PM_SNAPSHOT each variant's dist was LAST built with, so vanilla/astro can be
   crate-baked against a fixture-seeded plane and their featured IDs disagree
-  with the suite's — making a CORRECT test look broken. Only run-local.mjs
+  with the suite's, making a CORRECT test look broken. Only run-local.mjs
   builds every variant with the matching selector.
 - PNPM TRAP: to sabotage-test a resolution change you must WIPE node_modules.
   `pnpm install --force` keeps the previously-resolved symlink and will tell you
@@ -204,7 +204,7 @@ flips are the NEXT arc step. No new surfaces. No spec-layer redesign.
   twice.)
 - If a test fails only in CI, do not assume flakiness and do not loosen the
   assertion. Root-cause it. Known real classes: fresh-clone failures (a
-  typecheck importing generated build output — declare a build dependency AND
+  typecheck importing generated build output, declare a build dependency AND
   the generated file as a build output); generated framework output picked up by
   root `eslint .`; turbo cache-restore incompleteness (declare EVERY build
   product, not just the obvious directory); cold-cache compression on a
@@ -223,16 +223,16 @@ flips are the NEXT arc step. No new surfaces. No spec-layer redesign.
   PR and `gh pr merge --rebase` (keeps main linear, respects git.md). GitHub's
   rebase mints a new SHA, so verify `git diff <local> origin/main` is empty,
   then `git reset --hard origin/main`.
-- Model: strongest available (Opus 5) at high effort — Rob's standing call;
+- Model: strongest available (Opus 5) at high effort, Rob's standing call;
   there is no deadline, so do not drop to a cheaper model to save budget.
 - Long-running processes (dev servers, suites, verify-slice) ALWAYS in the
   background. Reap orphaned workerd/wrangler when done: run-local.mjs only
   cleans up its own run's children, and `pkill -f "wrangler dev"` misses the
-  inner process — kill by port or `pkill -9 workerd`.
+  inner process, kill by port or `pkill -9 workerd`.
 
 ── ONE OPEN JUDGMENT CALL, NOT YOURS TO SETTLE ALONE ──
 Slice D's measured result is that on the editorial surface Qwik's "no JS until
-interaction" claim does not hold — because OUR cart contract requires a
+interaction" claim does not hold, because OUR cart contract requires a
 load-time storage read (so the cart survives a variant swap), that read is a
 QRL, and resolving any QRL pulls the framework core. Qwik still fetches ~5.4x
 less than react-next. The reading table must NOT present 26.83 kB as a verdict

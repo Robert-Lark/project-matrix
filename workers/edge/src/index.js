@@ -7,15 +7,15 @@
 //   otherwise    → read KV: HIT serves the warm tier; MISS computes from R2
 //                  and writes through, so one priming request warms any URL.
 // Tray responses carry x-pm-cache-state: bypass | miss | hit; 4xx data
-// responses carry `none` (they never traverse the warm tier — negative
+// responses carry `none` (they never traverse the warm tier, negative
 // results are not cached), and so does the one 200 that IS a negative
 // result: a PLP page past the last real one (see `handlePlp`). Images are
 // deliberately OUTSIDE the warm tier:
 // the cache axis is the tray API's measurement variable; image bytes are
 // immutable R2 reads (see workers/README.md).
 //
-// KV keys are built from the EFFECTIVE measurement condition — the parsed,
-// clamped knobs (n, page, id) plus the documented `run` isolation knob —
+// KV keys are built from the EFFECTIVE measurement condition, the parsed,
+// clamped knobs (n, page, id) plus the documented `run` isolation knob,
 // never from raw client query strings. That makes the key bijective with the
 // payload (no encoding aliasing, no junk-param key minting, bounded length;
 // all three were demonstrated failure modes of raw-query keys).
@@ -23,23 +23,23 @@
 // THE KEY-CARDINALITY POLICY (ADR-0005 §5 + its 2026-09-04 addendum). A key
 // is WRITTEN only for a condition the warm tier can hold a FINITE number of:
 //   cacheable ⇔ `q` absent  ∧  n ∈ {24, 240}  ∧  page ≤ totalPages
-// Everything else is still SERVED — from R2, marked `x-pm-cache-state: none`
-// ("not a warm-tier resource") — and never stored.
+// Everything else is still SERVED, from R2, marked `x-pm-cache-state: none`
+// ("not a warm-tier resource"), and never stored.
 //  - `q` is free text: no finite key space exists, so search is computed per
 //    request (one R2 read + CPU, bounded per request, nothing accretes).
 //  - `n` is warmed only at the two published knob values (PLP_N.default /
-//    PLP_N.max — SURFACE_CONTROLS.plp.nKnob): every n in 1..240 is a real
+//    PLP_N.max, SURFACE_CONTROLS.plp.nKnob): every n in 1..240 is a real
 //    served condition, but warming all 240 multiplies the key space ~120×
 //    for conditions the instrument never names (the ceiling, computed from
-//    the real crate with kv-ceiling.mjs, 2026-09-04, re-run 2026-09-18 —
+//    the real crate with kv-ceiling.mjs, 2026-09-04, re-run 2026-09-18,
 //    the table of record is the ADR-0005 addendum: 4,548,342 keys / ~19.7 GB
 //    / $22.74 of writes at $5/M / $9.87 per month at $0.50/GB-mo with n free,
 //    vs 37,182 keys / 0.162 GB / $0.19 / $0.08 per month with n at the knobs).
-//  - `page` has a floor (1) and a numeric cap (Number.MAX_SAFE_INTEGER —
+//  - `page` has a floor (1) and a numeric cap (Number.MAX_SAFE_INTEGER,
 //    `parseInt` of 309+ digits is Infinity, which JSON writes as null) but no
 //    ceiling in the sense that matters: it cannot know `totalPages` before
 //    the snapshot is read, and reading R2 before the KV lookup would put
-//    ~400 ms of origin on every warm hit — so the ceiling is applied on the way OUT:
+//    ~400 ms of origin on every warm hit, so the ceiling is applied on the way OUT:
 //    a page past `totalPages` (of the FILTERED set) is served as the honest
 //    empty page every arm renders as "0", and never stored. Before this,
 //    `for p in $(seq 1 1000000); do curl "?page=$p"; done` minted one
@@ -48,12 +48,12 @@
 //    is past the end too: no key for a negative result.
 //  - Facet values are validated against the snapshot's REAL facet sets, exact
 //    match: junk is a 400 (`none`), never a key. `sort` against PLP_SORTS.
-//    Validation needs the snapshot, so it runs AFTER the lookup — a junk key
-//    can never hit because it is never written — but a value too long to be
+//    Validation needs the snapshot, so it runs AFTER the lookup, a junk key
+//    can never hit because it is never written, but a value too long to be
 //    real is refused BEFORE the lookup so the key can never approach KV's
 //    512-byte limit (longest real facet value: 37 characters).
 // The residual cost of a junk or uncacheable request is one KV read-miss
-// ($0.50/M) plus one R2 read per request — bounded per request, zero storage.
+// ($0.50/M) plus one R2 read per request, bounded per request, zero storage.
 //
 // No Discogs credential exists anywhere here (ADR-0002 §1): the Worker only
 // ever reads the frozen snapshot.
@@ -64,7 +64,7 @@ import {
   clampN,
   plpWarmable,
 } from "@pm/measurement";
-// The PLP query semantics are the reference package's OWN pure module — the
+// The PLP query semantics are the reference package's OWN pure module, the
 // spec's function serves the data, so the Worker cannot disagree with the
 // master about what a filtered page contains (ADR-0004 §2 addendum,
 // 2026-09-04). Import-free and platform-neutral by construction; wrangler
@@ -80,7 +80,7 @@ import {
 } from "@pm/reference/render/plp-query.mjs";
 
 // Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25):
-// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts —
+// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts,
 // WARM, SNAPSHOT, BEACONS), the tray shapes are the query module's own
 // typedefs, and the beacon contract is @pm/measurement's.
 /** @typedef {import("@pm/reference/render/plp-query.mjs").PlpQuery} PlpQuery */
@@ -126,11 +126,11 @@ function runKnob(url) {
 /**
  * Serve a data endpoint through the warm tier under an explicit canonical
  * key. `compute` builds the payload from R2; null means not-found (never
- * cached, no cache-state — the caller owns the 4xx).
+ * cached, no cache-state, the caller owns the 4xx).
  *
  * `cacheable(payload)` decides, AFTER compute, whether this condition may be
  * written through. It is a predicate on the payload rather than on the URL
- * because the one fact it needs — is this a real page — exists only once R2
+ * because the one fact it needs, is this a real page, exists only once R2
  * has been read; the lookup above it stays a single KV read, and an
  * uncacheable condition can never HIT because it is never written. Such a
  * response carries `x-pm-cache-state: none`: it is not a warm-tier resource.
@@ -145,7 +145,7 @@ function runKnob(url) {
 async function serveData(url, env, key, compute, { cacheable = () => true, tiered = true } = {}) {
   const bypass = url.searchParams.get("cache") === "cold";
 
-  // `tiered: false` — the condition is known UNCACHEABLE before compute (a
+  // `tiered: false`, the condition is known UNCACHEABLE before compute (a
   // search, an unwarmed n): skip the lookup too, since nothing could be
   // there, and save the read.
   if (!bypass && tiered) {
@@ -179,7 +179,7 @@ async function serveData(url, env, key, compute, { cacheable = () => true, tiere
   });
 }
 
-/** A tray from R2, parsed. The caller names the shape it expects — the
+/** A tray from R2, parsed. The caller names the shape it expects, the
  *  frozen snapshot is the contract's (ADR-0002), and the guards that hold
  *  it to that contract are the capture tool's, not this Worker's.
  *  @param {Env} env @param {string} key @returns {Promise<unknown>} */
@@ -199,12 +199,12 @@ class BadRequest extends Error {}
  *  512-byte limit whatever alphabet the junk arrives in. */
 const FACET_VALUE_ENCODED_MAX = 96;
 
-/** The length a value contributes to the KEY — measured with the key's own
+/** The length a value contributes to the KEY, measured with the key's own
  *  encoder. `plpKey` spells the key with `URLSearchParams`, whose
  *  application/x-www-form-urlencoded serializer percent-encodes `! ' ( ) ~`
  *  (3 bytes each) where `encodeURIComponent` leaves them as 1: the first
  *  draft bounded with the latter, so 96 `!`s passed the bound and two of
- *  them handed `WARM.get` a 613-byte key — KV refuses keys over 512 bytes on
+ *  them handed `WARM.get` a 613-byte key, KV refuses keys over 512 bytes on
  *  GET as well as PUT, so a junk URL answered 500 where the policy promises
  *  400 (verify-slice, 2026-09-18). `v=` is the two-character prefix. */
 /** @param {string} value */
@@ -212,7 +212,7 @@ const formEncodedLength = (value) => new URLSearchParams({ v: value }).toString(
 
 /** KV's key limit (developers.cloudflare.com/kv/platform/limits/: "512
  *  bytes", fetched 2026-09-04). The per-value bound above keeps every real
- *  key far below it; this is the belt over those braces — the KEY is what
+ *  key far below it; this is the belt over those braces, the KEY is what
  *  KV measures, so the key is what is refused, whatever alphabet, sort,
  *  page or nonce the junk arrives in. */
 const KV_KEY_MAX_BYTES = 512;
@@ -259,10 +259,10 @@ function validateFacets(query, summaries) {
 }
 
 /** The canonical warm key: fixed param order, defaults omitted,
- *  `URLSearchParams` spelling — one condition, one key. `q` never appears
+ *  `URLSearchParams` spelling, one condition, one key. `q` never appears
  *  because a search is never stored. The prefix is the TRAY's shape version
  *  (plp-query.mjs PLP_TRAY_VERSION): a shape change under a kept prefix
- *  would serve pre-deploy entries the renderers cannot read — un-nonced
+ *  would serve pre-deploy entries the renderers cannot read, un-nonced
  *  entries never expire, so a prefix bump is the only mechanism that
  *  retires them.
  *  @param {PlpQuery} query @param {string} run */
@@ -312,7 +312,7 @@ async function handlePlp(url, env) {
       },
       {
         // The policy in the file header. A search and an unwarmed n are
-        // known uncacheable from the URL alone — `plpWarmable` is the SAME
+        // known uncacheable from the URL alone, `plpWarmable` is the SAME
         // derivation the chrome's cacheState tag uses (@pm/measurement), so
         // what the tier does and what RUM says it did cannot disagree. A
         // page past the end is known only after compute.
@@ -323,7 +323,7 @@ async function handlePlp(url, env) {
     );
     // `serveData` answers null only for a null compute, and `applyPlpQuery`
     // always returns a page (an empty condition is the honest empty page,
-    // never not-found) — stated as a throw rather than a cast, so a future
+    // never not-found), stated as a throw rather than a cast, so a future
     // compute that CAN return null meets a 500 here instead of a null
     // response (found by the typecheck, workers-hardening 2026-09-25).
     if (served === null) throw new Error("plp: compute returned null for a condition that always has a page");
@@ -348,13 +348,13 @@ async function handlePdp(url, env, rawId) {
   const key = `v1:/api/pdp/${id}${run ? `?run=${run}` : ""}`;
 
   // KNOWN COST, recorded rather than removed (workers-hardening, 2026-09-25;
-  // 2026-08-29 audit priority 5, task 3): a cold read — `?cache=cold`, or
-  // the first request for an id under a `?run=` nonce — fetches and parses
+  // 2026-08-29 audit priority 5, task 3): a cold read, `?cache=cold`, or
+  // the first request for an id under a `?run=` nonce, fetches and parses
   // the WHOLE details tray from R2 to serve one release: 967,527 B on the
   // crate, 345,236 B on the fixture (`wc -c` on the committed trays). The
   // alternative is a per-release object written at seed time
   // (`snapshot/details/{id}.json`, seed-local.mjs), which is one small R2
-  // read per cold request instead — but every plane must be re-seeded
+  // read per cold request instead, but every plane must be re-seeded
   // before the Worker can read it, the deployed bucket's re-seed is a
   // credentialed manual step (workers/README.md), and until it ran every
   // cold PDP read would answer 404. Left as it is because the cost is
@@ -383,7 +383,7 @@ async function handleSnapshot(env) {
   // Provenance, not measurement (ADR-0002 §1): the dated SnapshotManifest
   // names which frozen snapshot this plane serves. The origin suite reads it
   // to pick WHICH committed snapshot's artifacts to assert against (issue
-  // #11) — so it sits deliberately outside the warm tier and carries no
+  // #11), so it sits deliberately outside the warm tier and carries no
   // cache-state marker.
   const obj = await env.SNAPSHOT.get(SNAPSHOT_KEYS.manifest);
   if (!obj) return json({ error: "snapshot manifest not found" }, 404);
@@ -402,9 +402,9 @@ async function handleImage(url, env) {
   if (!obj) return new Response("not found\n", { status: 404 });
   return new Response(obj.body, {
     headers: {
-      // The seeder's stored metadata is authoritative — never assume avif.
+      // The seeder's stored metadata is authoritative, never assume avif.
       "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream",
-      // Frozen snapshot — immutable by definition.
+      // Frozen snapshot, immutable by definition.
       "cache-control": "public, max-age=31536000, immutable",
     },
   });
@@ -432,12 +432,12 @@ async function handleBeacon(request, env) {
   if (missing.length > 0) {
     return json({ error: `missing required tags: ${missing.join(", ")}` }, 400);
   }
-  // Every key is a non-empty string from here on — proven by the filter.
+  // Every key is a non-empty string from here on, proven by the filter.
   const tags = /** @type {BeaconTags} */ (rawTags);
   // The VALUE is required and must be a finite number (workers-hardening,
   // 2026-09-25; 2026-08-29 audit priority 5, task 3). Until this check the
   // write below coerced a missing, null, NaN or non-numeric value to 0 and
-  // recorded the point — a fabricated 0 ms LCP is a lie in a dashboard, and
+  // recorded the point, a fabricated 0 ms LCP is a lie in a dashboard, and
   // a dashboard's p75 over a row of zeros is a lie that looks like a
   // finding. The measurement client always sends the metric's own number
   // (packages/measurement/src/client.ts), so a real beacon never meets this;
@@ -446,10 +446,10 @@ async function handleBeacon(request, env) {
     return json({ error: "value must be a finite number" }, 400);
   }
   // The ROSTER (security floor, 2026-09-18; @pm/measurement). `variant` is
-  // the AE index — the sampling key — and `surface` the first blob every
+  // the AE index, the sampling key, and `surface` the first blob every
   // dashboard groups by. Until this check any string that fit in 96 bytes
   // became a sampling key (2026-08-29 audit, priority 4 task 2: RUM-dashboard
-  // pollution — published numbers were never at risk, they come from
+  // pollution, published numbers were never at risk, they come from
   // committed lab bundles). Exact match, refused BEFORE the byte bound so the
   // message names the tag. Rate limiting stays deferred to domain-cutover
   // (workers/README.md); this is the part a rate limit cannot do.
@@ -461,8 +461,8 @@ async function handleBeacon(request, env) {
   }
   // Analytics Engine throws TypeError synchronously on shape violations
   // (verified against workerd source: 1 index ≤ 96 bytes, ≤ 20 blobs,
-  // ≤ 16 KB cumulative). EVERY client-controlled blob — the five tags AND
-  // the metric name — is bounded here, so oversized input is a 400, never a
+  // ≤ 16 KB cumulative). EVERY client-controlled blob, the five tags AND
+  // the metric name, is bounded here, so oversized input is a 400, never a
   // production 500 the local no-op emulation can't catch.
   const encoder = new TextEncoder();
   const name = typeof event.name === "string" ? event.name : "";
@@ -479,8 +479,8 @@ async function handleBeacon(request, env) {
   }
 
   // writeDataPoint is fire-and-forget by design ("you do not need to await
-  // writeDataPoint() — it will return immediately", per the AE docs);
-  // "success" here means the call completed without throwing — the point
+  // writeDataPoint(). It will return immediately", per the AE docs);
+  // "success" here means the call completed without throwing, the point
   // passed validation and was handed to the runtime's background pipeline
   // (PRD story 26). Locally it is a documented no-op. Field packing: one
   // indexed dimension (variant, the sampling key), the five tags + metric

@@ -3,43 +3,43 @@
  *
  * `PAGE_NORMALIZE` runs INSIDE the driven browser (Playwright serializes the
  * function into the page), so the DOM being normalized is the browser's own
- * parse of what the variant actually served — no second HTML parser whose
+ * parse of what the variant actually served, no second HTML parser whose
  * quirks could diverge from what a visitor's browser sees. The function is
  * therefore fully self-contained: no imports, no closures.
  *
  * What normalization removes, and why each removal is legitimate:
  *
- *  1. The `div#pm-chrome-slot` ELEMENT and its subtree — chrome is
+ *  1. The `div#pm-chrome-slot` ELEMENT and its subtree, chrome is
  *     instrumentation, excluded by contract (ADR-0004 §7,
  *     packages/switcher/README.md). The slot element itself goes too: the
- *     reference render has no slot, variants do — both facts are part of the
+ *     reference render has no slot, variants do. Both facts are part of the
  *     contract, so after normalization both sides agree.
- *  2. Comment nodes — permitted paradigm noise (ADR-0003 §6: SSR boundary
+ *  2. Comment nodes, permitted paradigm noise (ADR-0003 §6: SSR boundary
  *     markers and the like). Text they SPLIT is merged back first: React-style
  *     `foo<!-- -->bar` renders as one text run and must compare equal to it.
- *  3. `script`/`style`/`link`/`template` elements — DELIVERY, the measured
+ *  3. `script`/`style`/`link`/`template` elements, DELIVERY, the measured
  *     variable, not the canonical markup (ADR-0003 §2: a paradigm may inline
  *     critical CSS or emit hydration payloads; the drift gate must not
- *     punish repackaging — only re-valuing, which the pixel check catches).
+ *     punish repackaging, only re-valuing, which the pixel check catches).
  *     NOTE: this deliberately widens issue #6's "only the permitted paradigm
- *     noise" list — ADR-0003 §2 wins over the issue text (flagged on the
+ *     noise" list, ADR-0003 §2 wins over the issue text (flagged on the
  *     issue). Like comments, dropped elements are transparent to text runs.
- *  4. The `<head>` subtree — asset links and metadata are delivery. The
+ *  4. The `<head>` subtree, asset links and metadata are delivery. The
  *     `<html>` and `<body>` elements' OWN attributes are contract surface
  *     though (a dropped `lang` is pixel-neutral a11y drift): they are
  *     serialized as the extract's leading lines, through the same noise
  *     filter as every other attribute.
- *  5. Per-variant PERMITTED noise — hydration-marker attributes, scoping
+ *  5. Per-variant PERMITTED noise, hydration-marker attributes, scoping
  *     hash classes, and behavior attributes (their own declared class,
  *     ADR-0008), declared in {@link PERMITTED_NOISE} so what each variant
  *     is allowed to add is auditable in exactly one place.
- *  6. Insignificant whitespace — ASCII whitespace runs collapse to one
+ *  6. Insignificant whitespace, ASCII whitespace runs collapse to one
  *     space; ASCII-whitespace-only text drops (indentation is not drift).
  *     ONLY ASCII: U+00A0 and friends are rendered content per the HTML
  *     spec's whitespace definition, and must compare verbatim.
  *
- * Everything else — elements, nesting, attributes and their values, class
- * names, text — must match the reference render exactly.
+ * Everything else, elements, nesting, attributes and their values, class
+ * names, text, must match the reference render exactly.
  *
  * Serialization is deterministic (sorted attributes, sorted class tokens,
  * one node per line, two-space indent) so equality is a string comparison
@@ -53,7 +53,7 @@ export interface NoiseSpec {
   /** Regex sources matching CLASS TOKENS that are permitted scoping hashes. */
   classPatterns: readonly string[];
   /** Regex sources matching BEHAVIOR-ATTRIBUTE NAMES (`hx-*`, `on:*`,
-   *  `q:*`): the paradigm's MECHANISM, not residue — ADR-0008's freedoms
+   *  `q:*`): the paradigm's MECHANISM, not residue, ADR-0008's freedoms
    *  list makes them their own declared registry class so a registration is
    *  auditable as "this is how the paradigm works", never smuggled in as
    *  residue. Stripped identically to `attrPatterns`; the distinction is
@@ -62,16 +62,16 @@ export interface NoiseSpec {
    *  this shared type mid-chain. */
   behaviorAttrPatterns: readonly string[];
   /** CSS selectors matching WHOLE ELEMENTS (subtree included) that are
-   *  permitted noise — for residue that isn't expressible as an
+   *  permitted noise, for residue that isn't expressible as an
    *  attribute/class strip because the element itself doesn't exist in the
    *  master (e.g. a framework's own internal streaming/hydration-boundary
    *  wrapper). Optional: only variants that measure a real need register
    *  it (minted by editorial-build slice B for Next's App Router streaming
-   *  marker, `body > div[hidden]:first-child` — an empty wrapper around
+   *  marker, `body > div[hidden]:first-child`, an empty wrapper around
    *  React's own `<!--$-->`/`<!--/$-->` Suspense-boundary comments, which
    *  the comment-stripping rule already erases; only the wrapping element
    *  remains to account for). Removed the same way the chrome slot already
-   *  is — this generalizes that one hardcoded case into registry policy. */
+   *  is. This generalizes that one hardcoded case into registry policy. */
   dropElementSelectors?: readonly string[];
 }
 
@@ -83,13 +83,13 @@ export const NO_NOISE: NoiseSpec = {
 };
 
 /**
- * The permitted-noise registry — gate POLICY, one auditable place
+ * The permitted-noise registry, gate POLICY, one auditable place
  * (ADR-0003 §6 names the permitted classes: hydration markers, comment
  * nodes, scoping hashes; comments are dropped unconditionally). Every real
  * variant registers its paradigm's idiomatic noise here when it lands.
  *
  * Registering noise does NOT extend the gate past its boundary: the gate
- * proves the SERVED DOM only (contexts are JS-off) — a hydrating variant's
+ * proves the SERVED DOM only (contexts are JS-off), a hydrating variant's
  * post-hydration mutations are unchecked until the JS-on second pass lands
  * with the first hydrating variant (tools/drift-gate/README.md).
  */
@@ -100,14 +100,14 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
     classPatterns: ["^ph-"],
     behaviorAttrPatterns: [],
   },
-  // vanilla registers NOTHING — it is the NO_NOISE control, by design
+  // vanilla registers NOTHING. It is the NO_NOISE control, by design
   // (editorial-build PRD): the absence of an entry here is asserted in the
   // origin suite, and its drift comparison runs under NO_NOISE.
   /**
    * htmx (editorial-build slice E, extended by the PLP build 2026-08-28).
    * ALL mechanism, like qwik's: the one registered pattern is the
    * paradigm's own behavior-attribute prefix, so `attrPatterns` and
-   * `classPatterns` stay empty and no `dropElementSelectors` is needed —
+   * `classPatterns` stay empty and no `dropElementSelectors` is needed,
    * this Worker emits the markup it is asked for and wraps nothing.
    *
    * THIS ENTRY REPLACES A MEASURED-EMPTY REGISTRATION, and the reason is
@@ -115,19 +115,19 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    * htmx registered nothing, correctly: editorial's single interaction is
    * client cart state, which hypermedia does not own, so the served page
    * carried no `hx-*` at all and the runtime rode a `<script>` element
-   * (delivery — dropped unconditionally). That note ended: "if a later
+   * (delivery, dropped unconditionally). That note ended: "if a later
    * surface (the PLP build, where htmx's loaders+PE strategy lives) puts
    * `hx-*` on a page, THAT build registers `^hx-` under
    * behaviorAttrPatterns deliberately." This is that build.
    *
-   * What earns it, measured rather than assumed — the PLP's served page
+   * What earns it, measured rather than assumed, the PLP's served page
    * carries exactly three `hx-*` attribute NAMES on five elements
    * (variants/htmx/src/render.mjs, PLP_HX_ROOT / HX_BOOST): `hx-target` and
    * `hx-swap` on the `.pm-plp` root, inherited by everything inside it, and
-   * `hx-boost` on the FOUR navigation containers — the facet rail, the
+   * `hx-boost` on the FOUR navigation containers, the facet rail, the
    * search form, the sort form, the pagination. They are ADR-0005 §1's arm
-   * definition made real — "interactions are real links enhanced into
-   * partial swaps (works JS-off)" — and `hx-boost` is deliberately NOT on
+   * definition made real, "interactions are real links enhanced into
+   * partial swaps (works JS-off)", and `hx-boost` is deliberately NOT on
    * the root: it would boost the 24 card links too and swap a PDP document
    * into the grid. Until 2026-09-04 only the pagination was boosted, because
    * the other three affordances had no data-plane params behind them; the
@@ -137,14 +137,14 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    * `^hx-` is deliberately BROADER than those three names. A prefix is
    * what the class is for (`^q:`, `^on:` are registered the same way): it
    * is the paradigm's namespace, and pinning three literal attribute names
-   * would mean a fourth attribute — the next surface's `hx-get`, or a
-   * `hx-push-url` made explicit — silently failing the gate as content
+   * would mean a fourth attribute, the next surface's `hx-get`, or a
+   * `hx-push-url` made explicit, silently failing the gate as content
    * drift rather than being read as the mechanism it is.
    *
    * The anchors themselves are UNTOUCHED: each keeps its own `href` and is
    * byte-identical to the master's, which is what makes the JS-off claim a
    * property of the markup rather than a promise. Registering the noise
-   * does not widen the gate — with JS off there is nothing to strip but
+   * does not widen the gate, with JS off there is nothing to strip but
    * these three attributes, and the served DOM equals the master under
    * them (proven pre-merge in variants/htmx/test/master-identity.test.js).
    */
@@ -164,17 +164,17 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   //     and no element carries a cid.
   //   - `<astro-island>` wrappers appear only around FRAMEWORK components
   //     given a `client:*` directive. The one interaction on this surface is a
-  //     plain bundled `<script>` — Astro's own documented mechanism for
-  //     interactivity without a UI framework — so no island exists to wrap.
+  //     plain bundled `<script>`, Astro's own documented mechanism for
+  //     interactivity without a UI framework, so no island exists to wrap.
   // Measured from real built output, not inferred: the served page's DOM
   // normalizes equal to the master under NO_NOISE, and an island probe built
   // during the slice confirmed the wrapper is an ELEMENT with element
   // children (so `dropElementSelectors`' content-aware guard could not have
-  // excused it anyway — the reason the island was rejected). The origin suite
+  // excused it anyway, the reason the island was rejected). The origin suite
   // asserts the empty registration, and the drift leg compares under
   // NO_NOISE; variants/astro/DIFF-TO-STARTER.md records the whole finding.
   /** react-next (editorial-build slice B): measured from real served
-   *  output (not guessed) — no noisy attributes or scoping-hash classes
+   *  output (not guessed), no noisy attributes or scoping-hash classes
    *  anywhere; the one residue is structural, App Router's own streaming
    *  wrapper (see NoiseSpec.dropElementSelectors' doc comment). */
   "react-next": {
@@ -186,13 +186,13 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
     // NO permitted noise of its own"). Two species it DOES add are already
     // covered without a registration: React 19 hoists a
     // `<link rel="preload" as="image">` per eager card image, and the fenced
-    // Apollo exhibit carries a `[data-pm-fenced]` plaque — the first is a
+    // Apollo exhibit carries a `[data-pm-fenced]` plaque, the first is a
     // DELIVERY element the normalizer drops unconditionally, the second is
     // dropped only by the exhibit's own comparison legs via the call-site
     // `dropFencedSubtrees` flag, which no registration can smuggle in.
     // Scope, stated rather than implied: that measurement is in-process
     // (`react-dom/server`), which never emits the streaming wrapper below, so
-    // it does not re-prove the SERVED page — the origin suite's browser leg
+    // it does not re-prove the SERVED page, the origin suite's browser leg
     // owes that, exactly as it does for editorial.
     attrPatterns: [],
     classPatterns: [],
@@ -201,16 +201,16 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   },
   /**
    * qwik (editorial-build slice D): the first variant whose noise is ALL
-   * mechanism — every entry below is the resumability wire format, so all
+   * mechanism, every entry below is the resumability wire format, so all
    * three patterns belong to the behavior-attribute class and `attrPatterns`
    * stays empty (tools/repo-checks/test/noise-class-discipline.test.ts fails
    * the build if a `q:`/`on:` shape is ever registered as inert residue).
    *
    * Measured from the real served page, and each pattern earns its place:
-   *  - `^q:` — two distinct species. On the `<html>` ELEMENT, the container
+   *  - `^q:`, two distinct species. On the `<html>` ELEMENT, the container
    *    attributes: exactly `q:container`, `q:version`, `q:render`, `q:route`,
    *    `q:base`, `q:locale`, `q:manifest-hash`, `q:instance`. These are why
-   *    this variant needs a registration at all — the normalizer treats the
+   *    this variant needs a registration at all, the normalizer treats the
    *    document element's own attributes as contract surface (§4 above), so
    *    they are compared, not dropped. Inside the page, per-element
    *    bookkeeping: `q:key` and `q:id`.
@@ -219,8 +219,8 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    *    an audit note with unqualified numbers is not auditable (an earlier
    *    version of this note said "11" for the comments below and was wrong by
    *    three): in `<body>`, which is all this normalizer compares, 7 elements
-   *    carry `q:key` — but one of those is a `<script>`, which the
-   *    DROP_ELEMENTS rule removes, so **6 compared elements** carry it — and 4
+   *    carry `q:key`, but one of those is a `<script>`, which the
+   *    DROP_ELEMENTS rule removes, so **6 compared elements** carry it, and 4
    *    carry `q:id` (three `<a>`, one `<button>`). Document-wide there are 15,
    *    the other 8 being `<head>`'s mapped stylesheet `<link>`s, all sharing
    *    `q:key="Ro_1"` (root.tsx relies on that measurement). Separately there
@@ -231,7 +231,7 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    *    element's `q:key` comes only from its JSX node's key
    *    (`@builder.io/qwik/dist/core.mjs`: `if (key != null) openingElement +=
    *    ' q:key="' + escapeHtml(key) + '"'`), and the optimizer assigns node keys
-   *    for its own bookkeeping — so `q:key` appears on plain markup that is
+   *    for its own bookkeeping, so `q:key` appears on plain markup that is
    *    neither a `component$` host nor author-keyed (`<article
    *    class="pm-editorial">`, a `<blockquote>`, `<li
    *    class="pm-release-card">`), while a `component$` host's OWN key goes on
@@ -240,18 +240,18 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
    *    to reference, including two masthead links that carry no listener at
    *    all. The pattern is a prefix for exactly this reason: it covers the
    *    species without pretending to predict the placement.
-   *  - `^on:` — the resumable listener bindings (`on:click` on the
+   *  - `^on:`, the resumable listener bindings (`on:click` on the
    *    add-to-cart button: chunk + symbol, no listener attached until the
    *    click).
-   *  - `^on-document:` — the document-level equivalents (`on-document:qinit`
+   *  - `^on-document:`, the document-level equivalents (`on-document:qinit`
    *    from `useOnDocument`, which is how the masthead badge reads stored
    *    cart state at load; `on-document:qcinit` from qwik-city's own router).
-   *    NOT covered by `^on:` — a separate prefix, and registering only `^on:`
+   *    NOT covered by `^on:`, a separate prefix, and registering only `^on:`
    *    would leave these on the page for the DOM check to fail on.
    *
    * Deliberately NOT registered: `^on-window:` (this page uses no
    * `useOnWindow`, and the rule is to register only what is measured in
-   * served output) and any `dropElementSelectors` — Qwik adds no wrapper
+   * served output) and any `dropElementSelectors`, Qwik adds no wrapper
    * ELEMENT anywhere, so unlike slice B there is nothing structural to
    * excuse. Its dynamic-text markers (`<!--t=…-->`) and component boundaries
    * (`<!--qv …-->`) are COMMENTS, which the normalizer already drops
@@ -262,19 +262,19 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
     classPatterns: [],
     behaviorAttrPatterns: ["^q:", "^on:", "^on-document:"],
   },
-  // remix3 registers NOTHING — the fenced frontier exhibit (editorial-build
+  // remix3 registers NOTHING, the fenced frontier exhibit (editorial-build
   // slice F), and like astro's and htmx's this is a MEASURED outcome from
   // the real served page, not an assumption. Remix 3's residue species all
   // fall outside what a NoiseSpec would need to excuse:
   //   - `<!-- rmx:f:… -->`/`<!-- /rmx:f -->` frame boundaries and the
-  //     `<!-- rmx:flush … -->` trailer are COMMENTS — dropped
+  //     `<!-- rmx:flush … -->` trailer are COMMENTS, dropped
   //     unconditionally while the text runs they split merge back together;
   //   - the `#rmx-data` hydration script IS emitted (end of body, the
-  //     frame-status map) and is a `<script>` — DELIVERY, dropped
+  //     frame-status map) and is a `<script>`, DELIVERY, dropped
   //     unconditionally like every script, so it needs no registration.
   //     Its presence is pinned by variants/remix3/test/worker-fallback
   //     (an earlier draft of this comment recorded it ABSENT, misreading a
-  //     post-strip test dump — the pin exists so this record can never
+  //     post-strip test dump, the pin exists so this record can never
   //     drift from the page again);
   //   - `rmxc-*` classes and `<style data-rmx>` exist only behind the css()
   //     mixin, which this variant deliberately never uses on served markup
@@ -283,7 +283,7 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
   //     this slice's registration call "IF they appear in served DOM")
   //     appear ONLY inside the [data-pm-fenced] demo subtree, which the
   //     fenced variant's own comparisons drop via `dropFencedSubtrees`
-  //     below — so on COMPARED elements they never occur, and registering
+  //     below, so on COMPARED elements they never occur, and registering
   //     them would be exactly the vacuous-excuse class slice D's non-vacuity
   //     scoping exists to reject.
   // The origin suite asserts the empty registration against raw served
@@ -294,7 +294,7 @@ export const PERMITTED_NOISE: Readonly<Record<string, NoiseSpec>> = {
 
 /**
  * The in-page normalizer. Passed to `page.evaluate` by
- * `extractNormalizedDom` (gate.ts) — self-contained by construction.
+ * `extractNormalizedDom` (gate.ts), self-contained by construction.
  * Operates on a clone of the document element; never mutates the live page.
  *
  * With `rootSelector` set, serializes only the first matching element's
@@ -310,10 +310,10 @@ export const PAGE_NORMALIZE = (spec: {
   /** Drop `[data-pm-fenced]` subtrees before comparing (editorial-build
    *  slice F). The fence hook is the CONTRACT's own labeling mechanism
    *  (CONTEXT.md "Plaque": reserved for true number-exclusions), so unlike
-   *  `dropElementSelectors` the removal is deliberately content-bearing —
+   *  `dropElementSelectors` the removal is deliberately content-bearing,
    *  a plaque exists to carry text. SCOPING IS THE ANTI-RIGGING SEAM:
    *  this is a call-site flag, NOT a NoiseSpec field, so no PERMITTED_NOISE
-   *  registration can ever smuggle it in — only a fenced variant's own
+   *  registration can ever smuggle it in, only a fenced variant's own
    *  comparison legs pass it (remix3's advisory drift leg + its pre-merge
    *  guard). A core variant marking markup `data-pm-fenced` gains nothing:
    *  its comparisons never set this flag, so the extra element FAILS its
@@ -321,7 +321,7 @@ export const PAGE_NORMALIZE = (spec: {
    *  carry no such element at all. */
   dropFencedSubtrees?: boolean;
 }): string => {
-  // Behavior attributes strip exactly like inert-residue attributes — the
+  // Behavior attributes strip exactly like inert-residue attributes, the
   // two classes differ in the registry's audit trail, not in mechanics.
   const attrRes = [...spec.attrPatterns, ...spec.behaviorAttrPatterns].map(
     (s) => new RegExp(s),
@@ -333,7 +333,7 @@ export const PAGE_NORMALIZE = (spec: {
     "link", "meta", "source", "track", "wbr",
   ]);
 
-  // HTML's ASCII whitespace only — NBSP/Unicode spaces are content (§6 above).
+  // HTML's ASCII whitespace only, NBSP/Unicode spaces are content (§6 above).
   const WS_RUN = /[\t\n\f\r ]+/g;
   const WS_EDGES = /^[\t\n\f\r ]+|[\t\n\f\r ]+$/g;
   const escText = (s: string) =>
@@ -343,7 +343,7 @@ export const PAGE_NORMALIZE = (spec: {
   const root = document.documentElement.cloneNode(true) as HTMLElement;
   for (const slot of root.querySelectorAll("div#pm-chrome-slot")) slot.remove();
   if (spec.dropFencedSubtrees === true) {
-    // Content-bearing by design (doc comment above) — the plaque/demo are
+    // Content-bearing by design (doc comment above), the plaque/demo are
     // labeled exclusions, not residue; callers assert the removed COUNT
     // separately so an unexpected fenced element can't ride along silently.
     for (const el of root.querySelectorAll("[data-pm-fenced]")) el.remove();
@@ -357,12 +357,12 @@ export const PAGE_NORMALIZE = (spec: {
       // <head> regardless of tree position). If real markup ever renders
       // inside the matched element (e.g. a future <link>/icon that does
       // NOT auto-hoist), silently deleting the whole subtree would hide
-      // that divergence from the drift gate instead of proving it —
+      // that divergence from the drift gate instead of proving it,
       // exactly the failure mode this gate exists to catch. Only comment
       // nodes and insignificant ASCII whitespace are tolerated inside; an
       // element child OR any real text (NBSP/Unicode spaces are content per
       // §6) aborts the removal (verify-slice finding: the registration is a
-      // scoped noise excuse, never a bulk content eraser — and
+      // scoped noise excuse, never a bulk content eraser, and
       // `childElementCount` alone would let a stray text run be erased).
       const hasContent = Array.from(el.childNodes).some(
         (n) =>
@@ -449,7 +449,7 @@ export const PAGE_NORMALIZE = (spec: {
 
 /**
  * First point of divergence between two normalized-DOM strings, with
- * surrounding context — the CI-log evidence when the DOM check fails.
+ * surrounding context, the CI-log evidence when the DOM check fails.
  */
 export function firstDomDivergence(
   a: string,

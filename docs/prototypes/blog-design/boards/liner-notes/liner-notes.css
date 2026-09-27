@@ -1,11 +1,11 @@
 /* ============================================================
-   LINER NOTES — Rob Lark, /blog
+   LINER NOTES, Rob Lark, /blog
    Every post is a release. The sleeve varies; the shelf is calm.
    Tokens shared by all four boards.
    ============================================================ */
 
 :root {
-  /* palette — measured contrast in NOTES.md */
+  /* palette, measured contrast in NOTES.md */
   --stock:  #F7F6F2;  /* sleeve board */
   --ink:    #20241F;  /* letterpress ink       14.56:1 on stock */
   --muted:  #585E54;  /* credits gray           6.18:1 on stock */
@@ -19,7 +19,7 @@
   --mono: "IBM Plex Mono", "Courier New", monospace;
 
   /* rhythm */
-  --measure: 41rem;                       /* ~69ch of Source Serif 4 @19px — math in NOTES.md */
+  --measure: 41rem;                       /* ~69ch of Source Serif 4 @19px, math in NOTES.md */
   --gutter: clamp(1.25rem, 4vw, 2.5rem);
   --step: 1.65rem;                        /* one line of body text */
 }
@@ -163,7 +163,7 @@ img { max-width: 100%; height: auto; display: block; }
 .post-meta .credit + .credit::before { content: "\00a0\00b7\00a0\00a0"; color: var(--rule); }
 .post-meta .credit-role { color: var(--ink); font-weight: 600; }
 
-/* display — the sleeve-front moment: title escapes the measure */
+/* display, the sleeve-front moment: title escapes the measure */
 .post-head--display h1 {
   font-weight: 900;
   font-size: clamp(2.7rem, 7.6vw, 6rem);
@@ -174,7 +174,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .post-head--display .dek { font-size: 1.38rem; }
 
-/* photo-hero — type steps back, pictures carry it */
+/* photo-hero, type steps back, pictures carry it */
 .post-head--photo-hero h1 {
   font-weight: 700;
   font-size: 1.35rem;
@@ -182,7 +182,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .post-head--photo-hero .post-meta { border-bottom: 0; padding-bottom: 0; }
 
-/* bare — a note has no title; the spine and date are the whole header */
+/* bare, a note has no title; the spine and date are the whole header */
 .post-head--bare { margin-bottom: 0.5rem; }
 .post-head--bare .eyebrow { margin-bottom: 1.1rem; }
 .post-head--bare .post-meta { border-bottom: 0; padding-bottom: 0; }
@@ -403,7 +403,7 @@ section.footnotes li::marker { font-family: var(--mono); font-size: 0.8rem; colo
 .tag-list a:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ============================================================
-   CONTENTS — the shelf. A tracklist, not a feed.
+   CONTENTS, the shelf. A tracklist, not a feed.
    ============================================================ */
 .contents-page { padding: 3.5rem var(--gutter) 0; }
 .contents-page > * {

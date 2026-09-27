@@ -1,13 +1,13 @@
 // The PDP's cart write (CART_CONTRACT's quantity clause: a surface WITH a
-// quantity control adds the CHOSEN quantity — the PDP is the only writer of
+// quantity control adds the CHOSEN quantity, the PDP is the only writer of
 // qty > 1).
 //
-// FULLY SELF-CONTAINED, deliberately — no import from cart.ts, not even the
+// FULLY SELF-CONTAINED, deliberately, no import from cart.ts, not even the
 // constants. Two measured reasons, both about editorial's published,
 // SHA-pinned initial-JS cell:
 //  1. extending cart.ts's addToCart with a qty parameter changed editorial's
 //     served chunk bytes directly;
-//  2. merely IMPORTING cart.ts's helpers from here changed them too — the
+//  2. merely IMPORTING cart.ts's helpers from here changed them too, the
 //     new importer kept `announce` and `CART_KEY` from being tree-shaken out
 //     of editorial's chunk (+494 raw bytes across the two cart-adjacent
 //     chunks, measured against the deployed plane, prettified-diff-verified).
@@ -20,7 +20,7 @@
 // implementations honest).
 //
 // The event names couple this module to CartCount/CartStatus (they listen on
-// window) — pdp-controls.browser.test.ts proves the badge and announcement
+// window), pdp-controls.browser.test.ts proves the badge and announcement
 // end-to-end per variant, so a drifted string fails a suite, not a visitor.
 
 const CART_KEY = "pm:cart";
@@ -53,14 +53,14 @@ function isValidCart(value: unknown): value is Cart {
         Number.isInteger((i as CartItem).qty) &&
         (i as CartItem).qty >= 1,
     ) &&
-    // One entry per release id (contract) — the uniqueness clause, checked
+    // One entry per release id (contract), the uniqueness clause, checked
     // in every read() implementation since 2026-08-15.
     new Set(cart.items.map((i) => (i as CartItem).id)).size === cart.items.length
   );
 }
 
 /** Recovery rule: a missing, unparseable, or schema-failing value is the
- *  EMPTY cart — the next successful add overwrites it. */
+ *  EMPTY cart, the next successful add overwrites it. */
 function readCart(): Cart {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(CART_KEY) ?? "");
@@ -72,7 +72,7 @@ function readCart(): Cart {
 }
 
 /** Add `qty` units of `id`. Returns the new count, or `null` if storage
- *  failed (quota, storage off) — the contract: state unchanged, nothing
+ *  failed (quota, storage off), the contract: state unchanged, nothing
  *  announced. Immutable next-cart construction for the reason cart.ts's
  *  addToCart records (a failed setItem must change nothing). */
 export function addToCartQty(id: number, title: string, qty: number): number | null {
@@ -95,7 +95,7 @@ export function addToCartQty(id: number, title: string, qty: number): number | n
   window.dispatchEvent(new CustomEvent(CART_CHANGED_EVENT, { detail: { count: n } }));
   window.dispatchEvent(
     new CustomEvent(CART_ANNOUNCE_EVENT, {
-      detail: { message: `Added "${title}" to cart — ${n} in cart.` },
+      detail: { message: `Added "${title}" to cart, ${n} in cart.` },
     }),
   );
   return n;

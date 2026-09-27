@@ -1,25 +1,25 @@
 /**
  * The zero-bias asset, PROVEN not promised (ADR-0004 §2): with pnpm's strict
  * layout + `hoist: false`, a workspace cannot resolve a SIBLING's undeclared
- * dependency from anywhere inside the repo — so a variant can never quietly
+ * dependency from anywhere inside the repo, so a variant can never quietly
  * bundle a sibling's packages and bundle contents stay honest.
  *
  * The demonstration is end-to-end: spawn a real `node` process resolving
- * `zod` from inside two workspaces — one that declares it (@pm/data-contract)
- * and one that does not (@pm/tokens) — and assert resolution succeeds/fails
+ * `zod` from inside two workspaces, one that declares it (@pm/data-contract)
+ * and one that does not (@pm/tokens), and assert resolution succeeds/fails
  * accordingly. This is the "test or documented check" issue #2 requires.
  *
  * Two porosity channels exist OUTSIDE this guarantee, documented so the claim
  * stays honest (both audited 2026-07-07):
  *  - Node's walk-up continues past the repo root, so a node_modules directory
  *    in an ancestor of the repo (e.g. $HOME/node_modules on a dev machine)
- *    can satisfy undeclared imports locally. Guarded in CI below — where the
- *    benchmark builds actually run — and the airtight form (every resolved
+ *    can satisfy undeclared imports locally. Guarded in CI below, where the
+ *    benchmark builds actually run, and the airtight form (every resolved
  *    module path lives under the repo) belongs to the bench/drift builds
  *    (issues #6/#7).
  *  - `pnpm exec` bin lookup includes shims pnpm links for TRANSITIVE deps
  *    (e.g. vitest's vite appears in a declaring workspace's .bin). Module
- *    resolution — what determines bundle contents — stays strict; only
+ *    resolution, what determines bundle contents, stays strict; only
  *    script/bin invocation is looser.
  */
 import { spawnSync } from "node:child_process";
@@ -58,7 +58,7 @@ describe("strict, non-hoisted dependency isolation (ADR-0004 §2)", () => {
   it("the root dependency set is exactly the tooling allowlist (the walk-up channel stays tooling-only)", () => {
     // Everything the root declares is resolvable from every workspace via
     // Node's walk-up. Pinning the exact set means adding ANY root dependency
-    // fails here loudly and forces a deliberate decision — the guarantee
+    // fails here loudly and forces a deliberate decision, the guarantee
     // cannot narrow silently.
     const rootPkg = JSON.parse(
       readFileSync(join(repoRoot, "package.json"), "utf8"),
@@ -82,7 +82,7 @@ describe("strict, non-hoisted dependency isolation (ADR-0004 §2)", () => {
 
   it("the hidden virtual-store hoist is actually empty (hoist: false applied)", () => {
     // vitest exports NODE_PATH ending in node_modules/.pnpm/node_modules to
-    // its workers and their children — if pnpm populated that dir, undeclared
+    // its workers and their children, if pnpm populated that dir, undeclared
     // deps would leak into anything a test spawns. Guard it directly.
     const hiddenHoist = join(repoRoot, "node_modules", ".pnpm", "node_modules");
     expect(

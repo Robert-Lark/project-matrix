@@ -1,6 +1,6 @@
 /*
- * Surface module — PLP (catalogue). The facet rail + the grid; the covers
- * supply the color, the mat-board holds — at n=24 and at n=240 alike
+ * Surface module, PLP (catalogue). The facet rail + the grid; the covers
+ * supply the color, the mat-board holds, at n=24 and at n=240 alike
  * (density is a stated condition, ADR-0002 §5).
  *
  * Skeleton:
@@ -22,7 +22,7 @@
  * honoured none of the params its links navigated to) and `__body` was a
  * single column. It is back with the params, honoured (ADR-0005 §5).
  *
- * Image loading contract (pinned — a fuzzy rule here moves a published
+ * Image loading contract (pinned, a fuzzy rule here moves a published
  * metric): the first 4 card images are eager, card 1 carries
  * fetchpriority="high" (the LCP candidate on every viewport), the rest are
  * loading="lazy" decoding="async". The tradeoff (slight mobile over-fetch,
@@ -43,8 +43,8 @@
   align-items: start;
 }
 
-/* A grid item's min-width defaults to `auto` — the widest unbreakable
-   content, i.e. a long card title — so without this the results column
+/* A grid item's min-width defaults to `auto`, the widest unbreakable
+   content, i.e. a long card title, so without this the results column
    pushes the page wider than the viewport instead of wrapping (WCAG 1.4.10
    reflow; the PDP's thumb strip taught the same lesson). */
 .pm-plp__results {
@@ -53,7 +53,7 @@
 
 @media (max-width: 52em) {
   .pm-plp__body { grid-template-columns: 1fr; }
-  /* The rail folds under the grid on small screens — filters stay reachable,
+  /* The rail folds under the grid on small screens, filters stay reachable,
      records stay first (the store leads). */
   .pm-plp__body .pm-facets { order: 2; }
 }

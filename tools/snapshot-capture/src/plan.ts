@@ -1,5 +1,5 @@
 /**
- * Phase 2 — the crate plan: the deterministic curation rule (issue #9) applied
+ * Phase 2, the crate plan: the deterministic curation rule (issue #9) applied
  * to the frozen search checkpoints. Pure disk → disk; no API traffic.
  *
  * Rule of record:
@@ -8,14 +8,14 @@
  *    (whole-word: fuzzy search may return "Kitchen Label" for "Ki");
  *  - dedupe by release id, labels walked in spec order;
  *  - per-label quota = ceil(target / labels-with-candidates), each label's
- *    candidates ranked by community popularity (have + want — a store stocks
+ *    candidates ranked by community popularity (have + want, a store stocks
  *    what people want), ties broken by lower id;
  *  - overshoot trimmed globally from the least popular chosen; shortfall
  *    backfilled from the globally-ranked remainder;
  *  - everything unchosen becomes the ordered reserve, from which detail/image
  *    failures are substituted deterministically.
  *
- * The plan is WRITE-ONCE: once plan.json exists it is frozen — code tweaks or
+ * The plan is WRITE-ONCE: once plan.json exists it is frozen, code tweaks or
  * upstream drift between resumed runs cannot silently re-curate the crate.
  * Deleting the file is the explicit re-plan action.
  */
@@ -57,7 +57,7 @@ export interface Plan {
  * the spec label must open the entity name, with a word boundary after it
  * (hyphens word-internal). Suffix variance is legitimate entity naming
  * ("Erased Tapes" → "Erased Tapes Records Ltd.", "Thesis" → "Thesis +
- * Instinct records"); PREFIX matches are impostors — both classes probed
+ * Instinct records"); PREFIX matches are impostors. Both classes probed
  * live: "Par-ki-lee Publishing" matched "Ki" under plain boundaries, and
  * "Surfin' Ki Records" (garage punk) matched a mid-string "Ki Records" and
  * put three Giuda pressings in an ambient crate.
@@ -78,7 +78,7 @@ const byPopularity = (a: Candidate, b: Candidate) => b.popularity - a.popularity
 export function planPhase(spec: CrateSpec, dirs: Dirs, log: (line: string) => void): Plan {
   const existing = readJsonIf<Plan>(paths.plan(dirs));
   if (existing) {
-    log(`[plan] frozen plan exists (${existing.chosen.length} chosen) — delete plan.json to re-plan`);
+    log(`[plan] frozen plan exists (${existing.chosen.length} chosen), delete plan.json to re-plan`);
     return existing;
   }
 
@@ -89,7 +89,7 @@ export function planPhase(spec: CrateSpec, dirs: Dirs, log: (line: string) => vo
   for (const label of spec.labels) {
     const slug = slugify(label);
     const complete = readJsonIf<SearchComplete>(paths.searchComplete(dirs, slug));
-    if (!complete) throw new Error(`[plan] search incomplete for label "${label}" — run search first`);
+    if (!complete) throw new Error(`[plan] search incomplete for label "${label}", run search first`);
 
     const stats: LabelStats = {
       pagesFetched: complete.pagesFetched,
@@ -193,7 +193,7 @@ export function planPhase(spec: CrateSpec, dirs: Dirs, log: (line: string) => vo
         `label-mismatch ${stats.rejected.labelMismatch}, image ${stats.rejected.image})${stats.capped ? " [CAPPED]" : ""}`,
     );
     if (stats.uniqueNew === 0) {
-      log(`[plan] WARNING: label "${label}" contributed nothing — name mismatch or no vinyl in window?`);
+      log(`[plan] WARNING: label "${label}" contributed nothing, name mismatch or no vinyl in window?`);
     }
   }
   log(`[plan] chosen ${plan.chosen.length} / target ${spec.targetReleases}, reserve ${plan.reserve.length}`);

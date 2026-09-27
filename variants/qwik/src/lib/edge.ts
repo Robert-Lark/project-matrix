@@ -3,7 +3,7 @@
  * request-time variant fetches trays through the edge Worker on the same
  * plane; only build-time variants bake them in).
  *
- * The variant binds pm-edge ITSELF (`services` in its own wrangler.jsonc) —
+ * The variant binds pm-edge ITSELF (`services` in its own wrangler.jsonc),
  * the front Worker's own EDGE binding does not reach a variant server-side
  * (the editorial-build PRD's per-slice binding duties, established by slice
  * B). wrangler's local dev registry resolves it because run-local.mjs spawns
@@ -14,7 +14,7 @@ import type { ReleaseDetail, SnapshotManifest } from "@pm/data-contract";
 import { featuredIdFor } from "./snapshot";
 
 /** What this variant needs from the platform. `QwikCityPlatform` is
- *  `PlatformCloudflarePages`, whose `env` is `Record<string, any>` — so the
+ *  `PlatformCloudflarePages`, whose `env` is `Record<string, any>`, so the
  *  binding is typed here, once, instead of `any` leaking into the loader. */
 export interface EdgeEnv {
   readonly EDGE: { fetch(input: string): Promise<Response> };
@@ -26,7 +26,7 @@ function edgeFetch(env: EdgeEnv, path: string): Promise<Response> {
   return env.EDGE.fetch(`https://pm-edge${path}`);
 }
 
-/** Exactly the tray fields the editorial page renders — the shape the route
+/** Exactly the tray fields the editorial page renders, the shape the route
  *  loader projects to, and therefore the only shape that reaches the page's
  *  serialized resumability state. Derived from the shared tray contract with
  *  `Pick`, so a renamed field is a type error here rather than a missing
@@ -47,7 +47,7 @@ export type FeaturedRelease = Pick<
 >;
 
 /** The projection itself, as a function rather than an object literal inside
- *  the route loader — so the pre-merge master-identity guard (test/) drives the
+ *  the route loader, so the pre-merge master-identity guard (test/) drives the
  *  SAME projection the served page does instead of a copy of it that could
  *  drift. */
 export function projectFeatured(detail: ReleaseDetail): FeaturedRelease {
@@ -67,10 +67,10 @@ export function projectFeatured(detail: ReleaseDetail): FeaturedRelease {
 }
 
 /** The editorial page's whole data dependency, resolved per request: the
- *  freeze date (the dateline IS this value — ADR-0008 §8) plus the featured
+ *  freeze date (the dateline IS this value, ADR-0008 §8) plus the featured
  *  release's detail tray. */
 export interface EditorialData {
-  /** The served manifest's `crate` — selects which essay is the honest one. */
+  /** The served manifest's `crate`, selects which essay is the honest one. */
   readonly crate: string;
   readonly capturedAt: string;
   readonly featured: ReleaseDetail;
@@ -89,11 +89,11 @@ export async function loadEditorialData(env: EdgeEnv): Promise<EditorialData> {
   return { crate: manifest.crate, capturedAt: manifest.capturedAt, featured };
 }
 
-/** Exactly the tray fields the PDP renders — the loader projection's shape
+/** Exactly the tray fields the PDP renders, the loader projection's shape
  *  (the FeaturedRelease reasoning one surface over: the whole loader result
  *  rides /qwik/pdp/{slug}/q-data.json to client-nav visitors, so unrendered
  *  fields are unshipped fields). The drops: `cover`, the summary `format`
- *  string, and `slug` — the route's mismatch check runs on the RAW detail
+ *  string, and `slug`, the route's mismatch check runs on the RAW detail
  *  BEFORE projection, and nothing rendered reads it (verify-slice caught the
  *  first draft shipping it, ~40 unrendered bytes per q-data.json on a
  *  byte-measured plane, with this comment claiming otherwise). */
@@ -135,7 +135,7 @@ export function projectPdpDetail(detail: ReleaseDetail): PdpRelease {
   };
 }
 
-/** One detail tray by id, or null when the plane has no such release — the
+/** One detail tray by id, or null when the plane has no such release, the
  *  PDP route turns that null into its 404 (the slug contract: parse the
  *  leading id, fetch, verify). Any other non-2xx throws to the route's 503
  *  branch, the loadEditorialData shape. */

@@ -1,5 +1,5 @@
 /**
- * The capture CLI — `pnpm capture …` from the repo root (built by esbuild to
+ * The capture CLI, `pnpm capture …` from the repo root (built by esbuild to
  * dist/cli.mjs; sharp stays external).
  *
  *   pnpm capture run [--until search|plan|details|images|derive|normalize]
@@ -11,10 +11,10 @@
  *
  * `run` is the one-time capture (issue #9), checkpointed and resumable: kill
  * it anywhere, run it again, and it continues from disk; a fully-landed
- * capture re-runs with ZERO API requests (and therefore needs no token —
+ * capture re-runs with ZERO API requests (and therefore needs no token,
  * the credential is loaded lazily, on the first real request only).
  *
- * `seed` pushes the frozen crate into R2 through the edge seeder — local
+ * `seed` pushes the frozen crate into R2 through the edge seeder, local
  * wrangler emulation by default; `--remote` shares issue #3's credential gate.
  */
 import { spawnSync } from "node:child_process";
@@ -67,7 +67,7 @@ function load(values: CommonValues): { spec: ReturnType<typeof loadSpec>; dirs: 
 /**
  * Advisory single-runner lock. Two concurrent captures against one checkpoint
  * dir converge to a correct crate (atomic writes + existence checkpoints) but
- * race on downloads and waste rate-limit budget — probed live when a killed
+ * race on downloads and waste rate-limit budget, probed live when a killed
  * wrapper shell orphaned its node child. A SIGKILLed run leaves a stale lock;
  * the pid liveness check clears it on the next start.
  */
@@ -82,7 +82,7 @@ function acquireLock(dirs: Dirs): () => void {
       alive = false;
     }
     if (alive && pid !== process.pid) {
-      throw new Error(`another capture run (pid ${pid}) holds ${lockPath} — refusing to race it`);
+      throw new Error(`another capture run (pid ${pid}) holds ${lockPath}, refusing to race it`);
     }
   }
   writeJsonAtomic(lockPath, { pid: process.pid, startedAt: new Date().toISOString() });
@@ -108,7 +108,7 @@ async function main(): Promise<number> {
       return 1;
     }
     const { spec, dirs } = load(values);
-    // NaN poisons the pacing scheduler (Math.max(NaN, …) is NaN — every pace
+    // NaN poisons the pacing scheduler (Math.max(NaN, …) is NaN, every pace
     // AND park would silently no-op), so the flag is validated, not coerced.
     const minIntervalMs = Number(values["min-interval-ms"]);
     if (!Number.isFinite(minIntervalMs) || minIntervalMs <= 0) {
@@ -132,7 +132,7 @@ async function main(): Promise<number> {
 
       // Details and images interleave: an image failure can tombstone a
       // release, which pulls a deterministic substitute whose details/images
-      // then need fetching — loop to a fixed point.
+      // then need fetching, loop to a fixed point.
       for (;;) {
         await detailsPhase(dirs, client, plan, log);
         if (!after("details")) return 0;

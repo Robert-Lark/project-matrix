@@ -1,6 +1,6 @@
 // Deterministic fixture-snapshot generator (issue #4). Everything here is
-// CLEARLY SYNTHESIZED throwaway data — obviously-fake names, a fixed PRNG
-// seed, a pinned capture date — so `?n=` and pagination have ≥240 real rows
+// CLEARLY SYNTHESIZED throwaway data, obviously-fake names, a fixed PRNG
+// seed, a pinned capture date, so `?n=` and pagination have ≥240 real rows
 // to serve before the real crate lands (`snapshot-capture`). Pagination and
 // facet fields are COMPUTED from what is stored, never copied from samples.
 //
@@ -16,7 +16,7 @@
 // and null durations, multi-format, unpriced, multiple genres, the crate's
 // `33 ⅓ RPM` (U+2153) format string and a `℗` (U+2117) note, plus a
 // curation.json whose `featured` id the editorial/PDP reference renders read.
-// Every image also ships its 160px `<name>.thumb.avif` twin — the same thumb
+// Every image also ships its 160px `<name>.thumb.avif` twin, the same thumb
 // tier derive.ts mints for the real crate (thumb src is derived in render by
 // `src.replace(/\.avif$/, ".thumb.avif")`, never stored in the trays).
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -28,9 +28,9 @@ const root = dirname(fileURLToPath(import.meta.url));
 const out = join(root, "snapshot");
 const RELEASE_COUNT = 240;
 const IMAGE_SETS = 12; // small set of placeholder image files, rotated
-const CAPTURED_AT = "2026-07-17"; // pinned — regeneration stays byte-stable
+const CAPTURED_AT = "2026-07-17"; // pinned, regeneration stays byte-stable
 
-// mulberry32 — tiny deterministic PRNG, fixed seed.
+// mulberry32, tiny deterministic PRNG, fixed seed.
 function mulberry32(seed) {
   let a = seed >>> 0;
   return () => {
@@ -49,14 +49,14 @@ const int = (min, max) => min + Math.floor(rand() * (max - min + 1));
 // covers a rendering branch the real crate contains (DRAFT §6); tests and
 // reference renders may target them by id.
 const SPECIAL = {
-  landscape: 13, // 9000014 — 600×298 landscape cover
-  portrait: 14, //  9000015 — 337×450 portrait cover
-  featured: 15, //  9000016 — exactly 5 images + 3 formats[] + priced (curation.json `featured`)
-  singleImage: 16, // 9000017 — exactly 1 image
-  longTrack: 17, // 9000018 — a 3816 s track (renders 1:03:36) + a null duration
-  unpriced: 18, //  9000019 — priceFrom null + numForSale 0, guaranteed (not PRNG luck)
-  phonogram: 19, // 9000020 — ℗ (U+2117) in notes
-  noNotes: 20, //    9000021 — notes: null (61/500 crate releases; the PDP no-notes branch)
+  landscape: 13, // 9000014, 600×298 landscape cover
+  portrait: 14, //  9000015, 337×450 portrait cover
+  featured: 15, //  9000016, exactly 5 images + 3 formats[] + priced (curation.json `featured`)
+  singleImage: 16, // 9000017, exactly 1 image
+  longTrack: 17, // 9000018, a 3816 s track (renders 1:03:36) + a null duration
+  unpriced: 18, //  9000019, priceFrom null + numForSale 0, guaranteed (not PRNG luck)
+  phonogram: 19, // 9000020, ℗ (U+2117) in notes
+  noNotes: 20, //    9000021, notes: null (61/500 crate releases; the PDP no-notes branch)
 };
 
 const ENSEMBLES = [
@@ -67,7 +67,7 @@ const ENSEMBLES = [
 const MOODS = ["Blue", "Cool", "Modal", "Electric", "Quiet", "Midnight", "Analog", "Golden"];
 const NOUNS = ["Sessions", "Sketches", "Studies", "Impressions", "Excursions", "Variations", "Dialogues", "Fragments"];
 const STYLES = ["Modal", "Hard Bop", "Cool Jazz", "Free Jazz", "Post Bop", "Soul-Jazz", "Fusion", "Bossa Nova"];
-// Second and third facet genres (DRAFT §6: facet groups need >1 entry) —
+// Second and third facet genres (DRAFT §6: facet groups need >1 entry),
 // assigned deterministically by index, with their own style pools.
 const ELECTRONIC_STYLES = ["Ambient", "Downtempo", "Minimal"];
 const CLASSICAL_STYLES = ["Modern Classical", "Neo-Classical"];
@@ -78,7 +78,7 @@ const DESCRIPTION_POOL = [
   ["LP", "Album", "Stereo"],
   ["LP", "Album", "Mono"],
   // Space-wrapped exactly like the crate's format strings ("Vinyl, 12", 33 ⅓ RPM")
-  // — exercises the U+2153 glyph path in CI.
+  //, exercises the U+2153 glyph path in CI.
   ["LP", "Album", "33 ⅓ RPM"],
 ];
 const LABELS = [
@@ -107,7 +107,7 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
   const label = pick(LABELS);
 
   // Genre spread: mostly Jazz; every 8th-mod-3 release is Electronic and
-  // every 16th-mod-6 is a Jazz + Classical crossover — three genre facets,
+  // every 16th-mod-6 is a Jazz + Classical crossover, three genre facets,
   // multi-genre releases included.
   let genres = ["Jazz"];
   let styles = jazzStyles;
@@ -125,7 +125,7 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
     src: `/assets/img/ph-${imgSet}-primary.avif`,
     width: 600,
     height: 600,
-    alt: `${artist} — ${title}, front cover (placeholder)`,
+    alt: `${artist}, ${title}, front cover (placeholder)`,
   };
   if (i === SPECIAL.landscape) {
     cover = { src: "/assets/img/ph-land-primary.avif", width: 600, height: 298, alt: cover.alt };
@@ -159,7 +159,7 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
   };
   let images = [cover, back];
   if (i === SPECIAL.featured) {
-    // Exactly 5 images — the rich-gallery branch the reference PDP renders.
+    // Exactly 5 images, the rich-gallery branch the reference PDP renders.
     images = [
       cover,
       back,
@@ -171,7 +171,7 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
       })),
     ];
   } else if (i === SPECIAL.singleImage) {
-    images = [cover]; // exactly 1 image — the no-gallery branch
+    images = [cover]; // exactly 1 image, the no-gallery branch
   }
 
   // Multi-format branch: the featured release carries 3 formats[] entries;
@@ -189,8 +189,8 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
     i === SPECIAL.noNotes
       ? null
       : i === SPECIAL.phonogram
-        ? "Synthesized placeholder release — not a real record. ℗ 1974 Placeholder Records (fixture phonogram-mark branch)."
-        : "Synthesized placeholder release — not a real record. Interim fixture until snapshot-capture lands the real crate.";
+        ? "Synthesized placeholder release, not a real record. ℗ 1974 Placeholder Records (fixture phonogram-mark branch)."
+        : "Synthesized placeholder release, not a real record. Interim fixture until snapshot-capture lands the real crate.";
 
   details.push({
     id,
@@ -214,7 +214,7 @@ for (let i = 0; i < RELEASE_COUNT; i++) {
   });
 }
 
-// The small tray is DERIVED from the full tray — one source of truth.
+// The small tray is DERIVED from the full tray, one source of truth.
 const summaries = details.map(
   ({ id, slug, title, artist, cover, format, year, priceFrom, numForSale, genres, styles }) => ({
     id, slug, title, artist, cover, format, year, priceFrom, numForSale, genres, styles,
@@ -223,7 +223,7 @@ const summaries = details.map(
 
 const manifest = {
   capturedAt: CAPTURED_AT,
-  source: "synthesized-fixture", // truthful provenance (ADR-0002 addendum) — the fixture is synthesized, not from the API
+  source: "synthesized-fixture", // truthful provenance (ADR-0002 addendum), the fixture is synthesized, not from the API
   crate: "synthesized-placeholder-fixture",
   releaseCount: RELEASE_COUNT,
   commitSha: null,
@@ -232,7 +232,7 @@ const manifest = {
 // The curation receipt, mirroring the crate's curation.json shape (spec /
 // planGeneratedAt / perLabel / reserveSize / tombstones) with honestly
 // synthesized stats, plus `featured`: the release id the editorial/PDP
-// reference renders resolve (multi-format, priced, 5-image — SPECIAL.featured).
+// reference renders resolve (multi-format, priced, 5-image, SPECIAL.featured).
 // `featured` is introduced BY the fixture: the crate's frozen curation.json
 // predates it, so readers must treat the field as optional.
 const perLabel = {};
@@ -252,8 +252,8 @@ const curation = {
   spec: {
     slug: "synthesized-placeholder-fixture",
     description:
-      "Deterministic synthesized fixture crate — obviously-fake ensembles on four placeholder labels, branch-covering every rendering path the real crate contains (surface-design DRAFT §6).",
-    decidedBy: "generate.mjs — fixed PRNG seed 20260709, pinned capture date",
+      "Deterministic synthesized fixture crate, obviously-fake ensembles on four placeholder labels, branch-covering every rendering path the real crate contains (surface-design DRAFT §6).",
+    decidedBy: "generate.mjs, fixed PRNG seed 20260709, pinned capture date",
     labels: LABELS.map((l) => l.name),
     format: "Vinyl",
     yearMin: 1950,
@@ -269,7 +269,7 @@ const curation = {
   tombstones: [],
   featured: 9000001 + SPECIAL.featured,
   featuredNote:
-    "The editorial/PDP reference renders read `featured`: a committed release id whose detail tray is multi-format (3 formats), priced, and carries a 5-image gallery. Field introduced by the fixture; the crate's frozen curation.json predates it — treat as optional.",
+    "The editorial/PDP reference renders read `featured`: a committed release id whose detail tray is multi-format (3 formats), priced, and carries a 5-image gallery. Field introduced by the fixture; the crate's frozen curation.json predates it, treat as optional.",
 };
 
 rmSync(out, { recursive: true, force: true });
@@ -282,7 +282,7 @@ writeFileSync(join(out, "curation.json"), JSON.stringify(curation, null, 2) + "\
 // Placeholder cover art: flat tones + a vinyl-ish disc, deterministic per
 // index. 12 square primary/back pairs, one landscape and one portrait cover
 // (the non-square branches), and 3 square gallery-detail extras. Every image
-// is emitted twice: full size and its 160px `<name>.thumb.avif` twin — the
+// is emitted twice: full size and its 160px `<name>.thumb.avif` twin, the
 // SAME thumb spec derive.ts uses for the real crate (160×160 inside-fit,
 // withoutEnlargement, avif quality 50 effort 4).
 const HUES = [210, 30, 120, 275, 0, 160, 45, 330, 90, 195, 250, 15];

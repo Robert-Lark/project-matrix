@@ -21,7 +21,7 @@
 /.open-next/
 /.wrangler/
 
-# @pm/tokens copied in by scripts/copy-tokens.mjs before every build —
+# @pm/tokens copied in by scripts/copy-tokens.mjs before every build,
 # generated, not source (byte-identical to packages/tokens, never edited).
 /public/assets/pm/
 

@@ -1,16 +1,16 @@
 /**
  * The PDP's cart write (CART_CONTRACT's quantity clause: a surface WITH a
- * quantity control adds the CHOSEN quantity — the PDP is the only writer of
+ * quantity control adds the CHOSEN quantity, the PDP is the only writer of
  * qty > 1).
  *
- * FULLY SELF-CONTAINED — no import from lib/cart.ts, the unit's standing
+ * FULLY SELF-CONTAINED, no import from lib/cart.ts, the unit's standing
  * byte-freeze rule (react-next's pdp-cart.ts measured why: a new importer
  * of the shared module changed its retained exports inside EDITORIAL's
  * served chunks, and editorial's published initial-JS cell is pinned at its
  * measurement SHA; on this variant cart.ts rides editorial's chunk graph the
  * same way). Storage only: the shared UI state (the masthead badge, the
  * status region) lives in the CartContext store, which the CALLING component
- * updates — qwik's flow, no window events (lib/cart.ts's header records the
+ * updates, qwik's flow, no window events (lib/cart.ts's header records the
  * paradigm difference).
  */
 
@@ -40,13 +40,13 @@ function isValidCart(value: unknown): value is Cart {
         Number.isInteger((i as CartItem).qty) &&
         (i as CartItem).qty >= 1,
     ) &&
-    // One entry per release id (contract) — the uniqueness clause.
+    // One entry per release id (contract), the uniqueness clause.
     new Set(cart.items.map((i) => (i as CartItem).id)).size === cart.items.length
   );
 }
 
 /** Recovery rule: a missing, unparseable, or schema-failing value is the
- *  EMPTY cart — the next successful add overwrites it. */
+ *  EMPTY cart, the next successful add overwrites it. */
 function readCart(): Cart {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(KEY) ?? "");
@@ -58,7 +58,7 @@ function readCart(): Cart {
 }
 
 /** Add `qty` units of `id`. Returns the new count, or `null` if storage
- *  failed (quota, storage off) — the contract: state unchanged, nothing
+ *  failed (quota, storage off), the contract: state unchanged, nothing
  *  announced. Immutable next-cart construction: a failed setItem must
  *  change nothing. */
 export function addToCartQty(id: number, qty: number): number | null {

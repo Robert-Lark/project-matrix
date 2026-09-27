@@ -1,25 +1,25 @@
 /**
- * ADR-0005 §5's five PLP params — `genre`, `style`, `format`, `sort`, `q` —
+ * ADR-0005 §5's five PLP params, `genre`, `style`, `format`, `sort`, `q`,
  * and the key-cardinality policy that bounds what they can mint in KV
  * (ADR-0005 addendum, 2026-09-04; the policy's prose is the Worker's header).
  *
  * What these legs prove, in the order a skeptic would ask:
  *  1. The params FILTER. A facet click, a search and a sort each return a
- *     genuinely different tray whose items all satisfy the request — and the
+ *     genuinely different tray whose items all satisfy the request, and the
  *     tray is exactly what the spec's own `applyPlpQuery` returns, because
  *     the Worker imports that function rather than re-typing it.
- *  2. Junk is a 400, `none`, and never a key — including values that are
+ *  2. Junk is a 400, `none`, and never a key, including values that are
  *     merely the wrong case, and values too long to be real.
  *  3. Empty is ABSENT: `?sort=`, `?q=`, `?genre=` are what a GET form submits
  *     for an untouched control, and they share the bare condition's key.
  *  4. What is stored: only q-less, knob-n, real-page conditions. A search
- *     never touches KV in either direction — so it can never HIT the
+ *     never touches KV in either direction, so it can never HIT the
  *     unfiltered entry a q-less key already warmed (the design critique's
  *     kill finding). An unwarmed n never touches KV either.
  *  5. One condition, one key: spellings that decode alike share one key; the
  *     key spells `q` never; the longest real key stays far under KV's 512 B.
  *
- * Driven in-process with stub bindings over BOTH committed snapshots — the
+ * Driven in-process with stub bindings over BOTH committed snapshots, the
  * fixture through this workspace's declared dependency, the crate by
  * repo-relative path (the react-next identity guard's precedent) because its
  * facet values carry the awkward characters (`&`, `,`, `"`, `⅓`) that break
@@ -120,7 +120,7 @@ for (const name of ["fixture", "crate"]) {
         expect(tray.items.length, `${param}=${value} served nothing`).toBeGreaterThan(0);
         for (const item of tray.items) expect(pick(item), `${param}=${value}`).toContain(value);
         expect(tray.applied[param]).toBe(value);
-        // The SAME tray the spec computes — the Worker has no opinion of its own.
+        // The SAME tray the spec computes, the Worker has no opinion of its own.
         expect(tray).toEqual(
           applyPlpQuery(summaries, {
             n: 240,
@@ -144,11 +144,11 @@ for (const name of ["fixture", "crate"]) {
       }
     });
 
-    it("the selected group is counted with its OWN filter lifted — every switch target stays listed", async () => {
+    it("the selected group is counted with its OWN filter lifted, every switch target stays listed", async () => {
       const { env } = stubEnv(summaries);
       const tray = await (await get(env, q({ genre, n: "240" }))).json();
       // With only `genre` applied, the genre group is counted over the WHOLE
-      // crate (its own filter lifted) — identical to the unfiltered rail.
+      // crate (its own filter lifted), identical to the unfiltered rail.
       const unfiltered = await (await get(env, q({ n: "240" }))).json();
       expect(tray.facets.genres).toEqual(unfiltered.facets.genres);
       // …while the other groups are counted over the filtered set.
@@ -157,7 +157,7 @@ for (const name of ["fixture", "crate"]) {
 
     it("`q` searches title OR artist, case-insensitively for A–Z, and is echoed normalized", async () => {
       const { env } = stubEnv(summaries);
-      // A real word from a real title, upper-cased and padded — the form of a
+      // A real word from a real title, upper-cased and padded, the form of a
       // hand-typed search.
       const word = summaries[3].title.split(" ").find((w) => /^[A-Za-z]{3,}$/.test(w));
       expect(word, "the fourth release needs a plain word in its title").toBeDefined();
@@ -206,7 +206,7 @@ for (const name of ["fixture", "crate"]) {
       expect(plain.items.map((s) => s.id)).toEqual(summaries.slice(0, 240).map((s) => s.id));
     });
 
-    it("a search matches by ARTIST alone — held to the raw rows, not to the spec's own function", async () => {
+    it("a search matches by ARTIST alone, held to the raw rows, not to the spec's own function", async () => {
       // The `q` leg above compares the Worker's tray to applyPlpQuery, which
       // the Worker IMPORTS: a defect in the shared module moves both sides
       // together. The 2026-09-18 sabotage table dropped the artist half of
@@ -232,13 +232,13 @@ for (const name of ["fixture", "crate"]) {
       }
     });
 
-    it("ties within a sort key keep the COMMITTED order — held to the rows' positions, not to the spec", async () => {
+    it("ties within a sort key keep the COMMITTED order, held to the rows' positions, not to the spec", async () => {
       // Same hazard as the artist leg: "ties on committed order" was asserted
       // by equality with the module both sides share, so nothing independent
       // read the tie-break. Held here to each row's position in `summaries`.
       // Non-vacuous: at least one sort must actually produce a tie run in the
       // served 240 (years repeat in both snapshots). Note: DELETING the
-      // tie-break is a no-op — Array.prototype.sort is stable since ES2019 —
+      // tie-break is a no-op, Array.prototype.sort is stable since ES2019,
       // so the sabotage this leg exists for is a REVERSED tie-break.
       const { env } = stubEnv(summaries);
       const position = new Map(summaries.map((s, i) => [s.id, i]));
@@ -266,7 +266,7 @@ for (const name of ["fixture", "crate"]) {
       expect(tieRuns).toBeGreaterThan(0);
     });
 
-    it("an EMPTY intersection still lists both selected values, at 0 — the rail keeps its toggle-off links", async () => {
+    it("an EMPTY intersection still lists both selected values, at 0, the rail keeps its toggle-off links", async () => {
       // ADR-0005 addendum Q1's one exception (verify-slice, 2026-09-18): the
       // recount over an empty intersection leaves the selected values no
       // bucket, and without the exception every renderer drew a rail with
@@ -321,7 +321,7 @@ describe("junk is a 400, `none`, and never a key", () => {
   const summaries = load("crate");
   const sets = facetValueSets(summaries);
 
-  it("an unknown facet value — including the right value in the wrong case — 400s without a write", async () => {
+  it("an unknown facet value, including the right value in the wrong case, 400s without a write", async () => {
     const { env, puts } = stubEnv(summaries);
     const real = [...sets.genre][0];
     for (const [param, value] of [
@@ -358,7 +358,7 @@ describe("junk is a 400, `none`, and never a key", () => {
     );
     // The bound must clear every real value with room to spare…
     expect(longest).toBeLessThan(96);
-    // …and a 64-char CJK value (576 encoded bytes — the design critique's
+    // …and a 64-char CJK value (576 encoded bytes, the design critique's
     // arithmetic) must never become a KV key.
     const cjk = "測".repeat(64);
     const res = await get(env, q({ genre: cjk }));
@@ -371,11 +371,11 @@ describe("junk is a 400, `none`, and never a key", () => {
     expect(gets).toEqual([]);
   });
 
-  it("the bound is measured in the KEY's encoding: 96 `!`s pass encodeURIComponent but not URLSearchParams — refused, 400, no lookup", async () => {
+  it("the bound is measured in the KEY's encoding: 96 `!`s pass encodeURIComponent but not URLSearchParams, refused, 400, no lookup", async () => {
     // The first draft bounded with encodeURIComponent, which leaves ! ' ( ) ~
     // as one byte where the key's serializer spells them as three; two such
     // values passed the bound and handed KV.get a 613-byte key, which KV
-    // refuses on GET as on PUT — a junk URL answered 500 where the policy
+    // refuses on GET as on PUT, a junk URL answered 500 where the policy
     // promises 400 `none` (verify-slice, 2026-09-18). The stub KV enforces
     // the platform's 512-byte key limit so the test can see what the plane
     // would have done.
@@ -394,7 +394,7 @@ describe("junk is a 400, `none`, and never a key", () => {
       expect(res.status, `two facets of 96 × ${ch}`).toBe(400);
       expect(res.headers.get("x-pm-cache-state")).toBe("none");
       // The PER-VALUE bound fires (first param, before the key is even
-      // built) — `unknown genre`, not the whole-key belt's `unknown filter`.
+      // built), `unknown genre`, not the whole-key belt's `unknown filter`.
       // Pinned so the two layers are each proven: bound the value with the
       // wrong encoder and the message flips; disable both and the status does.
       expect((await res.json()).error, `96 × ${ch}`).toBe("unknown genre");
@@ -412,7 +412,7 @@ describe("junk is a 400, `none`, and never a key", () => {
 
   it("a junk facet value cannot hit a warm entry: the lookup misses, then validation refuses", async () => {
     const { env, puts, gets } = stubEnv(summaries);
-    // Warm the bare condition first — the state of the deployed plane.
+    // Warm the bare condition first, the state of the deployed plane.
     await get(env, "/api/plp");
     expect(puts).toHaveLength(1);
     const res = await get(env, q({ genre: "Junk" }));
@@ -424,7 +424,7 @@ describe("junk is a 400, `none`, and never a key", () => {
   });
 });
 
-describe("empty is absent — what a GET form submits for an untouched control", () => {
+describe("empty is absent. What a GET form submits for an untouched control", () => {
   const summaries = load("fixture");
 
   it("`?sort=`, `?q=`, `?genre=` serve the bare condition under the bare condition's key", async () => {
@@ -454,10 +454,10 @@ describe("empty is absent — what a GET form submits for an untouched control",
   });
 });
 
-describe("what is stored: q-less, knob-n, real-page conditions — and nothing else", () => {
+describe("what is stored: q-less, knob-n, real-page conditions, and nothing else", () => {
   const summaries = load("fixture");
 
-  it("a search never touches KV in EITHER direction — so it cannot hit the unfiltered entry", async () => {
+  it("a search never touches KV in EITHER direction, so it cannot hit the unfiltered entry", async () => {
     const { env, puts, gets } = stubEnv(summaries);
     // The deployed plane's state: the bare condition is warm.
     const bare = await (await get(env, "/api/plp")).json();
@@ -523,7 +523,7 @@ describe("what is stored: q-less, knob-n, real-page conditions — and nothing e
     expect(puts).toEqual([]);
   });
 
-  it("a filtered page past ITS end is past the end — the ceiling is the filtered set's", async () => {
+  it("a filtered page past ITS end is past the end, the ceiling is the filtered set's", async () => {
     const { env, puts } = stubEnv(summaries);
     const sets = facetValueSets(summaries);
     const genre = [...sets.genre].sort(
@@ -593,7 +593,7 @@ describe("one condition, one key", () => {
     expect(key).not.toContain("q=");
   });
 
-  it("every crate facet value round-trips through a URL to a 200 — the rail's links can never 400", async () => {
+  it("every crate facet value round-trips through a URL to a 200, the rail's links can never 400", async () => {
     const { env } = stubEnv(summaries);
     for (const [param, set] of Object.entries(sets)) {
       for (const value of set) {

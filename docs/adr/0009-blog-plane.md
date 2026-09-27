@@ -4,16 +4,16 @@ date: 2026-07-17
 ticket: blog
 ---
 
-# The blog plane — Rob's writing home and its CMS
+# The blog plane: Rob's writing home and its CMS
 
 ## Context
 
 The domain is about to become roblark.com (`domain-cutover`), and Rob's
 writing home moves in with the benchmark: a personal blog (engineering,
-records, photography — anything) plus the CMS he writes it with. It is
+records, photography, anything) plus the CMS he writes it with. It is
 deliberately NOT a store surface: no Catalogue tokens, no chrome, no HUD,
 no receipts, outside every measurement fence (ADR-0001/0006/0008). What it
-does inherit is the domain's floor — the benchmark's numbers must be
+does inherit is the domain's floor, the benchmark's numbers must be
 provably untouched, and the craft must survive a staff engineer's
 view-source: semantic HTML, accessibility without exception, working RSS,
 URLs that never break.
@@ -35,20 +35,20 @@ composition: `workers_dev: false`, reachable only through `pm-front`'s
 service binding, original request forwarded untouched, blog assets nested
 under `/blog/` so no path rewriting. Unlike variant HTML, BLOG responses
 **bypass chrome injection entirely** and pass through byte-identical, the
-same guard the EDGE binding uses — the blog carries no HUD and appears in
+same guard the EDGE binding uses, the blog carries no HUD and appears in
 no receipt. The admin surface lives INSIDE the prefix at `/blog/admin/*`,
 so the blog claims exactly one top-level path; `domain-cutover` sub-decision
 (d) needs to reserve `/blog` and nothing else.
 
 **2. Content lives in D1 (`pm-blog`); media lives in R2
-(`pm-blog-media`).** Both are new resources — the benchmark's
+(`pm-blog-media`).** Both are new resources, the benchmark's
 `pm-snapshot` bucket and `pm-warm` KV are not touched. Markdown is the
 source of truth (one `body_md` column per post); rendered HTML is a cache
 column recomputed on save by the same pipeline that serves the public
 page. Tables: `posts`, `revisions` (crash-safe autosave history),
 `media`, `sessions`, `login_attempts`. Words are never locked in twice
 over: the source format is plain markdown, and the admin ships a
-one-request full export — a JSON dump of every post, every revision, the
+one-request full export, a JSON dump of every post, every revision, the
 media manifest, and the redirect map (a zip-of-`.md`-files variant is a
 recorded editor follow-up); `wrangler d1 export pm-blog` is the
 out-of-band backup path.
@@ -58,19 +58,19 @@ the preview IS the publish pipeline.** Rob writes markdown daily; the
 pleasurable tool for a drafts-over-days engineer is text he can trust, not
 a block UI he fights. The editor is CodeMirror 6 (markdown mode,
 keyboard-first, slash-command block insertion, drag-drop image upload that
-writes R2 and inserts the directive). Typographic range beyond CommonMark
-— pull quotes, asides, footnotes, galleries with layout options
-(full-bleed, inset, side-by-side), embeds — comes from `remark-directive`
+writes R2 and inserts the directive). Typographic range beyond CommonMark,
+pull quotes, asides, footnotes, galleries with layout options
+(full-bleed, inset, side-by-side), embeds, comes from `remark-directive`
 blocks (`:::pullquote`, `:::gallery{layout=bleed}`, …). One unified
 pipeline module (remark-parse → remark-gfm → remark-directive → custom
 handlers → rehype, Shiki JS-engine highlighting with a curated grammar
 set) renders the admin live preview, the published page, the preview-link
-page, and the RSS body — the preview cannot drift from the blog because
+page, and the RSS body, the preview cannot drift from the blog because
 they are the same function.
 
 **4. Per-post art direction is curated knobs stored as data.** Three
-post-level fields — `accent` (a color), `header_style` (one of a small set
-of designed header treatments), `mood` (layout register) — map to
+post-level fields, `accent` (a color), `header_style` (one of a small set
+of designed header treatments), `mood` (layout register), map to
 pre-designed CSS on the public side. A post can be individually dressed
 without Rob ever touching CSS, and nothing a post carries can break the
 blog's coherence. Kinds (essay/photo/note/link) select the base template;
@@ -80,9 +80,9 @@ series is a grouping field with prev/next navigation, not a kind.
 sessions, CSRF by custom header, rate-limited login.** Cloudflare Access
 was the first choice and is rejected *for now* on a hard constraint: the
 only public hostname is `pm-front.….workers.dev`, and Access on a
-workers.dev hostname cannot be path-scoped — walling `/blog/admin` would
+workers.dev hostname cannot be path-scoped, walling `/blog/admin` would
 wall the benchmark. The equivalently-serious mechanism: a single
-256-bit-entropy credential (single author — no usernames, nothing to
+256-bit-entropy credential (single author, no usernames, nothing to
 enumerate) stored only as a SHA-256 hash in a Worker secret; login issues
 a 256-bit session id stored hashed in D1 (30-day rolling expiry; revocable
 from the admin, including a "sign out everywhere" that kills every session
@@ -91,10 +91,10 @@ every mutation requires a custom `x-pm-blog-csrf` header bound to the
 session (cross-origin JS cannot set it without a preflight that will
 fail) plus a same-origin `Sec-Fetch-Site` check; the login endpoint is
 rate-limited in D1 (per-IP window with lockout backoff). Unauthenticated
-`/blog/admin/*` yields only a login wall — no admin markup, no existence
+`/blog/admin/*` yields only a login wall, no admin markup, no existence
 disclosure; the editor's script bundle also sits behind the session, and
 the only world-readable admin bytes are the login page's stylesheet. **Abuse case:** a write surface on a public domain invites
-credential brute force and session riding; the design closes both — brute
+credential brute force and session riding; the design closes both, brute
 force hits a rate-limited endpoint guarding a 256-bit secret with no
 username dimension, and riding fails on the custom-header CSRF gate while
 the stolen-cookie path is cut by HttpOnly + server-side revocation. At
@@ -103,31 +103,31 @@ layered onto `roblark.com/blog/admin/*` as defense-in-depth in front of
 this wall, not instead of it.
 
 **6. URLs are flat, author-owned, and permanent.** `/blog/` (contents),
-`/blog/{slug}` (posts — slug is an editable field, no dates in the path,
+`/blog/{slug}` (posts, slug is an editable field, no dates in the path,
 so a URL never encodes something that can change), `/blog/tag/{tag}`,
 `/blog/series/{series}`, `/blog/feed.xml` (full-content RSS),
 `/blog/media/{id}` (immutable cache headers), `/blog/preview/{token}`
 (secret drafts), `/blog/admin/*`. Route names are reserved words the slug
-validator refuses. Published slug changes write a redirect row — old URLs
+validator refuses. Published slug changes write a redirect row, old URLs
 301, never 404.
 
 **7. The public side ships zero framework bytes and the stack is four
 defensible dependencies.** Public pages are server-rendered strings from
-`pm-blog` — semantic HTML, one CSS file, no client JS except progressive
+`pm-blog`, semantic HTML, one CSS file, no client JS except progressive
 enhancement measured in single-digit KB. The dependency list: `codemirror`
-(the editor — best-in-class text editing, admin-only bytes), the
+(the editor, best-in-class text editing, admin-only bytes), the
 `unified`/`remark`/`rehype` ecosystem (the de-facto standard markdown
 pipeline), `shiki` (VS Code grammars, inline-styled output that survives
 RSS readers and print); sortable ids come from a 20-line in-repo util, not
 a dependency. Build is `esbuild` via the
 repo's existing `build.mjs` convention. Fonts are self-hosted, subset, and
-new to this plane — zero `@pm/tokens` imports (the workspace-isolation
+new to this plane, zero `@pm/tokens` imports (the workspace-isolation
 guard should be able to prove it).
 
 **8. Deploy order and suite coverage are additive.** `pm-blog` deploys
 before `pm-front` (binding must resolve), joining the variants+edge leg of
 the CI deploy job. The local origin suite gains the blog worker in
-`run-local.mjs` orchestration and a new `blog.test.ts` — existing suite
+`run-local.mjs` orchestration and a new `blog.test.ts`, existing suite
 files and assertions are untouched. The non-contamination claim rests on
 exactly what is enforced: the store workers are byte-untouched (the whole
 production diff is the front's dispatch seam), the full suite stays green,
@@ -135,7 +135,7 @@ and `blog.test.ts` asserts blog pages carry none of the front's injection
 artifacts. Two honest limits, recorded: no store contract asserts the
 absence of blog bytes (nothing about the store changed, so nothing needed
 asserting), and the deployed smoke can prove the wall REFUSES but not that
-it accepts — a missing `ADMIN_CREDENTIAL_HASH` secret is invisible to CI
+it accepts, a missing `ADMIN_CREDENTIAL_HASH` secret is invisible to CI
 and surfaces only at login (runbook step: verify login after arming).
 
 ## Considered alternatives
@@ -151,14 +151,14 @@ and surfaces only at login (runbook step: verify login after arming).
   claimed URL space the cutover must reserve forever, for zero functional
   gain over `/blog/admin`. Rejected.
 - **Git as the content store.** Beautiful export story, but it breaks the
-  interview's first lock — writing from any device — and turns every
+  interview's first lock, writing from any device, and turns every
   publish into a deploy. Rejected.
 - **KV as the content store.** No queries, no transactions, eventual
   consistency on the write path of an editor. Rejected.
 - **A block editor (ProseMirror/Tiptap) with JSON documents.** More
   editor, less trust: structured JSON is a worse source of truth than
   markdown for a writer who greps, diffs, and exports; and the block
-  schema becomes a private format — exactly the lock-in the brief forbids.
+  schema becomes a private format, exactly the lock-in the brief forbids.
   Rejected for this author; revisit only if directives prove insufficient.
 - **Cloudflare Access today.** Rejected above (§5) on the workers.dev
   path-scoping constraint; explicitly planned as a cutover-time layer.
@@ -170,7 +170,7 @@ and surfaces only at login (runbook step: verify login after arming).
 
 - `workers/blog` joins the workspace as `@pm/blog`; `workers/front` gains
   one `services` entry and a prefix table line plus the BLOG passthrough
-  guard — the complete production diff to the benchmark's plane.
+  guard, the complete production diff to the benchmark's plane.
 - First D1 database in the repo (`pm-blog`), second R2 bucket
   (`pm-blog-media`); D1 migrations live in `workers/blog/migrations/` and
   run via `wrangler d1 migrations apply` (local and remote).
@@ -181,7 +181,7 @@ and surfaces only at login (runbook step: verify login after arming).
   the tests themselves, with the committed fixture credential); `blog.test.ts` joins
   the suite additively.
 - CI deploy job gains the `pm-blog` deploy step before `pm-front`; the
-  post-deploy smoke gains blog checks. Merging to main deploys the blog —
+  post-deploy smoke gains blog checks. Merging to main deploys the blog,
   which is why this branch is presented as a preview
   (`wrangler versions upload`) and merging stays Rob's call.
 - `domain-cutover` picks up two lines: `/blog` is a claimed prefix its
@@ -192,24 +192,24 @@ and surfaces only at login (runbook step: verify login after arming).
   contracts never mention it. Separation is enforced by the same
   workspace-isolation guard that fences the variants.
 
-## Addendum — phase 2: the editor made luxurious (2026-07-18)
+## Addendum: phase 2: the editor made luxurious (2026-07-18)
 
 The recorded follow-ups, closed, plus one new mechanism decided here.
 
 **Scheduled publishing is a cron trigger, not a read-time check.** `posts`
 gains `scheduled_at` (migration 0002); a scheduled post is an ordinary
 draft until the Worker's `*/5 * * * *` trigger publishes due rows through
-`publishDue` → `publishPost` — the same slug gate, snapshot revision, and
+`publishDue` → `publishPost`, the same slug gate, snapshot revision, and
 redirect story a manual publish gets, with `published_at` stamped with the
 author's chosen instant rather than the tick that executed it. The gate is
 enforced when the schedule is MADE (a schedule that could never fire is a
 word-losing surprise), and a publish the cron cannot honor (the slug was
 edited invalid afterward) drops the schedule and logs rather than retrying
-forever. Considered alternatives: **publish_at checked on read** — rejected
+forever. Considered alternatives: **publish_at checked on read**, rejected
 because "published but not yet visible" semantics would have to be appended
 to every public query (contents, slug lookup, feed, tag/series, browse
 counts, neighbors) and one missed clause is a silent leak of unpublished
-words; **lazy sweep on public GETs** — rejected on writes riding the public
+words; **lazy sweep on public GETs**, rejected on writes riding the public
 read path and on duplicating publish invariants outside `publishPost`.
 Five-minute granularity is deliberate: a blog does not need minute
 precision, and the displayed date is the author's anyway. Local dev exposes
@@ -221,19 +221,19 @@ insert without re-uploading, edit alt after the fact. Inserts use the
 empty-alt form (`![](/blog/media/…)`) so the row's alt flows through
 `mediaLookup` at render; markdown-explicit alt still wins per image. Since
 `body_html` is a cache, an alt edit re-renders every referencing post's
-cached HTML server-side — `updated_at` untouched, so open editors keep
+cached HTML server-side, `updated_at` untouched, so open editors keep
 their optimistic-concurrency baseline.
 
 **The zip-of-markdown export (§2's recorded variant) ships beside the JSON
 dump.** Each post as front-matter + `body_md`, plus `media.json` and
 `redirects.json`; revisions stay the JSON dump's job. The writer is ~90
-in-repo lines of STORE-only ZIP (`src/zip.js`) — prose gains nothing from
+in-repo lines of STORE-only ZIP (`src/zip.js`), prose gains nothing from
 DEFLATE and the dependency list stays at four (§7).
 
 **AVIF is allowed now that it is sniffable.** `dimensions.js` walks the
-ISOBMFF property tree — `pitm`/`ipma` association to the PRIMARY item's
+ISOBMFF property tree, `pitm`/`ipma` association to the PRIMARY item's
 `ispe` (an alpha-carrying AVIF has a second ispe, so "first ispe" is wrong
-on exactly those files), with `irot` 90°/270° transposing the stored box —
+on exactly those files), with `irot` 90°/270° transposing the stored box,
 so uploads keep the zero-CLS-by-construction rule that justified refusing
 the type. Verified against a real encoder's output, not only crafted boxes.
 
@@ -249,18 +249,18 @@ stylesheet: page margins, break-avoidance around figures/code, ink-colored
 underlines, and the dark-mode image dim explicitly reset on paper.
 
 **One §8 correction learned the loud way:** the deploy job's API token
-needs **D1:Edit** as well as Workers Scripts:Edit — the first post-merge
+needs **D1:Edit** as well as Workers Scripts:Edit, the first post-merge
 deploy of `main` failed at `migrate:remote` with API error 7403 and
 deployed nothing (`workers/README.md` records the re-mint).
 
 **A §4 fence hole closed (found by the phase-2 verify pass):** the `loud`
-mood inked the post title in the per-post accent — recorded in phase 1 as
+mood inked the post title in the per-post accent, recorded in phase 1 as
 "the one sanctioned accent-as-text." But the accent is format-validated,
 never contrast-checked, so a light accent rendered the title near-invisible
 on paper (fails AA), an "accessibility without exception" violation. `loud`
 is now carried by scale and weight; the accent-never-colors-text discipline
 is absolute, its only home the spine. Two other phase-2 verify findings:
 the scheduled-republish stale-date bug above (fixed, `at` wins over
-COALESCE); and a staging-order catch — the fix and its regression test were
+COALESCE); and a staging-order catch, the fix and its regression test were
 staged before they were written, so the index had to be re-staged before
 commit (they would otherwise have shipped the bug green).

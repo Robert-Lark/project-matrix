@@ -1,16 +1,16 @@
 /**
  * Fit-line templates (ADR-0001 addendum C; ADR-0008 §3): the one sentence a
  * surface's reading closes on, GENERATED from receipt-derived values at
- * build — never typed — and REFUSED by the build when the receipts don't
+ * build, never typed, and REFUSED by the build when the receipts don't
  * support its claims (build.mjs bundleFromReceipt: the compared byte bands
  * must not overlap, and the surface's DECLARED `interactionFetch` must hold
  * in every variant's medians). Voice rules: names each paradigm's own cost in
  * the locked axis order (decision-map "Locked axes"), states no ranking, makes
- * no react-next-vs-qwik apples-to-apples claim (ADR-0001 addendum M — the
+ * no react-next-vs-qwik apples-to-apples claim (ADR-0001 addendum M, the
  * serialization caveat lives on the methodology page the chrome links).
  *
  * Keyed by SURFACE. A labBundle-flagged surface with no entry here serves an
- * empty bundle happily — but the build REFUSES a receipt for it, by name:
+ * empty bundle happily, but the build REFUSES a receipt for it, by name:
  * the fit sentence is written WITH the surface's first batch, against what
  * that batch actually measured, never ahead of it.
  *
@@ -24,7 +24,7 @@
 /**
  * Checked against fit.d.mts (workers-hardening, 2026-09-25): an entry that
  * omits a declaration, or adds a field the declaration lacks, fails
- * `tsc --checkJs` here — the build's refusals stay the runtime proof; this
+ * `tsc --checkJs` here, the build's refusals stay the runtime proof; this
  * is the compile-time one.
  * @type {Readonly<Record<string, import("./fit.mjs").FitSpec>>}
  */
@@ -40,11 +40,11 @@ export const FIT = {
      * `build.mjs` is that a surface which legitimately fetches must publish
      * the fetch STATED, not slip past a check that no longer applies to it.
      *
-     *  - `"none"`  — every variant's interaction-byte median must be 0 in
+     *  - `"none"` , every variant's interaction-byte median must be 0 in
      *                BOTH columns. This is editorial's claim, and it is the
      *                site's strongest: "and none of them fetches another byte
      *                for the click".
-     *  - `{ kind: "constant", toleranceBytes }` — the variants must AGREE
+     *  - `{ kind: "constant", toleranceBytes }`, the variants must AGREE
      *                within the stated tolerance, and the agreed figure is
      *                handed to `sentence` so it publishes IN the sentence
      *                rather than hiding in the receipt. A measured constant
@@ -56,8 +56,8 @@ export const FIT = {
     /**
      * The interaction this surface's batch may be driven by. Without it,
      * `--interaction body-click` on an editorial batch passes every gate the
-     * pipeline has — the id exists, one id per receipt, one id per surface,
-     * and "none" holds because a heading click genuinely fetches nothing — and
+     * pipeline has, the id exists, one id per receipt, one id per surface,
+     * and "none" holds because a heading click genuinely fetches nothing, and
      * the site publishes an INP row for a click on `main h1` under prose that
      * calls it the page's one designed interaction (verify-slice, anti-rigging
      * lens). The methodology page's own surface→interaction mapping is derived
@@ -72,20 +72,20 @@ export const FIT = {
      *
      * Editorial publishes it, and that is a measurement rather than an
      * assumption: across the committed receipts every column's INP sits inside
-     * one narrow band — published medians 24 ms throughout except react-next's
+     * one narrow band, published medians 24 ms throughout except react-next's
      * 32 ms on average broadband, and every run of every variant between 24 and
      * 32 ms. (The methodology page states that spread DERIVED from the
      * receipts rather than typed, so it cannot go stale at the next batch; an
      * earlier draft of this comment claimed a flat 24 ms everywhere and the
      * receipts refuted it.) The async-handler asymmetry ADR-0001 addendum T
-     * describes exists here too — qwik's DOM change lands at 22.0 ms against
-     * 1.0-3.5 ms for the others — but it falls INSIDE the measured window, so
+     * describes exists here too, qwik's DOM change lands at 22.0 ms against
+     * 1.0-3.5 ms for the others, but it falls INSIDE the measured window, so
      * the cell is like-for-like.
      */
     interactionTiming: { publish: true },
     /**
      * The EXACT variant set this sentence names. The build refuses any
-     * batch whose columns differ (not a subset check — a sixth variant must
+     * batch whose columns differ (not a subset check, a sixth variant must
      * also force the sentence to be rewritten): without it, renaming or
      * dropping a variant leaves `kb["astro"]` undefined and publishes
      * "islands undefined KB" as the site's only verdict, through every
@@ -96,15 +96,15 @@ export const FIT = {
     sentence: (kb) =>
       `Identical prose, one interaction: the no-runtime build ships ${kb["vanilla"]} KB of JavaScript, ` +
       `heavy hydration ${kb["react-next"]} KB, islands ${kb["astro"]} KB (inlined), ` +
-      `resumability ${kb["qwik"]} KB (up front — deferred binding, not deferred bytes), ` +
-      `hypermedia ${kb["htmx"]} KB (a site-wide runtime) — and none of them fetches another byte for the click.`,
+      `resumability ${kb["qwik"]} KB (up front, deferred binding, not deferred bytes), ` +
+      `hypermedia ${kb["htmx"]} KB (a site-wide runtime), and none of them fetches another byte for the click.`,
   },
   pdp: {
     /**
      * The PDP's headline is the INTERACTION, not initial JS (the pdp-build
      * ticket: "the render axis where JavaScript has real work to do"). The
      * sentence still names each paradigm's own JS cost in the locked axis
-     * order, because that is the axis the reading table publishes — what
+     * order, because that is the axis the reading table publishes. What
      * changes is what the sentence LEADS with.
      */
     metric: "interaction",
@@ -114,7 +114,7 @@ export const FIT = {
      * to the same full-size AVIF, a URL the load never requested because the
      * thumb carries the 160 px `.thumb.avif` derivative (ADR-0008 §11).
      * Declared as a CONSTANT rather than left to a hardcoded zero-check,
-     * because the bytes are IMAGE MASS — the same URL in all four paradigms —
+     * because the bytes are IMAGE MASS, the same URL in all four paradigms,
      * and are therefore never a paradigm difference. If they ever stop
      * agreeing, that is a defect or an instrument artifact, and this
      * declaration is what makes it a build failure instead of a published
@@ -130,7 +130,7 @@ export const FIT = {
      * both columns.
      */
     interactionFetch: { kind: "constant", toleranceBytes: 64 },
-    /** The interaction this surface's batch may be driven by — see the
+    /** The interaction this surface's batch may be driven by, see the
      *  editorial entry. `pdp-add-to-cart` is measured and recorded, but it is
      *  not what publishes: one receipt slot per (surface, profile) means one
      *  family publishes, and this is the one the surface genuinely owns. */
@@ -141,7 +141,7 @@ export const FIT = {
      * Chromium closes an interaction's event-timing entry at the first paint
      * after the handler's SYNCHRONOUS processing returns. Qwik's resumed
      * handler returns having only SCHEDULED the render, so on this surface its
-     * entry closes on a paint that carries nothing — and what the cell then
+     * entry closes on a paint that carries nothing, and what the cell then
      * reads is a race with the frame boundary rather than a property of the
      * paradigm. Measured 2026-08-28 against the deployed plane, qwik against
      * the other three (which read 24 ms throughout):
@@ -155,14 +155,14 @@ export const FIT = {
      * is not a measurement of responsiveness, and the direction flatters the
      * paradigm doing the most work: on the same click qwik's visible update
      * lands at 34.6 ms, the LATEST of the four (18.2-19.5). Switching
-     * interactions does not escape it — add-to-cart reads 8 ms on the default
-     * profile too — so this is a property of the surface's handlers, not of the
+     * interactions does not escape it, add-to-cart reads 8 ms on the default
+     * profile too, so this is a property of the surface's handlers, not of the
      * chosen click.
      *
      * Withheld LOUDLY: the row says so, the fit sentence refuses the timing
      * comparison in its own words, and `/methodology/` carries the mechanism
      * and these figures. Publishing 0 ms beside three 24s under a caveat was
-     * rejected — that is a number no prose can rescue, and "a plausible-looking
+     * rejected, that is a number no prose can rescue, and "a plausible-looking
      * meaningless cell is worse than a missing one" is this project's own rule.
      * The bytes half of the interaction publishes normally: it is verified,
      * cross-paradigm constant, and it is what this surface CAN honestly say
@@ -170,7 +170,7 @@ export const FIT = {
      */
     interactionTiming: {
       publish: false,
-      reason: "not comparable on this surface — see the methodology page",
+      reason: "not comparable on this surface: see the methodology page",
     },
     /**
      * kb: variant → initial-JS KB (warm median, receipt-derived).
@@ -182,16 +182,16 @@ export const FIT = {
      * 2026-08-28: qwik's resumed handler returns in 0.7 ms having only
      * SCHEDULED the render, so the paint that closes its event-timing entry
      * carries nothing, and the cell reads 8 ms while its visible update lands
-     * at 34.6 ms — the latest of the four (18.2–19.5). The methodology page
+     * at 34.6 ms, the latest of the four (18.2–19.5). The methodology page
      * carries the mechanism and the numbers; the sentence refuses to imply a
      * comparison the ruler cannot support.
      */
     sentence: (kb, facts) =>
       `One product page, one real interaction: switching the gallery image costs every paradigm the ` +
-      `same ${facts.interactionKb} KB, because that is image mass and not architecture — while the ` +
+      `same ${facts.interactionKb} KB, because that is image mass and not architecture, while the ` +
       `JavaScript each ships to run it is not the same at all: the no-runtime build ${kb["vanilla"]} KB, ` +
       `heavy hydration ${kb["react-next"]} KB, islands ${kb["astro"]} KB (inlined), ` +
-      `resumability ${kb["qwik"]} KB (up front — deferred binding, not deferred bytes). ` +
+      `resumability ${kb["qwik"]} KB (up front, deferred binding, not deferred bytes). ` +
       `How long the click takes is not measured like-for-like across these four; the methodology page says why.`,
   },
 };

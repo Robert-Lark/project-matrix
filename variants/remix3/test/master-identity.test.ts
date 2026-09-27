@@ -1,9 +1,9 @@
 /**
  * remix3 editorial equals the master by normalized DOM, both snapshots
  * (pre-merge; editorial-build slice F). The byte-strict vanilla/htmx
- * mechanism CANNOT hold here — Remix 3's serializer reorders attributes
+ * mechanism CANNOT hold here, Remix 3's serializer reorders attributes
  * (class last), leaves quotes raw in text where the reference escapes
- * `&#39;`, and self-closes voids — so this is the react-next mechanism: the
+ * `&#39;`, and self-closes voids, so this is the react-next mechanism: the
  * ACTUAL drift-gate normalizer (PAGE_NORMALIZE) over linkedom, master under
  * NO_NOISE, variant under NO_NOISE too (remix3's registration is
  * measured-empty) plus the fenced-subtree drop that is this slice's one
@@ -12,14 +12,14 @@
  * In the variant's own workspace, not repo-checks (the astro precedent):
  * rendering needs remix/ui's JSX runtime. The variant side renders through
  * the WORKER's real fetch path with a stub EDGE serving the same committed
- * trays the master renders from — so the snapshot policy module, the
+ * trays the master renders from, so the snapshot policy module, the
  * controller, the render middleware, and the serializer all execute here
  * pre-merge (the slice-E guard-derives-through-the-variant's-own-module
  * lesson).
  *
  * DETERMINISM NOTE (why this guard may BLOCK while the drift leg is
  * advisory): the lockfile exact-pins the whole render path, so this guard's
- * outcome can only change when a commit changes the tree — the weekly-beta
+ * outcome can only change when a commit changes the tree, the weekly-beta
  * weather ADR-0003's first addendum fences out of CI cannot reach it.
  */
 import { readFileSync } from "node:fs";
@@ -37,7 +37,7 @@ const variantRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(variantRoot, "..", "..");
 
 /** linkedom's parser keeps attribute-name case a real browser's tokenizer
- *  would lowercase — the react-next guard's recorded fixup, reused. */
+ *  would lowercase, the react-next guard's recorded fixup, reused. */
 function lowercaseAttributeNames(document: ReturnType<typeof parseHTML>["document"]): void {
   for (const el of document.querySelectorAll("*")) {
     for (const attr of [...el.attributes]) {
@@ -93,8 +93,8 @@ describe("remix3 editorial equals the master by normalized DOM, both snapshots (
 
       // The variant side goes through the REAL Worker path: stub EDGE
       // serving this snapshot's manifest + featured detail, so the
-      // variant's own featured-id policy picks the id — cross-checked
-      // against the reference's — rather than the test wiring it.
+      // variant's own featured-id policy picks the id, cross-checked
+      // against the reference's, rather than the test wiring it.
       const featuredId = lib.featuredIds(snapshot).editorial as number;
       const snapshotPolicy = await import(
         pathToFileURL(join(variantRoot, "src", "snapshot.mjs")).href
@@ -122,13 +122,13 @@ describe("remix3 editorial equals the master by normalized DOM, both snapshots (
       const variant = await res.text();
 
       // Fenced-count non-vacuity BEFORE the drop: exactly the plaque and
-      // the frames demo on the variant page, none on the master — an
+      // the frames demo on the variant page, none on the master, an
       // unexpected third fenced subtree must fail here, not ride the fence.
       expect(countFenced(variant)).toBe(2);
       expect(countFenced(master)).toBe(0);
 
       // remix3's PERMITTED_NOISE registration is measured-empty (the
-      // astro/htmx precedent) — pinned here so a future registration has to
+      // astro/htmx precedent), pinned here so a future registration has to
       // arrive together with a change to this guard's premises.
       expect(PERMITTED_NOISE["remix3"]).toBeUndefined();
 

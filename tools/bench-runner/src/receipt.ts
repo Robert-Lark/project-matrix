@@ -1,7 +1,7 @@
 /**
  * The receipt contract (ADR-0001 §9): every number a batch produces ships
- * with everything needed to reproduce it — profile, run count, date, commit
- * SHA, run location, raw per-run results, the exact URLs measured — plus the
+ * with everything needed to reproduce it, profile, run count, date, commit
+ * SHA, run location, raw per-run results, the exact URLs measured, plus the
  * measured resource profile the cost calculator consumes (ADR-0001 §7),
  * every field of which names its accounting source (never estimated).
  *
@@ -16,7 +16,7 @@ export const RECEIPT_VERSION = 1;
 const SourcedNumber = z.object({
   /** null = this source genuinely cannot account it here (never estimated). */
   value: z.number().nullable(),
-  /** WHERE the number comes from — part of the anti-rigging trail. */
+  /** WHERE the number comes from, part of the anti-rigging trail. */
   source: z.string().min(1),
 });
 
@@ -35,7 +35,7 @@ const TtfbDecomposition = z.object({
   travelMs: z.number(),
   /** Server think-time ≈ responseStart − requestStart (ADR-0001 §5). */
   serverMs: z.number(),
-  /** The raw sub-phase timestamps — publish the arithmetic (ADR-0001 §9). */
+  /** The raw sub-phase timestamps, publish the arithmetic (ADR-0001 §9). */
   raw: z.record(z.string(), z.number()),
 });
 
@@ -52,7 +52,7 @@ export const RunSample = z.object({
   docCacheState: z.string().nullable(),
   /**
    * Did the post-interaction wait reach network idle, or hit its cap? Zero
-   * interaction bytes means "nothing was fetched" ONLY when this is true —
+   * interaction bytes means "nothing was fetched" ONLY when this is true,
    * a request still in flight when the cap elapses never lands in resource
    * timing, so the two are indistinguishable without this flag. Optional so
    * receipts minted before it remain parseable; absent means unrecorded,
@@ -71,7 +71,7 @@ export const RunSample = z.object({
     initialJsBytes: z.number(),
     /** Bytes fetched because of the scripted interaction (ADR-0001 §3). */
     interactionBytes: z.number(),
-    /** /_pm/* + /api/beacon bytes — EXCLUDED from every bucket above,
+    /** /_pm/* + /api/beacon bytes, EXCLUDED from every bucket above,
      *  reported so the exclusion is visible and non-vacuous (ADR-0001 §6). */
     instrumentationBytes: z.number(),
     /** Sum of buckets (excludes instrumentation by construction). */
@@ -87,19 +87,19 @@ export const RunSample = z.object({
     docAttribution: z
       .object({
         estimator: z.string(),
-        /** The compression model the ratios used — the wire's own codec
+        /** The compression model the ratios used, the wire's own codec
          *  (brotli/zstd/gzip/deflate), null for the non-loo estimators. */
         codec: z.string().nullable().optional(),
         quality: z.number().nullable(),
-        /** The compressed body the model was fitted against — the
+        /** The compressed body the model was fitted against, the
          *  residual's denominator, so the fit is judgeable from the
          *  artifact alone. */
         calibrationTargetBytes: z.number().nullable().optional(),
         /** "encoded-body" (the honest fit) or "transfer-size" (the
-         *  headers-included fallback — publishable never). */
+         *  headers-included fallback, publishable never). */
         calibrationTargetSource: z.string().nullable().optional(),
         calibrationResidualBytes: z.number().nullable(),
-        /** The document response's content-encoding, verbatim — a model
+        /** The document response's content-encoding, verbatim, a model
          *  fitted to a different wire must be visible in the artifact. */
         contentEncoding: z.string().nullable().optional(),
       })
@@ -108,7 +108,7 @@ export const RunSample = z.object({
   requests: z.object({
     /** Request count, instrumentation excluded. */
     counted: z.number(),
-    /** /_pm/* + /api/beacon request count — excluded, reported. */
+    /** /_pm/* + /api/beacon request count, excluded, reported. */
     instrumentation: z.number(),
   }),
 });
@@ -139,7 +139,7 @@ const Column = z.object({
 });
 
 export const Target = z.object({
-  /** Knob-free composed-origin path — the identity half of the condition. */
+  /** Knob-free composed-origin path, the identity half of the condition. */
   path: z.string(),
   variant: z.string(),
   surface: z.string(),
@@ -166,7 +166,7 @@ export const Receipt = z.object({
    * beside the local pin above (ADR-0001 addendum N hole 2): `commit.sha`
    * names the tree that DROVE the browser; this names the tree the plane
    * was BUILT from. The runner refuses a batch whose origin SHA disagrees
-   * with the local pin unless the cross-tree escape is passed explicitly —
+   * with the local pin unless the cross-tree escape is passed explicitly,
    * and a receipt minted that way shows the disagreement right here.
    * Optional so pre-provenance receipts remain parseable; null means the
    * origin did not attest (no /_pm/build.json) and the escape was used.
@@ -187,7 +187,7 @@ export const Receipt = z.object({
   profile: z.object({
     id: z.string(),
     specVersion: z.number(),
-    /** What the automation layer ACTUALLY applied — publish the arithmetic. */
+    /** What the automation layer ACTUALLY applied, publish the arithmetic. */
     applied: z.object({
       mechanism: z.string(),
       latencyMs: z.number(),
@@ -209,13 +209,13 @@ export const Receipt = z.object({
     runNonce: z.string(),
   }),
   runsPerUrl: z.number().min(1),
-  /** What drove the measurement — reproduce-completeness (ADR-0001 §9). */
+  /** What drove the measurement, reproduce-completeness (ADR-0001 §9). */
   harness: z.object({
     browser: z.string(),
     browserVersion: z.string(),
     settleMs: z.number(),
     /**
-     * HOW the settle waits measure quiescence — the mechanism, in the
+     * HOW the settle waits measure quiescence, the mechanism, in the
      * artifact, so a publication gate can require it instead of inferring it
      * from a date.
      *
@@ -224,7 +224,7 @@ export const Receipt = z.object({
      * already closed during load and could observe nothing (ADR-0001 addendum
      * R). Every receipt minted under it carries `interactionSettled: true` on
      * every run, earned by nothing. Those receipts are indistinguishable from
-     * honest ones by their VALUES — the only thing that separates them is
+     * honest ones by their VALUES, the only thing that separates them is
      * which mechanism produced them, so the mechanism has to be recorded.
      *
      * Optional, because receipts minted before this field existed cannot grow

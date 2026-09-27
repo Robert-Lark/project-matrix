@@ -1,18 +1,18 @@
 /**
- * The cost calculator's arithmetic held to issue #8's acceptance criteria —
+ * The cost calculator's arithmetic held to issue #8's acceptance criteria,
  * PURE (no origin, no I/O, no clock): a known resource profile × a known
  * rate card × a stated cache-hit ratio and region must produce EXACT,
  * hand-computed dollars for both views, publish every intermediate step,
  * and keep nulls honest (unpriced, never estimated or zeroed).
  *
  * Fixture values are chosen to be exact in binary floating point, so every
- * dollar assertion is `toBe`, not `toBeCloseTo` — the arithmetic has no
+ * dollar assertion is `toBe`, not `toBeCloseTo`, the arithmetic has no
  * tolerance to hide in. The fixture receipt is parsed through the REAL
  * receipt contract (`Receipt.parse`) so the calculator's input shape is
  * pinned to what the bench runner emits (issue #8 "input shape aligns").
  *
  * The one I/O-touching block at the end validates the SHIPPED dated card
- * against the card contract — separate from the pure AC1 assertions.
+ * against the card contract, separate from the pure AC1 assertions.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -157,7 +157,7 @@ const FIXTURE_CARD: RateCardT = parseRateCard({
         // $2/1M requests → A: 2 × 14 = $28
         { meter: "Beta edge requests", basis: "requests", amountUsd: 2, per: 1_000_000, unit: "requests", regions: [REGION], quote: "fixture: $2.00 per million", url: "fixture://beta" },
         // $4/1M invocations, one per visit → $4 flat
-        { meter: "Beta invocations", basis: "visits", amountUsd: 4, per: 1_000_000, unit: "invocations", regions: "all", quote: "fixture: $4 per million invocations", url: "fixture://beta", note: "one invocation per visit — the rendered document" },
+        { meter: "Beta invocations", basis: "visits", amountUsd: 4, per: 1_000_000, unit: "invocations", regions: "all", quote: "fixture: $4 per million invocations", url: "fixture://beta", note: "one invocation per visit, the rendered document" },
         // $9 per 2 CPU-hr = $9 per 7,200,000 CPU-ms → A: 9 × 16e6 / 7.2e6 = $20
         { meter: "Beta active CPU", basis: "cpuMs", amountUsd: 9, per: 2, unit: "CPU-hr", regions: "all", quote: "fixture: $9 per 2 CPU-hours", url: "fixture://beta" },
         // $0.50/GB → A: 0.50 × 1,250 GB = $625
@@ -170,7 +170,7 @@ const FIXTURE_CARD: RateCardT = parseRateCard({
         plan: "Beta Hobby",
         allowances: [
           { meter: "Beta invocations", basis: "visits", allowance: 1_000_000, unit: "invocations", period: "month", quote: "fixture: 1M per month", url: "fixture://beta" },
-          // 4 CPU-hr = 14,400,000 CPU-ms — exercises allowance unit conversion
+          // 4 CPU-hr = 14,400,000 CPU-ms, exercises allowance unit conversion
           { meter: "Beta active CPU", basis: "cpuMs", allowance: 4, unit: "CPU-hr", period: "month", quote: "fixture: 4 CPU-hours per month", url: "fixture://beta" },
           { meter: "Beta edge requests", basis: "requests", allowance: "unlimited", unit: "requests", period: "month", quote: "fixture: unlimited", url: "fixture://beta" },
           { meter: "Beta per-invocation cap", allowance: 10, unit: "CPU-ms", period: "invocation", quote: "fixture: 10ms per invocation", url: "fixture://beta" },
@@ -180,7 +180,7 @@ const FIXTURE_CARD: RateCardT = parseRateCard({
     },
     {
       // An all-$0 host (the cloudflare-static-assets shape): a $0 rate
-      // prices ANY usage — even an unaccounted one — at exactly $0.
+      // prices ANY usage, even an unaccounted one, at exactly $0.
       hostId: "gamma",
       vendor: "Gamma",
       plan: "Gamma Free",
@@ -210,7 +210,7 @@ const [archA, archB] = report.views.architectureOnly.targets;
 const [realA, realB] = report.views.realWorld.targets;
 
 // ---------------------------------------------------------------------------
-// AC1 — exact dollars, both views, pure arithmetic
+// AC1, exact dollars, both views, pure arithmetic
 // ---------------------------------------------------------------------------
 
 describe("known profile × known card × stated ratio and region → exact dollars (issue #8 AC1)", () => {
@@ -232,7 +232,7 @@ describe("known profile × known card × stated ratio and region → exact dolla
     expect(realA!.totalUsdPer1MVisits).toBe(677);
     // The two views genuinely differ for the same measured profile.
     expect(realA!.totalUsdPer1MVisits).not.toBe(archA!.totalUsdPer1MVisits);
-    // B maps to alpha in both views — identical by construction.
+    // B maps to alpha in both views, identical by construction.
     expect(realB!.hostId).toBe("alpha");
     expect(realB!.pricedSubtotalUsdPer1MVisits).toBe(archB!.pricedSubtotalUsdPer1MVisits);
   });
@@ -248,7 +248,7 @@ describe("known profile × known card × stated ratio and region → exact dolla
 });
 
 // ---------------------------------------------------------------------------
-// AC2 — the card is data: dated, swappable without code changes
+// AC2, the card is data: dated, swappable without code changes
 // ---------------------------------------------------------------------------
 
 describe("rate card is dated and swappable without code changes (issue #8 AC2)", () => {
@@ -267,7 +267,7 @@ describe("rate card is dated and swappable without code changes (issue #8 AC2)",
 });
 
 // ---------------------------------------------------------------------------
-// AC3 — cache-hit ratio and region are required, explicit inputs
+// AC3, cache-hit ratio and region are required, explicit inputs
 // ---------------------------------------------------------------------------
 
 describe("cache-hit ratio and region are required, explicit inputs (issue #8 AC3)", () => {
@@ -285,7 +285,7 @@ describe("cache-hit ratio and region are required, explicit inputs (issue #8 AC3
     ).toThrow(/region is a required explicit input.*moon-base/);
   });
 
-  it("rejects a real-world view with an unmapped target — no hidden defaults", () => {
+  it("rejects a real-world view with an unmapped target, no hidden defaults", () => {
     expect(() =>
       computeCostReport({ ...baseInput(), realWorldHosts: { "/a/sample/": "beta" } }),
     ).toThrow(/missing "\/b\/sample\/"/);
@@ -339,7 +339,7 @@ describe("card authoring errors surface at parse time (AC2: swappable safely)", 
     expect(() => parseRateCard(JSON.parse(JSON.stringify(ok)))).not.toThrow();
   });
 
-  it("rejects duplicate hostIds — an appended (not replaced) host block must not first-match-win", () => {
+  it("rejects duplicate hostIds, an appended (not replaced) host block must not first-match-win", () => {
     const bad = structuredClone(FIXTURE_CARD);
     bad.hosts.push(structuredClone(bad.hosts[1]!));
     bad.hosts[3]!.rates[0]!.amountUsd = 3.2;
@@ -367,7 +367,7 @@ describe("card authoring errors surface at parse time (AC2: swappable safely)", 
 });
 
 // ---------------------------------------------------------------------------
-// AC4 — intermediate arithmetic published, normalized to $/1M visits
+// AC4, intermediate arithmetic published, normalized to $/1M visits
 // ---------------------------------------------------------------------------
 
 describe("the output publishes its arithmetic, normalized to $/1M visits (issue #8 AC4)", () => {
@@ -384,7 +384,7 @@ describe("the output publishes its arithmetic, normalized to $/1M visits (issue 
     expect(cpu.arithmetic).toContain("= $16");
   });
 
-  it("every line echoes the rate's provenance (quote + url) — the price side's receipt", () => {
+  it("every line echoes the rate's provenance (quote + url), the price side's receipt", () => {
     for (const target of [...report.views.architectureOnly.targets, ...report.views.realWorld.targets]) {
       for (const line of target.lines) {
         expect(line.rate.quote.length).toBeGreaterThan(0);
@@ -395,7 +395,7 @@ describe("the output publishes its arithmetic, normalized to $/1M visits (issue 
 });
 
 // ---------------------------------------------------------------------------
-// Nulls stay honest — never estimated, never zeroed
+// Nulls stay honest, never estimated, never zeroed
 // ---------------------------------------------------------------------------
 
 describe("a null resource-profile field is unpriced, never estimated (ADR-0001 §7)", () => {
@@ -404,14 +404,14 @@ describe("a null resource-profile field is unpriced, never estimated (ADR-0001 �
     expect(cpu.costUsdPer1MVisits).toBeNull();
     expect(cpu.unpricedReason).toContain("never estimated");
     expect(archB!.totalUsdPer1MVisits).toBeNull();
-    // $4.00 requests + $320 egress — the priced part only.
+    // $4.00 requests + $320 egress, the priced part only.
     expect(archB!.pricedSubtotalUsdPer1MVisits).toBe(324);
     expect(archB!.unpriced).toEqual([
       { meter: "Alpha CPU", reason: expect.stringContaining("cpuMs unavailable") },
     ]);
   });
 
-  it("a $0 rate prices even an unaccounted quantity at exactly $0 — zero is not an estimate", () => {
+  it("a $0 rate prices even an unaccounted quantity at exactly $0, zero is not an estimate", () => {
     // B (null CPU in both columns) on the all-free gamma host: the true
     // total is fully determined regardless of the unknown usage.
     const free = computeCostReport({
@@ -441,7 +441,7 @@ describe("a null resource-profile field is unpriced, never estimated (ADR-0001 �
     expect(report.methodNotes.join("\n")).toContain("Beta phantom memory");
   });
 
-  it("refuses a physically impossible (negative) profile value loudly — never priced", () => {
+  it("refuses a physically impossible (negative) profile value loudly, never priced", () => {
     const doctored = structuredClone(FIXTURE_RECEIPT);
     doctored.targets[0]!.columns.warm.resourceProfile.bytes.value = -3e9;
     expect(() => computeCostReport({ ...baseInput(), receipt: doctored })).toThrow(
@@ -477,9 +477,9 @@ describe("actual charge at a stated monthly volume (ADR-0001 §7: ≈$0 to date 
   it("free plan: fits → $0 with the allowance arithmetic shown (unit conversion included)", () => {
     expect(beta.freePlan!.chargeUsd).toBe(0);
     const checks = new Map(beta.freePlan!.checks.map((c) => [c.meter, c]));
-    // 500,000 invocations vs 1,000,000 — fits.
+    // 500,000 invocations vs 1,000,000, fits.
     expect(checks.get("Beta invocations")!.fits).toBe(true);
-    // 16 CPU-ms × 500,000 = 8,000,000 vs 4 CPU-hr = 14,400,000 — fits.
+    // 16 CPU-ms × 500,000 = 8,000,000 vs 4 CPU-hr = 14,400,000, fits.
     const cpuCheck = checks.get("Beta active CPU")!;
     expect(cpuCheck.fits).toBe(true);
     expect(cpuCheck.arithmetic).toContain("8,000,000");
@@ -491,7 +491,7 @@ describe("actual charge at a stated monthly volume (ADR-0001 §7: ≈$0 to date 
     expect(cap.fits).toBeNull();
   });
 
-  it("free plan: an exceeded allowance means the plan blocks — charge is null with the overflow stated", () => {
+  it("free plan: an exceeded allowance means the plan blocks, charge is null with the overflow stated", () => {
     // B on alpha: 16 requests × 500,000 = 8,000,000/month ≈ 262,839/day > 3,000.
     const reqCheck = alpha.freePlan!.checks.find((c) => c.meter === "Alpha requests")!;
     expect(reqCheck.fits).toBe(false);
@@ -526,7 +526,7 @@ describe("actual charge at a stated monthly volume (ADR-0001 §7: ≈$0 to date 
     expect(alpha.paidPlan.pricedSubtotalUsd).toBe(165.5);
   });
 
-  it("absent a stated volume, the actual view is absent — never a default", () => {
+  it("absent a stated volume, the actual view is absent, never a default", () => {
     expect(report.actual).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Design system — reference render (prototype)</title>
+  <title>Design system, reference render (prototype)</title>
 
   <!-- The design system: tokens first, then per-component modules.
        THIS render imports them as plain <link>s with no framework. It is the
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../components/button.css">
   <link rel="stylesheet" href="../components/field.css">
 
-  <!-- Demo-page scaffolding ONLY — not part of the design system. -->
+  <!-- Demo-page scaffolding ONLY, not part of the design system. -->
   <style>
     body { margin: 0; background: var(--color-surface-sunk); color: var(--color-text);
            font: var(--text-body)/1.5 var(--font-ui); }
@@ -38,21 +38,21 @@
 <body>
   <a class="demo__skip pm-button" href="#main">Skip to content</a>
   <main class="demo" id="main">
-    <h1>Design system — reference render</h1>
+    <h1>Design system, reference render</h1>
     <p class="demo__note">
       ⚠ <strong>Placeholder aesthetic.</strong> Colours, type and spacing here are
-      neutral stand-ins. This render proves the <em>architecture</em> — token tiers,
-      the semantic seam, forced-colors, and the canonical markup — not the final look
+      neutral stand-ins. This render proves the <em>architecture</em>, token tiers,
+      the semantic seam, forced-colors, and the canonical markup, not the final look
       (that's the <code>aesthetic-direction</code> ticket). It is also the drift-proof
       golden master every variant is measured against.
     </p>
 
     <!-- ── PLP release card: renders ReleaseSummary trays from the data contract ── -->
-    <h2>PLP grid — release card</h2>
+    <h2>PLP grid, release card</h2>
     <ul class="pm-grid" style="list-style: none; margin: 0; padding: 0;">
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="Miles Davis — Kind Of Blue, front cover"
+             alt="Miles Davis, Kind Of Blue, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">Kind Of Blue</h3>
@@ -67,7 +67,7 @@
       </li>
       <li class="pm-release-card">
         <img class="pm-release-card__media" width="600" height="600"
-             alt="John Coltrane — A Love Supreme, front cover"
+             alt="John Coltrane, A Love Supreme, front cover"
              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23eceef0'/%3E%3Ccircle cx='300' cy='300' r='210' fill='%23d9dde1'/%3E%3Ccircle cx='300' cy='300' r='58' fill='%239aa2ab'/%3E%3C/svg%3E">
         <div class="pm-release-card__body">
           <h3 class="pm-release-card__title">A Love Supreme</h3>
@@ -89,14 +89,14 @@
       <button class="pm-button" type="button" disabled>Sold out</button>
     </div>
     <p class="demo__caption">Tab to a button: the focus ring is styled off <code>:focus-visible</code>,
-      not a class. Turn on OS High Contrast — the shape stays visible (the transparent border)
+      not a class. Turn on OS High Contrast, the shape stays visible (the transparent border)
       and the ring maps to the system <code>Highlight</code> colour.</p>
 
     <!-- ── A11y A/B: matched compliant / stripped pair (differ ONLY in a11y) ── -->
-    <h2>Accessible form field — DS-on vs DS-off</h2>
+    <h2>Accessible form field, DS-on vs DS-off</h2>
     <div class="demo__ab">
       <div class="demo__panel">
-        <h3><span class="demo__tag">DS-ON</span> — accessible default</h3>
+        <h3><span class="demo__tag">DS-ON</span>, accessible default</h3>
         <div class="pm-field">
           <label class="pm-field__label" for="email-ok">Email address</label>
           <input class="pm-field__control" id="email-ok" name="email" type="email"
@@ -106,11 +106,11 @@
         </div>
         <p class="demo__caption">Real <code>&lt;label for&gt;</code>, <code>autocomplete</code>,
           error tied via <code>aria-describedby</code> + <code>aria-invalid</code>, and the error
-          reads with an icon + text — not colour alone.</p>
+          reads with an icon + text, not colour alone.</p>
       </div>
 
       <div class="demo__panel">
-        <h3><span class="demo__tag">DS-OFF</span> — what ships without the system</h3>
+        <h3><span class="demo__tag">DS-OFF</span>. What ships without the system</h3>
         <!-- Identical footprint, a11y stripped: placeholder-as-label, no association,
              error signalled by colour ONLY. This is the "failure" side of the demo. -->
         <div class="pm-field">
@@ -119,14 +119,14 @@
           <span style="color: var(--color-danger); font-size: var(--text-small);">Invalid</span>
         </div>
         <p class="demo__caption">No label (placeholder vanishes on type; screen reader announces
-          nothing), no <code>autocomplete</code>, error by red border + red word only — invisible
+          nothing), no <code>autocomplete</code>, error by red border + red word only, invisible
           under forced-colors and to colour-blind users.</p>
       </div>
     </div>
 
     <p class="demo__note" style="margin-block-start: var(--space-6);">
       <strong>Try the global-state a11y modes:</strong> zoom to 400% (layout reflows, no horizontal
-      scroll — everything is in <code>rem</code>); enable OS reduced-motion (the button transition
+      scroll. Everything is in <code>rem</code>); enable OS reduced-motion (the button transition
       collapses to zero); enable OS forced-colors (the whole page remaps via the semantic tier).
     </p>
   </main>

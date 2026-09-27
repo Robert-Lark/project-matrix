@@ -2,7 +2,7 @@
 /**
  * Emits preview.html for each candidate direction from one shared template,
  * so all three boards render IDENTICAL real-component markup (the canonical
- * markup contract) under different primitive pours — differences you see are
+ * markup contract) under different primitive pours, differences you see are
  * the tokens, never the markup.
  *
  * Load order per page: shared tokens.css (semantic tier + forced-colors +
@@ -10,7 +10,7 @@
  * override) → the real component modules → the real chrome.css.
  *
  * Cover art: absolute file:// paths into the MAIN checkout's crate (the
- * image bytes are deliberately git-excluded — ADR-0002/issue #9). Open the
+ * image bytes are deliberately git-excluded, ADR-0002/issue #9). Open the
  * pages via file://; regenerate with `node build-previews.mjs`.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -27,7 +27,7 @@ const DIRECTIONS = [
     slug: "a-catalogue",
     name: "A · Catalogue",
     tagline: "mat-board for five hundred sleeves",
-    face: "Familjen Grotesk (variable 400–700, tnum) — one face for everything",
+    face: "Familjen Grotesk (variable 400–700, tnum), one face for everything",
     thesis:
       "The label's own catalogue: warm paper, slate-water accent, generous air. The covers are the color; the system is mat-board.",
     dials:
@@ -35,7 +35,7 @@ const DIRECTIONS = [
     signature:
       "Restraint as the signature: the quietest direction, betting that 500 real sleeves and aligned numerals carry the personality.",
     risk:
-      "Reads 'tasteful default' if the type rhythm doesn't do enough work — the failure mode is anonymous minimalism.",
+      "Reads 'tasteful default' if the type rhythm doesn't do enough work, the failure mode is anonymous minimalism.",
     displayStyle: "font-weight: 400; letter-spacing: -0.02em;",
     extraCss: "",
   },
@@ -45,7 +45,7 @@ const DIRECTIONS = [
     tagline: "amber signal on warm charcoal",
     face: "Public Sans (variable 100–900, tnum) + JetBrains Mono metrics",
     thesis:
-      "The instrument panel: the one canonical theme poured dark — warm charcoal, amber signal, machined edges, mono readouts. Sleeves glow like records under shop light.",
+      "The instrument panel: the one canonical theme poured dark, warm charcoal, amber signal, machined edges, mono readouts. Sleeves glow like records under shop light.",
     dials:
       "radii 3/8 px · seated shadow (no float) · dense rack rhythm · motion 100/170 ms snappy",
     signature:
@@ -59,13 +59,13 @@ const DIRECTIONS = [
     slug: "c-runout",
     name: "C · Runout",
     tagline: "a spec sheet you can shop from",
-    face: "Archivo (variable wght × width 62–125, tnum) — width axis as display voice",
+    face: "Archivo (variable wght × width 62–125, tnum), width axis as display voice",
     thesis:
-      "The pressing-plant document: cool paper, stamp blue, square corners, zero float. Structure by rule and tone — a spec sheet you can shop from.",
+      "The pressing-plant document: cool paper, stamp blue, square corners, zero float. Structure by rule and tone, a spec sheet you can shop from.",
     dials:
       "radii 0/2 px · no shadow · document-grid space scale · motion 80/140 ms immediate",
     signature:
-      "The width axis: condensed eyebrows and wide display from ONE face — plus the deadwax etch line on receipts.",
+      "The width axis: condensed eyebrows and wide display from ONE face, plus the deadwax etch line on receipts.",
     risk:
       "Austerity: flat + square can read cold or unfinished if spacing precision slips anywhere.",
     displayStyle: "font-stretch: 118%; font-weight: 560; letter-spacing: -0.01em;",
@@ -183,18 +183,18 @@ for (const d of DIRECTIONS) {
 ${hud()}
   <main class="board">
     <p class="board__kicker">aesthetic-direction · candidate board · real components, real crate</p>
-    <h1>${d.name} — ${esc(d.tagline)}</h1>
+    <h1>${d.name}, ${esc(d.tagline)}</h1>
     <p class="board__meta">${esc(d.thesis)}</p>
     <p class="board__meta"><strong>Face:</strong> ${esc(d.face)}</p>
     <p class="board__meta"><strong>Dials:</strong> ${esc(d.dials)}</p>
     <p class="board__meta"><strong>Signature:</strong> ${esc(d.signature)}</p>
     <p class="board__meta"><strong>Risk:</strong> ${esc(d.risk)}</p>
 
-    <h2>Palette — the twelve slots</h2>
+    <h2>Palette, the twelve slots</h2>
     <div class="sw-row">${SLOTS.map(swatch).join("")}</div>
 
     <h2>Type specimen</h2>
-    <p class="spec-eyebrow">Ambient · Melodic Techno · Neo-Classical — 2006–2026</p>
+    <p class="spec-eyebrow">Ambient · Melodic Techno · Neo-Classical, 2006–2026</p>
     <p class="spec-display">One store, five architectures, real numbers.</p>
     <div class="spec-line">
       <span class="spec-weights"><span style="font-weight: var(--weight-normal)">Normal 400</span> ·
@@ -203,7 +203,7 @@ ${hud()}
       <span class="spec-nums">TTFB 412→15 ms · $515.24 · 1,817 files</span>
     </div>
 
-    <h2>The store — PLP grid (8 of 500, frozen 2026-07-11)</h2>
+    <h2>The store, PLP grid (8 of 500, frozen 2026-07-11)</h2>
     <ul class="pm-grid">
 ${picks.slice(0, 8).map(card).join("\n")}
     </ul>
@@ -235,7 +235,7 @@ ${picks.slice(0, 8).map(card).join("\n")}
       </div>
     </div>
 
-    <h2>Instrument sketch — receipt voice (exploratory, not a component)</h2>
+    <h2>Instrument sketch, receipt voice (exploratory, not a component)</h2>
     <div class="receipt">
       <div>PM-BENCH RECEIPT · commit f60385f · captured 2026-07-11 · slow-4G / mid-phone · median of 9</div>
       <div>TTFB 412 ms (navigation timing) · transfer 128.4 KB brotli (CDP) · CPU 84 ms (V8 profile)</div>

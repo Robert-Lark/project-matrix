@@ -1,5 +1,5 @@
 /**
- * PLP — the catalogue under the data axis. The master renders the grid, the
+ * PLP, the catalogue under the data axis. The master renders the grid, the
  * count, the facet rail, the search and sort forms and the pagination for any
  * condition: (n, page, genre, style, format, sort, q), plus the three knobs
  * every in-surface href must carry (cache, run, profile).
@@ -12,18 +12,18 @@
  * toolbar still reading "Showing 1–24 of 500 releases", with no error state.
  * The map's own rule (`decision-map.md`, pdp-controls): either the controls
  * become real in all variants, or they are removed from the master and the
- * CSS so no variant copies them. They are real now — ADR-0005 §5's five
+ * CSS so no variant copies them. They are real now, ADR-0005 §5's five
  * params are honoured by the data plane, and the data-plane semantics the
  * grid is rendered from are THIS package's own (`plp-query.mjs`), imported by
  * the Worker rather than re-typed, so the master and the served page cannot
  * disagree about what a filtered condition contains.
  *
  * Facet display rule (stated, not silent): all genres, top 12 styles, top 8
- * formats — each group titled with its cut. Counts are the tray's facet
+ * formats. Each group titled with its cut. Counts are the tray's facet
  * buckets, RECOUNTED over the filtered set (plp-query.mjs). The selected value
  * is always listed: if it ranks outside its group's cut it is appended after
  * the cut. A selected facet carries `aria-current="true"` and its href
- * REMOVES its own param — the same link toggles it off.
+ * REMOVES its own param, the same link toggles it off.
  *
  * Image loading contract (pinned): first 4 card images eager, card 1
  * fetchpriority="high", the rest loading="lazy" decoding="async".
@@ -37,27 +37,27 @@ export const STYLE_CUT = 12;
 export const FORMAT_CUT = 8;
 
 /** The sort select's options, in order. The default is the snapshot's
- *  committed order, which is id-ascending (snapshot-capture normalize.ts) —
+ *  committed order, which is id-ascending (snapshot-capture normalize.ts),
  *  the pre-2026-08-29 master labelled it "Popularity", which it is not. */
 export const SORT_OPTIONS = Object.freeze([
   ["", "Catalogue order"],
-  ["year-desc", "Year — newest first"],
-  ["year-asc", "Year — oldest first"],
-  ["price-asc", "Price — low to high"],
-  ["price-desc", "Price — high to low"],
-  ["title", "Title — A to Z"],
+  ["year-desc", "Year, newest first"],
+  ["year-asc", "Year, oldest first"],
+  ["price-asc", "Price, low to high"],
+  ["price-desc", "Price, high to low"],
+  ["title", "Title, A to Z"],
 ]);
 
 /**
- * THE ONE HREF RULE — for pagination, facets, both forms' hidden inputs, and
+ * THE ONE HREF RULE, for pagination, facets, both forms' hidden inputs, and
  * every variant's client-side history write. A condition is spelled with its
  * knobs in this order, every knob omitted at its default, and the default
  * condition itself spelled `?page=1` so that no link is ever a bare `?`.
  *
  * It replaces two rules: `pageHref` carried `page` and `n` only, so a
  * page-flip from `?cache=cold` landed on the WARM tier while the injected
- * chrome — rendered against the original search, outside the swapped
- * subtree — still read `cache: cold` (PLP handoff §6.2(ii): the address bar
+ * chrome, rendered against the original search, outside the swapped
+ * subtree, still read `cache: cold` (PLP handoff §6.2(ii): the address bar
  * and the instrument disagreeing about one visit, in the flattering
  * direction). A query-only relative reference REPLACES the whole query
  * string (RFC 3986 §5.3), so the knobs must be carried explicitly.
@@ -90,8 +90,8 @@ export function conditionHref(condition) {
 }
 
 /** The hidden inputs a GET form carries so a submit keeps the condition it
- *  was made from. `page` is never carried — a new filter, sort or search
- *  starts at page 1 — and the form's own control (`q` or `sort`) is skipped
+ *  was made from. `page` is never carried, a new filter, sort or search
+ *  starts at page 1, and the form's own control (`q` or `sort`) is skipped
  *  because the visible field supplies it. Canonical order, so the browser's
  *  DOM-order serialization spells the URL the way `conditionHref` does. */
 function hiddenKnobs(condition, own) {
@@ -99,7 +99,7 @@ function hiddenKnobs(condition, own) {
   // knobs that canonically precede the form's own control go before it, the
   // ones that follow it (the sort form's `q`) go AFTER it. The first draft
   // emitted every hidden input first, so a JS-off sort submit with a search
-  // applied spelled `…&q=…&sort=…` — a third spelling of one condition the
+  // applied spelled `…&q=…&sort=…`, a third spelling of one condition the
   // href rule exists to prevent (verify-slice, 2026-09-18).
   const before = [];
   const after = [];
@@ -142,14 +142,14 @@ function facetGroup(title, param, buckets, cut, condition) {
 
 /**
  * The `.pm-plp` block for a tray + the knobs its hrefs carry. Exported so a
- * guard can render the CONTRACT for any payload — including the ones a
- * committed master cannot express (page 2, a filter, a search) — and hold
+ * guard can render the CONTRACT for any payload, including the ones a
+ * committed master cannot express (page 2, a filter, a search), and hold
  * both arms to it.
  *
  * `payload` is `GET /api/plp`'s tray (`plp-query.mjs applyPlpQuery`), which
  * carries the applied query; the rail's selected facet, the select's chosen
  * option and the search box's value all come from `payload.applied`, never
- * from the URL — see PlpApplied in @pm/data-contract for why.
+ * from the URL, see PlpApplied in @pm/data-contract for why.
  */
 export function renderPlpBlock(payload, { origin = "", cache, run, profile } = {}) {
   const { items, page: current, perPage: n, total, totalPages, facets, applied } = payload;
@@ -169,9 +169,9 @@ export function renderPlpBlock(payload, { origin = "", cache, run, profile } = {
     .join("\n");
 
   // An out-of-range page answers with an empty `items` array (the edge
-  // Worker floors `page` at 1; the ceiling is applied on the way out — a
+  // Worker floors `page` at 1; the ceiling is applied on the way out, a
   // page past the end is served but never cached), and the arithmetic range
-  // would read BACKWARDS — "Showing 241–240 of 240". An empty page shows
+  // would read BACKWARDS, "Showing 241–240 of 240". An empty page shows
   // "0", which is true.
   const range = items.length ? `${start + 1}–${start + items.length}` : "0";
 
@@ -191,7 +191,7 @@ export function renderPlpBlock(payload, { origin = "", cache, run, profile } = {
       ? `<span class="pm-pagination__link pm-pagination__link--current" aria-current="page">${p}</span>`
       : `<a class="pm-pagination__link" href="${esc(conditionHref({ ...condition, page: p }))}">${p}</a>`;
 
-  // "Next" is emitted only when a next page exists — otherwise it walked
+  // "Next" is emitted only when a next page exists, otherwise it walked
   // forever into empty pages, and the two arms that mirror this file had
   // guessed differently about what to do there (2026-08-29).
   const hasNext = current < totalPages;
@@ -299,7 +299,7 @@ export function renderPlp(
   const content = renderPlpBlock(payload, { origin, cache, run, profile });
 
   return page({
-    title: `Records — Long Decay Records`,
+    title: `Records · Long Decay Records`,
     depth: 2 + extraDepth,
     css: [...PLP_CSS],
     current: "plp",

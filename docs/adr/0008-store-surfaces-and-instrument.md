@@ -4,7 +4,7 @@ date: 2026-07-17
 ticket: surface-design
 ---
 
-# Store surfaces + the instrument — the canonical spec layer
+# Store surfaces + the instrument: the canonical spec layer
 
 ## Context
 
@@ -14,14 +14,14 @@ no surface CSS, no reference render, and a chrome that ADR-0004 §7 shipped
 as a functional stub. This ADR records the design of the spec layer the
 per-paradigm variant builds will consume: per-surface canonical markup
 contracts, per-component CSS modules, framework-free reference renders (the
-drift-gate golden masters), and the full chrome — the contextual switcher
+drift-gate golden masters), and the full chrome, the contextual switcher
 and the HUD instrument.
 
 Two kill conditions bound every choice (the session brief): a hostile
-engineer must never be able to say "of course it's slow — look how this
+engineer must never be able to say "of course it's slow, look how this
 page is engineered" (image slots sized from data, zero CLS by construction,
 no interaction pattern that demands main-thread abuse); and no component may
-quietly bias a paradigm — everything must be expressible idiomatically in
+quietly bias a paradigm. Everything must be expressible idiomatically in
 vanilla, React, Astro, Qwik, and HTMX with byte-identical DOM (ADR-0003 §1),
 precisely: identical modulo the per-variant, audited noise registry
 (`PERMITTED_NOISE`), where behavior attributes (`hx-*`, `on:*`, `q:*`) are a
@@ -31,7 +31,7 @@ Method: structure and copy were drafted first
 ([`docs/prototypes/surface-design/DRAFT.md`](../prototypes/surface-design/DRAFT.md)),
 then attacked by a seven-lens adversarial panel (hostile staff engineer,
 zero-bias auditor, a11y auditor, voice cop, ADR fact-checker, design critic,
-seams editor — 78 findings: 12 kill, 43 discount; raw output committed
+seams editor, 78 findings: 12 kill, 43 discount; raw output committed
 alongside). Three lenses independently caught the same hand-typed wrong
 statistic in the draft, re-proving the ADR-0007 rule on its own author;
 every number in this record is tool-derived. Designs were then built as real
@@ -44,24 +44,24 @@ renders against the real crate and screenshot-critiqued (the
 **1. The instrument is a bench strip: a fixed-height dark band on every
 measured page, expanding to a console panel.** The chrome extends home's
 deadwax register (ADR-0006 §1 reserved the site's personality for exactly
-this) to every surface as a compact strip above the masthead — in-flow,
-server-injected, one line — whose expansion is a native `<details>` opening
+this) to every surface as a compact strip above the masthead, in-flow,
+server-injected, one line, whose expansion is a native `<details>` opening
 an OVERLAY panel (occludes, never reflows). The strip is **geometrically
 inert**: fixed block-size, fixed-width live-value slots, so neither the
-streamed vitals nor the font swap can move a pixel — the instrument must
+streamed vitals nor the font swap can move a pixel, the instrument must
 never manufacture the CLS it reports (panel kill). Landmarks: outer
 `<aside id="pm-chrome">`, `<nav>` scoped to the switcher row only; the
-summary's accessible name is "Instrument — lab readings and your visit".
+summary's accessible name is "Instrument, lab readings and your visit".
 Below the mobile breakpoint the switcher row SCROLLS inside the fixed bar
 (hiding the anchors would make variant switching unreachable to mobile,
-keyboard, and AT users — verify-slice corrected the draft's hide-and-count
+keyboard, and AT users, verify-slice corrected the draft's hide-and-count
 mobile contract); one line at 320 px is asserted in the origin suite.
 
-**2. The etch grammar is the signature — and the named aesthetic risk.**
+**2. The etch grammar is the signature, and the named aesthetic risk.**
 Variant cells are set in the deadwax etch voice home established: uppercase,
 letterspaced, interpunct-separated, hairline rules, radius-0, no boxes; the
 current cell carries an etched underline and `aria-current="page"`. The
-receipt/metric voice is a **chrome-owned mono** — "PM Instrument Mono", a
+receipt/metric voice is a **chrome-owned mono**, "PM Instrument Mono", a
 ~12 KB Basic-Latin subset of JetBrains Mono (OFL, provenance in
 `packages/switcher/fonts/README.md`) served from `/_pm/fonts/` on the
 excluded instrumentation path. `--pm-font-metric` is untouched: pouring a
@@ -70,18 +70,18 @@ Catalogue pick (ADR-0006 §3 "one face for UI and metrics"); ADR-0006's
 alternatives note left exactly this route open ("Its receipt/mono language
 remains reachable later through the `--pm-font-metric` slot and chrome CSS
 without touching a component"). **The risk, stated:** a permanent dark mono
-strip is the most imitable element in the system — it stands or falls on
+strip is the most imitable element in the system. It stands or falls on
 the matrix-number/etch signature; cut that move and the hero of this design
 is the one AI-default in an otherwise proprietary system.
 
 **3. The reading: the comparison is the interface, and C2 is structural.**
-The panel's lab table sets columns to the surface's comparison axis — data
+The panel's lab table sets columns to the surface's comparison axis, data
 strategies on the PLP (fenced exhibits never get a column, ADR-0005 §7),
-variants elsewhere — under the selected profile, whose selector sits beside
+variants elsewhere, under the selected profile, whose selector sits beside
 the table labeled for what it is (a snapshot selector that "never
 re-throttles this page", ADR-0004 §6). `SurfaceControls` grows
 **`plannedVariants`**: unbuilt matrix cells render as dead, labeled
-"not built yet" column headers — a disclosure, not an offer, so sparse
+"not built yet" column headers, a disclosure, not an offer, so sparse
 honesty holds and an unregistered matrix surface can never mislabel as
 "singleton surface" (panel finding). A lab value physically cannot render
 without its receipt: the renderer takes a `PublishedReading` whose
@@ -90,40 +90,40 @@ without its receipt: the renderer takes a `PublishedReading` whose
 built into the front Worker's dist at `/_pm/lab/{surface}.json` (owner:
 workers/front). Until the first publication every cell is an em-dash and
 the empty state reads: *"No published runs yet. When a number lands here it
-carries its receipt — profile, date, commit, location — or it doesn't land
+carries its receipt, profile, date, commit, location, or it doesn't land
 at all."* The fit line renders only from a receipt bundle whose bands don't
 overlap (ADR-0001 addendum C); its empty states are designed copy.
-**Singleton surfaces get no lab table at all** — ADR-0007 §5's plain
+**Singleton surfaces get no lab table at all**, ADR-0007 §5's plain
 sentence instead (no lab snapshot will ever exist off the matrix).
 
 **4. Panel order and voice are pinned.** Sections: **This surface** (the
-solo-first orientation line, first — panel a11y finding) **· The reading ·
+solo-first orientation line, first, panel a11y finding) **· The reading ·
 Fit · Your visit · The condition · Controls**. Self-explanation lines live
 in the config; any count in them renders from the config's own arrays,
 never typed. "Your visit" reuses home's explanation and falsifiability
 lines verbatim; "The condition" decomposes the URL (variant · surface · n ·
-cache · profile · served-from · a link to `/api/snapshot`) — the chrome
+cache · profile · served-from · a link to `/api/snapshot`), the chrome
 renders no snapshot SHA of its own because a sync renderer cannot know the
 served snapshot; the manifest link dereferences to the receipt instead.
 The PLP's Controls carry the `n` knob, the fenced-exhibit anchor with its
 exclusion line, and the per-interaction readout + replay slots with honest
-empty states ("lands with the store's PLP build") — the wiring belongs to
+empty states ("lands with the store's PLP build"), the wiring belongs to
 the PLP build with its interaction registry. Checkout's contextual controls
 collapse, deliberately, to profile-foregrounding: the device/CPU axis IS
 the lab profile system; a live CPU knob would fake slowness at a visitor
 (ADR-0004 §6). The fenced "feel the difference" demo remains the checkout
-build's option. **A11y-mode toggles move in-page — an explicit ADR-0004 §7
+build's option. **A11y-mode toggles move in-page, an explicit ADR-0004 §7
 amendment**: toggles are page presentation state, and the emulation-honesty
-caveat must sit beside the demo. (Rejected: mode as query-param anchors —
+caveat must sit beside the demo. (Rejected: mode as query-param anchors,
 emulation state is not a measurement condition and would pollute
 URL-as-receipt.)
 
 **5. Chrome delivery: head-injected CSS, budgeted fragment, audited dark
 ground.** The front Worker head-appends the chrome stylesheet link and the
 mono preload (an in-body stylesheet at the top of every measured page either
-blocks paint or flashes unstyled — panel finding); the fragment in the slot
+blocks paint or flashes unstyled, panel finding); the fragment in the slot
 is pure markup ending with the single deferred `measure.js` script.
-`measure.js` updates ALL matching live slots (`querySelectorAll` — the bar
+`measure.js` updates ALL matching live slots (`querySelectorAll`, the bar
 mini and the panel both carry hooks). The fragment has a **byte budget**
 (12 KiB, asserted in the switcher tests; measured 8.4 KiB empty, headroom
 for populated readings) and the ADR-0001 addendum-F obligation binds: the
@@ -132,12 +132,12 @@ before any publication. Chrome colors are `color-mix()` derivations of the
 poured neutrals (no literal hex; a re-pour moves the instrument), and the
 dark-ground pairs are **audited by derivation**:
 `tools/repo-checks/test/chrome-contrast.test.ts` re-derives the actual
-mixes from chrome.css and asserts 4.5:1 text / 3:1 focus — because the
+mixes from chrome.css and asserts 4.5:1 text / 3:1 focus, because the
 store's own defaults demonstrably fail there (muted 3.02:1, accent 2.71:1
 on neutral-950; the semantic accent is never used as ink on the strip).
 
 **6. The store shell: one fiction, stated plainly.** Brand: **"Long Decay
-Records"** — scene-true for the crate (the music is built from long
+Records"**, scene-true for the crate (the music is built from long
 decays), fictional, and deliberately not "Matrix Records": that name
 inverts ADR-0007 §4's metaphor axis (matrix numbers name pressings/
 variants; a store is the label side), blurs specimen and bench, and is the
@@ -146,13 +146,13 @@ alone carries Project Matrix identity; the connection is the strip sitting
 above the masthead. Shell skeleton (canonical): skip link FIRST, then the
 chrome slot, then `.pm-page` (masthead · main · a `role="status"` live
 region · footer). The footer states the fiction: *"A working store on
-frozen Discogs data — nothing ships, checkout is simulated."*
+frozen Discogs data. Nothing ships, checkout is simulated."*
 **Cross-surface links are absolute, to each surface's designated host
 variant** (masthead nav, card titles, cart → `/vanilla/checkout/`,
 Records → `/react-next/plp/plain/`): the sparse matrix means same-variant
 links 404 where a variant lacks the surface, and a Worker redirect would
 silently swap the variant under a URL-as-receipt (both rejected). CTA
-vocabulary: **"Add to cart"** — "Add to crate" would fork CONTEXT.md's
+vocabulary: **"Add to cart"**, "Add to crate" would fork CONTEXT.md's
 reserved noun.
 
 **7. The cart contract: the canonical served state is empty.** Cart is
@@ -163,15 +163,15 @@ min-height), population is per-paradigm client enhancement announced
 through the shell's status slot (WCAG 4.1.3), and populated-cart divergence
 is policed when a JS-on gate pass exists. Checkout's invalid-submit
 contract: the error-summary region (heading + links to each invalid field)
-renders and RECEIVES FOCUS — identical DOM + focus work in every paradigm,
+renders and RECEIVES FOCUS, identical DOM + focus work in every paradigm,
 so the flagship INP comparison compares like work (WCAG 3.3.1/4.1.3; panel
 kill). JS-off statements ship on-page (checkout: fields and native
-validation work; placing the order is the JavaScript moment — the
+validation work; placing the order is the JavaScript moment, the
 comparison, stated).
-> **PARTLY SUPERSEDED — see addendum D (2026-09-24).** Two clauses above are
+> **PARTLY SUPERSEDED, see addendum D (2026-09-24).** Two clauses above are
 > qualified there: "reserved min-height" is now a FIXED grid track the empty
 > copy and the list share (a minimum let a populated cart move the form on
-> the phone profile), and the JS-off "Place order" now LANDS — a native POST
+> the phone profile), and the JS-off "Place order" now LANDS, a native POST
 > to a relative `place-order/`, a 303, and a second committed master of the
 > surface at `checkout/placed/`. Placing the order IN the page remains the
 > JavaScript moment the comparison is about.
@@ -179,68 +179,68 @@ comparison, stated).
 **8. Surface structure, one tradeoff each** (contracts of record:
 `packages/reference/render/*.mjs`; compositions:
 `packages/tokens/css/surfaces/`):
-- **Editorial** — prose (~65ch, `pm-prose`) + exactly one interaction (the
+- **Editorial**: prose (~65ch, `pm-prose`) + exactly one interaction (the
   featured release's Add to cart). The essay is committed content with an
   explicit carve-out: prose narrates crate facts allusively ("north of five
   hundred dollars"); every precise number interpolates tray/manifest fields
   through the renderer; the dateline IS the freeze date. Per-snapshot
   essays (the fixture's synthetic register gets a synthetic essay,
   structurally identical).
-- **PDP** — gallery mat | buy panel. The stage is a fixed 1:1 mat with
+- **PDP**: gallery mat | buy panel. The stage is a fixed 1:1 mat with
   `object-fit: contain` (296/500 covers exactly square, 456/500 within 2%;
   letterboxing IS the mat-board; a fixed frame means image switching can
-  never shift the buy panel; per-release frames rejected — a 2:1-first
+  never shift the buy panel; per-release frames rejected, a 2:1-first
   PDP would letterbox every square thumb). Degenerate states are contract:
   single-format (439/500) renders a static meta line, no radio; unpriced
   (44/500) renders em-dash + "none for sale" + disabled CTA. Thumbs are
   buttons named "View image N of M: {alt}", selected = `aria-current`;
   fieldset/legend on the format radios; named qty steppers.
-  > **PARTLY SUPERSEDED — see addendum A (2026-08-15).** The format radios are
+  > **PARTLY SUPERSEDED, see addendum A (2026-08-15).** The format radios are
   > CUT: `formats` is the composition of one release, not a menu, so the group
   > offered a choice the data cannot honour. Every release now renders a
   > `<dt>Format</dt>` pair carrying the full composition, and the em-dash
   > states are NAMED (`lib.mjs` namedGlyph) rather than bare. The rest of this
   > paragraph stands. The
   live-origin demonstration is a fenced plaque with ADR-0002 §3's copy.
-  Reference PDP: id 896191 (3 formats, priced, 5 images — the rich path).
-- **PLP** — toolbar (count from the tray, search + sort as GET forms) ·
+  Reference PDP: id 896191 (3 formats, priced, 5 images, the rich path).
+- **PLP**: toolbar (count from the tray, search + sort as GET forms) ·
   facet rail (plain links carrying the canonical `?genre/style/format/
-  sort/q` params — the edge Worker grows them in the PLP build, ADR-0005
+  sort/q` params, the edge Worker grows them in the PLP build, ADR-0005
   §5; display cut stated in the group titles, never silent) · the grid ·
   pagination preserving the whole condition. Image loading pinned: first 4
   cards eager, card 1 `fetchpriority="high"`, rest lazy (a "first row" rule
-  is unimplementable in static markup — the fixed count trades slight
+  is unimplementable in static markup, the fixed count trades slight
   mobile over-fetch for correct desktop LCP).
-- **Checkout** — single-page form (contact · address · shipping method ·
+- **Checkout**: single-page form (contact · address · shipping method ·
   payment · summary), every field with label/autocomplete/inputmode, the
   base-plaque disclosure BEFORE the card fields, scoped honestly:
-  *"…what you type never leaves your browser — this page sends only the
+  *"…what you type never leaves your browser. This page sends only the
   same anonymous timing beacons every page sends."* (An absolute "nothing
   leaves this page" would be falsified by the beacon in devtools.) The
-  notice is NOT fenced — checkout is measured; `--fenced` is reserved for
+  notice is NOT fenced, checkout is measured; `--fenced` is reserved for
   true number-exclusions (Remix 3, Apollo exhibit, live-origin, a11y
   DS-OFF).
-- **A11y section** (vanilla singleton, three pages) — index + element
+- **A11y section** (vanilla singleton, three pages), index + element
   demos (five two-box compares; the DS-OFF twin sits inside a collapsed
   `<details>`, natively unfocusable and hidden from AT until deliberately
-  opened — the default page state is fully conformant) + mode demos
+  opened, the default page state is fully conformant) + mode demos
   (additive-only emulations gated behind the real media queries, with the
-  keepable caveat: *"your OS setting is the real thing — these demos never
+  keepable caveat: *"your OS setting is the real thing. These demos never
   override it"*). Element-demos is `noindex` (strategy-review finding 21).
-- **How it was built** — front-Worker static singleton at
+- **How it was built**: front-Worker static singleton at
   `/how-it-was-built/` (the home build precedent; owner workers/front),
   a `pm-doc` TOC + prose layout whose content is generated from `docs/`
-  (the master renders the real ADR index and build-log phases at build —
+  (the master renders the real ADR index and build-log phases at build,
   never retyped).
 
 **9. Reference renders are BUILT, and the fixture is adversarial.** Golden
 masters render from tray JSON via the framework-free renderer
 (`packages/reference/render/`): committed masters are the fixture-rendered
 output (regeneration-asserted so they cannot go stale); the crate renders
-are local board builds (`.local/`, git-excluded — crate image bytes are not
+are local board builds (`.local/`, git-excluded, crate image bytes are not
 in git); extending the deployed smoke to re-render masters from the RESOLVED
 snapshot (the issue-#11 pattern) is an owned obligation of the first
-variant build that serves a content surface — today's masters-health leg
+variant build that serves a content surface, today's masters-health leg
 proves fixture-equivalence only (verify-slice kept this claim honest). The gate's static server grows an `/assets/img/*` alias. The
 FIXTURE became branch-covering by construction (panel kill: the gate only
 ever proves fixture-equivalence, so the fixture must contain every
@@ -249,43 +249,43 @@ galleries, a ≥1 h duration (crate max 3,816 s) and null durations,
 multi-format, unpriced, multiple genres, `33 ⅓ RPM` / `℗` strings
 (exercising the crate-symbols face in CI), and a `curation.json` with a
 featured id. The crate's featured picks are design constants
-(editorial 953800, PDP 896191) — curated choices, like the crate itself,
+(editorial 953800, PDP 896191), curated choices, like the crate itself,
 not receipts.
 
 **10. crate-glyph-coverage, decided** (the open ticket closes): ship
-**"PM Crate Symbols"** — a 9-codepoint Inter subset (⅓ ℗ ˙ π ρ φ Я ∂ √;
+**"PM Crate Symbols"**, a 9-codepoint Inter subset (⅓ ℗ ˙ π ρ φ Я ∂ √;
 3.8 KB; same source family and OFL as the warn glyph), `unicode-range`-
 scoped behind Familjen in both stacks, preloaded in the canonical font
 markup (⅓ is first-paint content on the PLP meta line; a late swap is a
-layout-shift risk; PMWarnGlyph stays unpreloaded — error-state only). The
+layout-shift risk; PMWarnGlyph stays unpreloaded, error-state only). The
 remaining **21 codepoints stay on a documented per-OS system fallback**:
-Arabic ×8 (subsetting isolated forms breaks shaping — worse than an honest
+Arabic ×8 (subsetting isolated forms breaks shaping, worse than an honest
 fallback), CJK ×9 (Han-unification variant choice is a locale call a single
 webfont gets wrong for someone), and ∇ ∝ ⋅ ﬂ at exactly one occurrence
 each. Recorded in `coverage.json` as `crateSystemFallback` (renamed from
-"deferred" — this is a decision, not a deferral) and **guard-hardened**:
+"deferred". This is a decision, not a deferral) and **guard-hardened**:
 repo-checks now re-derives each font's cmap from the woff2 bytes (fontkit),
 so the manifest can no longer be hand-faked (the anti-rigging note carried
 on the ticket).
 
 **11. Issue #9 derivative sizing, settled with receipts.** The retained
-originals were scanned (sips, n=1,838 — the receipt is committed at
+originals were scanned (sips, n=1,838, the receipt is committed at
 [`prototypes/surface-design/originals-scan.json`](../prototypes/surface-design/originals-scan.json),
 including why 1,838 originals back 1,817 served derivatives): **zero exceed
-600 px on either side** — 600 is the upstream ceiling, so the single 600 px tier is correct
+600 px on either side**, 600 is the upstream ceiling, so the single 600 px tier is correct
 by data for the card (~250–300 CSS px ≈ the exact 2× asset) and the PDP
 stage (2× would want pixels that don't exist). One new tier IS minted: the
-**160 px thumb** (`{src}.thumb.avif` by URL convention — the frozen trays
+**160 px thumb** (`{src}.thumb.avif` by URL convention, the frozen trays
 are untouched), because 600 px files in 72 px thumb slots cost ~100 KB per
 PDP for nothing (panel finding); 1,817 thumbs generated from the retained
 originals through the derive phase built for exactly this re-derivation,
 indexed with chained sha256s, ~2.2 KB each. Card media gains
-`object-fit: cover` — 204/500 primaries are non-square and the forced 1:1
+`object-fit: cover`, 204/500 primaries are non-square and the forced 1:1
 box was silently distorting them (the card had only ever been proven on
 square placeholders).
 
-**12. The semantic tier grew with the surfaces** — `--space-block`,
-`--space-section`, `--text-caption`, `--text-headline` — because the new
+**12. The semantic tier grew with the surfaces**, `--space-block`,
+`--space-section`, `--text-caption`, `--text-headline`, because the new
 modules needed vocabulary that only existed as primitives, and components
 consume semantic tokens only (ADR-0003 §3; the structure test now also
 covers `css/surfaces/`). Fifteen component modules joined (masthead,
@@ -294,10 +294,10 @@ toolbar, pagination, cart-summary, error-summary, compare, mode-demo) and
 seven surface compositions; every module keeps state off native attributes
 and passes the semantic-only guard. `role="list"` joined the `pm-grid`
 contract everywhere (Safari/VoiceOver strips list semantics under
-`list-style: none` — home's lesson, retrofitted to the sample surface and
+`list-style: none`, home's lesson, retrofitted to the sample surface and
 both placeholders in the same change).
 
-## What a variant may vary (normative — the serialization freedoms)
+## What a variant may vary (normative: the serialization freedoms)
 
 The drift gate's normalizer grants exactly these; everything else must
 match the master byte-for-byte after parsing:
@@ -308,13 +308,13 @@ match the master byte-for-byte after parsing:
   `<head>` subtree are delivery, not contract (but `<html>`/`<body>` own
   attributes ARE contract);
 - paradigm noise must be REGISTERED per variant in `PERMITTED_NOISE`
-  (hydration markers, scoping hashes) — and behavior attributes (`hx-*`,
+  (hydration markers, scoping hashes), and behavior attributes (`hx-*`,
   `on:*`, `q:*`) get their own declared registry class when those variants
   land: they are the paradigm's mechanism, not residue, and the registry is
   part of the published diff-to-starter story (ADR-0003 2026-07-12
   addendum);
 - the chrome slot subtree is instrumentation and is dropped before both
-  DOM and pixel comparison; the gate sees the JS-off SERVED document only —
+  DOM and pixel comparison; the gate sees the JS-off SERVED document only,
   which is why every cart-bound region's canonical state is empty (§7);
 - `packages/reference/surfaces/{surface}/` is each surface's spec of
   record; registration of a variant in `SURFACE_CONTROLS` is part of that
@@ -324,7 +324,7 @@ match the master byte-for-byte after parsing:
 ## Considered alternatives
 
 - **Light strip / paper chrome.** Rejected: a paper link-row above the
-  paper masthead reads as store navigation — the register blur the
+  paper masthead reads as store navigation, the register blur the
   two-register system exists to prevent; the personality budget ADR-0006 §1
   reserved would go unspent (panel: the always-dark strip survived attack).
 - **Fixed bottom dock / side rail for the chrome.** Rejected: an
@@ -337,7 +337,7 @@ match the master byte-for-byte after parsing:
 - **Pouring the mono into `--pm-font-metric`.** Rejected (§2): changes
   every store price, re-litigates the Catalogue pick, and drags the store
   register toward the instrument's.
-- **"Matrix Records" as the store brand.** Rejected (§6) — three lenses,
+- **"Matrix Records" as the store brand.** Rejected (§6), three lenses,
   same verdict: wrong metaphor axis, specimen/bench blur, least believable
   name available.
 - **Worker 307 for unbuilt variant×surface cells; relative cross-surface
@@ -358,9 +358,9 @@ match the master byte-for-byte after parsing:
 - **Webfonts for the crate's Arabic/CJK.** Rejected (§10): isolated-form
   Arabic subsets break shaping; Han-unification needs locale awareness a
   single webfont lacks; per-OS fallback for out-of-repertoire scripts is
-  what real production sites do — real-world fidelity.
+  what real production sites do, real-world fidelity.
 - **Order numbers, mode toggles in chrome, "Add to crate", checkout plaque
-  as `--fenced`, per-cell SR text in the reading table** — each rejected
+  as `--fenced`, per-cell SR text in the reading table**. Each rejected
   for the reasons recorded in the panel revisions (DRAFT §6).
 
 ## Consequences
@@ -368,12 +368,12 @@ match the master byte-for-byte after parsing:
 - **The variant builds are unblocked** and consume: the masters as spec,
   the serialization freedoms above, the SURFACE_CONTROLS registration duty,
   the designated-host link map, the cart/error contracts, and the published
-  interaction-registry ids — `checkout-type-card`, `checkout-submit-invalid`,
+  interaction-registry ids, `checkout-type-card`, `checkout-submit-invalid`,
   `checkout-fix-and-submit` (owner tools/bench-runner; the ADR-0005 §3 PLP
   ids stand unchanged).
 - **Merge prerequisite (one manual step):** the 1,817 thumb derivatives
   exist only on the capture machine (crate image bytes are deliberately not
-  in git, so CI cannot seed them) — before this branch merges, run the
+  in git, so CI cannot seed them), before this branch merges, run the
   manual crate re-seed from workers/edge:
   `node seed-local.mjs --remote --dir ../../tools/snapshot-capture/crate`
   (idempotent puts; adds the thumbs the committed images-index now names).
@@ -387,7 +387,7 @@ match the master byte-for-byte after parsing:
   bundles (workers/front) render into the typed receipt slots; the fit
   line's three states are already written.
 - **Home deliberately keeps its ADR-0007 band** (a designed destination);
-  the strip shares the receipt grammar, not the anatomy — divergence is
+  the strip shares the receipt grammar, not the anatomy, divergence is
   intent, recorded here.
 - **`domain-cutover` item (e) sharpens:** the reference renders and boards
   now display crate cover art through the store surfaces; the ToS/
@@ -396,14 +396,14 @@ match the master byte-for-byte after parsing:
   `docs/prototypes/surface-design/` are the exploration record and
   "How it was built" source material.
 
-## Addendum — the fragment budget, re-set against a real populated state (2026-08-14)
+## Addendum: the fragment budget, re-set against a real populated state (2026-08-14)
 
 §5 set the chrome fragment's byte budget at **12 KiB**, measured 8.4 KiB
 empty "with headroom for populated readings (a receipt adds ~100 bytes per
 cell)". The first editorial publication turned that estimate into a
 measurement, and the estimate was low: a populated editorial fragment
 carries 30 receipt-linked cells **plus** the min–max band ADR-0001
-addendum C requires in each — and the largest real fragment (the remix3
+addendum C requires in each, and the largest real fragment (the remix3
 exhibit's, whose fenced note and tagged cell are extra) measured **12,396
 bytes**, over budget.
 
@@ -412,7 +412,7 @@ Two changes, both recorded rather than one silently absorbed:
 1. **Zero-width bands are omitted.** A band whose min equals its max states
    only what the median already stated. Dropping them removed 7 of 30 on
    this surface and 306 bytes; the band element is also `<small>` rather
-   than `<span>` — the element for fine print qualifying an adjacent value,
+   than `<span>`, the element for fine print qualifying an adjacent value,
    and 11 bytes cheaper per cell.
 2. **The budget is now 13 KiB** (13,312 bytes), which leaves the largest
    real fragment ~1.2 KiB of headroom instead of the 5 bytes the 12 KiB
@@ -421,18 +421,18 @@ Two changes, both recorded rather than one silently absorbed:
    1,913 bytes brotli (ADR-0001 addendum N, measured against the deployed
    plane; the 1,908 B this cited was the superseded local figure), and the
    chrome's measured
-   timing cost is dominated by its subresources — a render-blocking
-   stylesheet, a preloaded mono, and the ruler — not by the fragment's own
+   timing cost is dominated by its subresources, a render-blocking
+   stylesheet, a preloaded mono, and the ruler, not by the fragment's own
    markup. The budget's purpose is to catch creep, and it still does; it
    should not force markup golf against a number chosen before the
    populated state existed.
 
 The obligation §5 attaches to the budget is unchanged: the chrome's
 runtime cost is re-measured before publication (ADR-0001 addendum F/L),
-and that measurement now runs against the POPULATED chrome by mechanism —
+and that measurement now runs against the POPULATED chrome by mechanism,
 the front build refuses a constant measured against any other.
 
-## Addendum — the PDP master set, and a qty stepper the panel missed (2026-08-14)
+## Addendum: the PDP master set, and a qty stepper the panel missed (2026-08-14)
 
 The PDP build consumed §8's PDP paragraph as spec and found two things the
 spec layer owed it. Both are recorded here rather than improvised in a
@@ -440,7 +440,7 @@ variant, because §8 owns the masters and four variants were about to copy
 whatever the master said.
 
 **1. The qty steppers' glyphs are now `aria-hidden`.** §8 requires "named qty
-steppers", and `render/pdp.mjs` named them with a visually-hidden span — but
+steppers", and `render/pdp.mjs` named them with a visually-hidden span, but
 left the `−` / `+` glyphs as bare text nodes, so the accessible names computed
 to "−Decrease quantity" and "+Increase quantity". Two lines above, the
 tracklist header hides its own `#` glyph exactly the way this needed
@@ -448,7 +448,7 @@ tracklist header hides its own `#` glyph exactly the way this needed
 inconsistent about the same technique. Fixed in the master before the first
 variant copied it; the four committed PDP masters carry it.
 
-**2. The PDP renders FOUR masters, not one — the degenerate branches CAN now
+**2. The PDP renders FOUR masters, not one, the degenerate branches CAN now
 be gated.** (Heading corrected 2026-08-14: it read "are gated", which is an
 overclaim. Rendering four masters is a NECESSARY PRECONDITION for gating, not
 gating. No origin-suite leg opens `/{variant}/pdp/…` at all today, so no
@@ -459,7 +459,7 @@ normalizer-determinism or pixel-stability coverage either.) §8 made the
 degenerate states contract ("single-format renders a
 static meta line, no radio; unpriced renders em-dash + 'none for sale' +
 disabled CTA") and §9 made the fixture branch-covering, but `render/build.mjs`
-rendered exactly ONE PDP, from the featured id — the rich path. Since the
+rendered exactly ONE PDP, from the featured id, the rich path. Since the
 drift gate only ever compares a variant against a MASTER, all three degenerate
 arms were ungated by construction, and they are the COMMON path: 439/500
 single-format, 44/500 unpriced, 90/500 one-image in the crate.
@@ -468,7 +468,7 @@ The master set is now `pdp/` (rich) plus `pdp/single-format/`, `pdp/unpriced/`
 and `pdp/one-image/`, nested under the one surface rather than becoming
 sibling surfaces (SURFACE_CONTROLS keys off surfaces; there is one PDP surface
 with four rendered states). Which release each renders is derived by
-`render/lib.mjs` `pdpMasterIds` — ONE derivation, consumed today by the
+`render/lib.mjs` `pdpMasterIds`, ONE derivation, consumed today by the
 reference build; the variant builds and the gate's re-render adopt it as their
 PDP legs land (corrected 2026-08-14 from "shared by the reference build, every
 variant build and the gate's re-render", which described the intent rather
@@ -477,16 +477,16 @@ derivation at all.
 
 Each degenerate master **isolates one branch**: it holds the other two axes at
 the SINGLE-FORMAT master's value, so the set is a STAR centred on
-single-format — each degenerate master differs from that centre by exactly one
+single-format. Each degenerate master differs from that centre by exactly one
 rendering decision (ADR-0001 §4's one-variable-at-a-time rule, applied to the
 gate). Corrected 2026-08-14: this previously said "any two masters differ by
-exactly one rendering decision", which is false for 3 of the 6 pairs — `rich`
+exactly one rendering decision", which is false for 3 of the 6 pairs, `rich`
 is multi-format and every degenerate pick is single, so `rich`↔`unpriced`,
 `rich`↔`one-image` and `unpriced`↔`one-image` each differ by two axes. The
 test asserted the true (star) property all along; only the prose overclaimed.
 
 The first draft did not isolate at all, and the flaw was concrete rather than
-theoretical — picking "lowest id exhibiting the branch" resolved
+theoretical, picking "lowest id exhibiting the branch" resolved
 `single-format` and `unpriced` to the *same* release in the fixture (9000001
 is both), which would have gated the two branches only together and neither
 apart. `pdpMasterIds` now refuses a duplicate set outright, and (2026-08-14)
@@ -494,15 +494,15 @@ enforces the star property in the derivation itself: the `unpriced` and
 `one-image` predicates pin `formats.length <= 1`, and the function throws
 unless each degenerate class differs from the centre on exactly one axis.
 Before that, isolation held only because 439/500 crate and 239/240 fixture
-releases happen to be single-format — a property of the data, not the code.
+releases happen to be single-format, a property of the data, not the code.
 Both snapshots resolve the same ids with or without the clause, so the
 committed masters are byte-unchanged.
 
 What is asserted, and what deliberately is not: per-axis coverage with
 isolation IS asserted (`packages/reference/test/reference.test.ts`, sabotage
--proven), for both snapshots. Full *combination* coverage is NOT — three
+-proven), for both snapshots. Full *combination* coverage is NOT, three
 binary axes span **8** combinations, of which the crate populates **7** and
-the fixture **4**, against a master set of 4 — and claiming it would be the
+the fixture **4**, against a master set of 4, and claiming it would be the
 record-not-code class this chain keeps paying for. (Corrected 2026-08-14 from
 "the crate has 16 combinations", which was derivable from nothing; the counts
 are now derived in the test rather than typed. The three combinations the
@@ -510,7 +510,7 @@ crate has and the masters do not are multi/priced/one-image (6 releases),
 multi/unpriced/gallery (2) and single/unpriced/one-image (10).)
 
 Also NOT gated, and named here rather than left implied: `render/pdp.mjs`
-takes three further branches that `pdpRenderClass` does not model — an absent
+takes three further branches that `pdpRenderClass` does not model, an absent
 notes section, a null track duration, a null year. **0 of the 4 fixture
 masters take any of those arms**, so no master gates them. Closing that gap
 means widening the class and the master set; until then the guard proves
@@ -519,7 +519,7 @@ numForSale === 0` equivalence that `pdp.mjs` leans on (it reads two different
 fields for one branch) is asserted against the trays themselves: zero
 violations in both committed snapshots.
 
-## Addendum A — a control that cannot act does not ship (2026-08-15)
+## Addendum A: a control that cannot act does not ship (2026-08-15)
 
 _Cited in code as "ADR-0008 addendum A". The two addenda above are unlettered;
 lettering starts here so a comment can point at one claim, which is the
@@ -532,31 +532,31 @@ behaviour and nothing in the repo could tell whether the behaviour existed.
 
 **The rule this addendum adds, normative for every surface:** a control the
 markup advertises must be able to do what it says, or it must not be in the
-markup. Shipping it inert is not a third option — it is the "falsely
+markup. Shipping it inert is not a third option. It is the "falsely
 interactive" state ADR-0008 §7 already disclaims, and on a benchmarked surface
 it also silently zeroes the same cell in every paradigm at once.
 
-### 1. Zoom — WIRED
+### 1. Zoom: WIRED
 
 `render/pdp.mjs` rendered `<button class="pm-gallery__zoom" aria-pressed="false">`
 and `gallery.css` implemented the pressed state, but `variants/vanilla/src/pdp.js`
 never referenced it (`grep -c zoom` → 0) and `aria-pressed` is not CSS-settable.
 A JS-on visitor heard "Zoom, toggle button, not pressed", pressed it, and got
-the same result forever — **WCAG 4.1.2 name/role/value**, on the site that
+the same result forever, **WCAG 4.1.2 name/role/value**, on the site that
 ships an accessibility exhibit. The enhancement now writes the attribute and
 nothing else; the attribute is both the accessible state and the selector the
 stylesheet scales from, so a visual state cannot exist without the
 programmatic one. **Every paradigm owes this toggle**, and `gallery.css`'s
 contract comment now says so.
 
-### 2. The format radio group — CUT, not wired
+### 2. The format radio group: CUT, not wired
 
 This reverses the recommendation the unit was handed ("take the cut for zoom,
 never for format"), on evidence that recommendation did not have. It is the
 load-bearing decision of the unit, so the argument is recorded in full.
 
-**A Discogs `formats` array is the composition of ONE physical release — what
-is in the package — not a menu of things to buy.** From this repo's own
+**A Discogs `formats` array is the composition of ONE physical release. What
+is in the package, not a menu of things to buy.** From this repo's own
 sources:
 
 - `packages/data-contract/src/schema.ts:45` types `format` as the *primary*
@@ -567,12 +567,12 @@ sources:
   own, anywhere in the contract.
 - Crate release `896191` is one **$30.00** product whose three `formats`
   entries are two vinyl variants **and** a CD. **39** crate releases carry a
-  component literally named **"All Media"** — Discogs' marker for a release
+  component literally named **"All Media"**, Discogs' marker for a release
   spanning several media as one product. (Counts tool-derived from
   `tools/snapshot-capture/crate/details.json`.)
 
-So the group offered a choice the data cannot honour. Wiring it as specified —
-price, stock line, meta list and cart payload following the selection — was
+So the group offered a choice the data cannot honour. Wiring it as specified,
+price, stock line, meta list and cart payload following the selection, was
 not a bigger version of the zoom fix; it was **impossible without inventing
 per-format prices**, on a site whose first rule is that nothing publishes a
 number without a receipt. A fabricated price beside a real one is worse than a
@@ -581,23 +581,23 @@ unable to do.
 
 The counter-argument, answered: cutting it does **not** gut the PDP's claim to
 be the surface where interactivity is genuine. What remains is gallery switch,
-zoom, the quantity stepper and add-to-cart — four genuine interactions, and
+zoom, the quantity stepper and add-to-cart, four genuine interactions, and
 both of the surface's PLANNED interactions (`pdp-gallery-switch`,
 `pdp-add-to-cart`) are untouched. "Planned", not "registered", and the
 distinction is the kind this record exists to keep: `INTERACTIONS`
 (`collect.ts:33`) holds `none`, `body-click` and `editorial-add-to-cart` and
-nothing else — NEITHER PDP id appears anywhere in the codebase yet, so the cut
+nothing else, NEITHER PDP id appears anywhere in the codebase yet, so the cut
 removed nothing the instrument was going to measure.
 
 **Nothing is lost from the page but the lie.** The `formats` data now renders
 as data: the meta list carries the full composition (`lib.mjs`
 `formatComposition`) for **every** release, where before only single-format
-releases showed a format at all — so the 61 multi-format crate releases gain
+releases showed a format at all, so the 61 multi-format crate releases gain
 information they never had, and the 130 single-format releases whose tray
 records a quantity now show it ("2 × Vinyl, LP, Album"). For a single
 component of quantity 1 the composition reproduces `format` byte-for-byte,
 so **309 of the crate's 500 PDP meta lines are byte-unchanged and 191 move**
-(239/1 in the fixture) — derived by rendering both forms over every tray, not
+(239/1 in the fixture), derived by rendering both forms over every tray, not
 reasoned. That equality is asserted, not assumed
 (`tools/repo-checks/test/variant-master-identity.test.ts`).
 
@@ -606,12 +606,12 @@ interaction set the render-axis flip is measured over is now **gallery/zoom,
 add-to-cart with client cart state, and quantity**. The guardrail named format
 switch at planning time, before anyone had looked at what `formats` contains.
 
-`format-switch.css` is unchanged and still ships — its surviving consumer is
+`format-switch.css` is unchanged and still ships. Its surviving consumer is
 **checkout's shipping-method group**, which is a real choice. The component
 was never the defect; the PDP's application of it was. The PDP no longer links
 the sheet.
 
-### 3. `pm-pdp__scroll` — STYLED
+### 3. `pm-pdp__scroll`: STYLED
 
 `pdp.mjs` emitted `role="region" tabindex="0"` (the scrollable-region pattern)
 and the class matched **0 lines** across `packages/tokens/css/`. Every PDP page
@@ -619,7 +619,7 @@ with a tracklist gave keyboard users a focus stop on a container that could
 not scroll, and the WCAG 1.4.10 reflow protection the wrapper exists for was
 absent. `pdp.css` now gives it `overflow-x: auto`.
 
-### 3b. The thumb strip — WRAPPED (found by the guard, on real data)
+### 3b. The thumb strip: WRAPPED (found by the guard, on real data)
 
 The JS-ON leg above was written to check the tracklist wrapper and instead
 failed on something bigger, and only against a **crate-seeded** plane. The
@@ -631,7 +631,7 @@ scrolling. Four thumbs at 72 px plus gaps need 312 px inside a 280 px column.
 **316 of the crate's 500 releases carry four or more images** (1–5 images:
 90 / 64 / 30 / 71 / 245, tool-derived), so this was live WCAG 1.4.10 on the
 majority of deployed PDP pages. It survived every check because the FIXTURE's
-probe release has **two** images — CI never reached the case. `gallery.css`
+probe release has **two** images, CI never reached the case. `gallery.css`
 now sets `flex-wrap: wrap`; measured before and after at 320 px, the document's
 `scrollWidth` goes 332 → 320 for a 4-image release and 412 → 320 for a
 5-image one, with thumbs on two rows. Wrapping rather than scrolling, because a
@@ -639,7 +639,7 @@ scroll container would need its own focus stop and the 72 px target size
 (WCAG 2.5.8) has to survive either way.
 
 The reflow leg now probes the **widest gallery in the served snapshot** rather
-than any gallery, and fails closed if that is under four images — the fixture's
+than any gallery, and fails closed if that is under four images, the fixture's
 release 9000016 has five, so CI exercises the case from now on. Two lessons
 are worth keeping: a leg pointed at "some release with a gallery" proved
 nothing, and **the fixture is not a scale model of the crate**.
@@ -654,20 +654,20 @@ The defects were invisible because of a structural gap, not bad luck:
   typecheck test --dry=json` → 75 nodes, 30 with a real command, none of them
   this workspace), and no test anywhere read `renderPdpPage`. "Turbo 30/30"
   had never covered this variant at all, and the 740 pages matching was an
-  **unguarded true statement** — which by this repo's standard is the defect.
+  **unguarded true statement**, which by this repo's standard is the defect.
 
 Three guards close it, all sabotage-proven against the tree that shipped:
 
-1. `tools/repo-checks/test/pdp-controls-wired.test.ts` — every script-only
+1. `tools/repo-checks/test/pdp-controls-wired.test.ts`: every script-only
    state attribute the master renders must be written by the variant's
    enhancement, and every control must be named by it or listed in a
    reasoned native-behaviour registry. Run against the `pdp.js` on `main` it
    fails **nine** ways. It is in the 30, so it **blocks a merge**.
 2. `variant-master-identity.test.ts` gains a fourth `describe` comparing
    `renderPdp` against `renderPdpPage` for **every** detail tray in **both**
-   snapshots — 740 pages in ~90 ms, covering the render-class combinations
+   snapshots, 740 pages in ~90 ms, covering the render-class combinations
    the crate has and the fixture does not.
-3. `tools/origin-suite/suite/pdp-controls.browser.test.ts` — the JS-ON leg
+3. `tools/origin-suite/suite/pdp-controls.browser.test.ts`: the JS-ON leg
    that did not exist. Its headline assertion is generic on purpose: **no
    button on the page may change nothing when pressed**. A check naming zoom
    would say nothing about the next control.
@@ -677,16 +677,16 @@ Three guards close it, all sabotage-proven against the tree that shipped:
 Recorded because it is the strongest evidence in the addendum that the
 adversarial pass earns its cost, and because the fix is a spec-layer move.
 
-`.pm-sr-only` — the utility that makes `namedGlyph` work — was defined in
+`.pm-sr-only`, the utility that makes `namedGlyph` work, was defined in
 `components/gallery.css:152`, and **only the PDP links that sheet**. So the
 moment `namedGlyph` put visually-hidden text on the PLP master (5 instances)
 and the checkout master (1), those pages had no rule to hide it with: text
-written exclusively for assistive technology would have rendered as visible
-"— No price listed". A repo-wide grep would have said the class existed. It
+written exclusively for assistive technology would have rendered as a visible
+dash followed by "No price listed". A repo-wide grep would have said the class existed. It
 did exist; it just did not exist ON THE PAGE THAT USED IT.
 
 The utility now lives in `surfaces/shell.css`, which `head()` links on every
-surface — the correct home for a whole-system utility, and the reason the
+surface, the correct home for a whole-system utility, and the reason the
 defect could not recur for the a11y, editorial or how-it-was-built surfaces
 either.
 
@@ -697,7 +697,7 @@ and its contract comment ride every page including the editorial ones whose
 CSS cell is published: **+629 B raw / +243 B brotli-q11** (1,835 → 2,464 raw).
 `components/gallery.css`, PDP-only, is **+822 B raw / +376 B brotli-q11** for
 the zoom and thumb-wrap contracts minus the rule that left. The comments were
-trimmed to their load-bearing form first — the narrative lives here, and the
+trimmed to their load-bearing form first, the narrative lives here, and the
 sheets are served raw (`variants/vanilla/build.mjs` copies the CSS tree with
 `cpSync`; no minifier strips a comment before the wire), so prose in a
 stylesheet is prose on every visitor's connection. The editorial re-run the
@@ -705,14 +705,14 @@ ruler unit owes re-measures this too.
 
 The general guard is `tools/repo-checks/test/master-styles-resolve.test.ts`:
 **every `pm-` class a committed master renders must resolve to a rule in a
-sheet that master links.** It is the `pm-pdp__scroll` defect made impossible —
-markup contract ahead of stylesheet — and it is sabotage-proven against both
+sheet that master links.** It is the `pm-pdp__scroll` defect made impossible,
+markup contract ahead of stylesheet, and it is sabotage-proven against both
 instances: remove the `.pm-pdp__scroll` rule and FOUR masters fail; rename
-`.pm-sr-only` and SIX do (the four PDP masters plus plp and checkout — a
+`.pm-sr-only` and SIX do (the four PDP masters plus plp and checkout, a
 seventh failure is the separate test pinning where the utility lives, and
 counting it as a master was wrong). Three pre-existing unstyled classes are frozen in
 a reasoned `OWED` registry (`pm-plp__head`, `pm-plp__results`,
-`pm-checkout__form` — all on unbuilt surfaces, all owed to their surface's
+`pm-checkout__form`, all on unbuilt surfaces, all owed to their surface's
 build), and a further test fails if that registry ever describes more or fewer
 classes than are actually unstyled, so it cannot quietly outlive its debt.
 
@@ -724,8 +724,8 @@ constantly. It now matches whole selector tokens in comment-stripped CSS.
 
 ### 4c. The instrument advertised the control too
 
-`SURFACE_CONTROLS.pdp.proves` — the sentence the chrome renders into EVERY
-measured page — read "gallery, cart, quantity, format". Amending three
+`SURFACE_CONTROLS.pdp.proves`, the sentence the chrome renders into EVERY
+measured page, read "gallery, cart, quantity, format". Amending three
 documents while leaving that string would have had the INSTRUMENT advertise an
 interaction the surface does not have: the same falsehood as the dead control,
 one layer up, and this one is served to visitors. It now reads "gallery, zoom,
@@ -734,8 +734,8 @@ it works.
 
 The three new guards were also vanilla-hardcoded, which is invisible today
 (vanilla is the only live PDP variant) and worthless the moment a second one
-lands. The browser leg now runs `describe.each(SURFACE_CONTROLS.pdp.variants)`
-— the `cart.browser.test.ts` idiom, so it extends with no edit — and the
+lands. The browser leg now runs `describe.each(SURFACE_CONTROLS.pdp.variants)`,
+the `cart.browser.test.ts` idiom, so it extends with no edit, and the
 pre-merge guard keeps a variant→enhancement map with a **completeness
 assertion**: if `variants` ever names a variant the map does not, the guard
 FAILS rather than continuing to report green on vanilla alone. Sabotage-proven
@@ -743,18 +743,18 @@ by moving astro live: `expected [ 'astro' ] to deeply equal []`.
 
 ### 5. Bare glyphs are barred
 
-Swept up in the same pass, because it is the same class — markup that says
+Swept up in the same pass, because it is the same class, markup that says
 something to sighted users and nothing to anyone else. `pdp.mjs` rendered
-`${price ?? "—"}` and `<dd>${d.year ?? "—"}</dd>`; a lone "—" announces as "em
+`${price ?? <dash>}` and `<dd>${d.year ?? <dash>}</dd>`; a lone em dash announces as "em
 dash" or, at the common punctuation-verbosity default, as silence, making
-absent data and a rendering fault indistinguishable — the reasoning
+absent data and a rendering fault indistinguishable, the reasoning
 `tracklist.css` had already applied to empty duration cells. `lib.mjs`
 `namedGlyph` is now the rule, and
 `tools/repo-checks/test/master-glyph-names.test.ts` enforces it over every
 committed master: any element whose entire text is short and carries neither a
 letter nor a digit must be hidden from assistive tech with words supplied
 beside it, or named. Against the masters on `main` it finds **seven**
-instances — the PDP's unpriced amount, five release-card prices in the PLP
+instances, the PDP's unpriced amount, five release-card prices in the PLP
 master, and checkout's cart-total placeholder. The null-year arm was invisible
 to every other check because all four resolved masters have years.
 
@@ -765,7 +765,7 @@ to every other check because all four resolved masters have years.
   reading is invalidated by the markup change.
 - `CART_CONTRACT` gains a **uniqueness** clause. It had always *stated* "one
   entry per release id" without *checking* it, so a duplicate passed
-  validation and the two implementations then disagreed — one add on
+  validation and the two implementations then disagreed, one add on
   `{"v":1,"items":[{"id":7,"qty":1},{"id":7,"qty":1}]}` gave **3** on
   editorial (first match) and **4** on the PDP (every match). The rule now
   checks what it always claimed. Cost, re-derived over all six cart files
@@ -775,8 +775,8 @@ to every other check because all four resolved masters have years.
   `cart.js`, which ships raw and goes **1,122 → 1,205 B brotli-q11 (+7.4%)**,
   or roughly +5% of the published 1.69 KB editorial initial-JS cell. Two
   honest limits on that number: only vanilla, htmx and remix3 ship their source
-  raw — react-next, astro and qwik are bundled, so their source delta is an
-  UPPER bound on what reaches the wire — and Cloudflare compresses materially
+  raw, react-next, astro and qwik are bundled, so their source delta is an
+  UPPER bound on what reaches the wire, and Cloudflare compresses materially
   worse than local q11 (3.68× vs 4.46×, measured 2026-08-14), the very
   mismatch `bench-instrumentation-dilution` exists to settle. (`pdp.js`'s own
   +1,446 B raw / +371 B brotli is NOT this clause: it is dominated by the zoom
@@ -788,7 +788,7 @@ to every other check because all four resolved masters have years.
   re-typings were corrected in the same commit so spec and re-implementation
   cannot drift apart in a branch no test exercises.
 
-## Addendum B — §8's "How it was built", as built (2026-09-02)
+## Addendum B: §8's "How it was built", as built (2026-09-02)
 
 §8 specified the surface in one sentence: a front-Worker static singleton at
 `/how-it-was-built/`, "a `pm-doc` TOC + prose layout whose content is
@@ -807,7 +807,7 @@ sentence left open:
   for a hostless singleton, which no variant comparison could give it, and it
   is why `@pm/reference` became a declared dependency of `@pm/front`
   (ADR-0004, addendum of the same date).
-- **One source outside `docs/`, named.** The page indexes `/methodology/` —
+- **One source outside `docs/`, named.** The page indexes `/methodology/`,
   one entry per `<h2 id>` of `workers/front/methodology/index.html`,
   deep-linked to `/methodology/#id`. That page keeps its URL: the chrome links
   it from every measured page, and moving the link would invalidate the
@@ -816,13 +816,13 @@ sentence left open:
   therefore a contract the surface's guards read, and `turbo.json` declares
   the file as an input of `@pm/reference#test`.
 - **Deep links are receipts.** Every link into the record pins the build's
-  attested SHA (`/_pm/build.json`), or `main` — said on the page — when the
+  attested SHA (`/_pm/build.json`), or `main`, said on the page, when the
   tree was unclean. An index entry that could dereference to different bytes
   tomorrow is the unreproducible-number defect one layer up. Links into a
   rendered ADR carry GitHub's heading anchor; links into the build log carry
   a line anchor (`?plain=1#L…`), because GitHub does not render a markdown
   file of that size and a heading fragment would scroll nowhere.
-- **It indexes; it does not copy — and says what it leaves out.** ADRs and
+- **It indexes; it does not copy, and says what it leaves out.** ADRs and
   each ADR's addenda, build-log phases, reviews, methodology sections; not
   the decision map, handoffs, prototypes or PRDs, which the page names as
   unindexed. No figure appears on it (ADR-0007 §5: off the matrix, no lab
@@ -830,21 +830,21 @@ sentence left open:
   receipt. Rendering whole ADRs as pages was declined (PRD Decision 1) and
   stays an addendum-plus-dependency-review question, not a slice's call.
 
-## Addendum C — §8's A11y section, as built (2026-09-03)
+## Addendum C: §8's A11y section, as built (2026-09-03)
 
-§8 specified the section in one paragraph: a vanilla singleton of three pages —
+§8 specified the section in one paragraph: a vanilla singleton of three pages,
 index, five two-box element compares with the DS-OFF twin inside a collapsed
-`<details>`, three additive-only mode emulations with the honesty caveat —
+`<details>`, three additive-only mode emulations with the honesty caveat,
 element-demos `noindex` (strategy-review finding 21). The build (build-log
 Phase 15, "The footer's last 404"; decision map `a11y-section`) holds to it and
 settles four things the paragraph left open:
 
-- **One renderer, two heads — for a variant-hosted singleton.** The vanilla
+- **One renderer, two heads, for a variant-hosted singleton.** The vanilla
   variant does not re-type the pages: it renders them with this package's own
   `renderA11y*` under its head (its asset base; the master's ordered sheet list
   arrives through `page()`'s head callback), its chrome slot and one script.
   `shell.mjs` `page()` gained the skeleton's two ✂ lines as options (`slot`,
-  `scripts`) and `head` as a callback, all default off — the regeneration test
+  `scripts`) and `head` as a callback, all default off, the regeneration test
   holds every committed master byte-identical, and each default was flipped
   under sabotage to prove it fires. ADR-0003 §1's re-implementation rule exists
   so paradigms are compared on identical markup; this section compares no
@@ -856,11 +856,11 @@ settles four things the paragraph left open:
   writes its own `aria-pressed` and nothing else; `components/mode-demo.css`
   applies each emulation to the ADJACENT stage through
   `.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="…"]`
-  (ADR-0003 §5 — the visual state cannot exist without the programmatic one).
+  (ADR-0003 §5, the visual state cannot exist without the programmatic one).
   "Additive-only, gated behind the real media queries" is therefore a
   mechanism: with a toggle off no rule matches and the real query stands, so
   a visitor whose OS already reduces motion or forces colours sees no change
-  in either toggle direction — asserted in a real browser under Playwright's
+  in either toggle direction, asserted in a real browser under Playwright's
   `reducedMotion: "reduce"` and `forcedColors: "active"` contexts. The
   forced-colors rule's custom properties are `tokens.css`'s
   `@media (forced-colors: active)` remap verbatim, and a repo-check holds the
@@ -868,19 +868,19 @@ settles four things the paragraph left open:
   seam. Reflow narrows the stage to WCAG 1.4.10's 320 CSS px.
 - **Specimens are wired, not exempt.** Every button in a compare box or a stage
   is the store's own component shown for its rendering; a press answers in the
-  page's own visible `role="status"` line — one per compare and per mode
+  page's own visible `role="status"` line, one per compare and per mode
   (`[data-pm-a11y-response]`), never the shell's `[data-pm-status]`, which
   `masthead.css` sizes 1×1 and clips. Both halves of that were defects the
   verification pass found and are guarded: the shell's region answers a
   screen-reader user and leaves a sighted pointer user with a button that
   visibly does nothing, and one page-level line leaves the answer up to three
   viewports above the control. It names the demo, the side and the press
-  count, so no two specimens and no two presses produce the same string — a
+  count, so no two specimens and no two presses produce the same string, a
   live region does not re-announce text that has not changed, and the
   target-size walkthrough invites repeats. It names itself a specimen, because a button that
   does nothing when pressed is the dead-control state (addendum A) on whatever
   page it sits. The live-region demo writes the same sentence into each twin's
-  own slot — `role="status"` versus a plain element — and never into the
+  own slot, `role="status"` versus a plain element, and never into the
   shell's region, or the DS-OFF twin would be announced too and the exhibit
   would show nothing. The forms demo's field is a STATIC specimen served in its
   error-wired state: live validation on one twin would break "differs only in
@@ -893,23 +893,23 @@ settles four things the paragraph left open:
   sentence, one current cell, no offer (ADR-0004 §7). No lab table will ever
   publish for it (ADR-0007 §5), and `SURFACE_CONTROLS.a11y` moved
   `variants: ["vanilla"]` in the same commit as the routes (decision map,
-  2026-08-29) — home's PM‑005 row is derived from that array by the origin
+  2026-08-29), home's PM‑005 row is derived from that array by the origin
   suite, alongside the matrix rows.
 
-## Addendum D — §7's JS-off moment has a landing, and its reserved geometry is a cell (2026-09-24, `checkout-measure-prep`)
+## Addendum D: §7's JS-off moment has a landing, and its reserved geometry is a cell (2026-09-24, `checkout-measure-prep`)
 
 §7 says of checkout: *"JS-off statements ship on-page (checkout: fields and
-native validation work; placing the order is the JavaScript moment — the
+native validation work; placing the order is the JavaScript moment, the
 comparison, stated)."* The statement was on the page and true; what was
 also true, and stated nowhere, was that a visitor who placed the order with
-JavaScript off met a zero-length 405 — the assets binding's answer to a
+JavaScript off met a zero-length 405, the assets binding's answer to a
 POST it will not serve. Three amendments, each measured before it was
 written.
 
 **1. The JS-off order lands on a second page of the surface.** The form
-posts natively to a RELATIVE `place-order/` — each variant answers its own
-(`/vanilla/checkout/place-order/`, later `/react-next/checkout/place-order/`)
-— and the variant's Worker answers with a **303** to `checkout/placed/`, a
+posts natively to a RELATIVE `place-order/`. Each variant answers its own
+(`/vanilla/checkout/place-order/`, later `/react-next/checkout/place-order/`),
+and the variant's Worker answers with a **303** to `checkout/placed/`, a
 second committed master of the checkout surface nested like the PDP's
 degenerate ones: the shell, the plaque restated for what the request
 carried, the JS-off statement in the other direction, one link back to the
@@ -917,8 +917,8 @@ records, `noindex`, no form. Rule 1 of the master (no input but the shipping
 radios carries a `name`) is what makes the design complete: the posted body
 is `shipping=standard` or `shipping=express` and nothing else, the Worker
 never reads it, and the page says exactly that rather than naming a method
-it cannot know. §7's sentence stands — placing the order IN the page is
-still the JavaScript moment the comparison is about — and the on-page JS-off
+it cannot know. §7's sentence stands, placing the order IN the page is
+still the JavaScript moment the comparison is about, and the on-page JS-off
 statement now also says where the native submit goes.
 
 *Why not the form's own URL, which the first draft used.* On a Worker with
@@ -926,24 +926,24 @@ static assets, a request whose path matches an asset is answered before the
 script runs (Cloudflare's routing page, fetched 2026-09-24: "Cloudflare will
 first attempt to serve static assets if one matches the incoming request";
 "If an appropriate static asset if not found, Cloudflare will invoke your
-Worker script" — the typo is the page's). `POST /vanilla/checkout/` has an
+Worker script", the typo is the page's). `POST /vanilla/checkout/` has an
 `index.html` behind it, so the route sat unreached and the plane kept
 answering 405 while the pre-merge pin on the route passed. A path with no
 asset behind it is the one request that reaches the script, and every page
 GET stays assets-first. Rejected with their costs: `assets.run_worker_first`
-on the page path — a script invocation on every GET of the measured page, to
-answer a POST nobody measures; a `_redirects` file — method-blind; a 200 on
-the POST URL — a refresh re-posts.
+on the page path, a script invocation on every GET of the measured page, to
+answer a POST nobody measures; a `_redirects` file, method-blind; a 200 on
+the POST URL, a refresh re-posts.
 
 **2. "Reserved min-height" is superseded: the order summary's geometry is a
 fixed cell.** §7 said the order-summary region ships with *"designed empty
 copy and reserved min-height"*. A minimum is a floor, not a height: the
 empty region stood at 234 px against a 12 rem content-box floor, so a
 one-item cart changed nothing and a three-item cart grew it by 25 px and
-moved the form below it on the phone profile — layout-shift **0.0214**
+moved the form below it on the phone profile, layout-shift **0.0214**
 measured on the held plane; on the desktop the total row alone moved for
 0.0011. The region is now a three-row grid whose middle track is FIXED at
-9.25 rem (three 44 px lines plus two `--space-stack-sm` gaps — derived from
+9.25 rem (three 44 px lines plus two `--space-stack-sm` gaps, derived from
 the line's own geometry, not chosen), the empty copy and the list share
 that cell, the served list is `:empty` and hidden, past three lines the list
 scrolls inside the cell, and the total's price slot reserves `10ch` so a
@@ -962,7 +962,7 @@ ADR-0001 addendum V records. What this ADR needs to carry is the consequence
 for §7's like-for-like claim: every field error and the error summary's
 title draw U+26A0 as the non-colour cue, Familjen Grotesk does not carry it,
 and the one-glyph face `fonts.css` serves for it is fetched on the FIRST
-error render — so the two submit ids cost 1,212 B of font (1,512 B as
+error render, so the two submit ids cost 1,212 B of font (1,512 B as
 Resource Timing reports it) on every paradigm alike. Identical bytes from
 every variant's own tokens tree: glyph mass, never a paradigm difference,
 and the checkout fit template must declare it as a constant when the

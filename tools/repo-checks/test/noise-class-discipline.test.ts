@@ -1,11 +1,11 @@
 /**
  * Noise-class discipline (ADR-0008; editorial-build slice A). The
  * permitted-noise registry carries behavior attributes (`hx-*`, `on:*`,
- * `q:*`) as their OWN declared class — they are a paradigm's mechanism, not
+ * `q:*`) as their OWN declared class. They are a paradigm's mechanism, not
  * inert residue. Stripping is identical by design (normalize.ts), so
  * nothing in the drift gate itself can catch a MISLABELED registration: a
  * variant registering `^hx-` under `attrPatterns` would pass every suite
- * while its published registry entry — part of the diff-to-starter story —
+ * while its published registry entry, part of the diff-to-starter story,
  * presents the mechanism as residue, exactly the smuggling the class was
  * minted to prevent.
  *
@@ -21,8 +21,8 @@ import { PERMITTED_NOISE } from "@pm/drift-gate";
  * The `on-document:`/`on-window:` entries are NOT redundant with `on:click`
  * (editorial-build slice D): they are separate attribute prefixes that a `^on:`
  * regex does not match, so before they were listed here a variant could have
- * registered `^on-document:` under `attrPatterns` — presenting a paradigm's
- * mechanism as inert residue — and this guard would have passed. Found while
+ * registered `^on-document:` under `attrPatterns`, presenting a paradigm's
+ * mechanism as inert residue, and this guard would have passed. Found while
  * writing slice D's own registration, which uses all three qwik prefixes.
  * `on-window:` is listed ahead of need: nothing registers it today (this
  * surface uses no `useOnWindow`), but the shape is Qwik's and slice E's htmx
@@ -38,7 +38,7 @@ const BEHAVIOR_PROBES = [
   "on-document:qinit",
   "on-window:storage",
   // remix3's frame-navigation mechanism (editorial-build slice F), listed
-  // ahead of need like on-window: — nothing registers rmx-* today (the
+  // ahead of need like on-window:. Nothing registers rmx-* today (the
   // remix3 registration is measured-empty), but a future pin bump that
   // puts these on compared DOM must register them as MECHANISM, never
   // residue.
@@ -55,7 +55,7 @@ describe("behavior attributes never hide in the inert-residue class (ADR-0008)",
           expect(
             re.test(probe),
             `${variant} registers "${source}" under attrPatterns, which matches ` +
-              `behavior attribute "${probe}" — register it under behaviorAttrPatterns ` +
+              `behavior attribute "${probe}", register it under behaviorAttrPatterns ` +
               `(ADR-0008: mechanism, not residue)`,
           ).toBe(false);
         }

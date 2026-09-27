@@ -2,7 +2,7 @@
   "name": "@pm/vanilla",
   "version": "0.1.0",
   "private": true,
-  "description": "The vanilla variant (editorial-build slice A): hand-authored static HTML, no runtime — the render-baseline control every other paradigm is compared against. Snapshot-parameterized build (PM_SNAPSHOT: fixture default, crate on deploy); serves /vanilla/* through the composed origin.",
+  "description": "The vanilla variant (editorial-build slice A): hand-authored static HTML, no runtime, the render-baseline control every other paradigm is compared against. Snapshot-parameterized build (PM_SNAPSHOT: fixture default, crate on deploy); serves /vanilla/* through the composed origin.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

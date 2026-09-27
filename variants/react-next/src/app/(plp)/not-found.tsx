@@ -1,10 +1,10 @@
 import { Shell } from "@/lib/render";
 
 /** The branded 404 `notFound()` renders for a facet or sort value the
- *  snapshot does not hold (the edge answered 400 — ADR-0005 §5's "junk is a
+ *  snapshot does not hold (the edge answered 400, ADR-0005 §5's "junk is a
  *  400, never a KV key"). The STATUS and the copy are the cross-arm
  *  contract: htmx serves the same sentence at 404 for the same URL. The
- *  shell is kept so the page is branded once it renders — and it renders at
+ *  shell is kept so the page is branded once it renders, and it renders at
  *  HYDRATION: with multiple root layouts Next SSRs its own `__next_error__`
  *  document and ships this boundary in the RSC payload (DIFF-TO-STARTER.md
  *  item 25, the PDP not-found precedent), so the served HTML has no chrome

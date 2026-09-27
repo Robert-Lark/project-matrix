@@ -1,9 +1,9 @@
-// Front routing Worker — ADR-0004 §3 (single origin, path-prefixed) + §7
+// Front routing Worker, ADR-0004 §3 (single origin, path-prefixed) + §7
 // (edge-injected chrome, arriving with issue #5). Has its OWN static assets
-// (the home surface at /, ADR-0007 — composed by build.mjs) plus service
+// (the home surface at /, ADR-0007, composed by build.mjs) plus service
 // bindings to each
 // variant Worker. Deploy order: variants first, then this (bindings must
-// resolve). Local dev: one `wrangler dev` per Worker — the single-process
+// resolve). Local dev: one `wrangler dev` per Worker, the single-process
 // multi-config mode is forbidden (spike FINDINGS: breaks assets-through-
 // bindings).
 {
@@ -26,7 +26,7 @@
     { "binding": "EDGE", "service": "pm-edge" },
     { "binding": "BLOG", "service": "pm-blog" }
   ],
-  // Workers Logs — structured logs queryable in the dashboard (PRD story 42).
+  // Workers Logs, structured logs queryable in the dashboard (PRD story 42).
   "observability": {
     "enabled": true
   }

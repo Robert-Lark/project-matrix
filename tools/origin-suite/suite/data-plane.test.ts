@@ -1,13 +1,13 @@
 /**
- * Edge data plane through the composed origin (issue #4) — same seam as the
+ * Edge data plane through the composed origin (issue #4), same seam as the
  * composition suite: plain HTTP at PM_ORIGIN, responses validated against the
  * shared Zod contract. Discogs is never contacted; local runs read wrangler's
  * local R2/KV/Analytics Engine emulation, the post-deploy smoke reads the
  * real plane.
  *
  * Snapshot-aware (issue #11): the suite first asks the origin WHICH frozen
- * snapshot it serves (/api/snapshot — the dated SnapshotManifest, ADR-0002
- * §1) and asserts THAT snapshot's committed artifacts — ids, trays, and
+ * snapshot it serves (/api/snapshot, the dated SnapshotManifest, ADR-0002
+ * §1) and asserts THAT snapshot's committed artifacts, ids, trays, and
  * image sha256s from the fixture's or the crate's committed files. If the
  * snapshot can't be identified, resolution throws and every test here fails;
  * nothing skips (ADR-0001 §9).
@@ -16,7 +16,7 @@
  * `?run=` nonce (the documented harness isolation knob), for two reasons.
  * Reads: the KV warm tier is persistent and its keys carry no snapshot
  * identity, so an un-nonced request against the deployed plane could be
- * served a PREVIOUS smoke's warm payload — across the fixture→crate
+ * served a PREVIOUS smoke's warm payload, across the fixture→crate
  * re-seed that would false-fail the re-smoke (or let a torn re-seed
  * false-pass behind a warm hit). Writes: the smoke must plant no
  * un-nonced warm entries, or a real visitor would later HIT a stale
@@ -42,7 +42,7 @@ const get = (path: string, init?: RequestInit) => fetch(`${ORIGIN}${path}`, init
 
 /**
  * Real KV is eventually consistent and caches negative lookups ("not advised
- * to rely on" read-after-write, per the KV docs) — so against the deployed
+ * to rely on" read-after-write, per the KV docs), so against the deployed
  * plane the hit may take a propagation window to appear. Locally (miniflare,
  * strongly consistent) the first read after the miss must already be a hit.
  */
@@ -88,7 +88,7 @@ describe("tray API validates against the shared contract (ADR-0002 §6)", () => 
     expect(page.perPage).toBe(24);
     expect(page.total).toBe(snap.manifest.releaseCount);
     expect(page.totalPages).toBe(Math.ceil(page.total / page.perPage));
-    // The first page IS the committed tray content, in committed order —
+    // The first page IS the committed tray content, in committed order,
     // deep-equal against the snapshot's own summaries.json.
     expect(raw.items).toEqual(snap.summaries.slice(0, page.perPage));
     // Facets are computed from the stored crate, not copied from samples.
@@ -129,7 +129,7 @@ describe("tray API validates against the shared contract (ADR-0002 §6)", () => 
   it("a deterministic sample of PDP trays deep-equals the committed details", async () => {
     // Five evenly-spread positions (+ the probe detail above). Known
     // boundary, stated honestly: a detail outside the sample whose summary
-    // still matches would escape — full-detail coverage would cost one
+    // still matches would escape, full-detail coverage would cost one
     // request per release on every run, which the sweep above plus the
     // committed-artifact provenance does not justify.
     const positions = [0, 1, 2, 3, 4].map((i) =>
@@ -172,10 +172,10 @@ describe("the ?n= data-volume knob (ADR-0002 §5, ADR-0004 §5)", () => {
     }
   });
 
-  it("pages beyond the crate are valid and empty — and never become a warm-tier resource", async () => {
+  it("pages beyond the crate are valid and empty, and never become a warm-tier resource", async () => {
     // The `?page=` KV ceiling (2026-08-29 audit, step 0): the honest empty
     // page every arm renders as "0" is still served, but it is not written
-    // through — a curl loop over the integers used to mint one immortal
+    // through, a curl loop over the integers used to mint one immortal
     // entry per page number. `none` is the state of a response that is not
     // a warm-tier resource; asked twice, it must never come back as a hit.
     const path = `/api/plp?n=240&page=99&run=${RUN_NONCE}`;
@@ -236,7 +236,7 @@ describe("frozen self-hosted images (ADR-0002 §5)", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/avif");
     const wire = Buffer.from(await res.arrayBuffer());
-    // sha256 IS the byte-identity check — it's how the crate commits its
+    // sha256 IS the byte-identity check. It's how the crate commits its
     // image truth (images-index.json; the bytes themselves are deliberately
     // not in git). When the snapshot's bytes ARE committed (the fixture),
     // they were the hash's own source, so this one assertion covers both.
@@ -249,7 +249,7 @@ describe("frozen self-hosted images (ADR-0002 §5)", () => {
   it("a deterministic sample of committed derivatives carries the frozen byte identity", async () => {
     // Boundary, stated honestly (mirrors the PDP sample): derivatives
     // outside this five-position spread + the probe image above are not
-    // fetched — full coverage would be one request per derivative
+    // fetched, full coverage would be one request per derivative
     // (~1,800 for the crate) on every run.
     for (const { path, sha256 } of snap.imageSample) {
       const res = await get(path);
@@ -266,7 +266,7 @@ describe("frozen self-hosted images (ADR-0002 §5)", () => {
 
 describe("beacon collector (ADR-0001 §8)", () => {
   // Reserved synthetic tag values: the post-deploy smoke writes REAL,
-  // undeletable Analytics Engine points — "ci-smoke" marks them excludable
+  // undeletable Analytics Engine points, "ci-smoke" marks them excludable
   // forever, and location says where the suite actually ran.
   const fullEvent = {
     name: "LCP",
@@ -323,7 +323,7 @@ describe("beacon collector (ADR-0001 §8)", () => {
 
   // A missing or non-numeric value used to be written as a fabricated 0
   // (workers-hardening, 2026-09-25); the in-process leg in workers/edge/test
-  // asserts nothing reaches the dataset — this is the HTTP half on the plane.
+  // asserts nothing reaches the dataset. This is the HTTP half on the plane.
   it("rejects an event whose value is missing or not a finite number, naming the field", async () => {
     for (const [label, body] of [
       ["absent", { name: fullEvent.name, tags: fullEvent.tags }],
@@ -350,7 +350,7 @@ describe("beacon collector (ADR-0001 §8)", () => {
   });
 
   // The ROSTER (security floor, 2026-09-18): `variant` is the Analytics
-  // Engine index — the sampling key — and any string used to become one.
+  // Engine index, the sampling key, and any string used to become one.
   // Off-roster values are a 400 naming the tag, and the suite's own
   // reserved value above is ON the roster by name (the accept leg proves
   // that side). Real roster values are NOT posted here: on the deployed
@@ -374,12 +374,12 @@ describe("beacon collector (ADR-0001 §8)", () => {
     }
   });
 
-  it("the suite's reserved tag value is the roster's SMOKE_TAG — one spelling, importable", () => {
+  it("the suite's reserved tag value is the roster's SMOKE_TAG, one spelling, importable", () => {
     expect(fullEvent.tags.variant).toBe(SMOKE_TAG);
     expect(fullEvent.tags.surface).toBe(SMOKE_TAG);
   });
 
-  it("the home HUD's served tag pair is the roster's HOME_TAGS — the singleton's beacons stay accepted", async () => {
+  it("the home HUD's served tag pair is the roster's HOME_TAGS, the singleton's beacons stay accepted", async () => {
     const body = await (await get("/")).text();
     expect(body).toContain(
       `data-pm-variant="${HOME_TAGS.variant}" data-pm-surface="${HOME_TAGS.surface}"`,
@@ -398,7 +398,7 @@ describe("HTTP method semantics (known resource + wrong method = 405)", () => {
   it("HEAD works on data routes (uptime probes see the plane)", async () => {
     // Nonced like every other warm-tier request: HEAD traverses the
     // write-through, and an un-nonced probe would plant the canonical
-    // default-PLP key — the one entry a real visitor would later HIT as a
+    // default-PLP key, the one entry a real visitor would later HIT as a
     // stale payload across a snapshot re-seed.
     const res = await get(`/api/plp?run=${RUN_NONCE}`, { method: "HEAD" });
     expect(res.status).toBe(200);

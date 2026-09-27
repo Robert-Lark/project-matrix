@@ -3,7 +3,7 @@
 // it, record it beside the local commit pin, and REFUSE to measure a plane
 // whose attested SHA disagrees with the checkout driving the browser. Since
 // the how-it-was-built build (2026-09-02) the same stamp also writes
-// dist/how-it-was-built/index.html, whose deep links pin that SHA — see the
+// dist/how-it-was-built/index.html, whose deep links pin that SHA, see the
 // note inside stampBuild.
 //
 // Stamped everywhere dist can go stale against HEAD, deliberately: at the
@@ -11,7 +11,7 @@
 // after its turbo build and by the `dev` script before wrangler dev (turbo
 // replays a cached dist when the package's inputs are unchanged, and a
 // replayed dist carries the SHA of the commit that BUILT it). The `deploy`
-// script does NOT merely re-stamp — it re-runs the full build first: a
+// script does NOT merely re-stamp. It re-runs the full build first: a
 // bare stamp would write the current HEAD onto whatever stale dist was
 // lying around, a false attestation worse than none (verify-slice, this
 // unit; front's build is not snapshot-parameterized, so a rebuild inside
@@ -39,7 +39,7 @@ export function stampBuild() {
   // docs/prds/how-it-was-built-build.md Decision 1): every deep link on it
   // pins the sha this file attests, or falls back to `main` when the tree is
   // dirty. It is written HERE, from the same {sha, dirty}, rather than in
-  // build.mjs's main body, for the reason this whole file exists — a turbo
+  // build.mjs's main body, for the reason this whole file exists, a turbo
   // cache replay restores a dist whose page names the commit that BUILT it,
   // and the re-stamp must move the page with the attestation or the two
   // disagree on every replay. Same renderer as the committed master
@@ -49,7 +49,7 @@ export function stampBuild() {
   // RENDER FIRST, write second. The render can throw (a malformed
   // attestation, a moved docs directory, a missing token); if build.json were
   // already on disk by then, a failed stamp would leave a fresh attestation
-  // beside a stale or absent page — the one disagreement this arrangement
+  // beside a stale or absent page, the one disagreement this arrangement
   // exists to make impossible (design review, 2026-09-02).
   const html = howBuiltPage({ sha: build.sha, dirty: build.dirty });
 

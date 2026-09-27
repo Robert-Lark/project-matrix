@@ -1,9 +1,9 @@
 /**
- * @pm/measurement — the shared measurement layer (ADR-0001).
+ * @pm/measurement, the shared measurement layer (ADR-0001).
  *
  * Contents: the versioned test-profile spec (profiles.ts), the beacon tag
  * contract + canonical knob vocabulary (beacon.ts), and the pinned
- * web-vitals client (client.ts — deliberately NOT exported here; it is a
+ * web-vitals client (client.ts, deliberately NOT exported here; it is a
  * standalone browser bundle, built to dist/measure.js and served from the
  * front Worker's /_pm/* instrumentation path).
  */

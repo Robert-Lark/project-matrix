@@ -8,7 +8,7 @@
  * slice C recorded when it made the same call for Astro: hosting it in
  * repo-checks would route every repo-wide structural check through this one
  * variant's Vite plugin, so a framework upgrade could break guards that have
- * nothing to do with the framework. The guard is still reached pre-merge —
+ * nothing to do with the framework. The guard is still reached pre-merge,
  * CI's `check` job runs `turbo run lint typecheck test`, which picks up this
  * workspace's `test` script, and `@pm/qwik#test` is declared `cache: false`
  * in turbo.json because its real inputs span the reference renderer and both

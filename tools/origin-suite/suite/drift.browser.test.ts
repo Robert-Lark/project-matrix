@@ -1,7 +1,7 @@
 /**
  * The drift gate at the composed-origin seam (issue #6, ADR-0003 §6): every
- * variant page — fetched exactly as a visitor gets it, chrome injection
- * active — must equal the reference render by normalized DOM and by pixels
+ * variant page, fetched exactly as a visitor gets it, chrome injection
+ * active, must equal the reference render by normalized DOM and by pixels
  * across the three published profiles. A deliberate-drift fixture proves
  * both checks actually catch drift (and that chrome exclusion can't mask
  * it) before any real variant relies on the gate.
@@ -52,14 +52,14 @@ let statics: StaticServer;
 let REFERENCE_URL: string;
 let FIXTURE_URL: string;
 // The editorial master re-rendered from the RESOLVED snapshot (ADR-0008 §9)
-// — shared by every variant's editorial comparison below (vanilla,
+//, shared by every variant's editorial comparison below (vanilla,
 // react-next, ...): the re-render is a pure function of the snapshot, not
 // of which variant is under test.
 let masterDomUrl: string;
 let masterPixelUrl: string;
 // The four PDP masters re-rendered from the RESOLVED snapshot (pdp-variants):
 // slot "" is the rich path; the slug is the SERVED page each master compares
-// against, derived through the ONE derivation (lib.pdpMasterIds) — never
+// against, derived through the ONE derivation (lib.pdpMasterIds), never
 // named (the `resolvedPathSegments` lesson).
 let pdpMasters: {
   slot: string;
@@ -90,15 +90,15 @@ beforeAll(async () => {
   // The gate's first REAL variant comparison (editorial-build slice A) and
   // the deployed-smoke re-render leg are one snapshot-aware mechanism: the
   // editorial master is re-rendered IN-PROCESS from whatever snapshot
-  // /api/snapshot says the origin serves — the fixture in CI (proving
+  // /api/snapshot says the origin serves, the fixture in CI (proving
   // fixture-equivalence, exactly what the committed master pins) and the
   // crate on the deployed plane (proving the plane serves the crate
   // correctly, which the committed fixture-rendered master cannot). Two
   // flavors of the re-render:
-  //  - DOM leg: image srcs stay tray-verbatim (/assets/img/* — attribute
+  //  - DOM leg: image srcs stay tray-verbatim (/assets/img/*, attribute
   //    values are contract, and the served variant page carries the same);
   //  - pixel leg: image srcs point at the origin under test, because the
-  //    crate's image bytes are deliberately not in git — the plane serves
+  //    crate's image bytes are deliberately not in git, the plane serves
   //    them (the fixture case exercises the same path through local R2).
   const rerenderRoot = join(
     repoRoot,
@@ -110,7 +110,7 @@ beforeAll(async () => {
   const snap = await loadServedSnapshot();
   const name = snapshotNameFor(snap.root);
   // Dynamic import by file URL: the renderer is plain-JS build tooling
-  // with a main-module-guarded CLI — importing renders and writes nothing
+  // with a main-module-guarded CLI, importing renders and writes nothing
   // (the @pm/reference regeneration test's own pattern).
   const lib = await import(
     pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
@@ -137,7 +137,7 @@ beforeAll(async () => {
   masterPixelUrl = `${base}/pixels/editorial/`;
 
   // The PDP master set, same mechanism (pdp-variants): four masters per
-  // flavor, ids derived by lib.pdpMasterIds from the RESOLVED snapshot —
+  // flavor, ids derived by lib.pdpMasterIds from the RESOLVED snapshot,
   // fixture in CI, crate on the deployed plane. The rich slot renders at the
   // editorial re-render's depth; the three degenerate slots nest one deeper,
   // exactly as the committed masters do (extraDepth + 1, ADR-0008's second
@@ -173,8 +173,8 @@ beforeAll(async () => {
 
 /**
  * Settle every image before a pixel shot. In the gate's JS-off contexts
- * the editorial figure's `loading="lazy"` never actually defers — the
- * HTML spec runs lazy loading only when scripting is enabled — so the
+ * the editorial figure's `loading="lazy"` never actually defers, the
+ * HTML spec runs lazy loading only when scripting is enabled, so the
  * scroll is defensive (a JS-on reuse of this helper would need it), and
  * the real work is the settle + the broken-load check: every `<img>`
  * complete with `naturalWidth > 0`. A master-side 404 must read as a
@@ -184,16 +184,16 @@ beforeAll(async () => {
  * main (slice D's merge). It means "the bytes arrived"; the editorial figure
  * carries `decoding="async"`, which explicitly permits the browser to paint the
  * element BEFORE the frame is decoded. Nothing else in the pre-shot pipeline
- * closes that window either — `captureStablePixels` waits for FONTS and then
+ * closes that window either, `captureStablePixels` waits for FONTS and then
  * screenshots. So on a busy runner the shot can catch a decoded-too-late image
  * as a blank box: the failure was 421,656 differing pixels at identical
  * dimensions, and the CI screenshots showed every glyph matching with exactly
- * one image — the `decoding="async"` figure — empty on the served side.
+ * one image, the `decoding="async"` figure, empty on the served side.
  *
  * `img.decode()` is the real signal: it resolves when the frame is decoded and
  * ready to paint, and rejects if the image cannot be decoded at all. Measured
  * against the deployed plane, decode still needed 1.3–2.3 ms per image AFTER
- * `complete` went true on a fast workstation — small here, unbounded on a
+ * `complete` went true on a fast workstation, small here, unbounded on a
  * loaded two-core runner, and entirely inside the window a screenshot can land
  * in. Waiting for it makes the gate MORE precise rather than more forgiving,
  * which is the only acceptable direction for a zero-tolerance pixel check.
@@ -209,7 +209,7 @@ async function settleImages(page: Page): Promise<void> {
     );
     if (settled) break;
     if (Date.now() > deadline) {
-      throw new Error("images never settled — a screenshot now could false-diff");
+      throw new Error("images never settled, a screenshot now could false-diff");
     }
     await new Promise((r) => setTimeout(r, 100));
   }
@@ -256,13 +256,13 @@ function isSelfHosted(url: string): boolean {
 }
 
 // Each tracked page's running list of non-self-hosted request URLs, so the
-// check can run AGAIN after the load-time one — late @font-face fetches begin
+// check can run AGAIN after the load-time one, late @font-face fetches begin
 // only when layout is forced (see captureTracked).
 const externalRequests = new WeakMap<Page, string[]>();
 
 /**
  * Open a page and record every network request it makes: rendering must be
- * fully self-hosted (ADR-0003 §8 / ADR-0001 §6) — a fetch to any host but the
+ * fully self-hosted (ADR-0003 §8 / ADR-0001 §6), a fetch to any host but the
  * composed origin or the gate's own static server would mean the pixels depend
  * on bytes the benchmark doesn't control. The listener stays attached so a
  * later `captureTracked` can re-assert after layout-triggered fetches.
@@ -285,7 +285,7 @@ async function openTracked(
 /**
  * Screenshot AND re-assert self-hosting. `captureStablePixels` forces layout
  * and waits for fonts, which is when a page's `@font-face` fetches actually
- * begin (gate.ts) — AFTER openTracked's load-time check. So a variant pulling
+ * begin (gate.ts), AFTER openTracked's load-time check. So a variant pulling
  * an external font would slip past the load-time assertion; re-checking the
  * accumulated request list here closes that window (drift.browser.test.ts:208).
  */
@@ -304,7 +304,7 @@ function assertDomEqual(label: string, reference: string, actual: string): void 
   writeFileSync(join(evidenceDir, `${label}.expected.txt`), reference);
   writeFileSync(join(evidenceDir, `${label}.actual.txt`), actual);
   throw new Error(
-    `normalized DOM drift (${label}) — full extracts in .dev-logs/drift/\n` +
+    `normalized DOM drift (${label}), full extracts in .dev-logs/drift/\n` +
       firstDomDivergence(reference, actual),
   );
 }
@@ -325,13 +325,13 @@ function assertPixelsEqual(
     `pixel drift (${label}): ${result.reason}, ` +
       `${result.diffPixels} differing pixels, ` +
       `${result.a.width}×${result.a.height} vs ${result.b.width}×${result.b.height} ` +
-      `— screenshots in .dev-logs/drift/`,
+      `- screenshots in .dev-logs/drift/`,
   );
 }
 
 /* ── ADVISORY funnels (editorial-build slice F; ADR-0003 first addendum) ──
-   The remix3 frontier exhibit's drift comparison RUNS on every suite pass —
-   same normalizer, same master, same evidence files — but a mismatch WARNS
+   The remix3 frontier exhibit's drift comparison RUNS on every suite pass,
+   same normalizer, same master, same evidence files, but a mismatch WARNS
    instead of failing: a weekly-cadence beta must not be able to block the
    matrix's deploy, and a broken-beyond-repair exhibit is handled by the
    fence label, not by holding the pipeline hostage. The distinction is
@@ -347,7 +347,7 @@ function advisoryDomEqual(label: string, reference: string, actual: string): boo
     return true;
   } catch (err) {
     console.warn(
-      `ADVISORY (never fails CI — ADR-0003 first addendum): ${(err as Error).message}`,
+      `ADVISORY (never fails CI, ADR-0003 first addendum): ${(err as Error).message}`,
     );
     return false;
   }
@@ -359,7 +359,7 @@ function advisoryPixelsEqual(label: string, reference: Buffer, actual: Buffer): 
     return true;
   } catch (err) {
     console.warn(
-      `ADVISORY (never fails CI — ADR-0003 first addendum): ${(err as Error).message}`,
+      `ADVISORY (never fails CI, ADR-0003 first addendum): ${(err as Error).message}`,
     );
     return false;
   }
@@ -408,7 +408,7 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
     // Two copies of the canonical card markup exist by design (the
     // per-component demo and the surface master the gate compares against).
     // This pin makes stale-copy drift impossible: edit one, this fails
-    // until the other follows — so the master the gate enforces is always
+    // until the other follows, so the master the gate enforces is always
     // the contract of record (ADR-0003 §6 "it IS the contract").
     const demoPage = await openTracked(
       domContext,
@@ -425,7 +425,7 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
 
   it("placeholder-static matches the reference through the composed origin", async () => {
     const page = await openTracked(domContext, `${ORIGIN}/placeholder-static/sample/`);
-    // Non-vacuity: the chrome IS on this page (injected inside the slot) —
+    // Non-vacuity: the chrome IS on this page (injected inside the slot),
     // the normalizer's exclusion is being exercised, not skipped.
     expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
     const dom = await extractNormalizedDom(page, NO_NOISE);
@@ -434,11 +434,11 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
     await page.close();
   }, 60_000);
 
-  it("placeholder-ssr matches once its REGISTERED paradigm noise is stripped — non-vacuously", async () => {
+  it("placeholder-ssr matches once its REGISTERED paradigm noise is stripped, non-vacuously", async () => {
     const page = await openTracked(domContext, `${ORIGIN}/placeholder-ssr/sample/`);
 
     // The served page really carries all three permitted-noise species
-    // (hydration marker, scoping hash, comment nodes) — the PRD seams audit
+    // (hydration marker, scoping hash, comment nodes), the PRD seams audit
     // requires the stripping proof to be non-vacuous.
     const raw = await page.content();
     expect(raw).toContain('data-ph-hydrate="idle"');
@@ -460,7 +460,7 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
   it("behaviorAttrPatterns strips as its OWN declared class (the slice-A mechanism D–F register through)", async () => {
     // ADR-0008 makes behavior attributes (`hx-*`, `on:*`, `q:*`) a declared
     // registry class distinct from inert residue. Mechanics are identical to
-    // attrPatterns — the class is the audit trail — so the proof reuses the
+    // attrPatterns, the class is the audit trail, so the proof reuses the
     // SSR placeholder's real marker attribute: registered under the behavior
     // class instead, the page still normalizes to reference equality, and
     // with the class empty it demonstrably does not.
@@ -496,17 +496,17 @@ describe("normalized-DOM equivalence (chrome excluded by the normalizer)", () =>
 
 describe("the new surface masters are healthy (surface-design session)", () => {
   // The fixture-rendered masters (packages/reference/render/build.mjs).
-  // Count deliberately not written — it read "eight" while pdp-build added
+  // Count deliberately not written. It read "eight" while pdp-build added
   // three nested PDP masters, so those three received no health coverage at
   // all until this was corrected.
-  // No variant comparisons yet — no variant serves these surfaces; each
+  // No variant comparisons yet, no variant serves these surfaces; each
   // follow-on build adds its own gate leg. What IS proven now:
   //  (a) the DOM normalizer runs clean against each master (self-equivalence
-  //      across two independent loads — the existing reference-vs-self
+  //      across two independent loads, the existing reference-vs-self
   //      pattern), so the master is deterministic raw material for the gate;
   //  (b) captureStablePixels succeeds under the avg-broadband-desktop
-  //      profile: fonts settle, every asset — images through the server's
-  //      /assets/img/* fixture alias included — loads, and the full-page
+  //      profile: fonts settle, every asset, images through the server's
+  //      /assets/img/* fixture alias included, loads, and the full-page
   //      shot stays within sane bounds (an unsized-image dimension explosion
   //      would blow the height).
   const NEW_MASTERS = [
@@ -530,7 +530,7 @@ describe("the new surface masters are healthy (surface-design session)", () => {
   let context: BrowserContext;
 
   beforeAll(async () => {
-    // profileContextOptions is JS-off, like every gate context — one context
+    // profileContextOptions is JS-off, like every gate context, one context
     // serves both the DOM and the pixel leg.
     context = await browser.newContext(profileContextOptions(profile));
   });
@@ -554,7 +554,7 @@ describe("the new surface masters are healthy (surface-design session)", () => {
       assertDomEqual(`dom-${surface.replaceAll("/", "-")}-self`, dom, again);
     }, 60_000);
 
-    it(`${surface}: pixels stabilize — fonts settle, assets load through the /assets/img alias`, async () => {
+    it(`${surface}: pixels stabilize, fonts settle, assets load through the /assets/img alias`, async () => {
       const page = await openTracked(context, url());
       // Every same-origin response must succeed: a 404 under the image
       // alias would render a broken page whose pixels still "stabilize".
@@ -569,7 +569,7 @@ describe("the new surface masters are healthy (surface-design session)", () => {
 
       const shot = await captureTracked(page);
       // PNG IHDR: width/height at byte offsets 16/20. Sized-from-data image
-      // slots mean layout cannot explode — a runaway full-page height is a
+      // slots mean layout cannot explode, a runaway full-page height is a
       // broken master, not a long page.
       const width = shot.readUInt32BE(16);
       const height = shot.readUInt32BE(20);
@@ -585,7 +585,7 @@ describe("the new surface masters are healthy (surface-design session)", () => {
   }
 });
 
-describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
+describe.each(PROFILE_IDS)("pixel diff, profile %s", (profileId) => {
   const profile = PROFILES[profileId];
   let context: BrowserContext;
   let referenceShot: Buffer;
@@ -593,7 +593,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
   beforeAll(async () => {
     context = await browser.newContext(profileContextOptions(profile));
     const page = await openTracked(context, REFERENCE_URL);
-    // The reference render has no chrome slot — part of the contract.
+    // The reference render has no chrome slot, part of the contract.
     expect(await neutralizeChrome(page)).toBe(0);
     referenceShot = await captureTracked(page);
     await page.close();
@@ -614,7 +614,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
     it(`${variant} matches the reference once the injected chrome is REMOVED`, async () => {
       const page = await openTracked(context, `${ORIGIN}/${variant}/sample/`);
       // Removal (not region-masking): the chrome is in normal document
-      // flow — exactly one slot removed, page reflows to reference layout.
+      // flow, exactly one slot removed, page reflows to reference layout.
       expect(await neutralizeChrome(page)).toBe(1);
       const shot = await captureTracked(page);
       assertPixelsEqual(`pixels-${profileId}-${variant}`, referenceShot, shot);
@@ -624,7 +624,7 @@ describe.each(PROFILE_IDS)("pixel diff — profile %s", (profileId) => {
 });
 
 describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapshot (ADR-0008 §9)", () => {
-  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE (vanilla is the control)", async () => {
+  it("the served page equals the re-rendered master by normalized DOM, under NO_NOISE (vanilla is the control)", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -649,7 +649,7 @@ describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapsho
         profileContextOptions(PROFILES[profileId]),
       );
       const masterPage = await openTracked(context, masterPixelUrl);
-      // The re-rendered master has no chrome slot — part of the contract.
+      // The re-rendered master has no chrome slot, part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
       const referenceShot = await captureTracked(masterPage);
@@ -667,7 +667,7 @@ describe("editorial: vanilla vs the master re-rendered from the RESOLVED snapsho
 });
 
 describe("editorial: react-next vs the master re-rendered from the RESOLVED snapshot (editorial-build slice B)", () => {
-  it("the served page equals the re-rendered master by normalized DOM — under react-next's registered noise", async () => {
+  it("the served page equals the re-rendered master by normalized DOM, under react-next's registered noise", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -682,7 +682,7 @@ describe("editorial: react-next vs the master re-rendered from the RESOLVED snap
     // Non-vacuity for the registered noise itself: derived from the ACTUAL
     // registered selector(s) (not a hand-typed approximation, which could
     // silently drift out of sync with normalize.ts and pass even if the
-    // real selector became vacuous — verify-slice finding) — each selector
+    // real selector became vacuous, verify-slice finding), each selector
     // this variant excuses must actually match something on the served
     // page, or the registration is excusing nothing real.
     for (const selector of REACT_NEXT_NOISE.dropElementSelectors ?? []) {
@@ -701,7 +701,7 @@ describe("editorial: react-next vs the master re-rendered from the RESOLVED snap
         profileContextOptions(PROFILES[profileId]),
       );
       const masterPage = await openTracked(context, masterPixelUrl);
-      // The re-rendered master has no chrome slot — part of the contract.
+      // The re-rendered master has no chrome slot, part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
       const referenceShot = await captureTracked(masterPage);
@@ -719,7 +719,7 @@ describe("editorial: react-next vs the master re-rendered from the RESOLVED snap
 });
 
 describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot (editorial-build slice C)", () => {
-  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE, and its emptiness is EARNED", async () => {
+  it("the served page equals the re-rendered master by normalized DOM, under NO_NOISE, and its emptiness is EARNED", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -733,7 +733,7 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
     expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
 
     // Astro registers NO permitted noise (normalize.ts), and unlike vanilla
-    // that is a MEASURED result rather than a design choice — so it is checked
+    // that is a MEASURED result rather than a design choice, so it is checked
     // here against the raw served bytes rather than asserted in a comment.
     // Astro's two noise species are both opt-in and this page opts into
     // neither: `data-astro-cid-*` scoping attributes exist only on components
@@ -755,7 +755,7 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
 
   for (const profileId of PROFILE_IDS) {
     it(`pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
-      // The pixel leg is what proves Astro's `compressHTML` (on by default —
+      // The pixel leg is what proves Astro's `compressHTML` (on by default,
       // it strips the inter-element whitespace the master's own serialization
       // carries) is genuinely rendering-neutral on this page, rather than
       // trusting the reasoning that the two navs are flex containers whose
@@ -764,7 +764,7 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
         profileContextOptions(PROFILES[profileId]),
       );
       const masterPage = await openTracked(context, masterPixelUrl);
-      // The re-rendered master has no chrome slot — part of the contract.
+      // The re-rendered master has no chrome slot, part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
       const referenceShot = await captureTracked(masterPage);
@@ -782,7 +782,7 @@ describe("editorial: astro vs the master re-rendered from the RESOLVED snapshot 
 });
 
 describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (editorial-build slice D)", () => {
-  it("the served page equals the re-rendered master by normalized DOM — under qwik's registered noise, non-vacuously in both directions", async () => {
+  it("the served page equals the re-rendered master by normalized DOM, under qwik's registered noise, non-vacuously in both directions", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -800,11 +800,11 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
     // can drift out of sync with normalize.ts and keep passing after the real
     // pattern goes vacuous). Every attribute NAME on the served page is
     // enumerated, and each registered behaviour-attribute pattern must match
-    // at least one of them — so a pattern that stops describing this
+    // at least one of them, so a pattern that stops describing this
     // paradigm's output fails here instead of quietly excusing nothing.
     // Scoped to elements the comparison KEEPS. `querySelectorAll("*")` would
     // include the `<script>` QwikCityProvider emits unconditionally, which
-    // carries `on-document:qcinit` and `on-document:qinit` — so a pattern could
+    // carries `on-document:qcinit` and `on-document:qinit`, so a pattern could
     // "match something on the page" while stripping nothing the gate ever sees.
     // That is exactly the vacuity this block exists to prevent (a verify-slice
     // finding: swapping `useOnDocument` for `useVisibleTask$` would have left
@@ -852,7 +852,7 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
       // rendering-neutral. Two of them, stated as measured rather than as
       // assumed: JSX drops the inter-element whitespace the master's
       // hand-authored HTML carries, and ONE text position on this page is split
-      // by a comment marker — `<!--t=…-->` around CartStatus's `{cart.message}`,
+      // by a comment marker, `<!--t=…-->` around CartStatus's `{cart.message}`,
       // the only interpolation that reads a store proxy. Non-reactive
       // interpolation (the whole essay, the dateline, the feature notes) is NOT
       // split, so those text runs are byte-shaped like the master's. Neither
@@ -860,7 +860,7 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
       // reasoning behind it.
       const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
       const masterPage = await openTracked(context, masterPixelUrl);
-      // The re-rendered master has no chrome slot — part of the contract.
+      // The re-rendered master has no chrome slot, part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
       const referenceShot = await captureTracked(masterPage);
@@ -878,7 +878,7 @@ describe("editorial: qwik vs the master re-rendered from the RESOLVED snapshot (
 });
 
 describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (editorial-build slice E)", () => {
-  it("the served page equals the re-rendered master by normalized DOM — under NO_NOISE, and its emptiness is EARNED", async () => {
+  it("the served page equals the re-rendered master by normalized DOM, under NO_NOISE, and its emptiness is EARNED", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -892,26 +892,26 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
     expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
 
     // THIS PAGE carries no permitted noise, and that is a MEASURED result
-    // checked against the raw served bytes below — not an inference from the
+    // checked against the raw served bytes below, not an inference from the
     // registry, which since the PLP build is no longer empty. The paradigm's
     // mechanism is `hx-*` BEHAVIOR attributes, and editorial's one
     // interaction is client cart state, which hypermedia does not own, so
     // this page idiomatically carries none (ISSUE E's "honest hypermedia
     // statement"). The runtime rides a `<script>` element, which is
     // delivery. If a later edit puts an `hx-*` attribute on THIS page, the
-    // byte assertion fails — and that is what keeps this leg honest, because
+    // byte assertion fails, and that is what keeps this leg honest, because
     // the comparison below passes `NO_NOISE` explicitly (:910) and has never
     // consulted the registry at all. The registration could not have
     // loosened this surface even in principle.
     // The whole mechanism family (verify-slice finding): `hx-on:*` carries
     // a colon the old [a-z-]+= shape missed, `hx-disable` is valueless,
-    // and `data-hx-*` is the documented prefix form — all three are live
+    // and `data-hx-*` is the documented prefix form, all three are live
     // htmx 2.0.10 mechanisms. Any whitespace-preceded (data-)hx- token
     // fails loudly.
     const raw = await page.content();
     expect(raw).not.toMatch(/\s(?:data-)?hx-/i);
     // Asserted by SHAPE, not absence. The PLP build registers `^hx-` under
-    // behaviorAttrPatterns for its paginator's three real attributes — the
+    // behaviorAttrPatterns for its paginator's three real attributes, the
     // case the note this replaced predicted in so many words. What must
     // never happen is `attrPatterns` growing: that class would let ordinary
     // markup drift past the gate, which is the opposite of what the entry
@@ -934,11 +934,11 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
       // The renderer mirrors the master's own serialization (template
       // literals, byte-strict pre-merge guard in tools/repo-checks), so
       // unlike astro/qwik there is no whitespace reshaping to prove
-      // rendering-neutral — this leg holds the delivery (absolute asset
+      // rendering-neutral. This leg holds the delivery (absolute asset
       // base, Worker-rendered per request) to the same pixel zero.
       const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
       const masterPage = await openTracked(context, masterPixelUrl);
-      // The re-rendered master has no chrome slot — part of the contract.
+      // The re-rendered master has no chrome slot, part of the contract.
       expect(await neutralizeChrome(masterPage)).toBe(0);
       await settleImages(masterPage);
       const referenceShot = await captureTracked(masterPage);
@@ -955,11 +955,11 @@ describe("editorial: htmx vs the master re-rendered from the RESOLVED snapshot (
   }
 });
 
-describe("editorial: remix3 (fenced frontier) vs the master — ADVISORY, never blocking (editorial-build slice F)", () => {
+describe("editorial: remix3 (fenced frontier) vs the master, ADVISORY, never blocking (editorial-build slice F)", () => {
   it("the comparison RUNS under NO_NOISE + the scoped fenced drop; only its verdict is advisory", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const masterPage = await openTracked(context, masterDomUrl);
-    // The master carries NO fenced element (hard assertion — the drop's
+    // The master carries NO fenced element (hard assertion, the drop's
     // non-vacuity is one-sided by design: 2 on the exhibit, 0 on the master).
     expect(await masterPage.locator("[data-pm-fenced]").count()).toBe(0);
     const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -968,9 +968,9 @@ describe("editorial: remix3 (fenced frontier) vs the master — ADVISORY, never 
     expect(masterDom).toContain("pm-editorial");
 
     const page = await openTracked(context, `${ORIGIN}/remix3/editorial/`);
-    // Hard assertions — the advisory verdict means nothing if these fail:
+    // Hard assertions, the advisory verdict means nothing if these fail:
     // the page serves, the chrome is injected, and EXACTLY the two fenced
-    // subtrees (plaque + frames demo) ride the fence — a third would be an
+    // subtrees (plaque + frames demo) ride the fence, a third would be an
     // unlabeled exclusion and must fail loudly, not drop silently.
     expect(await page.locator("div#pm-chrome-slot #pm-chrome").count()).toBe(1);
     expect(await page.locator("[data-pm-fenced]").count()).toBe(2);
@@ -997,7 +997,7 @@ describe("editorial: remix3 (fenced frontier) vs the master — ADVISORY, never 
   }, 90_000);
 
   for (const profileId of PROFILE_IDS) {
-    it(`pixels compared under profile ${profileId} — chrome and fenced subtrees removed, verdict advisory`, async () => {
+    it(`pixels compared under profile ${profileId}, chrome and fenced subtrees removed, verdict advisory`, async () => {
       const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
       const masterPage = await openTracked(context, masterPixelUrl);
       expect(await neutralizeChrome(masterPage)).toBe(0);
@@ -1019,17 +1019,17 @@ describe("editorial: remix3 (fenced frontier) vs the master — ADVISORY, never 
     }, 120_000);
   }
 
-  it("the advisory funnels demonstrably cannot block: real drift warns and returns, never throws — BOTH funnels", () => {
+  it("the advisory funnels demonstrably cannot block: real drift warns and returns, never throws, BOTH funnels", () => {
     // The mechanism proof (ISSUE F acceptance: "advisory drift wired and
-    // demonstrably non-blocking") — fed DELIBERATELY divergent inputs, each
+    // demonstrably non-blocking"), fed DELIBERATELY divergent inputs, each
     // funnel must survive and report false. BOTH funnels, separately: they
     // are independent try/catch blocks sharing no code path, and the pixel
     // legs are green-by-default, so an unproven pixel funnel would first
-    // execute its catch on the day real beta drift appears — in CI, blocking
+    // execute its catch on the day real beta drift appears, in CI, blocking
     // the deploy, the exact outcome the advisory decision exists to prevent
     // (verify-slice finding, conformance lens: the first draft proved only
     // the DOM half). If someone later rewires the remix3 legs through the
-    // throwing helpers, the legs above fail the moment real drift appears —
+    // throwing helpers, the legs above fail the moment real drift appears,
     // this test pins the funnels themselves.
     expect(advisoryDomEqual("advisory-mechanism-proof", "<p>a</p>", "<p>b</p>")).toBe(false);
     expect(advisoryDomEqual("advisory-mechanism-proof", "<p>a</p>", "<p>a</p>")).toBe(true);
@@ -1053,7 +1053,7 @@ describe("the deliberate-drift fixture fails the pixel check", () => {
     await refPage.close();
 
     const page = await openTracked(context, FIXTURE_URL);
-    // The fixture's fake chrome exists and is removed — so the failure
+    // The fixture's fake chrome exists and is removed, so the failure
     // below is the planted drift, not leftover chrome bytes.
     expect(await neutralizeChrome(page)).toBe(1);
     const shot = await captureTracked(page);
@@ -1066,7 +1066,7 @@ describe("the deliberate-drift fixture fails the pixel check", () => {
 });
 
 /* ── The PDP drift legs (pdp-variants) ─────────────────────────────────────
-   The vanilla PDP shipped (pdp-build) with NO drift leg at all — the four
+   The vanilla PDP shipped (pdp-build) with NO drift leg at all, the four
    masters had health coverage only, and no served variant page was ever
    compared against them. These legs close that for every live PDP variant,
    the editorial describes' exact mechanism: the master re-rendered from the
@@ -1077,12 +1077,12 @@ describe("the deliberate-drift fixture fails the pixel check", () => {
     - the live-origin plaque is CANONICAL MASTER CONTENT on this surface
       (data-pm-fenced count exactly 1 per page): core comparisons never pass
       dropFencedSubtrees, so the plaque is COMPARED, and its presence in the
-      normalized extract is asserted as non-vacuity — copying editorial's
+      normalized extract is asserted as non-vacuity, copying editorial's
       zero-fenced rule here would fail every page; dropping the subtree would
       hide plaque drift.
     - pixels: the RICH master runs under all three profiles (cross-profile
       reflow risk is structural and shared); the three degenerate masters run
-      under avg-broadband-desktop only — their pixel risk is the state they
+      under avg-broadband-desktop only, their pixel risk is the state they
       isolate (named em-dash, disabled CTA, no thumb strip), which one
       profile exercises, and their structure is DOM-compared above on every
       pass. Recorded scope choice, not an accident: full 4×3 per variant
@@ -1096,7 +1096,7 @@ function pdpMaster(slot: string): { slug: string; domUrl: string; pixelUrl: stri
 }
 
 /** The live PDP variants these legs compare, with each one's noise spec.
- *  astro runs under NO_NOISE — it registers nothing, the same measured
+ *  astro runs under NO_NOISE. It registers nothing, the same measured
  *  emptiness its editorial leg asserts. */
 const PDP_DRIFT_VARIANTS = [
   ["vanilla", NO_NOISE],
@@ -1108,7 +1108,7 @@ const PDP_DRIFT_VARIANTS = [
 describe("the PDP drift legs cover every live variant", () => {
   it("SURFACE_CONTROLS.pdp.variants equals the set compared above", () => {
     // The ADR-0008 addendum A §4c discipline: a variant cannot move
-    // planned → variants without this file gaining its drift leg — the
+    // planned → variants without this file gaining its drift leg, the
     // guard fails rather than keeping green on the variants it knows.
     expect([...SURFACE_CONTROLS["pdp"]!.variants].sort()).toEqual(
       PDP_DRIFT_VARIANTS.map(([v]) => v).sort(),
@@ -1118,7 +1118,7 @@ describe("the PDP drift legs cover every live variant", () => {
 
 for (const [variant, noise] of PDP_DRIFT_VARIANTS) {
   describe(`pdp: ${variant} vs the four masters re-rendered from the RESOLVED snapshot`, () => {
-    it("every master's served page equals it by normalized DOM — plaque compared, not dropped", async () => {
+    it("every master's served page equals it by normalized DOM, plaque compared, not dropped", async () => {
       // Non-vacuity: an empty pdpMasters (a partial beforeAll failure) would
       // make this loop pass having compared nothing.
       expect(pdpMasters.length).toBe(4);
@@ -1201,9 +1201,9 @@ describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03
   // masters for every plane, served by the gate's static server exactly as the
   // masters-health block above serves them. The served body is the master
   // renderer's own output under the variant's head, slot and script
-  // (variants/vanilla/render.mjs renderA11yPage — DIFF-TO-STARTER decision 6),
+  // (variants/vanilla/render.mjs renderA11yPage, DIFF-TO-STARTER decision 6),
   // so what this leg proves is the COMPOSED page: chrome injected, sheets and
-  // fonts from the variant's own copied tree, the variant's head — still
+  // fonts from the variant's own copied tree, the variant's head, still
   // normalizes and paints as the spec. A sheet missing from the copy, a head
   // that dropped a stylesheet, or a post-render edit of the body all land here.
   // No images on any of the three pages, so no settleImages.
@@ -1213,7 +1213,7 @@ describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03
   const key = (surface: string) => surface.replaceAll("/", "-");
 
   for (const surface of A11Y) {
-    it(`${surface}: the served page equals the committed master by normalized DOM — under NO_NOISE (vanilla is the control)`, async () => {
+    it(`${surface}: the served page equals the committed master by normalized DOM, under NO_NOISE (vanilla is the control)`, async () => {
       const context = await browser.newContext({ javaScriptEnabled: false });
       const masterPage = await openTracked(context, masterUrl(surface));
       const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);
@@ -1236,7 +1236,7 @@ describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03
       it(`${surface}: pixels match under profile ${profileId} once the injected chrome is removed`, async () => {
         const context = await browser.newContext(profileContextOptions(PROFILES[profileId]));
         const masterPage = await openTracked(context, masterUrl(surface));
-        // The committed master has no chrome slot — part of the contract.
+        // The committed master has no chrome slot, part of the contract.
         expect(await neutralizeChrome(masterPage)).toBe(0);
         const referenceShot = await captureTracked(masterPage);
         await masterPage.close();
@@ -1253,15 +1253,15 @@ describe("a11y: vanilla vs the committed masters (a11y-section build, 2026-09-03
 });
 
 describe("checkout: vanilla vs the committed masters (checkout-measure-prep, 2026-09-24)", () => {
-  // The surface is DATA-FREE — `renderCheckout` takes no snapshot, so as with
+  // The surface is DATA-FREE, `renderCheckout` takes no snapshot, so as with
   // the a11y section there is no re-render from the served snapshot: the
   // committed fixture masters ARE the masters for every plane. Two pages: the
   // form, and where a JS-off "Place order" lands. Until this block the served
   // checkout had no gate leg of any kind (the decision map's owed item (3)):
   // the masters-health block above proved the master self-consistent and the
   // pre-merge identity guard held the variant's TEMPLATE to the master's, but
-  // nothing compared the page a visitor is served — chrome injected, sheets
-  // and fonts from the variant's own copied tree — to the spec. The a11y
+  // nothing compared the page a visitor is served, chrome injected, sheets
+  // and fonts from the variant's own copied tree, to the spec. The a11y
   // block's shape, verbatim: NO_NOISE (vanilla is the control), pixels under
   // all three profiles once the injected chrome is neutralised. No images on
   // either page, so no settleImages.
@@ -1271,7 +1271,7 @@ describe("checkout: vanilla vs the committed masters (checkout-measure-prep, 202
   const key = (surface: string) => surface.replaceAll("/", "-");
 
   for (const surface of CHECKOUT) {
-    it(`${surface}: the served page equals the committed master by normalized DOM — under NO_NOISE`, async () => {
+    it(`${surface}: the served page equals the committed master by normalized DOM, under NO_NOISE`, async () => {
       const context = await browser.newContext({ javaScriptEnabled: false });
       const masterPage = await openTracked(context, masterUrl(surface));
       const masterDom = await extractNormalizedDom(masterPage, NO_NOISE);

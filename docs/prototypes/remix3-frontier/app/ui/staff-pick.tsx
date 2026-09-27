@@ -6,7 +6,7 @@ export interface StaffPickProps {
   pick: number
 }
 
-// The frame partial: server-HTML for one staff pick. Rendered two ways —
+// The frame partial: server-HTML for one staff pick. Rendered two ways,
 // inline during SSR (resolveFrame) and as a standalone partial when the
 // frame reloads over the wire. The "next" control lives INSIDE the partial
 // (Turbo-style: frame content carries its own navigation) so repeated
@@ -24,7 +24,7 @@ export function StaffPick(handle: Handle<StaffPickProps>) {
       <article class="pm-staff-pick" data-pick={String(current)}>
         <p class="pm-staff-pick__eyebrow">Staff pick</p>
         <h3 class="pm-staff-pick__title">
-          {pick.artist} — <em>{pick.title}</em>
+          {pick.artist}, <em>{pick.title}</em>
         </h3>
         <p class="pm-staff-pick__meta">
           {pick.label}, {pick.year}

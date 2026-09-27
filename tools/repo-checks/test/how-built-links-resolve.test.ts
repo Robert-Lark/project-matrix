@@ -3,7 +3,7 @@
  * exists, every fragment on it names a heading in that file, and every
  * in-page anchor has its id (how-it-was-built build, 2026-09-02; PRD D4/D5).
  *
- * The surface is an INDEX whose whole value is that its links dereference —
+ * The surface is an INDEX whose whole value is that its links dereference,
  * "a citation that cannot be re-fetched at the state cited is not a
  * citation" (PRD Decision 1). Three ways a link can rot without any other
  * guard noticing: the file is renamed (`docs/adr/0009-blog-plane.md` →
@@ -14,7 +14,7 @@
  *
  * Offline by construction: a `blob/{ref}/{path}` link is checked by stripping
  * the prefix and testing the path on THIS disk; a `#fragment` is checked by
- * re-deriving GitHub's heading anchors from the named file's own headings —
+ * re-deriving GitHub's heading anchors from the named file's own headings,
  * with the ONE anchor rule the renderer exports (a second copy here would
  * only prove that two copies agree; design review, 2026-09-02). Whether that
  * rule matches GitHub is pinned separately, by GitHub-observed golden vectors
@@ -67,7 +67,7 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
 
   it("D4: every blob/{ref}/{path} names a file that exists in this checkout", () => {
     const missing = links.filter((l) => !existsSync(join(repoRoot, l.path))).map((l) => l.path);
-    expect(missing, "deep links to files that do not exist — re-run: node render/build.mjs").toEqual([]);
+    expect(missing, "deep links to files that do not exist, re-run: node render/build.mjs").toEqual([]);
   });
 
   it("D4: every heading fragment names a heading GitHub renders in that file", () => {
@@ -84,13 +84,13 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
       }
       if (!anchorsByPath.get(path)!.includes(fragment!)) bad.push(`${path}#${fragment}`);
     }
-    expect(bad, "fragments naming no heading in their file — the heading was reworded, or the anchor rule drifted").toEqual([]);
+    expect(bad, "fragments naming no heading in their file, the heading was reworded, or the anchor rule drifted").toEqual([]);
   });
 
   it("D4: every line anchor names the line that carries exactly the heading the link shows", () => {
     // GitHub's blob view does not render the build log (too large), so phase
     // links open the code view at a line: `?plain=1#L<n>`. Independent of the
-    // slug rule entirely — the check reads line n of the file and compares
+    // slug rule entirely, the check reads line n of the file and compares
     // it to the link's own text.
     const withLine = links.filter((l) => l.fragment !== undefined && /^L\d+$/.test(l.fragment));
     expect(withLine.length, "no line-anchored deep links (the phase list)").toBeGreaterThan(10);
@@ -102,7 +102,7 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
       const line = readFileSync(join(repoRoot, path), "utf8").split("\n")[n - 1];
       if (line !== `## ${text}`) bad.push(`${path}?plain=1#L${n} is "${line ?? "<past end of file>"}", link says "## ${text}"`);
     }
-    expect(bad, "line anchors that no longer point at their heading — re-run: node render/build.mjs").toEqual([]);
+    expect(bad, "line anchors that no longer point at their heading, re-run: node render/build.mjs").toEqual([]);
   });
 
   it("the build log stays inside the size at which GitHub's code view was OBSERVED to honour line anchors", () => {
@@ -112,21 +112,21 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     // the CODE view honours `?plain=1#L<n>` at this size was then OBSERVED,
     // not assumed (verify-slice, skeptic lens): a real Chromium opened
     // https://github.com/Robert-Lark/project-matrix/blob/main/docs/build-log.md?plain=1#L886
-    // on 2026-09-02 — 6,501 lines available, line 886 present reading
-    // "## Phase 3 — Store data", highlighted, no "too large" notice — with
+    // on 2026-09-02, 6,501 lines available, line 886 present reading
+    // "## Phase 3, Store data", highlighted, no "too large" notice, with
     // the file at 412,355 B. GitHub's code view has its own size behaviour
     // for large files, and this file only grows, so the observation is
     // pinned to a ceiling: when the build log crosses it, re-open one phase
     // link, record the observation beside the one above, and raise the
-    // ceiling — or change the anchor form. A guess is not a receipt.
+    // ceiling, or change the anchor form. A guess is not a receipt.
     //
     // Second observation, 2026-09-25 (workers-hardening): the unit's entry
     // took the file to 533,209 B, past the 512 KiB pinned above. A real
-    // Chromium (the origin suite's Playwright build, headless — the
+    // Chromium (the origin suite's Playwright build, headless, the
     // devtools profile was held by another session) opened the pushed
     // branch's code view at TWO anchors,
     // .../blob/workers-hardening/docs/build-log.md?plain=1#L4342 (a phase
-    // heading, "## Phase 15 — The instrument was the thing that was wrong")
+    // heading, "## Phase 15, The instrument was the thing that was wrong")
     // and #L7920 (the unit's own entry heading): GitHub's header read
     // "8132 lines (7399 loc) · 521 KB", both lines present reading their
     // headings, both highlighted, no "too large" notice. Ceiling raised to
@@ -138,11 +138,11 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     // Third observation, 2026-09-26 (decision-map-compaction): moving
     // sixteen nodes' narrative into this file took it to 723,812 B, past
     // the 640 KiB pinned above. The same script opened the pushed branch's
-    // code view (commit d4fdfe1) at two anchors, #L4508 ("## Phase 15 — The
+    // code view (commit d4fdfe1) at two anchors, #L4508 ("## Phase 15, The
     // instrument was the thing that was wrong") and #L8647 (the unit's own
     // entry heading): GitHub's header read "8869 lines (7920 loc) · 707 KB",
     // both lines present reading their headings, both highlighted, no "too
-    // large" notice. Ceiling raised to 768 KiB — the next 128 KiB step, as
+    // large" notice. Ceiling raised to 768 KiB, the next 128 KiB step, as
     // the two pins before it; 62 KB of headroom, one more unit's entry, so
     // the crossing after that re-observes again. The two JSON observation
     // lines verbatim and a screenshot are in the unit's record
@@ -151,7 +151,7 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     const size = statSync(join(repoRoot, "docs", "build-log.md")).size;
     expect(
       size,
-      `docs/build-log.md is ${size} B, past the ${OBSERVED_CEILING_BYTES} B at which GitHub's code view was last observed to honour ?plain=1#L<n> — re-observe (open a phase link on the served page) and raise the ceiling with the new date and size, or change the anchor form`,
+      `docs/build-log.md is ${size} B, past the ${OBSERVED_CEILING_BYTES} B at which GitHub's code view was last observed to honour ?plain=1#L<n>, re-observe (open a phase link on the served page) and raise the ceiling with the new date and size, or change the anchor form`,
     ).toBeLessThanOrEqual(OBSERVED_CEILING_BYTES);
   });
 
@@ -169,7 +169,7 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
   it("every /methodology/#section link names an <h2 id> the methodology page carries", () => {
     const targets = [...master.matchAll(/href="\/methodology\/#([^"]+)"/g)].map((m) => m[1]!);
     expect(targets.length).toBeGreaterThan(5);
-    // Attribute-order tolerant, comments stripped — the renderer's own reading
+    // Attribute-order tolerant, comments stripped, the renderer's own reading
     // (how-built.mjs methodologyHeadings), so a `<h2 class="x" id="y">` counts.
     const page = readFileSync(join(repoRoot, "workers", "front", "methodology", "index.html"), "utf8")
       .replace(/<!--[\s\S]*?-->/g, "");
@@ -179,12 +179,12 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
 
   it("the fragment check is live: a reworded heading fails it", () => {
     // The check must not pass because the master's fragments happen to be
-    // derived by the same function — feed it a document whose heading has
+    // derived by the same function, feed it a document whose heading has
     // moved and assert the fragment no longer resolves.
-    const anchors = githubHeadingAnchors("# Title\n\n## Phase 3 — Store data\n");
-    expect(anchors).toContain("phase-3--store-data");
-    expect(githubHeadingAnchors("# Title\n\n## Phase 3 — Store data, renamed\n")).not.toContain(
-      "phase-3--store-data",
+    const anchors = githubHeadingAnchors("# Title\n\n## Phase 3: Store data\n");
+    expect(anchors).toContain("phase-3-store-data");
+    expect(githubHeadingAnchors("# Title\n\n## Phase 3: Store data, renamed\n")).not.toContain(
+      "phase-3-store-data",
     );
   });
 });

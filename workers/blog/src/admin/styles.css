@@ -268,7 +268,7 @@ button.primary {
   border-block-end: 1px solid var(--line);
   background: var(--paper);
   /* Stay above the settings drawer (z 20) and its backdrop (z 15) so the
-     primary actions — Publish, Settings, Preview — never hide behind it. */
+     primary actions, Publish, Settings, Preview, never hide behind it. */
   position: relative;
   z-index: 30;
 }
@@ -394,7 +394,7 @@ button.primary {
   border-color: transparent;
 }
 
-/* Durable guidance shown when Publish needs a real slug first — the header
+/* Durable guidance shown when Publish needs a real slug first, the header
    status line is transient (autosave overwrites it) and was hidden here. */
 .publish-hint {
   margin: 0 0 0.5rem;

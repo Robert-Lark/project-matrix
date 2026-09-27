@@ -8,7 +8,7 @@
  * table (2026-09-18) removed the fence and NOTHING pre-merge went red: the
  * package had no test task, so the ADR's sentence "the bench runner refuses
  * a PLP batch at any other n" was typechecked prose. A refusal with no test
- * is a receipt no field can falsify — the class the fence exists to stop.
+ * is a receipt no field can falsify, the class the fence exists to stop.
  */
 import { describe, expect, it } from "vitest";
 import { PLP_N, plpWarmable } from "@pm/measurement";
@@ -34,11 +34,11 @@ describe("the PLP n fence (batch.ts assertWarmablePlpBatch)", () => {
     expect(() => assertWarmablePlpBatch(48, NON_PLP_TARGETS)).not.toThrow();
   });
 
-  it("one PLP target among others is enough to refuse (ONE batch, ONE n — ADR-0001 §4)", () => {
+  it("one PLP target among others is enough to refuse (ONE batch, ONE n, ADR-0001 §4)", () => {
     expect(() => assertWarmablePlpBatch(48, [...NON_PLP_TARGETS, PLP_TARGETS[0]!])).toThrow();
   });
 
-  it("refuses exactly the n values plpWarmable refuses, over the whole clamp range — one derivation", () => {
+  it("refuses exactly the n values plpWarmable refuses, over the whole clamp range, one derivation", () => {
     for (let n = 1; n <= PLP_N.max; n++) {
       const warm = plpWarmable(new URLSearchParams({ n: String(n) }));
       let refused = false;

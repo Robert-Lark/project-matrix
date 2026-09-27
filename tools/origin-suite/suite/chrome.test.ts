@@ -1,13 +1,13 @@
 /**
  * Edge-injected chrome through the composed origin (issue #5; instrument
- * redesign, surface-design session 2026-07-17) — same seam: plain HTTP, no
+ * redesign, surface-design session 2026-07-17), same seam: plain HTTP, no
  * Worker internals. The Playwright checks (JS-on HUD readout, JS-off
  * functionality, beacon firing) live in chrome.browser.test.ts.
  *
  * The redesigned contract this file pins:
  *  - the front Worker HEAD-APPENDS the instrument-mono preload + the
  *    chrome.css link (the in-body blocking/FOUC path is dead), and injects
- *    the fragment — `<aside id="pm-chrome" …>` … measure.js — into the
+ *    the fragment, `<aside id="pm-chrome" …>` … measure.js, into the
  *    documented `div#pm-chrome-slot`;
  *  - the switcher row is a `<nav>` of plain anchors, current cell marked
  *    `aria-current="page"`, never linked;
@@ -43,7 +43,7 @@ describe("chrome injection (ADR-0004 §7)", () => {
       // Injected INTO the documented slot, not appended elsewhere.
       expect(body).toContain('<div id="pm-chrome-slot"><aside id="pm-chrome"');
       // The stylesheet + instrument-mono preload ride in <head> (head-append:
-      // the in-body blocking/FOUC path is dead) — exactly one of each, and
+      // the in-body blocking/FOUC path is dead), exactly one of each, and
       // adjacent in the order the Worker appends them.
       const head = body.slice(0, body.indexOf("</head>"));
       expect(count(head, 'href="/_pm/chrome.css"')).toBe(1);
@@ -87,7 +87,7 @@ describe("chrome injection (ADR-0004 §7)", () => {
     const css = await (await get("/placeholder-static/assets/pm/css/tokens.css")).text();
     expect(css).not.toContain("pm-chrome");
     // cache=cold bypasses the warm tier in BOTH directions: this probe must
-    // not plant a canonical un-nonced KV entry on the deployed plane — the
+    // not plant a canonical un-nonced KV entry on the deployed plane, the
     // fixture-era smoke's entry would outlive the crate re-seed and be
     // served to real visitors as a stale hit (issue #11; enforced by the
     // repo-checks warm-tier discipline guard).
@@ -109,7 +109,7 @@ describe("chrome injection (ADR-0004 §7)", () => {
   it("the home surface at / stays free of INJECTED chrome (assets-first)", async () => {
     // Home is a singleton off the benchmarked matrix (ADR-0007): it carries
     // its own in-page HUD (same #pm-chrome contract measure.js reads) but is
-    // served assets-first, so the front Worker's rewriter never touches it —
+    // served assets-first, so the front Worker's rewriter never touches it,
     // no injected-chrome marker, no slot, and no head-append (neither the
     // chrome stylesheet nor the instrument-mono preload).
     const body = await (await get("/")).text();
@@ -138,7 +138,7 @@ describe("the /_pm/* instrumentation path (ADR-0001 §6)", () => {
 
   it("serves the instrument mono byte-identical to its @pm/switcher source", async () => {
     // The chrome-owned receipt/metric face (surface-design session): chrome
-    // bytes on the known excluded path, identical on every platform — the
+    // bytes on the known excluded path, identical on every platform, the
     // ADR-0003 §8 controlled-constant discipline applied to the instrument.
     const res = await get("/_pm/fonts/PMInstrumentMono.var.woff2");
     expect(res.status).toBe(200);
@@ -153,7 +153,7 @@ describe("the /_pm/* instrumentation path (ADR-0001 §6)", () => {
     const body = await (await get("/placeholder-static/sample/")).text();
     expect(body).toContain('href="/_pm/chrome.css"');
     expect(count(body, '<script src="/_pm/measure.js"')).toBe(1);
-    // The chrome brings exactly one script — the measurement bundle.
+    // The chrome brings exactly one script, the measurement bundle.
     expect(count(body, "<script")).toBe(1);
   });
 });
@@ -182,7 +182,7 @@ describe("switcher semantics (ADR-0004 §4–§5, §7)", () => {
 
 describe("the reading's ?profile= selector (ADR-0004 §6)", () => {
   // The selector lives in the panel's reading section, labeled "lab profile",
-  // beside what it selects — a snapshot selector, never a throttle.
+  // beside what it selects, a snapshot selector, never a throttle.
   const profileRow = (body: string) =>
     body.match(
       /<span class="pm-chrome__key">lab profile<\/span>[\s\S]*?<\/p>/,
@@ -210,7 +210,7 @@ describe("the reading's ?profile= selector (ADR-0004 §6)", () => {
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain("No published runs yet");
-    // Falls back to the default snapshot selection — still exactly one
+    // Falls back to the default snapshot selection, still exactly one
     // selected cell, never a crash or an unmarked row.
     const row = profileRow(body);
     expect(count(row, 'aria-current="true"')).toBe(1);

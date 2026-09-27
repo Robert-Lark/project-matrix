@@ -2,7 +2,7 @@
 // through this package's own dependency graph (isolation-honest, the same
 // shape as the variant builds). One module, two consumers: build.mjs (home,
 // methodology) and how-built-page.mjs (the how-it-was-built page, written at
-// build attestation by stamp-build.mjs) — so head colours, the escape rule
+// build attestation by stamp-build.mjs), so head colours, the escape rule
 // and the token lookup have one definition rather than one per page.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -29,7 +29,7 @@ export const esc = (v) =>
     .replace(/'/g, "&#39;");
 
 // Head colors (theme-color, favicon) cannot read CSS custom properties, so
-// they are substituted from the REAL token file at build — a re-pour of the
+// they are substituted from the REAL token file at build, a re-pour of the
 // primitive tier moves them with it, same anti-drift rule as the receipts.
 export const token = (name) => {
   const m = tokensCss.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{3,8})`));

@@ -1,9 +1,9 @@
 /**
- * Loose schemas for RAW Discogs responses — the capture's trust boundary
+ * Loose schemas for RAW Discogs responses, the capture's trust boundary
  * (never trust external input; validate at the system boundary).
  *
  * Loose on purpose: they pin only the fields the pipeline reads and pass the
- * rest through, because the docs publish example responses, not field tables —
+ * rest through, because the docs publish example responses, not field tables,
  * several fields are documented as inconsistent (search-result `year` is a
  * string and sometimes absent; `formats[].qty` is a string; `lowest_price`
  * null when nothing is for sale). Checkpoints store the raw bytes as returned;
@@ -27,7 +27,7 @@ export const RawSearchItem = z.looseObject({
       have: z.number().optional(),
     })
     .optional(),
-  cover_image: z.string().optional(), // undocumented in the search example — treated as a hint only
+  cover_image: z.string().optional(), // undocumented in the search example, treated as a hint only
   thumb: z.string().optional(),
 });
 export type RawSearchItem = z.infer<typeof RawSearchItem>;
@@ -44,13 +44,13 @@ export type RawSearchPage = z.infer<typeof RawSearchPage>;
 
 export const RawArtistCredit = z.looseObject({
   name: z.string(),
-  anv: z.string().optional(), // alternate name variation — display name when non-empty
+  anv: z.string().optional(), // alternate name variation, display name when non-empty
   join: z.string().optional(), // joining word/punctuation to the NEXT credit ("And", ",", "&")
 });
 
 export const RawImage = z.looseObject({
   type: z.string().optional(), // "primary" | "secondary" in the docs example
-  uri: z.string().optional(), // signed full-size URL — fetch as-is, never modify
+  uri: z.string().optional(), // signed full-size URL, fetch as-is, never modify
   width: z.number().optional(),
   height: z.number().optional(),
 });
@@ -70,9 +70,9 @@ export const RawRelease = z.looseObject({
     .array(
       z.looseObject({
         name: z.string(),
-        qty: z.union([z.string(), z.number()]).optional(), // "1" — a string in the docs example
+        qty: z.union([z.string(), z.number()]).optional(), // "1", a string in the docs example
         descriptions: z.array(z.string()).optional(),
-        text: z.string().optional(), // free text ("Digipak", vinyl color) — folded into descriptions
+        text: z.string().optional(), // free text ("Digipak", vinyl color), folded into descriptions
       }),
     )
     .optional(),

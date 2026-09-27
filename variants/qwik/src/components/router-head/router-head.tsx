@@ -7,13 +7,13 @@ import { useDocumentHead } from "@builder.io/qwik-city";
  * ── slice-D deviations from the starter ──
  *  - No `<link rel="icon" href="/favicon.svg">`. That href is NOT base-aware
  *    (a real prefix bug in the starter), so on the composed origin it points
- *    at `/favicon.svg` — a path this variant does not own and the front
+ *    at `/favicon.svg`, a path this variant does not own and the front
  *    Worker does not serve, i.e. a guaranteed 404 request on every page load.
  *    public/favicon.svg went with it.
  *  - No `<link rel="canonical">`. `useLocation().url.href` is the ORIGIN's
  *    URL, and this page is served from three places during a slice (local
  *    dev, CI's composed origin, the deployed plane), so the emitted canonical
- *    would differ per environment — a per-environment byte difference in a
+ *    would differ per environment, a per-environment byte difference in a
  *    variant whose whole job is byte-identical output. Nothing on the matrix
  *    publishes a canonical link today.
  *  - `head.styles` / `head.scripts` are not rendered: this surface sets

@@ -1,6 +1,6 @@
 /**
  * There is deliberately NO shared component-runtime package (ADR-0003 §1):
- * a "component" is a spec — canonical markup + shared CSS — re-implemented by
+ * a "component" is a spec, canonical markup + shared CSS, re-implemented by
  * each paradigm in its own idiom. A shared runtime would bias the exact
  * numbers the project measures (the Web Components rejection).
  *
@@ -63,7 +63,7 @@ describe("no shared component runtime exists (ADR-0003 §1, ADR-0004 §2)", () =
       if (name === "reference") {
         expect(
           pkg.exports,
-          "reference must not gain an exports map — see workers/front/how-built-page.mjs",
+          "reference must not gain an exports map, see workers/front/how-built-page.mjs",
         ).toBeUndefined();
       }
     }

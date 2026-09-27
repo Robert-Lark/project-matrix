@@ -1,14 +1,14 @@
 /*
- * Project Matrix — design system · FONT LOADING (controlled constant)
+ * Project Matrix, design system · FONT LOADING (controlled constant)
  * ----------------------------------------------------------------------------
  * Fonts are a fairness control, not a paradigm feature (ADR-0003 §8): one
- * self-hosted, subset, variable sans — identical files, identical loading,
+ * self-hosted, subset, variable sans, identical files, identical loading,
  * everywhere. This file is the loading half; the files live in ../fonts/.
  *
- * The face is Familjen Grotesk (SIL OFL 1.1 — see ../fonts/LICENSE-OFL.txt
+ * The face is Familjen Grotesk (SIL OFL 1.1, see ../fonts/LICENSE-OFL.txt
  * and ../fonts/README.md), chosen by the `aesthetic-direction` ticket
  * (ADR-0006, the "Catalogue" pour). Variable wght 400–700, so the token
- * scale's 550 medium is real, not synthesized — and it ships OpenType
+ * scale's 550 medium is real, not synthesized, and it ships OpenType
  * tabular figures (tnum) for the metric/price text.
  */
 @font-face {
@@ -21,14 +21,14 @@
 
 /*
  * Icon-glyph fallback (ONE codepoint). Familjen Grotesk does not include
- * U+26A0 (⚠) — the field component's error affordance (field.css
+ * U+26A0 (⚠), the field component's error affordance (field.css
  * `.pm-field__error::before { content: "\26A0" }`). Without this, that one
  * glyph would fall back to the visitor's OS font: per-platform metrics, and
  * a colour-emoji presentation on some platforms that ignores the
  * forced-colors remap. Serving it as a 1-glyph monochrome subset of Inter,
  * scoped by unicode-range so it is consulted ONLY for U+26A0, keeps the error
  * icon byte-identical everywhere (ADR-0001 fairness) and forced-colors-safe
- * by construction (ADR-0003 §5) — restoring what the interim Inter subset
+ * by construction (ADR-0003 §5), restoring what the interim Inter subset
  * did before the Catalogue pour (ADR-0006). Inter is SIL OFL 1.1 too
  * (LICENSE-OFL-Inter.txt); it is added to the --pm-font-* stacks after
  * Familjen, never in front of it.
@@ -44,8 +44,8 @@
 
 /*
  * Crate text symbols (NINE codepoints). The frozen crate's display text uses
- * glyphs Familjen Grotesk does not carry — chiefly U+2153 ⅓ (179×, the
- * "33 ⅓ RPM" card meta) and U+2117 ℗ (74×, PDP notes) — so, like the warn
+ * glyphs Familjen Grotesk does not carry, chiefly U+2153 ⅓ (179×, the
+ * "33 ⅓ RPM" card meta) and U+2117 ℗ (74×, PDP notes), so, like the warn
  * glyph above, they are served as a scoped subset of Inter (SIL OFL 1.1,
  * LICENSE-OFL-Inter.txt): identical letterforms on every platform (ADR-0003
  * §8 held for everything we cover). unicode-range scopes it to exactly the
@@ -53,10 +53,10 @@
  * --pm-font-* stacks after "PM Warn Glyph", never in front.
  *
  * DELIBERATELY NOT HERE: the crate's Arabic and CJK codepoints (plus four
- * one-occurrence stragglers) stay on a documented per-OS system fallback —
+ * one-occurrence stragglers) stay on a documented per-OS system fallback,
  * subsetting isolated Arabic forms breaks shaping, and CJK Han-unification
  * variant choice (JP vs SC forms) is a locale call a webfont would get wrong
- * for someone. Decided, not deferred — surface-design session (DRAFT §4.1);
+ * for someone. Decided, not deferred, surface-design session (DRAFT §4.1);
  * the list lives in ../fonts/coverage.json `crateSystemFallback`.
  */
 @font-face {

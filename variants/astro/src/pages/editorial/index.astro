@@ -1,11 +1,11 @@
 ---
 /**
- * /astro/editorial/ — the islands paradigm on the render baseline.
+ * /astro/editorial/, the islands paradigm on the render baseline.
  *
  * The page is thin on purpose: the snapshot was already resolved and baked by
  * `scripts/prepare-build.mjs` (build-time is this paradigm's real shape on this
  * surface, ADR-0002 §7), so all this route does is hand the baked payload to
- * the one render entry point. Nothing here runs per request — there is no
+ * the one render entry point. Nothing here runs per request. There is no
  * server at request time, only Workers Static Assets.
  */
 import type { EditorialData } from "../../lib/data";

@@ -3,23 +3,23 @@
  * reference render (packages/reference/surfaces/…) and the deliberate-drift
  * fixture (tools/drift-gate/fixtures/…) load in a real browser with their
  * relative `node_modules/@pm/tokens` links resolving through the pnpm
- * workspace symlinks — the same shared CSS/font bytes the variants serve.
+ * workspace symlinks, the same shared CSS/font bytes the variants serve.
  *
  * `file://` was rejected: Chromium's font/CORS behavior on file URLs differs
  * from HTTP and the whole gate otherwise runs over HTTP.
  *
  * `/assets/img/*` is ALIASED onto the committed fixture snapshot's img
  * directory (surface-design session): the rendered masters carry image srcs
- * exactly as the trays do — `/assets/img/…`, the composed origin's
- * data-plane path (lib.mjs `imageSrc`) — so the gate's server must answer
+ * exactly as the trays do, `/assets/img/…`, the composed origin's
+ * data-plane path (lib.mjs `imageSrc`), so the gate's server must answer
  * that path or every master's images 404. The fixture is the only snapshot
  * whose bytes are committed (CI never reads the crate, ADR-0007); the
- * ADR-0008 §9 deployed-smoke leg therefore does NOT re-point this alias —
+ * ADR-0008 §9 deployed-smoke leg therefore does NOT re-point this alias,
  * it re-renders the master's PIXEL flavor with image srcs pointed at the
  * origin under test, which serves the resolved snapshot's bytes
  * (drift.browser.test.ts, editorial block).
  *
- * Binds 127.0.0.1 on an EPHEMERAL port — no fixed-port collision class, no
+ * Binds 127.0.0.1 on an EPHEMERAL port, no fixed-port collision class, no
  * interaction with the origin-suite orchestrator's pre-flight list.
  * Local/CI-only; path traversal is rejected, symlinks inside the repo are
  * deliberately followed (that's how workspace links work).

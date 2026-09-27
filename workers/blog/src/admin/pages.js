@@ -1,4 +1,4 @@
-// Admin templates. Unauthenticated eyes see loginPage and nothing else —
+// Admin templates. Unauthenticated eyes see loginPage and nothing else,
 // no admin markup, no existence disclosure (ADR-0009 §5). The editor page
 // is a shell: values are server-rendered, behavior lives in the CM6 bundle
 // (static/editor/main.js), and the post JSON rides a non-executable
@@ -133,7 +133,7 @@ ${KINDS.map(
           <button type="submit">Sign out</button>
         </form>
         <form method="post" action="/blog/admin/logout-all"
-              title="Revoke every session on every device — the stolen-cookie response">
+              title="Revoke every session on every device: the stolen-cookie response">
           <input type="hidden" name="csrf" value="${esc(csrf)}">
           <button type="submit">Sign out everywhere</button>
         </form>
@@ -157,7 +157,7 @@ export function editorPage({ post, csrf }) {
   const tags = JSON.parse(post.tags || "[]").join(", ");
   const published = post.status === "published";
   return shell({
-    title: post.title ? `${post.title} — editing` : "New post",
+    title: post.title ? `${post.title} · editing` : "New post",
     csrf,
     script: "/blog/admin/static/editor/main.js",
     body: `  <main class="editor" data-post-id="${esc(post.id)}">
@@ -183,7 +183,7 @@ export function editorPage({ post, csrf }) {
         <div id="cm-host"></div>
       </section>
       <section class="pane pane-preview" hidden aria-label="Live preview">
-        <iframe id="preview" title="Live preview — rendered exactly as the blog renders"></iframe>
+        <iframe id="preview" title="Live preview: rendered exactly as the blog renders"></iframe>
       </section>
     </div>
     <div id="meta-backdrop" class="meta-backdrop" hidden></div>
@@ -197,7 +197,7 @@ export function editorPage({ post, csrf }) {
         <label for="f-slug">Slug <button type="button" id="slug-from-title" class="linkish">from title</button></label>
         <input id="f-slug" name="slug" value="${esc(post.slug)}" autocomplete="off"
                pattern="[a-z0-9]+(-[a-z0-9]+)*" spellcheck="false">
-        <p class="hint">URL: /blog/<span id="slug-echo">${esc(post.slug)}</span> — permanent once published (old slugs 301).</p>
+        <p class="hint">URL: /blog/<span id="slug-echo">${esc(post.slug)}</span>: permanent once published (old slugs 301).</p>
         <label for="f-dek">Dek</label>
         <input id="f-dek" name="dek" value="${esc(post.dek)}" autocomplete="off">
         <label for="f-kind">Kind</label>
@@ -255,7 +255,7 @@ export function editorPage({ post, csrf }) {
     <dialog id="media-library" closedby="any" aria-labelledby="media-lib-title">
       <header class="media-head">
         <h2 id="media-lib-title">Media library</h2>
-        <p class="hint">Insert uses the library’s alt text — editing it here re-fixes every post that shows the image.</p>
+        <p class="hint">Insert uses the library’s alt text. Editing it here re-fixes every post that shows the image.</p>
         <button id="close-media" type="button" aria-label="Close media library">✕</button>
       </header>
       <p id="media-status" class="hint" role="status" aria-live="polite"></p>

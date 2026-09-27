@@ -7,7 +7,7 @@
  *
  *  - The drift gate compares the SERVED MARKUP with JS OFF (ADR-0008 §7,
  *    `drift.browser.test.ts`). Both dead controls had perfectly correct,
- *    perfectly identical markup — they were dead only with JS ON, which is
+ *    perfectly identical markup. They were dead only with JS ON, which is
  *    precisely the gate's blind spot.
  *  - `@pm/vanilla` contributes ZERO tasks to turbo's 30 (`turbo run lint
  *    typecheck test --dry=json` → 75 nodes, 30 with a real command, none of
@@ -15,8 +15,8 @@
  *
  * The rule below is the cheap half of the close, and it is deliberately the
  * half that BLOCKS A MERGE: `@pm/repo-checks#test` is one of the 30, needs no
- * browser, no plane and no image bytes. The expensive half — proving the
- * controls actually DO something — is `pdp-controls.browser.test.ts` in the
+ * browser, no plane and no image bytes. The expensive half, proving the
+ * controls actually DO something, is `pdp-controls.browser.test.ts` in the
  * origin suite, which needs a live plane and therefore cannot gate a merge.
  *
  * Neither half is sufficient alone: this one would pass a script that
@@ -25,13 +25,13 @@
  * "the control does not respond".
  *
  * Per-variant mechanisms (pdp-variants slice 1 generalised what was
- * vanilla-hardcoded — the exact green-on-vanilla-alone gap this file's own
+ * vanilla-hardcoded, the exact green-on-vanilla-alone gap this file's own
  * completeness assertion was written to block):
- *  - "selectors" — a plain-DOM enhancement (vanilla's pdp.js, astro's
+ *  - "selectors", a plain-DOM enhancement (vanilla's pdp.js, astro's
  *    bundled script): its OWN string-literal selectors are extracted and run
  *    against the master DOM, so a control none of its selectors can reach is
  *    reported by markup.
- *  - "names" — a JSX enhancement (react-next, qwik) authors elements rather
+ *  - "names", a JSX enhancement (react-next, qwik) authors elements rather
  *    than selecting them, so there are no selectors to run; instead every
  *    unexcused control's class must be NAMED as a whole token somewhere in
  *    the registered component sources. Weaker on purpose and stated so: the
@@ -51,7 +51,7 @@ const MASTERS = ["pdp", "pdp/single-format", "pdp/unpriced", "pdp/one-image"] as
 
 interface Enhancement {
   /** Repo-relative source files that together ARE the variant's PDP
-   *  enhancement — what must reach the master's controls. */
+   *  enhancement. What must reach the master's controls. */
   readonly files: readonly string[];
   readonly mechanism: "selectors" | "names";
 }
@@ -62,7 +62,7 @@ interface Enhancement {
  * `SURFACE_CONTROLS.pdp.variants` is the registry of record, and the test
  * below FAILS if it ever names a variant with no entry here. So the day a
  * variant moves `plannedVariants → variants`, this guard stops the merge
- * until someone points it at that variant's enhancement — rather than
+ * until someone points it at that variant's enhancement, rather than
  * quietly continuing to check the others and reporting green.
  */
 const ENHANCEMENTS: Record<string, Enhancement> = {
@@ -94,7 +94,7 @@ const ENHANCEMENTS: Record<string, Enhancement> = {
 
 /**
  * State attributes CSS cannot set. A rule can style `[aria-pressed="true"]`,
- * but nothing except script can ever make the attribute say "true" — so a
+ * but nothing except script can ever make the attribute say "true", so a
  * master that renders one and an enhancement that never writes it is a
  * control which announces a state it can never enter (WCAG 4.1.2). This is
  * exactly what the Zoom button did.
@@ -107,14 +107,14 @@ const SCRIPT_ONLY_STATE = [
   // it is the SECOND script-only state on the very page this guards: the
   // gallery's exclusive thumb selection rides it, and moving it is the whole
   // of what a gallery switch does programmatically. (The masthead also
-  // renders a STATIC `aria-current="page"`, which needs no script — the rule
+  // renders a STATIC `aria-current="page"`, which needs no script, the rule
   // asks only that the enhancement be able to write the attribute at all, so
   // a static instance never makes it pass vacuously for a live one.)
   "aria-current",
   // `aria-invalid` is the CHECKOUT surface's script-only state, and it was
-  // found the same way `aria-current` was — by reading the stylesheet that
+  // found the same way `aria-current` was, by reading the stylesheet that
   // promises it, not by reading the markup. `field.css:7-8` is explicit:
-  // "Error state styles off [aria-invalid], never a class — so the visual
+  // "Error state styles off [aria-invalid], never a class, so the visual
   // defect cannot exist without the programmatic one." No committed master
   // renders it (a served checkout form is pristine, by contract), which is
   // exactly why the styles-derived leg below exists: on this surface the
@@ -130,14 +130,14 @@ const SCRIPT_ONLY_STATE = [
  * `PERMITTED_NOISE` follows.
  */
 const NATIVE_BEHAVIOUR: Record<string, string> = {
-  "pm-skip": "an in-page anchor — the browser moves focus, no script owed",
+  "pm-skip": "an in-page anchor, the browser moves focus, no script owed",
   "pm-masthead__brand": "navigation",
   "pm-masthead__link": "navigation",
   "pm-masthead__cart": "navigation (its aria-label IS written by cart code)",
   "pm-qty__input": "a native number input; the steppers drive it",
 };
 
-/** The checkout masters that render CONTROLS — the form page, data-free (the
+/** The checkout masters that render CONTROLS, the form page, data-free (the
  *  reference renderer takes no snapshot at all; `render/build.mjs` discards
  *  it). The surface's second master, `checkout/placed` (where a JS-off
  *  "Place order" lands, checkout-measure-prep 2026-09-24), renders no control
@@ -150,12 +150,12 @@ const NATIVE_BEHAVIOUR: Record<string, string> = {
 const CHECKOUT_MASTERS = ["checkout"] as const;
 
 /**
- * Where each checkout variant keeps its enhancement — the `ENHANCEMENTS`
+ * Where each checkout variant keeps its enhancement, the `ENHANCEMENTS`
  * shape, one surface along.
  *
  * Read the completeness legs below together with this map. They used to be
- * temporarily weak — `SURFACE_CONTROLS.checkout.variants` was `[]`, so
- * "every LIVE variant has an entry" ranged over nothing — and that is no
+ * temporarily weak, `SURFACE_CONTROLS.checkout.variants` was `[]`, so
+ * "every LIVE variant has an entry" ranged over nothing, and that is no
  * longer true: this unit registers `variants: ["vanilla"]`
  * (`packages/switcher/src/config.ts`) in the same commit as the routes it
  * makes true, so the leg now ranges over vanilla and bites. The control and
@@ -172,7 +172,7 @@ const CHECKOUT_ENHANCEMENTS: Record<string, Enhancement> = {
 
 /**
  * Surfaces whose canonical SERVED markup carries no script-only state at
- * all, with the reason. A registry, not a skip — and asserted in BOTH
+ * all, with the reason. A registry, not a skip, and asserted in BOTH
  * directions, which is the whole point: the PDP legs prove the rule bites by
  * requiring at least one state attribute in the markup, and simply exempting
  * checkout from that would have been the vacuous pass this file exists to
@@ -181,7 +181,7 @@ const CHECKOUT_ENHANCEMENTS: Record<string, Enhancement> = {
  */
 const SERVES_NO_SCRIPT_STATE: Record<string, string> = {
   checkout:
-    "a served checkout form is pristine — every state its enhancement writes " +
+    "a served checkout form is pristine, every state its enhancement writes " +
     "is entered by the visitor, never served (ADR-0008 §7: the canonical " +
     "served state is the empty cart and an unfilled form). What the surface " +
     "owes is derived from its STYLESHEETS instead, by the leg below.",
@@ -194,7 +194,7 @@ const SERVES_NO_SCRIPT_STATE: Record<string, string> = {
  * deliberately not shared with it: that file answers "does this class have a
  * rule", this one answers "does this rule promise a state nothing can
  * enter". Making them one helper would couple two guards that must be able
- * to fail independently. The comment strip is load-bearing either way — a
+ * to fail independently. The comment strip is load-bearing either way, a
  * class named in a contract comment is not a rule, and these sheets name
  * classes constantly (`facets.css:14` carries a bare `[aria-current="true"]`
  * inside one).
@@ -214,7 +214,7 @@ function linkedSheets(surface: string, html: string): string {
  *
  * This is the `pm-pdp__scroll` defect in mirror image. That one was markup
  * promising behaviour no stylesheet implemented; this is a STYLESHEET
- * promising a state no script can produce — `field.css:45` styles
+ * promising a state no script can produce, `field.css:45` styles
  * `.pm-field__control[aria-invalid="true"]`, and if nothing ever writes the
  * attribute that rule is dead CSS and the error state it draws can never
  * appear. Neither guard sees the other's case.
@@ -265,7 +265,7 @@ function enhancementSource(enhancement: Enhancement): string {
  * surfaces must answer the question the SAME way: two copies of this rule
  * would be two rules, and the repo's own lesson is that a duplicated
  * contract diverges silently (CART_CONTRACT's uniqueness clause, seven
- * `read()`s). The PDP loop below is unchanged in behaviour — its own legs
+ * `read()`s). The PDP loop below is unchanged in behaviour. Its own legs
  * assert the same thresholds they always did.
  */
 function reachOf(
@@ -280,7 +280,7 @@ function reachOf(
   // button), so a dead live-origin handler passed an earlier draft purely
   // because `pm-button` appeared in the file for the OTHER button. The
   // "names" mechanism accepts that limit knowingly (JSX has no selectors to
-  // run) — its behavior half is the browser leg, which presses every button
+  // run). Its behavior half is the browser leg, which presses every button
   // per variant.
   if (mechanism === "selectors") {
     const selected = new Set<unknown>();
@@ -291,7 +291,7 @@ function reachOf(
       try {
         for (const el of document.querySelectorAll(sel)) selected.add(el);
       } catch {
-        /* not a selector — a regex, a URL, a message string */
+        /* not a selector, a regex, a URL, a message string */
       }
     }
     return { reaches: (raw) => selected.has(raw), matched: selected.size };
@@ -307,14 +307,14 @@ function reachOf(
 /**
  * ONE rule, both benchmarked surfaces (parameterised by checkout-measure-prep,
  * 2026-09-24). The checkout block below used to be a near-verbatim copy of
- * the PDP's — about forty lines that would have had to change twice, and the
+ * the PDP's, about forty lines that would have had to change twice, and the
  * repo's own lesson about a duplicated contract is that it diverges silently.
  * A row is a surface, its committed masters, where each LIVE variant keeps
  * its enhancement, and the one number the two genuinely differ on: the
  * control-count floor that keeps the reach leg non-vacuous.
  *
  * Where the surfaces differ in KIND rather than degree, the row does not
- * carry a flag — the registries do: `SERVES_NO_SCRIPT_STATE` decides which
+ * carry a flag, the registries do: `SERVES_NO_SCRIPT_STATE` decides which
  * shape the markup-derived state leg takes (the PDP proves itself by
  * rendering at least one script-only state; a served checkout form correctly
  * renders none, and the entry is a claim the leg checks), and
@@ -345,21 +345,21 @@ for (const row of SURFACES) {
       // build, and the checkout unit moved `vanilla` from `plannedVariants`
       // into `variants` in the same commit as the routes it made true. The
       // day a variant goes live, the merge stops until someone points this
-      // file at its enhancement — rather than the guard quietly reporting
+      // file at its enhancement, rather than the guard quietly reporting
       // green on the others alone.
       const live = SURFACE_CONTROLS[row.surface]!.variants;
       expect(live.length, `${row.surface} registers no live variant`).toBeGreaterThan(0);
       const unregistered = live.filter((v) => !(v in row.enhancements));
       expect(
         unregistered,
-        `a ${row.surface} variant is live but this guard does not know where its enhancement lives — ` +
+        `a ${row.surface} variant is live but this guard does not know where its enhancement lives, ` +
           `point the ${row.surface} enhancement map at it`,
       ).toEqual([]);
     });
 
     it("the enhancement map names only variants this surface actually plans", () => {
       // The other direction: a map entry for a variant the registry has never
-      // heard of would be a guard checking a file nobody serves — green, and
+      // heard of would be a guard checking a file nobody serves, green, and
       // about nothing.
       const controls = SURFACE_CONTROLS[row.surface]!;
       const known = new Set([...controls.variants, ...(controls.plannedVariants ?? [])]);
@@ -376,7 +376,7 @@ for (const row of SURFACES) {
       const script = enhancementSource(enhancement);
 
       for (const surface of row.masters) {
-        it(`${variant} · ${surface}: every script-only state attribute the master renders is written by the enhancement — or the registry says it renders none`, () => {
+        it(`${variant} · ${surface}: every script-only state attribute the master renders is written by the enhancement, or the registry says it renders none`, () => {
           const { document } = parseHTML(master(surface));
           const rendered = SCRIPT_ONLY_STATE.filter(
             (attr) => document.querySelectorAll(`[${attr}]`).length > 0,
@@ -387,18 +387,18 @@ for (const row of SURFACES) {
             // this until someone either wires it or removes the entry.
             expect(
               rendered,
-              `${surface} renders script-only state the registry claims it never serves — ` +
+              `${surface} renders script-only state the registry claims it never serves, ` +
                 `either the enhancement must write it or the registry entry is now false`,
             ).toEqual([]);
             return;
           }
           // The PDP shape: the leg proves itself non-vacuous by requiring at
           // least one rendered state, then holds the enhancement to each.
-          expect(rendered.length, `${surface} renders no script-only state — this leg is vacuous`).toBeGreaterThan(0);
+          expect(rendered.length, `${surface} renders no script-only state. This leg is vacuous`).toBeGreaterThan(0);
           for (const attr of rendered) {
             expect(
               script.includes(attr),
-              `${surface} renders [${attr}] but ${variant}'s enhancement never writes it — ` +
+              `${surface} renders [${attr}] but ${variant}'s enhancement never writes it, ` +
                 `the control announces a state it can never enter`,
             ).toBe(true);
           }
@@ -410,19 +410,19 @@ for (const row of SURFACES) {
           // scales the stage from `[aria-pressed="true"]` and `:128` marks the
           // current thumb from `[aria-current="true"]`, so the sheets promise
           // the same two states the markup renders. On checkout they diverge
-          // completely — the markup renders none and the sheets promise
-          // `aria-invalid` (`field.css:45`, twelve controls) — which is where
+          // completely, the markup renders none and the sheets promise
+          // `aria-invalid` (`field.css:45`, twelve controls), which is where
           // this surface's rule actually bites.
           const { document } = parseHTML(master(surface));
           const promised = statesPromisedByStyles(surface, master(surface), document);
           expect(
             promised.length,
-            `${surface}'s linked sheets promise no script-only state at all — this leg is vacuous`,
+            `${surface}'s linked sheets promise no script-only state at all. This leg is vacuous`,
           ).toBeGreaterThan(0);
           for (const attr of promised) {
             expect(
               script.includes(attr),
-              `${surface}'s sheets style [${attr}] but ${variant}'s enhancement never writes it — ` +
+              `${surface}'s sheets style [${attr}] but ${variant}'s enhancement never writes it, ` +
                 `the rule can never match, and the state it draws can never appear`,
             ).toBe(true);
           }
@@ -455,7 +455,7 @@ for (const row of SURFACES) {
             if (classes.some((c) => c in NATIVE_BEHAVIOUR)) continue;
             // A focusable scroll REGION is behaviour the stylesheet owns
             // (pdp.css `.pm-pdp__scroll { overflow-x: auto }`); script owes it
-            // nothing, but something must — it shipped styled by NOTHING, a
+            // nothing, but something must. It shipped styled by NOTHING, a
             // focus stop on a container that could not scroll. Held to the
             // master's OWN linked sheets, comments stripped.
             if (el.getAttribute("role") === "region") {
@@ -468,12 +468,12 @@ for (const row of SURFACES) {
             // A submit button inside a form the enhancement REACHES is
             // reached: the browser routes the press to that form's `submit`
             // event, and that event is where the whole invalid-submit
-            // contract lives (ADR-0008 §7 — render the error summary, move
+            // contract lives (ADR-0008 §7, render the error summary, move
             // focus). STRUCTURAL rather than a `NATIVE_BEHAVIOUR` row on
             // purpose: the button's class is `pm-button`, which is also the
             // PDP's add-to-cart, so a class row would blanket-excuse the very
             // control the PDP guard was written for. And it is not a free
-            // pass — it applies only when the enhancement reaches the form
+            // pass. It applies only when the enhancement reaches the form
             // itself, so an enhancement that never binds `submit` still fails.
             if (el.getAttribute("type") === "submit") {
               const form = el.closest("form");
@@ -488,7 +488,7 @@ for (const row of SURFACES) {
   });
 }
 
-/** The PDP's own self-proofs — the defects that shipped, held as fixtures. */
+/** The PDP's own self-proofs, the defects that shipped, held as fixtures. */
 describe("the PDP guard's self-proofs", () => {
   it("fires on the two controls that actually shipped dead", () => {
     // The exact pre-repair state: the master's markup with an enhancement
@@ -531,7 +531,7 @@ describe("the PDP guard's self-proofs", () => {
 describe("the checkout guard's self-proofs", () => {
   it("fires on an enhancement that leaves the form dead", () => {
     // The PDP block's self-proof, this surface's version: the exact shape a
-    // checkout enhancement fails in — one that does the cart badge (which
+    // checkout enhancement fails in, one that does the cart badge (which
     // every shell page does anyway) and never touches the form. Both halves
     // of the rule must fail on it, and pass on the real one.
     const { document } = parseHTML(master("checkout"));
@@ -550,7 +550,7 @@ describe("the checkout guard's self-proofs", () => {
     }
   });
 
-  it("checkout/placed renders no control and no script-only state — a checked claim, not a skipped page", () => {
+  it("checkout/placed renders no control and no script-only state, a checked claim, not a skipped page", () => {
     // The a11y index's leg, one surface over. The order-placed page collects
     // nothing: one link back to the store, the shell's masthead links, and
     // nothing script must reach. Asserted rather than left out of
@@ -570,7 +570,7 @@ describe("the checkout guard's self-proofs", () => {
 
 /**
  * The same rule, on the accessibility exhibit (a11y-section build,
- * 2026-09-03) — the surface where a dead control is the project's worst
+ * 2026-09-03), the surface where a dead control is the project's worst
  * possible bug, because the page's whole claim is that its controls behave.
  *
  * Three pages, one enhancement (variants/vanilla/src/a11y.js), and two
@@ -578,11 +578,11 @@ describe("the checkout guard's self-proofs", () => {
  *  - SPECIMENS. The focus, target-size and mode-stage demos render the
  *    store's own button as an exhibit of its RENDERING; the forms demo
  *    renders the field in its error-wired state as an exhibit of that WIRING.
- *    A specimen BUTTON is still wired — a11y.js answers every press through
- *    the shell's status region (the behave test drives it) — so the reach leg
+ *    A specimen BUTTON is still wired, a11y.js answers every press through
+ *    the shell's status region (the behave test drives it), so the reach leg
  *    holds them like any control. The two INPUTS are the exception: typing is
  *    the browser's and the served wiring is the demo, so they are registered
- *    native by class WITH the reason — and the leg asserts every such element
+ *    native by class WITH the reason, and the leg asserts every such element
  *    sits inside a compare box, so the row cannot excuse a real form field
  *    anywhere else on the surface.
  *  - SERVED SPECIMEN STATE. The forms demo serves `aria-invalid="true"` (the
@@ -600,7 +600,7 @@ const A11Y_ENHANCEMENTS: Record<string, Enhancement> = {
   },
 };
 
-/** The committed a11y masters that render controls, DERIVED FROM DISK — the
+/** The committed a11y masters that render controls, DERIVED FROM DISK, the
  *  index is asserted control-free separately, and a fourth master committed
  *  tomorrow joins this loop by existing rather than by being remembered. The
  *  sibling guard in this same slice
@@ -622,7 +622,7 @@ const A11Y_CONTROL_MASTERS = a11yControlMasters();
 
 /** Controls the BROWSER owns on this surface: class, the tag it must be, and
  *  exactly how many the masters may render. All three, because a bare class
- *  row is an open door — a `<button class="pm-field__control">` dropped into
+ *  row is an open door, a `<button class="pm-field__control">` dropped into
  *  a compare box, or a sixth field added to the forms demo, would inherit the
  *  exemption without anyone arguing for it (F-S3, verification pass). The
  *  count is the registry's teeth: it fails on the change rather than after
@@ -633,7 +633,7 @@ const A11Y_SPECIMEN_NATIVE: Record<string, { tag: string; count: number; reason:
     tag: "input",
     count: 2, // the DS-ON field and its placeholder-only twin
     reason:
-      "the forms demo's field, served in its error-wired state — typing is the browser's; " +
+      "the forms demo's field, served in its error-wired state, typing is the browser's; " +
       "the wiring the screen reader announces is the exhibit (a11y.mjs demo-forms)",
   },
 };
@@ -643,7 +643,7 @@ const A11Y_SERVED_SPECIMEN_STATE: Record<string, { selector: string; count: numb
     selector: '.pm-compare__box .pm-field__control[aria-invalid="true"]',
     count: 1,
     reason:
-      "the forms demo's DS-ON field displays the error-wired state as its exhibit — " +
+      "the forms demo's DS-ON field displays the error-wired state as its exhibit, " +
       "the attribute is served, never entered (a11y.mjs demo-forms)",
   },
 };
@@ -656,13 +656,13 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
     // parallel-builds falsehood, and this leg would be vacuous over it.
     expect(
       controls.variants.length,
-      "a11y registers no live variant — either the section is unserved or the registration was left out of the commit that served it",
+      "a11y registers no live variant. Either the section is unserved or the registration was left out of the commit that served it",
     ).toBeGreaterThan(0);
     expect(controls.singleton, "a11y is a singleton off the benchmarked matrix").toBe(true);
     const unregistered = controls.variants.filter((v) => !(v in A11Y_ENHANCEMENTS));
     expect(
       unregistered,
-      "an a11y variant is live but this guard does not know where its enhancement lives — point A11Y_ENHANCEMENTS at it",
+      "an a11y variant is live but this guard does not know where its enhancement lives, point A11Y_ENHANCEMENTS at it",
     ).toEqual([]);
   });
 
@@ -673,7 +673,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
     }
   });
 
-  it("the index page renders no control and no script-only state — a checked claim, not a skipped page", () => {
+  it("the index page renders no control and no script-only state, a checked claim, not a skipped page", () => {
     const { document } = parseHTML(master("a11y"));
     expect([...document.querySelectorAll("button, input, select, textarea, [tabindex]")]).toEqual([]);
     for (const attr of SCRIPT_ONLY_STATE) {
@@ -693,7 +693,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
         const rendered = SCRIPT_ONLY_STATE.filter(
           (attr) => document.querySelectorAll(`[${attr}]`).length > 0,
         );
-        expect(rendered.length, `${surface} renders no script-only state — this leg is vacuous`).toBeGreaterThan(0);
+        expect(rendered.length, `${surface} renders no script-only state. This leg is vacuous`).toBeGreaterThan(0);
         for (const attr of rendered) {
           const served = A11Y_SERVED_SPECIMEN_STATE[attr];
           if (served) {
@@ -712,7 +712,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
           }
           expect(
             script.includes(attr),
-            `${surface} renders [${attr}] but ${variant}'s enhancement never writes it — ` +
+            `${surface} renders [${attr}] but ${variant}'s enhancement never writes it, ` +
               `the control announces a state it can never enter`,
           ).toBe(true);
         }
@@ -721,7 +721,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
       it(`${variant} · ${surface}: every script-only state the master's own sheets promise is written by the enhancement, unless the master serves it`, () => {
         const { document } = parseHTML(master(surface));
         const promised = statesPromisedByStyles(surface, master(surface), document);
-        expect(promised.length, `${surface}'s linked sheets promise no script-only state — vacuous`).toBeGreaterThan(0);
+        expect(promised.length, `${surface}'s linked sheets promise no script-only state, vacuous`).toBeGreaterThan(0);
         for (const attr of promised) {
           if (attr in A11Y_SERVED_SPECIMEN_STATE) {
             // The rule CAN match: the master itself carries the attribute.
@@ -730,7 +730,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
           }
           expect(
             script.includes(attr),
-            `${surface}'s sheets style [${attr}] but ${variant}'s enhancement never writes it — ` +
+            `${surface}'s sheets style [${attr}] but ${variant}'s enhancement never writes it, ` +
               `the rule can never match, and the state it draws can never appear`,
           ).toBe(true);
         }
@@ -776,7 +776,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
     }
   }
 
-  it("the specimen registry's counts are exactly what the masters render — the row's teeth", () => {
+  it("the specimen registry's counts are exactly what the masters render, the row's teeth", () => {
     // A registry that excuses "any number of these" excuses the next one too.
     for (const [cls, row] of Object.entries(A11Y_SPECIMEN_NATIVE)) {
       let seen = 0;
@@ -794,11 +794,11 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
     }
   });
 
-  it("mode-demos: the emulation is keyed on the toggle's own aria-pressed — the ONE state the enhancement writes", () => {
+  it("mode-demos: the emulation is keyed on the toggle's own aria-pressed, the ONE state the enhancement writes", () => {
     // mode-demo.css applies each emulation from
     // `.pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="…"]`,
     // so the visual state cannot exist without the programmatic one (ADR-0003
-    // §5) — which holds only if the master places every stage DIRECTLY after
+    // §5), which holds only if the master places every stage DIRECTLY after
     // its toggle with matching keys, and every mode has its rule.
     const html = master("a11y/mode-demos");
     const { document } = parseHTML(html);
@@ -819,7 +819,7 @@ describe("the a11y masters advertise no control the variant leaves dead", () => 
 
   it("fires on an enhancement that does the badge and nothing else", () => {
     // The other blocks' self-proof, this surface's version: the shape an
-    // exhibit enhancement fails in — one that populates the cart badge (every
+    // exhibit enhancement fails in, one that populates the cart badge (every
     // shell page does) and never touches a demo. Both halves must fail on it
     // and pass on the real one.
     const { document } = parseHTML(master("a11y/mode-demos"));

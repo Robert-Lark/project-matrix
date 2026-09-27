@@ -1,13 +1,13 @@
-// The vanilla editorial page — this variant's OWN re-implementation of the
+// The vanilla editorial page. This variant's OWN re-implementation of the
 // canonical markup (ADR-0003 §1: a component is a spec, re-implemented per
 // paradigm; ADR-0008: packages/reference/surfaces/editorial/ is the contract
 // of record). Nothing here imports the reference renderer FOR A BENCHMARKED
 // SURFACE: essay copy is re-typed as variant-owned content and the formatting
 // rules are re-implemented to the canonical spec (packages/reference/render/
-// lib.mjs is the rules of record) — the drift gate polices textual identity
+// lib.mjs is the rules of record), the drift gate polices textual identity
 // both ways, in CI against the fixture master and on the deployed plane
 // against the master re-rendered from the resolved snapshot (ADR-0008 §9).
-// That call — re-type, not build-time import — is recorded in
+// That call, re-type, not build-time import, is recorded in
 // DIFF-TO-STARTER.md (decision 1).
 //
 // The ONE exception is the a11y section at the bottom of this file, a
@@ -57,7 +57,7 @@ function metaLine(summary) {
 /** Canonical format composition (lib.mjs rules of record): every component of
  *  the release in tray order, "N × " where the tray records more than one of
  *  a medium, components joined with "; ". A Discogs `formats` array is what
- *  is IN the package, not a menu — which is why the PDP renders it as data
+ *  is IN the package, not a menu, which is why the PDP renders it as data
  *  and carries no format control (ADR-0008 addendum A). */
 function formatComposition(formats) {
   return formats
@@ -69,15 +69,15 @@ function formatComposition(formats) {
     .join("; ");
 }
 
-/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "—"
+/** Canonical stand-in for absent data (lib.mjs rules of record): a lone "–"
  *  announces as "em dash" or as nothing, making absent data and a rendering
- *  fault sound alike — so the glyph is hidden and a real phrase rides beside
+ *  fault sound alike, so the glyph is hidden and a real phrase rides beside
  *  it. Both arguments are authored literals, never tray data. */
 function namedGlyph(glyph, name) {
   return `<span aria-hidden="true">${glyph}</span><span class="pm-sr-only">${name}</span>`;
 }
 
-/* ── The per-snapshot essays — committed CONTENT, re-typed verbatim from the
+/* ── The per-snapshot essays, committed CONTENT, re-typed verbatim from the
       contract of record (packages/reference/render/editorial.mjs). Prose
       narrates allusively; every precise number interpolates tray fields;
       the dateline is the manifest's freeze date. ─────────────────────────── */
@@ -85,16 +85,16 @@ function namedGlyph(glyph, name) {
 const CRATE_ESSAY = {
   kicker: "Staff pick",
   title: "The price of stillness",
-  dek: "A drone record from 2007 has become the most expensive thing in our crate — without a single loud moment on it.",
+  dek: "A drone record from 2007 has become the most expensive thing in our crate, without a single loud moment on it.",
   body: (d) => [
-    `p:There are records you put on and records you put up — and ${esc(d.artist)}'s <em>${esc(d.title)}</em> has spent nearly two decades being both. Two hours of tape-saturated strings and horns that barely move, released on ${esc(d.labels[0]?.name ?? "Kranky")} in ${d.year}, it is the kind of album whose fans describe it in architectural terms: a room, a horizon, a place they go.`,
-    `p:It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer — ${formatPrice(d.priceFrom)} at the freeze, to be exact — and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
-    `blockquote:Stillness scales badly. You can stream it anywhere, but the people who want this record want the object — the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.`,
+    `p:There are records you put on and records you put up, and ${esc(d.artist)}'s <em>${esc(d.title)}</em> has spent nearly two decades being both. Two hours of tape-saturated strings and horns that barely move, released on ${esc(d.labels[0]?.name ?? "Kranky")} in ${d.year}, it is the kind of album whose fans describe it in architectural terms: a room, a horizon, a place they go.`,
+    `p:It is also, as of this crate's freeze, the most expensive record we stock. The original pressing sits north of five hundred dollars with a single copy on offer, ${formatPrice(d.priceFrom)} at the freeze, to be exact, and the story of how it got there is the story of what vinyl does when music refuses to be background for the people who love it.`,
+    `blockquote:Stillness scales badly. You can stream it anywhere, but the people who want this record want the object, the gatefold, the etched runout, the side you have to stand up and flip. Scarcity does the rest.`,
     `p:The economics are unsentimental. A triple LP of very quiet music is expensive to press and risky to repress, so supply arrives in slow, deliberate waves; a reissue surfaces, sells through, and the originals resume their climb. Meanwhile the music itself does the one thing collectible records must do: it keeps being recommended, year after year, by people who sound slightly embarrassed at how much they mean it.`,
-    `p:We are not in the appreciation business — this is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.`,
+    `p:We are not in the appreciation business. This is a record store, and our copy count is what it is. But if you have ever wondered what people hear in a record that seems to do nothing, this is the one to start with. Put it on in the late afternoon. Let it be the room.`,
   ],
   featureNote: () =>
-    `The pressing described above, as captured in the frozen snapshot — price and availability are the real aggregate at the freeze.`,
+    `The pressing described above, as captured in the frozen snapshot, price and availability are the real aggregate at the freeze.`,
 };
 
 const FIXTURE_ESSAY = {
@@ -102,17 +102,17 @@ const FIXTURE_ESSAY = {
   title: "A quiet variation, on repeat",
   dek: "The fixture's stand-in essay: synthetic prose over synthetic data, exercising every structure the real one uses.",
   body: (d) => [
-    `p:<em>${esc(d.title)}</em> by ${esc(d.artist)} is not a real record — it is release ${d.id} of the synthesized fixture crate, pressed on ${esc(d.labels[0]?.name ?? "a placeholder label")} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`,
+    `p:<em>${esc(d.title)}</em> by ${esc(d.artist)} is not a real record. It is release ${d.id} of the synthesized fixture crate, pressed on ${esc(d.labels[0]?.name ?? "a placeholder label")} in ${d.year} by a deterministic generator. This essay exists so the editorial surface renders honestly in CI, where the real crate never travels.`,
     `p:It carries everything the real staff pick carries: a priced feature card rendered from the tray (${formatPrice(d.priceFrom) ?? "unpriced"} at the fixture's pinned capture date), a figure with data-sized dimensions, one blockquote, and exactly one interaction below.`,
-    `blockquote:If you can read this in a published benchmark screenshot, the wrong snapshot is being served — the fixture never leaves CI.`,
+    `blockquote:If you can read this in a published benchmark screenshot, the wrong snapshot is being served. The fixture never leaves CI.`,
     `p:Structure is the point: the drift gate compares this page's rendered DOM against every paradigm's re-implementation, so even placeholder prose is part of the contract. The words are synthetic; the markup is law.`,
-    `p:The real essay ships wherever the real crate is served, with the same shape and the same rules — numbers from trays, dates from the manifest, verdicts from nowhere.`,
+    `p:The real essay ships wherever the real crate is served, with the same shape and the same rules: numbers from trays, dates from the manifest, verdicts from nowhere.`,
   ],
   featureNote: () =>
-    `The fixture's featured release, rendered from its tray — same contract as the real crate's.`,
+    `The fixture's featured release, rendered from its tray, same contract as the real crate's.`,
 };
 
-/* ── The shell — canonical skeleton (packages/reference/render/shell.mjs):
+/* ── The shell, canonical skeleton (packages/reference/render/shell.mjs):
       skip link FIRST, then the chrome slot (variants only), then .pm-page.
       Cross-surface links absolute to each surface's designated host. ─────── */
 
@@ -149,15 +149,15 @@ const PDP_CSS = [
  * page sat at exactly one level (`/vanilla/editorial/`), so the base was the
  * literal "../". A PDP sits one deeper (`/vanilla/pdp/{slug}/`) and every
  * stylesheet, font and script would 404 unchanged. Deriving the base from
- * depth — the shape `packages/reference/render/shell.mjs` already uses for
- * its masters (`"../".repeat(depth)`) — is deliberately preferred to adding a
+ * depth, the shape `packages/reference/render/shell.mjs` already uses for
+ * its masters (`"../".repeat(depth)`), is deliberately preferred to adding a
  * second literal: two literals is how the first one silently goes wrong when
  * a third surface lands.
  */
 const assetBase = (depth) => "../".repeat(depth) + "assets/";
 
 /** The canonical font-loading markup (@pm/tokens/fonts/loading-markup.html)
- *  verbatim modulo the base path — ADR-0003 §8: fonts are a controlled
+ *  verbatim modulo the base path, ADR-0003 §8: fonts are a controlled
  *  constant, only the asset base may differ per consumer. */
 function fontMarkup(depth) {
   const a = assetBase(depth);
@@ -194,7 +194,7 @@ function releaseCard(summary) {
     <p class="pm-release-card__artist">${esc(summary.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(summary))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("–", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(summary.numForSale))}</span>
     </div>
   </div>
@@ -223,11 +223,11 @@ export function renderEditorialPage(snapshot, featuredId) {
   blocks.splice(
     1,
     0,
-    `<figure><img src="${esc(figureImg.src)}" width="${figureImg.width}" height="${figureImg.height}" alt="${esc(figureImg.alt)}" loading="lazy" decoding="async"><figcaption>${esc(featured.artist)} — ${esc(featured.title)} (${esc(featured.labels[0]?.name ?? "")}${featured.labels[0]?.catno ? ` · ${esc(featured.labels[0].catno)}` : ""}), from the frozen snapshot.</figcaption></figure>`,
+    `<figure><img src="${esc(figureImg.src)}" width="${figureImg.width}" height="${figureImg.height}" alt="${esc(figureImg.alt)}" loading="lazy" decoding="async"><figcaption>${esc(featured.artist)}, ${esc(featured.title)} (${esc(featured.labels[0]?.name ?? "")}${featured.labels[0]?.catno ? ` · ${esc(featured.labels[0].catno)}` : ""}), from the frozen snapshot.</figcaption></figure>`,
   );
 
-  // The enhancement's data hook rides a script element — delivery, not
-  // contract (ADR-0008 freedoms) — so the canonical DOM carries no extra
+  // The enhancement's data hook rides a script element, delivery, not
+  // contract (ADR-0008 freedoms), so the canonical DOM carries no extra
   // attribute and vanilla stays the NO_NOISE control. `<` is escaped so a
   // tray string can never close the script element early.
   const cartItem = JSON.stringify({ id: featured.id, title: featured.title }).replace(/</g, "\\u003c");
@@ -235,7 +235,7 @@ export function renderEditorialPage(snapshot, featuredId) {
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${head(`${essay.title} — Long Decay Records`)}
+  ${head(`${essay.title} · Long Decay Records`)}
 </head>
 <body>
   <a class="pm-skip pm-button" href="#main">Skip to content</a>
@@ -267,14 +267,14 @@ ${releaseCard(summary)}
           <div class="pm-editorial__feature-body">
             <p class="pm-editorial__feature-note">${esc(essay.featureNote(featured))}</p>
             <div><button class="pm-button" type="button"${summary.numForSale === 0 ? " disabled" : ""}>Add to cart</button></div>
-            <p class="pm-editorial__feature-note">The only interactive element on this page — that's the experiment.</p>
+            <p class="pm-editorial__feature-note">The only interactive element on this page. That's the experiment.</p>
           </div>
         </aside>
       </article>
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>
@@ -295,11 +295,11 @@ ${releaseCard(summary)}
    (packages/reference/render/pdp.mjs is the contract of record; the drift
    gate polices textual identity against the master re-rendered from the
    RESOLVED snapshot, both in CI against the fixture and on the deployed
-   plane against the crate — ADR-0008 §9).
+   plane against the crate, ADR-0008 §9).
 
    Formatting is NOT re-invented: formatPrice/stockLine above are the
    canonical rules re-implemented to spec, and formatDuration joins them
-   below. `Intl.NumberFormat` is deliberately not used — the gate compares
+   below. `Intl.NumberFormat` is deliberately not used, the gate compares
    rendered TEXT, and Intl would drift on the first non-USD or four-digit
    price (ADR-0008's normative formatting note).
    ───────────────────────────────────────────────────────────────────────── */
@@ -315,7 +315,7 @@ function formatDuration(durationSeconds) {
 }
 
 /** The 160 px thumb derivative, by the URL convention over the frozen tray
- *  src (ADR-0008 §11 — the trays themselves are untouched). */
+ *  src (ADR-0008 §11, the trays themselves are untouched). */
 function thumbSrc(src) {
   return src.replace(/\.avif$/, ".thumb.avif");
 }
@@ -393,7 +393,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
   const d = detail;
   const price = formatPrice(d.priceFrom);
   const sold = d.numForSale === 0;
-  // The cart enhancement's data hook — delivery, not contract, so the
+  // The cart enhancement's data hook, delivery, not contract, so the
   // canonical DOM carries no extra attribute and vanilla stays the NO_NOISE
   // control. `<` escaped so a tray string cannot close the element early.
   const cartItem = JSON.stringify({ id: d.id, title: d.title }).replace(/</g, "\\u003c");
@@ -401,7 +401,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${head(`${d.title} — ${d.artist} — Long Decay Records`, { depth, css: PDP_CSS })}
+  ${head(`${d.title} · ${d.artist} · Long Decay Records`, { depth, css: PDP_CSS })}
 </head>
 <body>
   <a class="pm-skip pm-button" href="#main">Skip to content</a>
@@ -423,7 +423,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
           <div class="pm-pdp__buy">
             <h1 class="pm-pdp__title">${esc(d.title)}</h1>
             <p class="pm-pdp__artist">${esc(d.artist)}</p>
-            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("—", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
+            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("–", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
             <div class="pm-qty">
               <label class="pm-qty__label" for="qty">Quantity</label>
               <div class="pm-qty__group">
@@ -436,7 +436,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
             <dl class="pm-pdp__meta">
               <dt>Label</dt><dd>${esc(d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; "))}</dd>
               <dt>Format</dt><dd>${esc(formatComposition(d.formats))}</dd>
-              <dt>Year</dt><dd>${d.year ?? namedGlyph("—", "No year listed")}</dd>
+              <dt>Year</dt><dd>${d.year ?? namedGlyph("–", "No year listed")}</dd>
               <dt>Genre</dt><dd>${esc([...d.genres, ...d.styles].join(", "))}</dd>
             </dl>
           </div>
@@ -445,7 +445,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
         <aside class="pm-plaque pm-plaque--fenced" data-pm-fenced="true">
           <p class="pm-plaque__kicker">Fenced demonstration</p>
           <p class="pm-plaque__name"><strong>The live-origin demonstration</strong></p>
-          <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
+          <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead: the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
           <p class="pm-plaque__claim"><button class="pm-button pm-button--secondary" type="button">Fetch today's price live</button> <output data-pm-live-origin></output></p>
           <p class="pm-plaque__rule">measured with the same harness · excluded from every benchmark number</p>
         </aside>
@@ -454,7 +454,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>
@@ -473,13 +473,13 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
 /* ── The checkout (checkout-vanilla) ───────────────────────────────────────
    This variant's OWN re-implementation of the canonical checkout markup
    (packages/reference/render/checkout.mjs is the contract of record). Unlike
-   editorial and the PDP this surface is DATA-FREE — `renderCheckout` takes no
+   editorial and the PDP this surface is DATA-FREE, `renderCheckout` takes no
    snapshot at all (`build.mjs:78` discards it), so there is no fixture/crate
    flavor to diverge and the whole page is authored constants.
 
    The canonical SERVED state is the EMPTY cart (ADR-0008 §7: cart is
    localStorage, so no paradigm can serve cart contents) with reserved
-   geometry — `cart-summary.css` gives the lines a FIXED grid track the
+   geometry, `cart-summary.css` gives the lines a FIXED grid track the
    empty copy and the list share, so population moves nothing outside the
    summary (checkout-measure-prep, 2026-09-24; the floor it replaced let a
    three-item cart move the form). Everything the enhancement writes into the
@@ -493,7 +493,7 @@ export function renderPdpPage(snapshot, detail, { depth = 2 } = {}) {
 
 /** The checkout's sheet list (packages/reference/render/checkout.mjs `css`,
  *  prefixed by the six `head()` ships on every master). Order is cascade
- *  order — a rendering property, not a freedom. */
+ *  order, a rendering property, not a freedom. */
 const CHECKOUT_CSS = [
   "tokens.css",
   "surfaces/shell.css",
@@ -508,16 +508,16 @@ const CHECKOUT_CSS = [
   "surfaces/checkout.css",
 ];
 
-/** One labelled field row — the DS default the contract fixes: label-for,
+/** One labelled field row, the DS default the contract fixes: label-for,
  *  autocomplete, inputmode, and an aria-describedby hint when there is one.
  *
  *  NO `name`, and that is the contract, not an oversight: the form is a real
  *  `method="post"` form, so JS off it submits natively, and an input with no
- *  `name` is not a successful control — nothing it holds is serialized. That
+ *  `name` is not a successful control. Nothing it holds is serialized. That
  *  is what makes the plaque's "what you type never leaves your browser" true
  *  on the JS-off path. `required`/`pattern` mirror checkout.js's RULES, and
  *  they still apply to unnamed controls (constraint validation ignores
- *  `name`). The master carries the full rationale — checkout.mjs:14-42. */
+ *  `name`). The master carries the full rationale, checkout.mjs:14-42. */
 function field({
   id,
   label,
@@ -553,7 +553,7 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${head("Checkout — Long Decay Records", { depth, css: CHECKOUT_CSS })}
+  ${head("Checkout · Long Decay Records", { depth, css: CHECKOUT_CSS })}
 </head>
 <body>
   <a class="pm-skip pm-button" href="#main">Skip to content</a>
@@ -573,13 +573,13 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
         <aside class="pm-plaque">
           <p class="pm-plaque__kicker">Simulated commerce</p>
           <p class="pm-plaque__name"><strong>This checkout is a demonstration.</strong></p>
-          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser — this page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
+          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser. This page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
         </aside>
         <div class="pm-checkout__body">
           <form class="pm-checkout__form" method="post" action="place-order/">
             <fieldset class="pm-checkout__section">
               <legend class="pm-checkout__legend">Contact</legend>
-              ${field({ id: "email", label: "Email address", type: "email", autocomplete: "email", required: true, hint: "Used only to render the demo confirmation in this page — nothing is ever sent." })}
+              ${field({ id: "email", label: "Email address", type: "email", autocomplete: "email", required: true, hint: "Used only to render the demo confirmation in this page. Nothing is ever sent." })}
             </fieldset>
             <fieldset class="pm-checkout__section">
               <legend class="pm-checkout__legend">Shipping address</legend>
@@ -608,17 +608,17 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
               <legend class="pm-checkout__legend">Shipping method</legend>
               <label class="pm-format__option">
                 <input class="pm-format__input" type="radio" name="shipping" value="standard" checked>
-                <span class="pm-format__label">Standard — free, 5–8 days</span>
+                <span class="pm-format__label">Standard, free, 5–8 days</span>
               </label>
               <label class="pm-format__option">
                 <input class="pm-format__input" type="radio" name="shipping" value="express">
-                <span class="pm-format__label">Express — $12.00, 2 days</span>
+                <span class="pm-format__label">Express, $12.00, 2 days</span>
               </label>
             </fieldset>
             <fieldset class="pm-checkout__section">
               <legend class="pm-checkout__legend">Payment</legend>
-              <p class="pm-checkout__jsoff">Demo card fields — type anything; nothing you enter is stored or sent.</p>
-              ${field({ id: "card", label: "Card number", autocomplete: "off", inputmode: "numeric", required: true, pattern: "\\d{13,19}", title: "13 to 19 digits", hint: "Formats as you type — that formatting is part of what this page measures." })}
+              <p class="pm-checkout__jsoff">Demo card fields: type anything; nothing you enter is stored or sent.</p>
+              ${field({ id: "card", label: "Card number", autocomplete: "off", inputmode: "numeric", required: true, pattern: "\\d{13,19}", title: "13 to 19 digits", hint: "Formats as you type, that formatting is part of what this page measures." })}
               ${field({ id: "cardname", label: "Name on card", autocomplete: "off", required: true })}
               <div class="pm-checkout__row">
                 ${field({ id: "expiry", label: "Expiry (MM/YY)", autocomplete: "off", inputmode: "numeric", required: true, pattern: "(0[1-9]|1[0-2])/\\d{2}", title: "Two digits for the month, then two for the year, as MM/YY" })}
@@ -626,20 +626,20 @@ export function renderCheckoutPage({ depth = 1 } = {}) {
               </div>
             </fieldset>
             <div><button class="pm-button" type="submit">Place order</button></div>
-            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, native validation that gates the submit, and a Place order that posts natively to a plain confirmation page. Live card formatting and the error summary are what JavaScript adds; placing the order in the page is its JavaScript moment, and that cost is the comparison.</p>
+            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works: labels, hints, native validation that gates the submit, and a Place order that posts natively to a plain confirmation page. Live card formatting and the error summary are what JavaScript adds; placing the order in the page is its JavaScript moment, and that cost is the comparison.</p>
           </form>
           <section class="pm-cart" aria-label="Order summary">
             <h2 class="pm-cart__title">Order summary</h2>
-            <p class="pm-cart__empty">Your cart is empty — items appear here as you add them from the store.</p>
+            <p class="pm-cart__empty">Your cart is empty. Items appear here as you add them from the store.</p>
             <ul class="pm-cart__lines" role="list"></ul>
-            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>${namedGlyph("—", "No total yet")}</span></p>
+            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total>${namedGlyph("–", "No total yet")}</span></p>
           </section>
         </div>
       </div>
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>
@@ -670,22 +670,22 @@ const CHECKOUT_PLACED_CSS = [
  * Where a JS-off "Place order" lands (checkout-measure-prep, 2026-09-24):
  * this variant's re-typed copy of the `checkout/placed` master. The Worker
  * (src/index.js) answers the form's native POST with a 303 here, so the page
- * is a plain GET-able document one directory below the form — depth 2 at
+ * is a plain GET-able document one directory below the form, depth 2 at
  * `/vanilla/checkout/placed/`. Re-typed rather than imported, like the form
  * above: checkout is a BENCHMARKED surface, and every checkout variant will
  * land this same document (DIFF-TO-STARTER decision 1; decision 6 is for
- * singletons only). `noindex` is the master's — a confirmation reached by
+ * singletons only). `noindex` is the master's, a confirmation reached by
  * posting has no standalone meaning to index.
  *
  * One script, the same `checkout.js`: on this page it renders the masthead
- * badge from storage (CART_CONTRACT — every shell page does) and then finds
+ * badge from storage (CART_CONTRACT, every shell page does) and then finds
  * no summary and no form, so it fetches nothing and returns.
  */
 export function renderCheckoutPlacedPage({ depth = 2 } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
-  ${head("Order placed — Long Decay Records", { depth, css: CHECKOUT_PLACED_CSS, noindex: true })}
+  ${head("Order placed · Long Decay Records", { depth, css: CHECKOUT_PLACED_CSS, noindex: true })}
 </head>
 <body>
   <a class="pm-skip pm-button" href="#main">Skip to content</a>
@@ -705,15 +705,15 @@ export function renderCheckoutPlacedPage({ depth = 2 } = {}) {
         <aside class="pm-plaque">
           <p class="pm-plaque__kicker">Simulated commerce</p>
           <p class="pm-plaque__name"><strong>This was a demonstration.</strong></p>
-          <p class="pm-plaque__claim">Nothing ships, nothing was charged, and nothing was kept. The form posted the way a form does without JavaScript, and the only field it carries a name for is the shipping method — the card and address fields have none, so what you typed never left your browser.</p>
+          <p class="pm-plaque__claim">Nothing ships, nothing was charged, and nothing was kept. The form posted the way a form does without JavaScript, and the only field it carries a name for is the shipping method, the card and address fields have none, so what you typed never left your browser.</p>
         </aside>
-        <p class="pm-checkout__jsoff">With JavaScript on, this moment happens inside the checkout itself: the same form validates as you type and announces the order without leaving the page. This page is what the same form does with JavaScript off — a real request and a real answer.</p>
+        <p class="pm-checkout__jsoff">With JavaScript on, this moment happens inside the checkout itself: the same form validates as you type and announces the order without leaving the page. This page is what the same form does with JavaScript off, a real request and a real answer.</p>
         <p><a class="pm-button" href="/react-next/plp/plain/">Back to the records</a></p>
       </div>
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>
@@ -731,13 +731,13 @@ export function renderCheckoutPlacedPage({ depth = 2 } = {}) {
 /* ── The a11y section (a11y-section build, 2026-09-03) ─────────────────────
    Three pages, a SINGLETON off the benchmarked matrix (ADR-0008 §8; decision
    map `a11y-section`): /vanilla/a11y/ · /vanilla/a11y/element-demos/ ·
-   /vanilla/a11y/mode-demos/. Data-free, like the checkout — no snapshot
+   /vanilla/a11y/mode-demos/. Data-free, like the checkout, no snapshot
    flavour, byte-identical under fixture and crate.
 
-   ONE renderer, two heads — the how-it-was-built precedent (ADR-0008 addendum
+   ONE renderer, two heads, the how-it-was-built precedent (ADR-0008 addendum
    B; ADR-0004 §2 addendum: build-time spec consumption is the @pm/tokens
    class, never a component runtime). The body is `renderA11y*` from
-   @pm/reference — the very functions that render the committed masters — so
+   @pm/reference, the very functions that render the committed masters, so
    the served page and the spec cannot drift; what is this variant's is the
    <head> (its own asset base, the master's own sheet list handed back through
    the callback), the chrome slot, and the one script. The pre-merge identity
@@ -745,7 +745,7 @@ export function renderCheckoutPlacedPage({ depth = 2 } = {}) {
    after the delivery strip, so the composition can add exactly those three
    things and nothing else. Why not re-type, like every surface above: the
    re-implementation rule exists so paradigms are compared on identical
-   markup (ADR-0003 §1), and this section compares no paradigms — it is
+   markup (ADR-0003 §1), and this section compares no paradigms. It is
    served in one variant, measured by nothing. DIFF-TO-STARTER decision 6. */
 
 /** The three pages: dist path → how deep it sits below /vanilla/ (the asset

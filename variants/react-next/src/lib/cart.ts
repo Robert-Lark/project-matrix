@@ -4,7 +4,7 @@
 // vanilla's direct DOM manipulation: two client islands (the masthead badge
 // and the add-to-cart button) share cart state through this module plus a
 // same-window CustomEvent, since they sit in unrelated branches of the tree
-// (no common client ancestor to lift state into — the shell is a Server
+// (no common client ancestor to lift state into, the shell is a Server
 // Component). The canonical SERVED state stays empty by construction: every
 // island's initial useState reads nothing from localStorage (that only
 // happens in an effect, after hydration), so server-rendered HTML always
@@ -46,7 +46,7 @@ function isValidCart(value: unknown): value is Cart {
 }
 
 /** Recovery rule: a missing, unparseable, or schema-failing value is the
- *  EMPTY cart — the next successful add overwrites it. */
+ *  EMPTY cart, the next successful add overwrites it. */
 export function readCart(): Cart {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(CART_KEY) ?? "");
@@ -73,24 +73,24 @@ export function cartLabel(count: number): string | null {
 }
 
 export function announce(title: string, count: number): string {
-  return `Added "${title}" to cart — ${count} in cart.`;
+  return `Added "${title}" to cart, ${count} in cart.`;
 }
 
 /** Fired with `{ count }` whenever the stored cart changes. */
 export const CART_CHANGED_EVENT = "pm:cart-changed";
-/** Fired with `{ message }` after a successful add — the status region's cue. */
+/** Fired with `{ message }` after a successful add, the status region's cue. */
 export const CART_ANNOUNCE_EVENT = "pm:cart-announce";
 
 /** Add one unit of `id` to the cart. Returns the new count, or `null` if
- *  storage failed (quota, storage off) — the contract: state unchanged,
+ *  storage failed (quota, storage off), the contract: state unchanged,
  *  nothing announced.
  *
  *  Builds the next cart IMMUTABLY rather than mutating what `readCart()`
  *  returned. That is load-bearing, not style: on an empty or schema-failing
  *  store `readCart()` returns the module-level `EMPTY_CART`, so the previous
  *  in-place `existing.qty += 1` / `items.push(...)` mutated that shared
- *  constant. When `setItem` then threw — the exact case the contract says must
- *  change nothing — the failed add stayed in memory, and every later
+ *  constant. When `setItem` then threw, the exact case the contract says must
+ *  change nothing, the failed add stayed in memory, and every later
  *  `readCart()` on a still-empty store returned a phantom cart. Reproduced
  *  against the live plane before fixing: two failed adds followed by one
  *  successful add stored qty 4 instead of 1, where vanilla, astro and qwik all

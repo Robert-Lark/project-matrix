@@ -1,27 +1,27 @@
 /**
  * Per-visit CPU-ms accounting (ADR-0001 §7): the measured half of the cost
  * model. The receipt field must come from REAL accounting, never estimates,
- * and must name its source (issue #7) — so this module offers exactly two
+ * and must name its source (issue #7), so this module offers exactly two
  * honest shapes:
  *
- *  - {@link InspectorCpuSource} — LOCAL dev: a V8 CPU profile of the
+ *  - {@link InspectorCpuSource}, LOCAL dev: a V8 CPU profile of the
  *    serving-path Workers (front + the target's variant + edge) per visit,
  *    captured over the workerd inspector
  *    wrangler exposes (`--inspector-port`, CDP `Profiler` domain; endpoint
  *    discovered via the standard `/json` route). Verified empirically
  *    2026-07-09: profiling the edge Worker's cold PLP path attributes
  *    real time to `handlePlp`/`computeFacets`/R2 `get`. Sampling interval
- *    100µs; only `(idle)` samples are excluded — `(program)` is real
+ *    100µs; only `(idle)` samples are excluded, `(program)` is real
  *    isolate CPU and stays in. The wrangler proxy requires an `Origin`
  *    header on the websocket handshake (any value); Node's undici
  *    WebSocket passes it via its non-standard `headers` option.
  *
- *  - {@link UNAVAILABLE_CPU_SOURCE} — anywhere the plane's accounting isn't
+ *  - {@link UNAVAILABLE_CPU_SOURCE}, anywhere the plane's accounting isn't
  *    reachable (e.g. the deployed origin before/without an API token):
  *    `value: null` with the source naming what WOULD account it (Workers
  *    observability invocation logs / GraphQL analytics, which
  *    `observability.enabled` already turns on for every Worker here).
- *    A null beats a fabricated number — "never estimated" is the contract.
+ *    A null beats a fabricated number, "never estimated" is the contract.
  */
 
 export interface CpuSource {
@@ -35,7 +35,7 @@ export interface CpuSource {
 
 export const UNAVAILABLE_CPU_SOURCE: CpuSource = {
   sourceName:
-    "unavailable here — the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev.",
+    "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev.",
   beforeVisit: async () => {},
   afterVisit: async () => null,
   close: async () => {},
@@ -63,7 +63,7 @@ class CdpConnection {
         error?: { message: string };
         result?: unknown;
       };
-      if (msg.id === undefined) return; // events — not subscribed
+      if (msg.id === undefined) return; // events, not subscribed
       const entry = this.pending.get(msg.id);
       if (!entry) return;
       this.pending.delete(msg.id);
@@ -127,7 +127,7 @@ function nonIdleMicros(profile: CdpProfile): number {
  * Profiles the SERVING-PATH Workers for each visit and sums their non-idle CPU:
  * a visit's canonical-plane cost is front + the variant that served it + edge
  * together, which is exactly what the cost model prices (ADR-0001 §7). It does
- * NOT sum the whole plane — profiling non-serving isolates would let a sibling
+ * NOT sum the whole plane, profiling non-serving isolates would let a sibling
  * suite's traffic on, say, pm-qwik contaminate a pm-vanilla visit's number, and
  * would force the full plane up to bench one variant (verify-slice, anti-rigging
  * lens). Connections open lazily per worker, so only the serving path need be up.
@@ -140,7 +140,7 @@ export class InspectorCpuSource implements CpuSource {
   constructor(ports: ReadonlyArray<{ worker: string; port: number }>) {
     this.portByWorker = new Map(ports.map((p) => [p.worker, p.port]));
     this.sourceName =
-      "v8-inspector-profile over wrangler dev (workerd CDP Profiler → V8 SAMPLING profile, 100µs interval, (idle) excluded — measured, not a platform counter; per visit: front + the serving variant + edge)";
+      "v8-inspector-profile over wrangler dev (workerd CDP Profiler → V8 SAMPLING profile, 100µs interval, (idle) excluded, measured, not a platform counter; per visit: front + the serving variant + edge)";
   }
 
   // Front dispatches every request and edge serves its data/asset subrequests,
@@ -166,13 +166,13 @@ export class InspectorCpuSource implements CpuSource {
     try {
       conn = await CdpConnection.open(port);
     } catch (cause) {
-      // Hard error, NAMED — never a silent skip. CPU is a SUM over the serving
+      // Hard error, NAMED, never a silent skip. CPU is a SUM over the serving
       // path, so a missing serving-path inspector would silently under-attribute
       // (issue #16 defect 2, the failure this module exists to avoid). Only the
       // serving path must be up, so benching ONE variant needs just front + that
-      // variant + edge — not the whole plane.
+      // variant + edge, not the whole plane.
       throw new Error(
-        `CPU inspector for ${worker} unreachable on port ${port} — bring up its serving path (front + ${worker} + edge) or drop --local-cpu; a missing serving-path inspector would under-attribute CPU.`,
+        `CPU inspector for ${worker} unreachable on port ${port}, bring up its serving path (front + ${worker} + edge) or drop --local-cpu; a missing serving-path inspector would under-attribute CPU.`,
         { cause },
       );
     }
@@ -209,18 +209,18 @@ export class InspectorCpuSource implements CpuSource {
   }
 }
 
-/** The local composition's pinned inspector ports (tools/origin-suite) — the
+/** The local composition's pinned inspector ports (tools/origin-suite), the
  *  REGISTRY the serving-path attribution resolves against. A visit's CPU is
  *  front + the variant that served it + edge, so EVERY variant Worker must be
- *  registered here or its serving path can't be profiled — issue #16 defect 2:
+ *  registered here or its serving path can't be profiled, issue #16 defect 2:
  *  omitting the editorial variants attributed ZERO CPU to whichever one served
  *  the page while the placeholders it was compared against WERE sampled. Ports
  *  are the canonical plane's (tools/origin-suite/run-local.mjs). pm-blog (9234)
- *  stays OUT — ADR-0009 puts the blog outside every measurement fence. pm-remix3
+ *  stays OUT, ADR-0009 puts the blog outside every measurement fence. pm-remix3
  *  (9240) stays OUT for the same class of reason (editorial-build slice F): the
  *  fenced frontier exhibit is in no number, and upstream of this registry the
  *  runner REFUSES /remix3/* targets outright (assertBenchableTarget, batch.ts),
- *  so no measured serving path can ever include it — the absence here is
+ *  so no measured serving path can ever include it, the absence here is
  *  belt-over-mechanism, not the fence itself. Only a visit's OWN serving-path
  *  inspector is required to be up (connectionFor opens lazily); a missing one
  *  on the path is a named hard error, never a silent under-attribution. */

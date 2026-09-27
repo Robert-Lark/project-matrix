@@ -1,13 +1,13 @@
 /**
- * Strategy: client cache — TanStack Query v5 (@tanstack/react-query), the
+ * Strategy: client cache, TanStack Query v5 (@tanstack/react-query), the
  * REST-native client cache. Same page as plain; ONLY the data layer differs.
  *
  * Published config, not silent defaults (the fairness rule): staleTime is
- * 5 minutes — the production-defensible choice for a catalog whose only
+ * 5 minutes, the production-defensible choice for a catalog whose only
  * volatile field is a price aggregate. Within a measured interaction
  * sequence (seconds), a revisited query key is fresh-in-cache: zero
  * requests, zero bytes. The library DEFAULT is staleTime 0 ("consider
- * cached data as stale" — tanstack.com important-defaults): instant paint
+ * cached data as stale", tanstack.com important-defaults): instant paint
  * from cache plus a background refetch. `?stale=0` runs that default so
  * the difference is a demonstrated fact, not a tuning secret.
  */

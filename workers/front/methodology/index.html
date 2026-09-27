@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Methodology — how Project Matrix numbers are made</title>
+  <title>Methodology, how Project Matrix numbers are made</title>
   <meta name="description" content="Every fairness rule behind the published numbers, in plain language: the ruler, the profiles, the byte accounting, the noise rule, the instrument's own cost, and the honest list of what this data cannot claim.">
   <meta name="theme-color" content="%%TOKEN_PAPER%%">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%%TOKEN_VINYL_URI%%'/%3E%3Ccircle cx='50' cy='50' r='17' fill='%%TOKEN_PAPER_SUNK_URI%%'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%%TOKEN_VINYL_URI%%'/%3E%3C/svg%3E">
 
   <!-- The methodology page (ADR-0001 §9): a static singleton on the canonical
-       plane, served assets-first like home (ADR-0007 §6 precedent) — no
+       plane, served assets-first like home (ADR-0007 §6 precedent), no
        injected chrome, off the benchmarked matrix. Every specific number on
        this page is substituted at build from a committed artifact (the
        chrome-constant probe output, the published receipts, the crate
-       manifest) — hand-typing a number here is how a wrong claim ships.
+       manifest), hand-typing a number here is how a wrong claim ships.
        This page KEEPS its URL. The "How it was built" surface (ADR-0008 §8;
-       docs/prds/how-it-was-built-build.md, Decision 2) INDEXES it — one
-       generated entry per <h2 id> below, deep-linked to /methodology/#id —
+       docs/prds/how-it-was-built-build.md, Decision 2) INDEXES it, one
+       generated entry per <h2 id> below, deep-linked to /methodology/#id,
        rather than absorbing or redirecting it: the chrome links this URL from
        every measured page, and moving that link would invalidate the chrome
        constant (workers/front/build.mjs, the fragment-hash refusal). The ids
@@ -45,7 +45,7 @@
     <h1>How the numbers are made</h1>
     <p class="doc__lede">
       One store, several rendering architectures, one ruler. This page states
-      every rule the published numbers follow — and, just as load-bearing,
+      every rule the published numbers follow, and, just as load-bearing,
       what those numbers cannot claim. If a rule here and a number on the
       site ever disagree, that is a bug:
       <a href="https://github.com/Robert-Lark/project-matrix/issues" rel="noopener">send me the URL</a>.
@@ -54,9 +54,9 @@
     <h2 id="lab-and-field">Lab and field never mix</h2>
     <p>
       Two kinds of numbers exist here. <strong>Lab</strong> numbers come from
-      scripted, throttled, repeated runs — they are the only numbers ever
+      scripted, throttled, repeated runs. They are the only numbers ever
       compared across architectures, because they are reproducible.
-      <strong>Field</strong> numbers are the live readout of your own visit —
+      <strong>Field</strong> numbers are the live readout of your own visit,
       the reality check, shown per page, never used to rank architectures
       (nobody controls who visits what). A bench run's beacons are captured
       by the harness and never reach the field collector, so lab traffic
@@ -68,14 +68,14 @@
       The same pinned <a href="/_pm/measure.js">web-vitals build</a> measures
       every page, lab and field, so TTFB, FCP, LCP, CLS and INP mean exactly
       the same thing everywhere. Bytes are read from the browser's own
-      network accounting — compressed bytes actually transferred, including
+      network accounting, compressed bytes actually transferred, including
       response headers, never decoded sizes.
     </p>
 
     <h2 id="profiles">Three published profiles</h2>
     <p>
       Every lab run applies one of three pinned test profiles at the
-      automation layer: <em>fast WiFi + laptop</em> (project-defined — no
+      automation layer: <em>fast WiFi + laptop</em> (project-defined, no
       widely-published WiFi preset exists), <em>average broadband + desktop</em>
       and <em>slow 4G + mid-range phone</em> (both pinned to Lighthouse's
       published defaults, the second with a 4× CPU slowdown). The exact
@@ -87,7 +87,7 @@
 
     <h2 id="batches">One batch per surface, %%LAB_RUNS%% runs per cell, two cache columns</h2>
     <p>
-      Within a surface, all architectures are measured in one batch — runs
+      Within a surface, all architectures are measured in one batch, runs
       interleaved round-robin, so a noisy moment lands on every variant, not on
       whichever URL happened to be measuring. Surfaces are separate
       publications: each is one batch, minted on its own day, and every cell
@@ -96,7 +96,7 @@
       that median's min–max band across those runs so you can see when a gap
       sits inside the noise. One honest detail: a metric a run could not
       produce is recorded as absent rather than as a zero, so a cell's median
-      is over the runs that produced a value — the receipt lists every run
+      is over the runs that produced a value, the receipt lists every run
       either way, so the count behind any cell is checkable. Cold and warm are
       separate columns, and the cold one is narrower than its name. The cold
       knob bypasses the edge cache only for a fetch that carries it. On the
@@ -105,12 +105,12 @@
       tier under both columns; variants that bake the data in at build time
       make no runtime fetch at all. There, that is every target: the cold
       column never reaches the R2 tier on those pages, so it is scoped to
-      browser-visible fetches. The browser cache is held constant instead — every
+      browser-visible fetches. The browser cache is held constant instead, every
       run is a fresh browser context, a first-time visitor whose cache then
       behaves normally for the rest of the visit.
       <strong>The reading table
-      publishes the WARM column</strong> — steady state, per ADR-0001's
-      "warm as headline, cold as a labeled callout" — no matter what cache
+      publishes the WARM column</strong>, steady state, per ADR-0001's
+      "warm as headline, cold as a labeled callout", no matter what cache
       knob the page you are reading it on carries; the linked receipt holds
       the cold column beside it. Numbers publish as dated snapshots pinned to
       a commit, never live-updated.
@@ -120,15 +120,15 @@
       runner's settled signal moved from a <code>networkidle</code> latch,
       which resolved at once when no navigation was in flight, to tracking
       in-flight requests and settling only after a 500 ms window with none
-      fresh — receipts record it as
+      fresh, receipts record it as
       <code>harness.quiescence: "in-flight-tracked"</code>, and receipts
       minted before that date lack the field.
     </p>
 
     <h2 id="bytes">What the bytes mean</h2>
     <p>
-      Transferred bytes are bucketed — HTML, JavaScript, CSS, fonts, images,
-      data — with <strong>initial JavaScript as the headline</strong>: that is
+      Transferred bytes are bucketed, HTML, JavaScript, CSS, fonts, images,
+      data, with <strong>initial JavaScript as the headline</strong>: that is
       where the render-axis story lives. Three rules keep the buckets honest:
     </p>
     <ul>
@@ -138,8 +138,8 @@
         document arrives as one compressed stream, so any split of it is an
         attribution, and the rule is stated: the measured transfer size
         stays the total, and each part's share is its leave-one-out
-        marginal — what the compressed document loses when exactly that
-        part is removed — computed with the wire's own codec at the
+        marginal. What the compressed document loses when exactly that
+        part is removed, computed with the wire's own codec at the
         setting that reproduces the observed wire bytes (brotli for a
         brotli wire, zstandard for the zstandard wire modern browsers
         negotiate), re-derived per document and recorded in every receipt
@@ -150,14 +150,14 @@
         each part's share of the <em>uncompressed</em> document, which
         over-attributed this page's own instrumentation (it compresses far
         better than the document average) and under-attributed every other
-        bucket — measured at 40–48% on the smallest published JavaScript
+        bucket, measured at 40–48% on the smallest published JavaScript
         cells, a bias that grew with the instrumentation and flattered the
         smallest numbers on this site. The batch re-ran on the fixed ruler
-        on 2026-08-17 — every published cell now derives from wire-priced
+        on 2026-08-17, every published cell now derives from wire-priced
         attribution, and each receipt records the estimator, codec,
         setting, and residual that produced it. The rule's own
         stated limit: disjoint parts' marginals do not sum to the whole
-        (redundancy shared between parts belongs to no single one — 0.94–0.95×
+        (redundancy shared between parts belongs to no single one, 0.94–0.95×
         of the whole on the live shapes), so every part is scaled up ~5% pro
         rata; validated against a chrome-only change (the JavaScript cell
         now moves ≤0.3%, where the old rule moved it 14%) and against a real
@@ -170,13 +170,13 @@
         counts as JavaScript; Qwik ships equivalent state as <em>inert</em>
         JSON, so it counts as data. The initial-JS row therefore includes
         serialized hydration state for executable-payload frameworks and
-        excludes it for inert-payload ones — a real asymmetry of the
+        excludes it for inert-payload ones, a real asymmetry of the
         paradigms' own delivery choices, stated here rather than silently
         reclassified. No initial-JS comparison between two hydrating
         frameworks is published as a verdict without this caveat riding it.</li>
       <li><strong>The instrument strips itself out.</strong> The switcher/HUD
-        chrome this site injects — its markup, stylesheet, font, and the
-        ruler itself — is excluded from every bucket by known path, and the
+        chrome this site injects. Its markup, stylesheet, font, and the
+        ruler itself, is excluded from every bucket by known path, and the
         excluded bytes are <em>reported</em> in each receipt, so the
         exclusion is checkable, not vacuous.</li>
     </ul>
@@ -185,7 +185,7 @@
     <p>
       Every cell publishes its median with the min–max band across that
       batch's runs, and every receipt carries the raw runs behind both.
-      Comparative language — "faster", "lighter", any verdict — is permitted
+      Comparative language, "faster", "lighter", any verdict, is permitted
       only where the compared bands do not overlap. Where they overlap, the site says exactly this:
       <em>indistinguishable at this sample size</em>. The publication
       pipeline enforces the rule mechanically: a fit sentence whose receipts
@@ -196,13 +196,13 @@
     <p>
       Byte-stripping removes the injected instrument from the counted bytes;
       it cannot remove the instrument's parse, style and font work from the
-      timing metrics. So that cost is measured — the same page, with and
+      timing metrics. So that cost is measured, the same page, with and
       without the chrome, both served compressed exactly as the plane serves
       them. %%CC_STATEMENT%%
       Every architecture carries the identical instrument, so no column gets
       a different strip. The constant itself, though, is one measurement of
       one page under one profile: it is the order of magnitude of what the
-      instrument costs, not a per-variant or per-profile equality — a page
+      instrument costs, not a per-variant or per-profile equality, a page
       that parses more before first paint absorbs it differently, which is
       the same reason throttled cells here carry no verdicts.
     </p>
@@ -210,12 +210,12 @@
     <h2 id="environment">Where these runs execute</h2>
     <p>
       %%LAB_BATCH_STATEMENT%% The target environment this project
-      records — a pinned, documented cloud runner, two geographic locations,
-      and a WebPageTest cross-check — activates in a later unit.
+      records, a pinned, documented cloud runner, two geographic locations,
+      and a WebPageTest cross-check, activates in a later unit.
     </p>
     <p>
       Two consequences, binding until then. First: throttled-profile timing
-      cells publish <em>numbers</em>, never <em>verdicts</em> — the throttle
+      cells publish <em>numbers</em>, never <em>verdicts</em>, the throttle
       is request-level emulation (see the limits below) and the cross-check
       that would confirm a throttled verdict directionally does not exist
       yet, so the published fit line rides bytes, which no throttle touches.
@@ -229,8 +229,8 @@
     <ul>
       <li>Throttling is CDP request-level emulation above the transport
         stack: no TCP slow-start, no connection setup, no request
-        parallelism. That limit is not paradigm-neutral — it interacts with
-        round-trip count — which is exactly why throttled cells carry no
+        parallelism. That limit is not paradigm-neutral. It interacts with
+        round-trip count, which is exactly why throttled cells carry no
         verdicts yet.</li>
       <li>TTFB's travel/server split is attributed beneath the emulation
         (Chromium rebases navigation timing under throttle): compare the
@@ -242,7 +242,7 @@
         extrapolations don't.</li>
       <li>Every lab number is a Chromium number.</li>
       <li>The batch measured the site as it was serving at the time, which
-        was before these very readings were published to it — and the
+        was before these very readings were published to it, and the
         instrument grew slightly when they were (each cell gained a receipt
         link and a band). So the timing rows understate what you meet today
         by something no larger than the instrument constant above; the byte
@@ -252,7 +252,7 @@
       <li>INP is always <em>INP (scripted)</em>: real event-timing entries
         under a named, scripted interaction, clicked with no warm-up click
         before it. Each reading table names the interaction its INP row was
-        driven by, in the row itself — editorial's is the page's one designed
+        driven by, in the row itself, editorial's is the page's one designed
         interaction, Add&nbsp;to&nbsp;cart; the product page's is switching the
         gallery image.</li>
       <li><strong>The INP row is not like-for-like across paradigms when a
@@ -260,22 +260,22 @@
         event-timing entry at the first paint after the handler's
         <em>synchronous</em> processing returns. A resumed handler returns
         immediately having only scheduled the render, so that paint can carry
-        nothing and the entry closes before the visitor sees anything — which
+        nothing and the entry closes before the visitor sees anything, which
         makes the cell read low exactly where the work finishes last.
         <strong>So the product page does not publish an INP row at all.</strong>
         On that surface one column swings between 0 and 24&nbsp;ms across
         profiles and interactions while the other three hold still, and
         switching to the other interaction does not escape it. Every figure
-        behind that decision is in the receipts those cells would have linked —
+        behind that decision is in the receipts those cells would have linked,
         they carry the per-run INP the table withholds, which is the point:
         the raw measurement publishes, the derived cell does not. Publishing
         0&nbsp;ms beside three 24s under a caveat was the alternative, and it
         was rejected: that is a number no wording rescues. The editorial
         surface keeps its INP row, because there the metric IS like-for-like.
         %%LAB_INP_SPREAD%% Where a row is withheld the table says so in the row
-        itself. The paint-timing measurements behind the mechanism — when each
+        itself. The paint-timing measurements behind the mechanism, when each
         paradigm's handler returns, when its DOM changes, and when the result
-        is actually on screen — are an unpublished probe, so they are recorded
+        is actually on screen, are an unpublished probe, so they are recorded
         in <a href="https://github.com/Robert-Lark/project-matrix/blob/main/docs/adr/0001-benchmark-measurement-methodology.md" rel="noopener">the methodology ADR</a>
         and deliberately not stated here as site numbers: this page carries no
         figure without its artifact, and that probe has none yet.</li>
@@ -285,13 +285,13 @@
         stated consequence in both directions: a framework whose preloader
         runs at idle (Qwik) has those bytes counted in its initial-JS row,
         and the fetch half of any deferred handler binding is finished before
-        the click, so the INP row reflects what remains at click time —
+        the click, so the INP row reflects what remains at click time,
         resolving and running the handler, not downloading it.</li>
       <li>Cost cells: none are published. The cost model prices CPU-ms from
         the deployed plane's own telemetry, which is not armed yet; a local
         CPU profile of a remote origin is refused by the harness outright.</li>
       <li>The live field readout displays no percentile below fifty samples
-        per segment — a portfolio's traffic is honest about being small.</li>
+        per segment, a portfolio's traffic is honest about being small.</li>
       <li>Privacy: the field beacon carries variant, surface, environment,
         cache state and serving location. No identifiers, no cookies, no
         PII.</li>
@@ -301,15 +301,15 @@
     <p>
       Every published number links a receipt: profile, date, commit, run
       location, the exact URLs driven, and every raw run. The harness is
-      public. One command re-runs any receipt's batch — same paths, profile,
-      run count and interaction — and mints a new dated receipt:
+      public. One command re-runs any receipt's batch, same paths, profile,
+      run count and interaction, and mints a new dated receipt:
     </p>
     <pre><code>git clone https://github.com/Robert-Lark/project-matrix
 pnpm install
 pnpm bench reproduce &lt;receipt.json&gt; --origin https://pm-front.robresearch87.workers.dev</code></pre>
     <p>
       One honest caveat about that command. Each batch tags its URLs with a
-      run-isolation nonce, and a reproduce mints a fresh one — so it drives
+      run-isolation nonce, and a reproduce mints a fresh one, so it drives
       the same pages under fresh cache state, not the identical URL strings.
       That matters on a live plane, because a brand-new URL's first hit is a
       cache miss served uncompressed, which inflates the first of the seven
@@ -322,8 +322,8 @@ pnpm bench reproduce &lt;receipt.json&gt; --origin https://pm-front.robresearch8
       number <em>by mechanism</em>: the runner refuses any
       <code>/remix3/</code> URL before it launches a browser, so a receipt
       naming it cannot exist. The Apollo misapplication exhibit is fenced by
-      declaration for now — labeled on its surface, never given a column or
-      counted in any cell — and the runner-side refusal that makes Remix 3's
+      declaration for now, labeled on its surface, never given a column or
+      counted in any cell, and the runner-side refusal that makes Remix 3's
       fence a mechanism extends to it when the catalogue surface it lives on
       is built.
     </p>

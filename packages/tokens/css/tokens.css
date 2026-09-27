@@ -1,26 +1,26 @@
 /*
- * Project Matrix — design system · TOKENS (two-tier)
+ * Project Matrix, design system · TOKENS (two-tier)
  * ----------------------------------------------------------------------------
  * The single CSS custom-property token system every variant consumes,
  * byte-identical. Lifted from docs/prototypes/design-system/ (ADR-0003).
  *
- *   AESTHETIC: "Catalogue" — poured 2026-07-12 by the `aesthetic-direction`
+ *   AESTHETIC: "Catalogue", poured 2026-07-12 by the `aesthetic-direction`
  *   ticket (ADR-0006). The label's own catalogue: warm paper ground,
- *   slate-water accent, one grotesk, generous air — mat-board for the crate's
+ *   slate-water accent, one grotesk, generous air, mat-board for the crate's
  *   sleeves, which supply the color. Chosen from three candidate boards built
  *   on the real components (docs/prototypes/aesthetic-direction/directions/;
  *   AA-audited by audit-contrast.mjs there). Only this PRIMITIVE tier changed
- *   — components reference SEMANTIC tokens only, so no component was touched.
+ *  , components reference SEMANTIC tokens only, so no component was touched.
  *
  * Tiers (ADR-0003):
- *   1. PRIMITIVE — raw scale (palette, type, space…). Never used by a component.
- *   2. SEMANTIC  — the aliases components consume (--color-text, --space-inset…).
+ *   1. PRIMITIVE, raw scale (palette, type, space…). Never used by a component.
+ *   2. SEMANTIC , the aliases components consume (--color-text, --space-inset…).
  *                  The ONE seam for theming + forced-colors.
  */
 
 :root {
   /* ── 1. PRIMITIVE ───────────────────────────────────────────────────────── */
-  /* Neutral palette — warm paper (all pairs AA-audited at definition time) */
+  /* Neutral palette, warm paper (all pairs AA-audited at definition time) */
   --pm-neutral-0:   #fdfcfa;
   --pm-neutral-50:  #f6f4ef;
   --pm-neutral-100: #edeae2;
@@ -32,20 +32,20 @@
   --pm-neutral-950: #131009;
   --pm-accent-500:  #3d5d70;  /* slate-water */
   --pm-accent-700:  #2b4454;
-  --pm-danger-600:  #a03a2d;  /* status colour — NEVER used alone; paired w/ text+icon */
+  --pm-danger-600:  #a03a2d;  /* status colour, NEVER used alone; paired w/ text+icon */
 
-  /* Type scale — rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
+  /* Type scale, rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
   /* Fonts are a controlled constant (ADR-0003 §8): one self-hosted, subset,
      variable sans served identically everywhere (css/fonts.css + fonts/).
-     The face is Familjen Grotesk (wght 400–700 — the 550 medium is real;
+     The face is Familjen Grotesk (wght 400–700, the 550 medium is real;
      ships tnum), chosen by `aesthetic-direction` (ADR-0006; provenance in
      fonts/README.md). Metrics (prices, HUD) use the same face with tabular
-     figures — see --pm-numeric-tabular below. The scale is deliberately airy;
+     figures, see --pm-numeric-tabular below. The scale is deliberately airy;
      size-3 (card titles) sits below 1.25rem so titles never fight the cover
      art (boards critique, 2026-07-12). */
   /* "PM Warn Glyph" is a 1-glyph (U+26A0 ⚠) fallback for the field error icon,
      which Familjen lacks; "PM Crate Symbols" covers the nine crate text
-     symbols Familjen lacks (⅓ ℗ ˙ π ρ φ Я ∂ √ — crate-glyph-coverage,
+     symbols Familjen lacks (⅓ ℗ ˙ π ρ φ Я ∂ √, crate-glyph-coverage,
      DRAFT §4.1). Both are unicode-range-scoped Inter subsets, consulted only
      for their own codepoints, so they never affect letterforms; the crate's
      Arabic/CJK stay on a documented per-OS system fallback (see
@@ -63,7 +63,7 @@
   --pm-weight-medium: 550;
   --pm-weight-bold: 700;
 
-  /* Space scale — airy top steps (gallery hanging room) */
+  /* Space scale, airy top steps (gallery hanging room) */
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
   --pm-space-3: 0.875rem;
@@ -101,7 +101,7 @@
   --text-small:    var(--pm-size-1);
   --text-body:     var(--pm-size-2);
   --text-title:    var(--pm-size-3);
-  --text-headline: var(--pm-size-4);   /* surface H1s — below display */
+  --text-headline: var(--pm-size-4);   /* surface H1s, below display */
   --text-display:  var(--pm-size-5);
   --weight-normal: var(--pm-weight-normal);
   --weight-medium: var(--pm-weight-medium);
@@ -126,7 +126,7 @@
   --focus-offset: var(--pm-focus-offset);
   --target-min:   var(--pm-target-min);
 
-  /* Motion — gated below by prefers-reduced-motion */
+  /* Motion, gated below by prefers-reduced-motion */
   --motion-fast: var(--pm-dur-fast);
   --motion-base: var(--pm-dur-base);
   --motion-ease: var(--pm-ease);
@@ -144,7 +144,7 @@
 
 /* ── Forced colors (Windows High Contrast) ──────────────────────────────────
    Remap the SEMANTIC tier to CSS system colors in ONE place. Every component
-   adapts for free — the whole reason for the two-tier seam. Meaning that rode
+   adapts for free, the whole reason for the two-tier seam. Meaning that rode
    on hue (e.g. --color-danger) collapses to CanvasText here, because the real
    signal is carried by text + icon in the component, never by colour alone.
    Keywords verified 2026-07-07 against CSS Color Module Level 4 §6.2

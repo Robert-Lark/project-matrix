@@ -1,6 +1,6 @@
-// Composed-origin suite against local cross-process dev — the one command CI
+// Composed-origin suite against local cross-process dev, the one command CI
 // (and anyone) runs. Starts one `wrangler dev` per Worker (spike hardening 3:
-// the single-process multi-config mode is forbidden — it demonstrably breaks
+// the single-process multi-config mode is forbidden. It demonstrably breaks
 // assets-through-bindings), waits for the composed origin to answer, runs the
 // suite, and tears everything down.
 //
@@ -32,7 +32,7 @@ mkdirSync(logDir, { recursive: true });
 const children = [];
 
 // Pre-flight: a stale wrangler/workerd tree holding any composition port
-// would silently serve this suite while the fresh worker dies on its bind —
+// would silently serve this suite while the fresh worker dies on its bind,
 // a demonstrated wrong-data failure mode. Fail loudly instead.
 async function assertPortsFree() {
   const { createServer } = await import("node:net");
@@ -42,7 +42,7 @@ async function assertPortsFree() {
       probe.once("error", () =>
         reject(
           new Error(
-            `port ${port} is already bound — a stale wrangler/workerd tree is running; list it with pgrep -fl 'wrangler|workerd|run-local' and kill by PID (kill -TERM, then -KILL); note pkill -f "wrangler dev" matches NOTHING — the process is spelled "wrangler.js dev"`,
+            `port ${port} is already bound, a stale wrangler/workerd tree is running; list it with pgrep -fl 'wrangler|workerd|run-local' and kill by PID (kill -TERM, then -KILL); note pkill -f "wrangler dev" matches NOTHING, the process is spelled "wrangler.js dev"`,
           ),
         ),
       );
@@ -52,7 +52,7 @@ async function assertPortsFree() {
 }
 
 function startWorker(workspaceDir, name) {
-  // Children write straight to file descriptors — piping through this parent
+  // Children write straight to file descriptors, piping through this parent
   // would stall while spawnSync (the suite) blocks the event loop, losing
   // exactly the logs from the failure window.
   const fd = openSync(join(logDir, `${name}.log`), "w");
@@ -108,18 +108,18 @@ async function waitFor(url, timeoutMs) {
       /* not up yet */
     }
     if (Date.now() > deadline) {
-      throw new Error(`${url} not answering after ${timeoutMs}ms — check tools/origin-suite/.dev-logs/`);
+      throw new Error(`${url} not answering after ${timeoutMs}ms, check tools/origin-suite/.dev-logs/`);
     }
     await new Promise((r) => setTimeout(r, 1000));
   }
 }
 
 // The snapshot the plane will SERVE is chosen by PM_SEED_DIR (below); the
-// snapshot build-time variants BAKE is chosen by PM_SNAPSHOT (@pm/vanilla —
+// snapshot build-time variants BAKE is chosen by PM_SNAPSHOT (@pm/vanilla,
 // the selector minted by the editorial build's slice A). Deriving the second
 // from the first here is what keeps "the one command holds either way" true:
 // a crate-seeded plane gets crate-baked variant pages, and the two can never
-// silently disagree. Unknown seed dirs fail loudly — a build-time variant
+// silently disagree. Unknown seed dirs fail loudly, a build-time variant
 // cannot bake a snapshot the selector doesn't name (and the suite's snapshot
 // resolution would fail closed on it anyway).
 const SNAPSHOT_DIRS = {
@@ -134,14 +134,14 @@ const snapshotName = Object.entries(SNAPSHOT_DIRS).find(
 )?.[0];
 if (!snapshotName) {
   console.error(
-    `PM_SEED_DIR=${process.env.PM_SEED_DIR} names no known snapshot (fixture|crate) — build-time variants cannot bake it`,
+    `PM_SEED_DIR=${process.env.PM_SEED_DIR} names no known snapshot (fixture|crate), build-time variants cannot bake it`,
   );
   process.exit(1);
 }
 console.log(`snapshot-parameterized builds run with PM_SNAPSHOT=${snapshotName}`);
 
 // Build every workspace's dist (variants, the measurement bundle, the
-// front Worker's /_pm assets) — cached by turbo when unchanged.
+// front Worker's /_pm assets), cached by turbo when unchanged.
 const build = spawnSync("pnpm", ["exec", "turbo", "run", "build"], {
   cwd: repoRoot,
   stdio: "inherit",
@@ -161,7 +161,7 @@ if (stamp.status !== 0) process.exit(stamp.status ?? 1);
 
 // Fresh edge-Worker state per run: the bypass→miss→hit assertions need a KV
 // that this run's requests haven't already warmed. Then seed local R2 with a
-// frozen snapshot — the synthesized fixture by default (the CI seed, always;
+// frozen snapshot, the synthesized fixture by default (the CI seed, always;
 // issue #9). PM_SEED_DIR selects another committed snapshot-layout directory
 // for a local verification run (e.g. the real crate,
 // PM_SEED_DIR=tools/snapshot-capture/crate); the suite itself asks the plane
@@ -174,7 +174,7 @@ rmSync(join(repoRoot, "workers/edge/.wrangler/state"), {
 const seedDir = process.env.PM_SEED_DIR
   ? resolve(repoRoot, process.env.PM_SEED_DIR)
   : null;
-if (seedDir) console.log(`PM_SEED_DIR set — seeding ${seedDir}`);
+if (seedDir) console.log(`PM_SEED_DIR set, seeding ${seedDir}`);
 const seed = spawnSync(
   "node",
   ["seed-local.mjs", ...(seedDir ? ["--dir", seedDir] : [])],
@@ -226,25 +226,25 @@ try {
   await waitFor(`${ORIGIN}/blog/`, 60_000);
 
   // A worker that lost a port race exits while something stale answers in
-  // its place — readiness alone cannot tell the difference. Every spawned
+  // its place, readiness alone cannot tell the difference. Every spawned
   // child must still be alive.
   const dead = children.filter((c) => c.exitCode !== null);
   if (dead.length > 0) {
     throw new Error(
-      `${dead.length} worker process(es) exited during startup — see tools/origin-suite/.dev-logs/`,
+      `${dead.length} worker process(es) exited during startup, see tools/origin-suite/.dev-logs/`,
     );
   }
   console.log("composed origin ready");
 
   // PM_HOLD=1: bring the plane up and HOLD it instead of running the suite.
   // The ADR-0001 addendum-F chrome-constant probe has to measure the chrome
-  // that actually SHIPS — which only exists on a plane serving the current
-  // publication — and this is the only thing that builds every variant with
+  // that actually SHIPS, which only exists on a plane serving the current
+  // publication, and this is the only thing that builds every variant with
   // the matching snapshot selector (a hand-started plane serves whatever
   // PM_SNAPSHOT its dists were last built with, the recorded slice-D trap).
   // The existing SIGINT/SIGTERM traps tear it down.
   if (process.env.PM_HOLD === "1") {
-    console.log("PM_HOLD=1 — plane held; SIGINT/SIGTERM to stop");
+    console.log("PM_HOLD=1, plane held; SIGINT/SIGTERM to stop");
     await new Promise(() => {});
   }
 
@@ -252,7 +252,7 @@ try {
   const suite = spawnSync("pnpm", ["exec", "vitest", "run"], {
     cwd: suiteDir,
     stdio: "inherit",
-    // PM_BLOG_CREDENTIAL unlocks the blog write-path tests — local only;
+    // PM_BLOG_CREDENTIAL unlocks the blog write-path tests, local only;
     // the post-deploy smoke omits it so the suite never writes to prod.
     env: {
       ...process.env,

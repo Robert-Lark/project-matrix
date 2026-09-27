@@ -1,12 +1,12 @@
 /**
- * PDP — interactivity earns its JS. The advertised interactions are gallery
+ * PDP, interactivity earns its JS. The advertised interactions are gallery
  * switch, ZOOM, quantity and add-to-cart, and every one of them is genuine:
- * ADR-0008 addendum A (2026-08-15) makes that a rule — this surface does not
+ * ADR-0008 addendum A (2026-08-15) makes that a rule. This surface does not
  * ship a control that cannot do what its markup says it does.
  *
  * The FORMAT RADIO GROUP that ADR-0002's propagated guardrail named is CUT,
- * not wired. `formats` is the composition of ONE physical release — what is
- * in the package — and the tray carries one `priceFrom` and one `numForSale`
+ * not wired. `formats` is the composition of ONE physical release. What is
+ * in the package, and the tray carries one `priceFrom` and one `numForSale`
  * for the whole release, so the group could only have been wired by inventing
  * per-format prices, on a site whose rule is that nothing publishes a number
  * without a receipt (evidence: `lib.mjs` formatComposition). The data it held
@@ -15,7 +15,7 @@
  *
  * Degenerate states are contract (panel finding): unpriced/zero-stock renders
  * a named em-dash + "none for sale" + a disabled CTA; a null year renders the
- * same named em-dash. Bare glyphs are barred — `lib.mjs` namedGlyph says why.
+ * same named em-dash. Bare glyphs are barred, `lib.mjs` namedGlyph says why.
  * The live-origin demonstration ships as a FENCED plaque with ADR-0002 §3's
  * mandatory copy.
  */
@@ -105,7 +105,7 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
           <div class="pm-pdp__buy">
             <h1 class="pm-pdp__title">${esc(d.title)}</h1>
             <p class="pm-pdp__artist">${esc(d.artist)}</p>
-            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("—", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
+            <p class="pm-pdp__price"><span class="pm-pdp__amount">${price ?? namedGlyph("–", "No price listed")}</span> <span class="pm-pdp__stock">${esc(stockLine(d.numForSale))}</span></p>
             <div class="pm-qty">
               <label class="pm-qty__label" for="qty">Quantity</label>
               <div class="pm-qty__group">
@@ -118,7 +118,7 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
             <dl class="pm-pdp__meta">
               <dt>Label</dt><dd>${esc(d.labels.map((l) => `${l.name}${l.catno ? ` · ${l.catno}` : ""}`).join("; "))}</dd>
               <dt>Format</dt><dd>${esc(formatComposition(d.formats))}</dd>
-              <dt>Year</dt><dd>${d.year ?? namedGlyph("—", "No year listed")}</dd>
+              <dt>Year</dt><dd>${d.year ?? namedGlyph("–", "No year listed")}</dd>
               <dt>Genre</dt><dd>${esc([...d.genres, ...d.styles].join(", "))}</dd>
             </dl>
           </div>
@@ -127,7 +127,7 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
         <aside class="pm-plaque pm-plaque--fenced" data-pm-fenced="true">
           <p class="pm-plaque__kicker">Fenced demonstration</p>
           <p class="pm-plaque__name"><strong>The live-origin demonstration</strong></p>
-          <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
+          <p class="pm-plaque__claim">The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead: the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number.</p>
           <p class="pm-plaque__claim"><button class="pm-button pm-button--secondary" type="button">Fetch today's price live</button> <output data-pm-live-origin></output></p>
           <p class="pm-plaque__rule">measured with the same harness · excluded from every benchmark number</p>
         </aside>
@@ -135,7 +135,7 @@ export function renderPdp(snapshot, { origin = "", id, extraDepth = 0 } = {}) {
       </article>`;
 
   return page({
-    title: `${d.title} — ${d.artist} — Long Decay Records`,
+    title: `${d.title} · ${d.artist} · Long Decay Records`,
     depth: 2 + extraDepth,
     css: [
       "components/gallery.css",

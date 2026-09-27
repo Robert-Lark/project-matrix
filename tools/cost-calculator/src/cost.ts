@@ -5,8 +5,8 @@
  * real-world views, plus free-tier fit / paid-plan charge at a stated
  * monthly volume.
  *
- * The cache-hit ratio blends the receipt's two MEASURED columns —
- * expected = h × warm + (1−h) × cold — which is why receipts carry both;
+ * The cache-hit ratio blends the receipt's two MEASURED columns,
+ * expected = h × warm + (1−h) × cold, which is why receipts carry both;
  * nothing here is modeled, only weighted.
  *
  * Cost = amountUsd × usage / (per × unitFactor), multiplication before
@@ -34,7 +34,7 @@ import {
 } from "./report";
 
 type TargetT = ReceiptT["targets"][number];
-/** The receipt's per-column measured resource profile — the §7 input. */
+/** The receipt's per-column measured resource profile, the §7 input. */
 export type ResourceProfileT = TargetT["columns"]["cold"]["resourceProfile"];
 
 /** Mean Gregorian month, for daily-allowance arithmetic (stated in output). */
@@ -70,7 +70,7 @@ export interface CostInput {
   realWorldHosts: Record<string, string>;
   /** Stated real monthly volume for the actual-charge view. */
   monthlyVisits?: number;
-  /** Report timestamp — supplied, not read from a clock (purity). */
+  /** Report timestamp, supplied, not read from a clock (purity). */
   date: string;
 }
 
@@ -108,12 +108,12 @@ export function blendColumns(
   cacheHitRatio: number,
 ): BlendedQuantityT {
   const h = cacheHitRatio;
-  // Measured quantities are physically nonnegative — a negative value is a
+  // Measured quantities are physically nonnegative, a negative value is a
   // doctored or corrupt receipt and must be refused loudly, not priced.
   for (const [label, col] of [["cold", cold], ["warm", warm]] as const) {
     if (col.value !== null && (col.value < 0 || !Number.isFinite(col.value))) {
       throw new Error(
-        `${basis} ${label} column carries a physically impossible value (${col.value}, source: ${col.source}) — refusing to price a doctored or corrupt profile`,
+        `${basis} ${label} column carries a physically impossible value (${col.value}, source: ${col.source}), refusing to price a doctored or corrupt profile`,
       );
     }
   }
@@ -178,7 +178,7 @@ export function priceLine(rate: RateT, blended: BlendedQuantityT): CostLineT {
     ...(rate.note === undefined ? {} : { note: rate.note }),
   };
   if (blended.value === null) {
-    // A $0 rate is $0 for ANY usage — no estimation involved, so an
+    // A $0 rate is $0 for ANY usage, no estimation involved, so an
     // unaccounted quantity still prices exactly. Anything else stays
     // honestly unpriced.
     if (rate.amountUsd === 0) {
@@ -189,7 +189,7 @@ export function priceLine(rate: RateT, blended: BlendedQuantityT): CostLineT {
         usagePer1MVisits: null,
         baseUnit,
         costUsdPer1MVisits: 0,
-        arithmetic: `${unitArithmetic}; measured ${rate.basis} unavailable (${blended.arithmetic}), but a $0 rate prices ANY usage at exactly $0 — no estimation involved`,
+        arithmetic: `${unitArithmetic}; measured ${rate.basis} unavailable (${blended.arithmetic}), but a $0 rate prices ANY usage at exactly $0, no estimation involved`,
       };
     }
     return {
@@ -199,7 +199,7 @@ export function priceLine(rate: RateT, blended: BlendedQuantityT): CostLineT {
       usagePer1MVisits: null,
       baseUnit,
       costUsdPer1MVisits: null,
-      arithmetic: `${unitArithmetic}; usage unpriceable — ${blended.arithmetic}`,
+      arithmetic: `${unitArithmetic}; usage unpriceable, ${blended.arithmetic}`,
       unpricedReason: `measured ${rate.basis} unavailable: ${blended.arithmetic}`,
     };
   }
@@ -295,7 +295,7 @@ function actualForHost(
       if (b.value === null) {
         return {
           value: null,
-          arithmetic: `unavailable: ${t.path} — ${b.arithmetic}`,
+          arithmetic: `unavailable: ${t.path}, ${b.arithmetic}`,
         };
       }
       total += b.value * perTargetVisits;
@@ -315,10 +315,10 @@ function actualForHost(
           chargeUsd: anyExceeded || anyUnknown ? null : 0,
           overflow: host.freePlan!.overflow,
           arithmetic: anyExceeded
-            ? `an allowance is exceeded — the free plan does not bill overage: ${host.freePlan!.overflow}`
+            ? `an allowance is exceeded, the free plan does not bill overage: ${host.freePlan!.overflow}`
             : anyUnknown
-              ? "a checkable allowance could not be evaluated (usage unavailable) — fit unknown"
-              : "every checkable allowance fits — charge is $0 (uncheckable caps listed above, stated not verified)",
+              ? "a checkable allowance could not be evaluated (usage unavailable), fit unknown"
+              : "every checkable allowance fits, charge is $0 (uncheckable caps listed above, stated not verified)",
         };
       })()
     : null;
@@ -346,7 +346,7 @@ function actualForHost(
         baseUnit,
         includedPerMonth: rate.includedPerMonth === undefined ? null : includedBase,
         overageUsd: null,
-        arithmetic: `monthly ${rate.basis} usage unavailable — ${u.arithmetic}`,
+        arithmetic: `monthly ${rate.basis} usage unavailable, ${u.arithmetic}`,
         unpricedReason: u.arithmetic,
       };
     }
@@ -398,7 +398,7 @@ function checkAllowance(
       meter: a.meter,
       checkable: false,
       fits: null,
-      arithmetic: `stated cap, not checkable against the measured per-visit profile: ${a.allowance} ${a.unit} per ${a.period} — "${a.quote}"${a.note ? ` (${a.note})` : ""}`,
+      arithmetic: `stated cap, not checkable against the measured per-visit profile: ${a.allowance} ${a.unit} per ${a.period}, "${a.quote}"${a.note ? ` (${a.note})` : ""}`,
     };
   }
   if (a.allowance === "unlimited") {
@@ -406,7 +406,7 @@ function checkAllowance(
       meter: a.meter,
       checkable: true,
       fits: true,
-      arithmetic: `unlimited by the vendor's own statement — "${a.quote}"`,
+      arithmetic: `unlimited by the vendor's own statement, "${a.quote}"`,
     };
   }
   const u = usage[a.basis];
@@ -422,7 +422,7 @@ function checkAllowance(
       meter: a.meter,
       checkable: true,
       fits: null,
-      arithmetic: `monthly usage unavailable — ${u.arithmetic}`,
+      arithmetic: `monthly usage unavailable, ${u.arithmetic}`,
     };
   }
   const periodUsage = a.period === "day" ? u.value / DAYS_PER_MONTH : u.value;
@@ -449,7 +449,7 @@ export function computeCostReport(input: CostInput): CostReportT {
       );
     }
   }
-  // A mapping key that matches no target is a typo waiting to shadow one —
+  // A mapping key that matches no target is a typo waiting to shadow one,
   // explicit inputs are checked both ways.
   const targetPaths = new Set(receipt.targets.map((t) => t.path));
   for (const key of Object.keys(input.realWorldHosts)) {
@@ -514,17 +514,17 @@ export function computeCostReport(input: CostInput): CostReportT {
         })();
 
   const methodNotes = [
-    // The measurement side's stated limits travel with the dollars — the
+    // The measurement side's stated limits travel with the dollars, the
     // receipt is gitignored, its caveats must not be.
     ...receipt.methodNotes.map((note) => `receipt: ${note}`),
-    "egress is priced from the receipt's instrumentation-stripped bytes (the architecture's own transfer, ADR-0001 §6) — a deployed site's total egress additionally carries the injected chrome's bytes.",
-    "a null never becomes an estimate: a quantity whose measurement source could not account it yields an UNPRICED line and a null total (partial sums are labeled) — except under a $0 rate, where the COST is exactly determined for any usage (the usage itself stays null).",
-    "GB is decimal (1 GB = 1,000,000,000 bytes); CPU-hr = 3,600,000 CPU-ms — conversions are shown inline in each line's arithmetic.",
+    "egress is priced from the receipt's instrumentation-stripped bytes (the architecture's own transfer, ADR-0001 §6), a deployed site's total egress additionally carries the injected chrome's bytes.",
+    "a null never becomes an estimate: a quantity whose measurement source could not account it yields an UNPRICED line and a null total (partial sums are labeled), except under a $0 rate, where the COST is exactly determined for any usage (the usage itself stays null).",
+    "GB is decimal (1 GB = 1,000,000,000 bytes); CPU-hr = 3,600,000 CPU-ms, conversions are shown inline in each line's arithmetic.",
     ...[...usedHosts.values()].flatMap((h) => [
       ...(h.caveats ?? []).map((c) => `${h.hostId}: ${c}`),
       ...(h.unmeasured ?? []).map(
         (u) =>
-          `${h.hostId} also bills "${u.meter}" (${u.priceSummary}), which the measured profile cannot account: ${u.note} — "${u.quote}" (${u.url})`,
+          `${h.hostId} also bills "${u.meter}" (${u.priceSummary}), which the measured profile cannot account: ${u.note}, "${u.quote}" (${u.url})`,
       ),
     ]),
     ...(card.notes ?? []),

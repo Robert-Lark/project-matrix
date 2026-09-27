@@ -1,26 +1,26 @@
 /**
  * The design-system font is a controlled constant (ADR-0003 §8): text must
  * render from the self-hosted subset on every platform, never an OS fallback.
- * A font swap or a crate re-freeze can silently break that — the Catalogue
+ * A font swap or a crate re-freeze can silently break that, the Catalogue
  * pour (ADR-0006) shipped with U+26A0 missing until an adversarial pass caught
  * it, and the frozen crate also carries glyphs no Latin face covers.
  *
  * This guard makes the guarantee non-vacuous by pinning
- * `packages/tokens/fonts/coverage.json` — a manifest that records each shipped
+ * `packages/tokens/fonts/coverage.json`, a manifest that records each shipped
  * font's sha256 and cmap. It:
  *   1. re-pins the fonts (sha256 of the file on disk == manifest.sha256), so a
  *      font that changes WITHOUT regeneration fails loudly;
  *   2. re-derives each font's cmap FROM THE WOFF2 BYTES (fontkit) and asserts
- *      it equals the manifest's `codepoints` — the surface-design session's
+ *      it equals the manifest's `codepoints`, the surface-design session's
  *      anti-rigging hardening: a hand-edited manifest (faked sha + codepoints
  *      together) can no longer drift from the real cmap;
  *   3. asserts the ⚠ fallback lists U+26A0 (the exact regression the pour
- *      introduced — ADR-0006 §3);
+ *      introduced, ADR-0006 §3);
  *   4. scans the committed crate DISPLAY trays and asserts every codepoint is
  *      either covered by a shipped font OR on the manifest's DECIDED per-OS
- *      system-fallback list (`crateSystemFallback` — Arabic/CJK plus four
+ *      system-fallback list (`crateSystemFallback`, Arabic/CJK plus four
  *      one-occurrence stragglers; the crate-glyph-coverage decision, DRAFT
- *      §4.1) — so a re-freeze that introduces a NEW uncovered glyph fails
+ *      §4.1), so a re-freeze that introduces a NEW uncovered glyph fails
  *      loudly instead of silently falling back to the OS.
  *
  * The manifest stays the human-readable record; regenerate it with the
@@ -64,7 +64,7 @@ describe("the shipped font covers the committed crate (ADR-0003 §8, ADR-0006 §
     for (const [name, entry] of Object.entries(coverage.fonts)) {
       expect(
         sha256(join(fontsDir, name)),
-        `${name} changed — regenerate coverage.json (README recipe)`,
+        `${name} changed, regenerate coverage.json (README recipe)`,
       ).toBe(entry.sha256);
     }
   });
@@ -72,20 +72,20 @@ describe("the shipped font covers the committed crate (ADR-0003 §8, ADR-0006 §
   it("each font's manifest cmap equals the cmap re-derived from the woff2 bytes", () => {
     // The anti-rigging hardening (crate-glyph-coverage / DRAFT §4.1): the
     // sha pins the BYTES, this pins the manifest's `codepoints` to the real
-    // cmap parsed from those bytes — a hand-edited manifest cannot pass both.
+    // cmap parsed from those bytes, a hand-edited manifest cannot pass both.
     for (const [name, entry] of Object.entries(coverage.fonts)) {
       const parsed = fontkit.create(readFileSync(join(fontsDir, name)));
       expect("fonts" in parsed, `${name} parsed as a collection`).toBe(false);
       const font = parsed as fontkit.Font;
       // characterSet includes the cmap format-4 sentinel U+FFFF, which maps
-      // to glyph 0 (.notdef) — not coverage. hasGlyphForCodePoint filters it
+      // to glyph 0 (.notdef), not coverage. hasGlyphForCodePoint filters it
       // (verified: only U+FFFF differs from the fontTools-derived manifest).
       const derived = [...new Set(font.characterSet)]
         .filter((cp) => font.hasGlyphForCodePoint(cp))
         .sort((a, b) => a - b);
       expect(
         derived,
-        `${name}: coverage.json codepoints drifted from the font's real cmap — ` +
+        `${name}: coverage.json codepoints drifted from the font's real cmap, ` +
           `regenerate coverage.json (README recipe); never hand-edit it`,
       ).toEqual(entry.codepoints);
     }
@@ -106,7 +106,7 @@ describe("the shipped font covers the committed crate (ADR-0003 §8, ADR-0006 §
       for (const cp of f.codepoints) covered.add(cp);
     const fallback = new Set(coverage.crateSystemFallback);
 
-    // Scan the crate's DISPLAY trays — the ones whose text a surface renders:
+    // Scan the crate's DISPLAY trays, the ones whose text a surface renders:
     // summaries (PLP), details (PDP), and curation (label names + blurb a
     // collection/meta surface would show). manifest.json / images-index.json
     // are machine metadata (dates, sha256s, paths), not render surfaces.
@@ -127,9 +127,9 @@ describe("the shipped font covers the committed crate (ADR-0003 §8, ADR-0006 §
       uncoveredUndocumented.size,
       `crate glyphs neither in a shipped font nor on the decided per-OS ` +
         `system-fallback list: ${report}. Either extend a subset / add a scoped ` +
-        `fallback face, or — if the glyph belongs on system fallback like the ` +
+        `fallback face, or, if the glyph belongs on system fallback like the ` +
         `Arabic/CJK set (shaping and Han-unification rationale in ` +
-        `packages/tokens/fonts/README.md) — regenerate coverage.json with the ` +
+        `packages/tokens/fonts/README.md), regenerate coverage.json with the ` +
         `README recipe so crateSystemFallback records the decision.`,
     ).toBe(0);
   });

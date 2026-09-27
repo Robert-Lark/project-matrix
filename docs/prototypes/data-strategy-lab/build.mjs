@@ -1,6 +1,6 @@
 /**
  * Build the three client bundles (same grid, data layer swapped) and report
- * MEASURED sizes — raw / gzip / brotli — into dist/sizes.json. The byte
+ * MEASURED sizes, raw / gzip / brotli, into dist/sizes.json. The byte
  * comparison is tool-verified output of real builds, never quoted from
  * anyone's marketing page.
  */
@@ -29,7 +29,7 @@ for (const page of pages) {
   });
 }
 
-// htmx is the server-loaders leg's whole client data layer — vendor it so
+// htmx is the server-loaders leg's whole client data layer, vendor it so
 // its bytes sit in the same measured table.
 await copyFile(
   join(ROOT, "node_modules/htmx.org/dist/htmx.min.js"),
@@ -50,7 +50,7 @@ for (const [name, file] of [
 }
 
 // The data-layer delta: each React bundle minus the shared plain baseline
-// (same React, same grid — the remainder is the data library).
+// (same React, same grid, the remainder is the data library).
 for (const p of ["tanstack", "apollo"]) {
   sizes[p].dataLayerDeltaBrotli = sizes[p].brotliBytes - sizes.plain.brotliBytes;
 }

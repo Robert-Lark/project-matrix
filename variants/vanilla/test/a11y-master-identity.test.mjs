@@ -3,10 +3,10 @@
  * vs the committed masters (a11y-section build, 2026-09-03).
  *
  * The body is rendered by the master's OWN renderer (render.mjs
- * `renderA11yPage` — DIFF-TO-STARTER decision 6), so unlike the checkout guard
+ * `renderA11yPage`, DIFF-TO-STARTER decision 6), so unlike the checkout guard
  * beside this file the comparison is not two templates agreeing. It is the
  * proof that the COMPOSITION adds exactly the three delivery freedoms the
- * strip removes — the head, the chrome slot, script elements — and nothing
+ * strip removes, the head, the chrome slot, script elements, and nothing
  * else. The D2 sabotage class the how-it-was-built build recorded (a
  * post-render edit of the body in the consumer, invisible to every other
  * guard because the renderer itself is unchanged) is what this catches. An
@@ -15,7 +15,7 @@
  *
  * Dependency-free like the checkout guard: node:test, node:assert. The master
  * side reaches the reference renderer by FILE URL (the drift gate's own
- * pattern) even though this workspace now declares @pm/reference — so the
+ * pattern) even though this workspace now declares @pm/reference, so the
  * variant side's bare-specifier import and the master side's file import are
  * two independent resolutions of one module, and a broken workspace link
  * fails here rather than passing two copies of the same broken import.
@@ -51,7 +51,7 @@ function stripDelivery(html) {
     .replace(/[\t\n\f\r ]+/g, " ");
 }
 
-/** First point of divergence, with context — see the checkout guard for why
+/** First point of divergence, with context, see the checkout guard for why
  *  this is written here rather than imported. */
 function firstDivergence(expected, actual, context = 70) {
   let i = 0;
@@ -64,7 +64,7 @@ function firstDivergence(expected, actual, context = 70) {
   ].join("\n");
 }
 
-/** The stylesheet LIST by tail after `/css/`, ORDER INCLUDED — cascade order
+/** The stylesheet LIST by tail after `/css/`, ORDER INCLUDED, cascade order
  *  is a rendering property, not a freedom (the vanilla PDP guard's leg). */
 function sheets(html) {
   return [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"\s*\/?>/g)].map((m) => {
@@ -88,7 +88,7 @@ function committedA11yMasters() {
 }
 
 describe("vanilla's a11y pages equal their masters textually (pre-merge)", () => {
-  it("the page table names exactly the committed masters — no page unserved, none invented", () => {
+  it("the page table names exactly the committed masters, no page unserved, none invented", () => {
     // Both sides derived: a fourth master committed without a build entry, or
     // a build entry with no master behind it, fails here by name.
     assert.deepEqual(Object.keys(A11Y_PAGES).sort(), committedA11yMasters());
@@ -109,7 +109,7 @@ describe("vanilla's a11y pages equal their masters textually (pre-merge)", () =>
     it(`${rel}: the composition adds exactly the chrome slot and this variant's one script`, () => {
       const html = renderA11yPage(rel);
       const { depth } = A11Y_PAGES[rel];
-      // One slot, directly after the skip link — the skip link stays the
+      // One slot, directly after the skip link, the skip link stays the
       // FIRST focusable (shell.mjs skeleton), the slot second.
       assert.equal(
         html.match(/<div id="pm-chrome-slot"><\/div>/g)?.length,
@@ -121,10 +121,10 @@ describe("vanilla's a11y pages equal their masters textually (pre-merge)", () =>
         /Skip to content<\/a>\n {2}<div id="pm-chrome-slot"><\/div>\n {2}<div class="pm-page">/,
       );
       // One script element, the enhancement, at THIS page's depth (the asset
-      // base derives from depth — a second literal is how the first goes wrong).
+      // base derives from depth, a second literal is how the first goes wrong).
       const scripts = [...html.matchAll(/<script[^>]*>/g)].map((m) => m[0]);
       assert.deepEqual(scripts, [`<script src="${"../".repeat(depth)}assets/a11y.js" defer>`]);
-      // And the master carries neither — the two ✂ lines are the whole difference.
+      // And the master carries neither, the two ✂ lines are the whole difference.
       const master = MASTER[rel]();
       assert.ok(!master.includes("pm-chrome-slot"), "the master must never carry a slot");
       assert.ok(!/<script/i.test(master), "the master must never carry a script");
@@ -136,7 +136,7 @@ describe("vanilla's a11y pages equal their masters textually (pre-merge)", () =>
       assert.ok(master.length > 5, "the master links no stylesheets");
       assert.deepEqual(variant, master);
       // The build copies @pm/tokens' whole css tree into the variant's assets,
-      // so every tail the page links must be a real file there — the
+      // so every tail the page links must be a real file there, the
       // compare and mode-demo sheets included.
       const tokensCss = join(
         createRequire(join(root, "package.json")).resolve("@pm/tokens/css/tokens.css"),
@@ -153,7 +153,7 @@ describe("vanilla's a11y pages equal their masters textually (pre-merge)", () =>
     });
   }
 
-  it("element-demos alone is noindex — the master's flag, carried through the head callback", () => {
+  it("element-demos alone is noindex, the master's flag, carried through the head callback", () => {
     // Strategy-review finding 21: the stripped twins are deliberately
     // inaccessible pages on a public site. The flag is the MASTER's
     // (a11y.mjs passes `noindex: true` for this page only); the variant's head
@@ -193,7 +193,7 @@ describe("vanilla's a11y pages equal their masters textually (pre-merge)", () =>
     assert.ok(!html.includes('aria-pressed="true"'), "a toggle is served pressed");
     // The caveat is CONTENT, once per demo (prompt duty 5), not chrome.
     assert.equal(
-      html.match(/your OS setting is the real thing — these demos never override it/g)?.length,
+      html.match(/your OS setting is the real thing. These demos never override it/g)?.length,
       3,
     );
   });

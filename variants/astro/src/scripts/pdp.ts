@@ -1,10 +1,10 @@
 /**
- * The astro PDP's enhancement — gallery, zoom, quantity, add-to-cart, and the
+ * The astro PDP's enhancement, gallery, zoom, quantity, add-to-cart, and the
  * live-origin demonstration, bundled by Astro into the PDP page's one
  * `<script>` exactly as the editorial page's cart is (the framework's
  * documented way to add interactivity without a UI framework; an island
  * would wrap content in an <astro-island> ELEMENT the master has no
- * equivalent for — DIFF-TO-STARTER).
+ * equivalent for, DIFF-TO-STARTER).
  *
  * The cart storage contract (packages/reference/render/shell.mjs
  * CART_CONTRACT) is RE-IMPLEMENTED here rather than imported from
@@ -31,7 +31,7 @@ interface Cart {
 }
 
 /** Contract recovery rule: a missing, unparseable, or schema-failing value
- *  IS the empty cart — the next successful add overwrites it. */
+ *  IS the empty cart, the next successful add overwrites it. */
 function read(): Cart {
   try {
     const raw = localStorage.getItem(KEY);
@@ -50,7 +50,7 @@ function read(): Cart {
             Number.isInteger(item.qty) &&
             item.qty >= 1,
         ) &&
-        // One entry per release id (contract) — the uniqueness clause.
+        // One entry per release id (contract), the uniqueness clause.
         new Set((parsed as Cart).items.map((item) => item.id)).size ===
           (parsed as Cart).items.length
       ) {
@@ -83,12 +83,12 @@ function renderCount(count: number): void {
 
 function announce(text: string): void {
   const status = document.querySelector("[data-pm-status]");
-  // textContent, never HTML — the title is tray data.
+  // textContent, never HTML, the title is tray data.
   if (status) status.textContent = text;
 }
 
 /** The release this page's buttons act on, from the JSON hook the document
- *  ships (delivery, not contract — ADR-0008's freedoms name `script`). */
+ *  ships (delivery, not contract, ADR-0008's freedoms name `script`). */
 function cartItem(): { id: number; title: string } | null {
   const el = document.getElementById("pm-cart-item");
   if (!el?.textContent) return null;
@@ -103,7 +103,7 @@ export function mountPdp(): void {
   renderCount(total(read()));
 
   /* ── Gallery: thumbs switch the stage (src + alt + exclusive
-        aria-current); the stage's width/height stay the first image's — the
+        aria-current); the stage's width/height stay the first image's, the
         fixed 1:1 mat means a switch can never move the buy panel. */
   const stage = document.querySelector<HTMLImageElement>(".pm-gallery__main");
   const thumbs = [...document.querySelectorAll<HTMLButtonElement>(".pm-gallery__thumb")];
@@ -112,7 +112,7 @@ export function mountPdp(): void {
       const img = thumb.querySelector("img");
       if (!stage || !img) return;
       // The thumb carries the 160 px derivative; the stage wants the full
-      // image — the same URL without the .thumb infix (ADR-0008 §11's URL
+      // image, the same URL without the .thumb infix (ADR-0008 §11's URL
       // convention, read backwards).
       stage.src = img.src.replace(/\.thumb\.avif$/, ".avif");
       const label = thumb.querySelector(".pm-sr-only")?.textContent ?? "";
@@ -125,7 +125,7 @@ export function mountPdp(): void {
     });
   }
 
-  /* ── Zoom: a real toggle — aria-pressed is BOTH the accessible state and
+  /* ── Zoom: a real toggle, aria-pressed is BOTH the accessible state and
         the selector gallery.css scales from. Survives a thumb switch. */
   const zoom = document.querySelector(".pm-gallery__zoom");
   if (zoom) {
@@ -162,7 +162,7 @@ export function mountPdp(): void {
     });
   }
 
-  /* ── Add to cart: the CHOSEN quantity (CART_CONTRACT's quantity clause —
+  /* ── Add to cart: the CHOSEN quantity (CART_CONTRACT's quantity clause,
         the PDP is the only writer of qty > 1). Immutable next cart: a failed
         setItem must change nothing. Not wired when disabled (unpriced). */
   const item = cartItem();
@@ -184,7 +184,7 @@ export function mountPdp(): void {
       }
       const n = total(next);
       renderCount(n);
-      announce(`Added "${item.title}" to cart — ${n} in cart.`);
+      announce(`Added "${item.title}" to cart, ${n} in cart.`);
     });
   }
 
@@ -208,7 +208,7 @@ export function mountPdp(): void {
         if (!res.ok) {
           liveOutput.textContent =
             res.status === 404
-              ? `The live route is not deployed yet — nothing to show, and nothing faked (${elapsed} ms to find that out).`
+              ? `The live route is not deployed yet. Nothing to show, and nothing faked (${elapsed} ms to find that out).`
               : `The live origin answered ${res.status} after ${elapsed} ms. That is the cost of a dynamic origin on a bad day.`;
           return;
         }
@@ -219,7 +219,7 @@ export function mountPdp(): void {
             : `The live origin answered in ${elapsed} ms but carried no price for this release.`;
       } catch {
         liveOutput.textContent =
-          "The live call failed. That is a real property of a dynamic origin — and why the numbers on this site never depend on one.";
+          "The live call failed. That is a real property of a dynamic origin, and why the numbers on this site never depend on one.";
       } finally {
         liveButton.disabled = false;
       }

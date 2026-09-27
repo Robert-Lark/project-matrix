@@ -1,5 +1,5 @@
 /**
- * Vitest through Astro's own Vite pipeline — `getViteConfig` is Astro's
+ * Vitest through Astro's own Vite pipeline, `getViteConfig` is Astro's
  * documented way to make `.astro` components importable from a test, which is
  * what the Container API needs to render one (editorial-build slice C).
  *
@@ -7,7 +7,7 @@
  * `tools/repo-checks` (where slices A and B put their pre-merge identity
  * guards) for one reason: loading a `.astro` file requires Astro's compiler.
  * Hosting this guard in repo-checks would mean routing every repo-wide
- * structural check through Astro's Vite plugin — coupling the shared guard
+ * structural check through Astro's Vite plugin, coupling the shared guard
  * workspace to one variant's toolchain, so an Astro upgrade could break checks
  * that have nothing to do with Astro. The guard runs pre-merge either way:
  * `turbo run test` (the `check` CI job) picks up this workspace's `test`

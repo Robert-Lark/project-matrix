@@ -5,7 +5,7 @@
  * the key policy holds at the seam; the front Worker passes htmx's partials
  * through untouched. Plain HTTP at PM_ORIGIN, snapshot-aware (values are
  * found in the served snapshot's committed summaries, never typed), and every
- * request that could reach the warm tier carries `cache=cold` — these legs
+ * request that could reach the warm tier carries `cache=cold`. These legs
  * must plant nothing on the deployed plane (the warm-tier guard's rule; the
  * PLP page paths are in its scope since this unit).
  *
@@ -36,7 +36,7 @@ const get = (path: string, init?: RequestInit) => {
 };
 
 const ARMS = [
-  // kv-exempt: a path constant — every request built from it below carries cache=cold or run= on its own line
+  // kv-exempt: a path constant, every request built from it below carries cache=cold or run= on its own line
   { name: "htmx", path: "/htmx/plp/" }, // kv-exempt: path constant, see above
   { name: "react-next", path: "/react-next/plp/plain/" }, // kv-exempt: path constant, see above
 ] as const;
@@ -47,7 +47,7 @@ const genre = snap.summaries[0]!.genres[0]!;
 const style = snap.summaries.find((s) => s.genres.includes(genre) && s.styles.length > 0)!.styles[0]!;
 const word = snap.summaries[3]!.title.split(" ").find((w) => /^[A-Za-z]{3,}$/.test(w))!;
 
-/** Every request line below spells `cache=cold` or `run=` LITERALLY — the
+/** Every request line below spells `cache=cold` or `run=` LITERALLY, the
  *  repo-checks warm-tier guard reads lines, not helpers, and a helper that
  *  hid the discipline would have passed a future un-nonced line with it. */
 const enc = (params: Record<string, string>) => new URLSearchParams(params).toString();
@@ -89,7 +89,7 @@ describe("the five params filter through the composed origin (ADR-0005 §5)", ()
     // Own group lifted: the genre buckets equal the unfiltered rail's.
     expect(filtered.facets.genres).toEqual(all.facets.genres);
     // The other groups are recounted: a style bucket's count is exactly what
-    // clicking it returns — the rule the recount exists for.
+    // clicking it returns, the rule the recount exists for.
     const bucket = filtered.facets.styles.find((b) => b.value === style)!;
     expect(bucket, `style ${style} missing from the recounted rail`).toBeDefined();
     const narrowed = await tray({ n: "240", genre, style });
@@ -112,7 +112,7 @@ describe("the five params filter through the composed origin (ADR-0005 §5)", ()
     for (let i = 1; i < years.length; i++) expect(years[i]! >= years[i - 1]!).toBe(true);
   });
 
-  it("junk is a 400 with `none` at the tray — a value in the wrong case included", async () => {
+  it("junk is a 400 with `none` at the tray, a value in the wrong case included", async () => {
     // kv-exempt: a 400 is refused before or without any write; cache=cold besides
     const junk: Record<string, string>[] = [
       { genre: "Junk" },
@@ -148,7 +148,7 @@ describe("the five params filter through the composed origin (ADR-0005 §5)", ()
 
 describe("both arms serve the filtered grid, by value", () => {
   for (const arm of ARMS) {
-    it(`${arm.name}: a facet click's URL serves the filtered grid — count, cards and selected facet all agree with the tray`, async () => {
+    it(`${arm.name}: a facet click's URL serves the filtered grid, count, cards and selected facet all agree with the tray`, async () => {
       const t = await tray({ genre });
       const res = await get(`${arm.path}?cache=cold&${enc({ genre })}`);
       expect(res.status).toBe(200);
@@ -176,10 +176,10 @@ describe("both arms serve the filtered grid, by value", () => {
       const sorted = await tray({ sort: "year-asc" });
       const o = await (await get(`${arm.path}?cache=cold&${enc({ sort: "year-asc" })}`)).text();
       expect(firstCardTitle(o)).toBe(sorted.items[0]!.title);
-      expect(o).toMatch(/<option value="year-asc" selected(="")?>Year — oldest first<\/option>/);
+      expect(o).toMatch(/<option value="year-asc" selected(="")?>Year, oldest first<\/option>/);
     });
 
-    it(`${arm.name}: a junk filter is a branded 404 — "No such filter" — not the data-plane-down page`, async () => {
+    it(`${arm.name}: a junk filter is a branded 404, "No such filter", not the data-plane-down page`, async () => {
       const res = await get(`${arm.path}?cache=cold&${enc({ genre: "Junk" })}`);
       expect(res.status).toBe(404);
       const body = await res.text();
@@ -188,8 +188,8 @@ describe("both arms serve the filtered grid, by value", () => {
       expect(body).not.toContain("didn&#x27;t answer");
       if (arm.name === "react-next") {
         // A thrown notFound() under multiple root layouts SSRs Next's own
-        // `__next_error__` document; the branded boundary — and the chrome
-        // slot inside its Shell — rides the RSC payload and renders at
+        // `__next_error__` document; the branded boundary, and the chrome
+        // slot inside its Shell, rides the RSC payload and renders at
         // hydration. That is the PDP 404's recorded shape (DIFF-TO-STARTER.md
         // item 25; pdp.test.ts "a non-canonical slug is a 404"), read off the
         // served body 2026-09-18: `<html id="__next_error__">`, no slot, the
@@ -206,7 +206,7 @@ describe("both arms serve the filtered grid, by value", () => {
       }
     });
 
-    it(`${arm.name}: an empty result is honest — "Showing 0 of 0", no pagination landmark, no error`, async () => {
+    it(`${arm.name}: an empty result is honest, "Showing 0 of 0", no pagination landmark, no error`, async () => {
       const res = await get(`${arm.path}?cache=cold&${enc({ q: "zzzz-no-such-record-zzzz" })}`);
       expect(res.status).toBe(200);
       const body = noTextBoundaries(await res.text());
@@ -216,7 +216,7 @@ describe("both arms serve the filtered grid, by value", () => {
     });
   }
 
-  it("the htmx document passes the tray's cache-state through — `none` for a search, `bypass` for cold", async () => {
+  it("the htmx document passes the tray's cache-state through, `none` for a search, `bypass` for cold", async () => {
     // ADR-0005's one named obligation on the htmx Worker, at the seam.
     const cold = await get(`/htmx/plp/?cache=cold&${enc({ genre })}`);
     expect(cold.headers.get("x-pm-cache-state")).toBe("bypass");
@@ -226,7 +226,7 @@ describe("both arms serve the filtered grid, by value", () => {
 });
 
 describe("the front Worker honours `x-pm-partial` (PLP handoff §6.1)", () => {
-  it("an htmx partial passes through the composed origin with no chrome injected — and the full document still gets it once", async () => {
+  it("an htmx partial passes through the composed origin with no chrome injected, and the full document still gets it once", async () => {
     const partial = await get(`/htmx/plp/?cache=cold&${enc({ genre })}`, { headers: { "HX-Request": "true" } });
     expect(partial.status).toBe(200);
     expect(partial.headers.get("x-pm-partial")).toBe("1");

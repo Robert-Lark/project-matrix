@@ -1,12 +1,12 @@
 /**
- * The committed snapshot is the interim frozen origin (issue #4) — this test
+ * The committed snapshot is the interim frozen origin (issue #4). This test
  * gates it in CI: every release schema-valid against the shared contract,
  * counts ≥240, manifest consistent, and every referenced image file present.
  * Regenerating (pnpm run generate) must keep all of this true.
  *
  * Branch coverage (surface-design DRAFT §6): CI's drift gate exercises this
  * fixture, so it must contain every rendering branch the real crate contains
- * — asserted below so a regeneration cannot silently drop one.
+ *, asserted below so a regeneration cannot silently drop one.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -87,7 +87,7 @@ describe("the fixture is adversarially branch-covering (DRAFT §6)", () => {
     const portrait = parsedDetails.filter((d) => d.cover.height > d.cover.width);
     expect(landscape.length).toBeGreaterThanOrEqual(1);
     expect(portrait.length).toBeGreaterThanOrEqual(1);
-    // Dimensions are DATA (honest CLS) — the tray numbers must be the truth
+    // Dimensions are DATA (honest CLS), the tray numbers must be the truth
     // of the committed files, for every unique referenced image.
     const seen = new Map<string, { width: number; height: number }>();
     for (const d of parsedDetails)
@@ -150,7 +150,7 @@ describe("the fixture is adversarially branch-covering (DRAFT §6)", () => {
     }
     const featured = parsedDetails.find((d) => d.id === curation.featured);
     expect(featured, "curation.featured names no committed release").toBeDefined();
-    // The editorial/PDP reference renders read it — it must exercise the
+    // The editorial/PDP reference renders read it. It must exercise the
     // rich path: multi-format, priced, 5-image gallery.
     expect(featured!.formats.length).toBeGreaterThanOrEqual(3);
     expect(featured!.priceFrom).not.toBeNull();

@@ -1,5 +1,5 @@
 // SSR echo: proves URL/query/header fidelity of requests forwarded through
-// the front Worker's service binding (ADR-0004 §5 — the URL is the
+// the front Worker's service binding (ADR-0004 §5, the URL is the
 // measurement condition, so nothing may be lost in transit).
 export default {
   async fetch(request) {

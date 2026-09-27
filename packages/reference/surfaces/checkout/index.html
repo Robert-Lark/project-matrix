@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Checkout — Long Decay Records</title>
+  <title>Checkout · Long Decay Records</title>
   <link rel="preload" href="../../node_modules/@pm/tokens/fonts/FamiljenGrotesk.var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../../node_modules/@pm/tokens/fonts/PMCrateSymbols.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../../node_modules/@pm/tokens/css/fonts.css">
@@ -36,7 +36,7 @@
         <aside class="pm-plaque">
           <p class="pm-plaque__kicker">Simulated commerce</p>
           <p class="pm-plaque__name"><strong>This checkout is a demonstration.</strong></p>
-          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser — this page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
+          <p class="pm-plaque__claim">No payment is processed, nothing ships, and what you type never leaves your browser. This page sends only the same anonymous timing beacons every page here sends. The form is real so the measurement is real.</p>
         </aside>
         <div class="pm-checkout__body">
           <form class="pm-checkout__form" method="post" action="place-order/">
@@ -45,7 +45,7 @@
               <div class="pm-field">
               <label class="pm-field__label" for="email">Email address</label>
               <input class="pm-field__control" id="email" type="email" autocomplete="email" required aria-describedby="email-hint">
-              <span class="pm-field__hint" id="email-hint">Used only to render the demo confirmation in this page — nothing is ever sent.</span>
+              <span class="pm-field__hint" id="email-hint">Used only to render the demo confirmation in this page. Nothing is ever sent.</span>
             </div>
             </fieldset>
             <fieldset class="pm-checkout__section">
@@ -93,20 +93,20 @@
               <legend class="pm-checkout__legend">Shipping method</legend>
               <label class="pm-format__option">
                 <input class="pm-format__input" type="radio" name="shipping" value="standard" checked>
-                <span class="pm-format__label">Standard — free, 5–8 days</span>
+                <span class="pm-format__label">Standard, free, 5–8 days</span>
               </label>
               <label class="pm-format__option">
                 <input class="pm-format__input" type="radio" name="shipping" value="express">
-                <span class="pm-format__label">Express — $12.00, 2 days</span>
+                <span class="pm-format__label">Express, $12.00, 2 days</span>
               </label>
             </fieldset>
             <fieldset class="pm-checkout__section">
               <legend class="pm-checkout__legend">Payment</legend>
-              <p class="pm-checkout__jsoff">Demo card fields — type anything; nothing you enter is stored or sent.</p>
+              <p class="pm-checkout__jsoff">Demo card fields: type anything; nothing you enter is stored or sent.</p>
               <div class="pm-field">
               <label class="pm-field__label" for="card">Card number</label>
               <input class="pm-field__control" id="card" type="text" autocomplete="off" inputmode="numeric" required pattern="\d{13,19}" title="13 to 19 digits" aria-describedby="card-hint">
-              <span class="pm-field__hint" id="card-hint">Formats as you type — that formatting is part of what this page measures.</span>
+              <span class="pm-field__hint" id="card-hint">Formats as you type, that formatting is part of what this page measures.</span>
             </div>
               <div class="pm-field">
               <label class="pm-field__label" for="cardname">Name on card</label>
@@ -124,20 +124,20 @@
               </div>
             </fieldset>
             <div><button class="pm-button" type="submit">Place order</button></div>
-            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works — labels, hints, native validation that gates the submit, and a Place order that posts natively to a plain confirmation page. Live card formatting and the error summary are what JavaScript adds; placing the order in the page is its JavaScript moment, and that cost is the comparison.</p>
+            <p class="pm-checkout__jsoff">With JavaScript off, every field here still works: labels, hints, native validation that gates the submit, and a Place order that posts natively to a plain confirmation page. Live card formatting and the error summary are what JavaScript adds; placing the order in the page is its JavaScript moment, and that cost is the comparison.</p>
           </form>
           <section class="pm-cart" aria-label="Order summary">
             <h2 class="pm-cart__title">Order summary</h2>
-            <p class="pm-cart__empty">Your cart is empty — items appear here as you add them from the store.</p>
+            <p class="pm-cart__empty">Your cart is empty. Items appear here as you add them from the store.</p>
             <ul class="pm-cart__lines" role="list"></ul>
-            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total><span aria-hidden="true">—</span><span class="pm-sr-only">No total yet</span></span></p>
+            <p class="pm-cart__total"><span>Total</span> <span class="pm-cart__price" data-pm-cart-total><span aria-hidden="true">–</span><span class="pm-sr-only">No total yet</span></span></p>
           </section>
         </div>
       </div>
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="/vanilla/a11y/">Accessibility, shown</a>

@@ -4,22 +4,22 @@
  * the same hole for their own variants).
  *
  * Why it exists: variant-owned content is re-typed by design (no shared
- * component runtime, ADR-0003 §1) and the browser drift gate polices identity —
+ * component runtime, ADR-0003 §1) and the browser drift gate polices identity,
  * but CI's browser legs only ever serve the FIXTURE. Crate-flavored text
  * (CRATE_ESSAY and its twin in `src/lib/essays.ts`) would otherwise first be
  * compared on the deployed plane, AFTER merge, so a one-word crate-copy edit
- * would merge green and turn the post-deploy smoke red — violating the PRD's
+ * would merge green and turn the post-deploy smoke red, violating the PRD's
  * standing rule. The crate TRAYS are committed, so this guard needs no browser,
  * no server, and no image bytes.
  *
- * The mechanism is Astro's OWN render-to-string entry point — the Container API
+ * The mechanism is Astro's OWN render-to-string entry point, the Container API
  * (`astro/container`), which renders a real `.astro` component tree in-process.
  * That is why this file can compare the whole document rather than just the
  * essay strings: it drives the same components the build does, with each
  * snapshot's data injected as props.
  *
  * Comparison policy is the drift gate's own normalizer (`PAGE_NORMALIZE`), run
- * over `linkedom` instead of a browser — the slice-B precedent. A byte-strict
+ * over `linkedom` instead of a browser, the slice-B precedent. A byte-strict
  * compare would fail on whitespace: Astro emits a template's whitespace as
  * authored and then compresses it out (`compressHTML`, on by default), which
  * matches the master's rendering but not its bytes. The normalizer forgives
@@ -42,7 +42,7 @@ import { resolveEditorialData } from "../scripts/resolve-snapshot.mjs";
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
 
 /**
- * `PAGE_NORMALIZE` is written to run INSIDE a driven browser page — it is
+ * `PAGE_NORMALIZE` is written to run INSIDE a driven browser page. It is
  * self-contained by construction and reads `document`/`Node` as globals rather
  * than parameters. linkedom supplies same-shape globals for a plain HTML
  * string; install them for the one synchronous call, then restore.
@@ -71,7 +71,7 @@ describe("astro editorial equals the master by normalized DOM, both snapshots (p
   for (const name of ["fixture", "crate"] as const) {
     it(`${name}: the rendered document matches renderEditorial`, async () => {
       // Both reference renderers are plain-JS build tooling with a
-      // main-module-guarded CLI — importing renders and writes nothing (the
+      // main-module-guarded CLI, importing renders and writes nothing (the
       // @pm/reference regeneration test's own pattern).
       const lib = await import(
         pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
@@ -84,7 +84,7 @@ describe("astro editorial equals the master by normalized DOM, both snapshots (p
 
       const container = await AstroContainer.create();
       // partial: false renders the component as a full-fledged page rather than
-      // a fragment — this component IS the whole document (doctype included).
+      // a fragment. This component IS the whole document (doctype included).
       const variant = await container.renderToString(EditorialDocument, {
         props: { data: resolveEditorialData(name) },
         partial: false,
@@ -104,12 +104,12 @@ describe("astro editorial equals the master by normalized DOM, both snapshots (p
 
   /**
    * The block above proves the COMPONENT for both snapshots, but the component
-   * is not what ships — `src/pages/editorial/index.astro` is, and it is the
+   * is not what ships, `src/pages/editorial/index.astro` is, and it is the
    * only consumer of the baked payload. Nothing else exercises it pre-merge
    * (verify-slice finding): CI's browser legs serve the built page but only
    * ever with the FIXTURE baked, so a page-level wiring bug that changes only
-   * the CRATE flavor — a swapped import, a `name` override, a renamed tray
-   * field the `as EditorialData` cast swallows — would pass every pre-merge
+   * the CRATE flavor, a swapped import, a `name` override, a renamed tray
+   * field the `as EditorialData` cast swallows, would pass every pre-merge
    * check and turn the post-deploy smoke red.
    *
    * Rather than try to drive the page once per flavor (its import of the baked
@@ -159,12 +159,12 @@ describe("astro editorial equals the master by normalized DOM, both snapshots (p
 });
 
 /**
- * The PDP's version of the guard (pdp-variants slice 2) — the same
+ * The PDP's version of the guard (pdp-variants slice 2), the same
  * Container-API mechanism, over EVERY detail tray in BOTH snapshots (the
  * vanilla and react-next PDP guards' shape: 740 pages, covering the
  * render-class combinations the crate has and the fixture does not, plus
- * the three KNOWINGLY UNGATED arms — absent notes, null duration, null
- * year — that no committed master exercises).
+ * the three KNOWINGLY UNGATED arms, absent notes, null duration, null
+ * year, that no committed master exercises).
  */
 describe("astro's PDP equals the master by normalized DOM, every tray, both snapshots", () => {
   for (const name of ["fixture", "crate"] as const) {
@@ -200,7 +200,7 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
 
       // Non-vacuity (the vanilla guard's rule): real PDP markup was compared,
       // the fenced plaque rode the comparison on both sides (it is CANONICAL
-      // content here — core comparisons never drop it), and the format
+      // content here, core comparisons never drop it), and the format
       // CONTROL stays gone while the format DATA survives (ADR-0008
       // addendum A).
       const sample = normalizeHtml(
@@ -214,12 +214,12 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
       expect(sample).toContain("data-pm-fenced");
       expect(sample).not.toContain("pm-format");
       // Same class and same budget as the react-next and qwik catalogue
-      // sweeps (300_000 — sized to catch a hang, not to race the runner).
+      // sweeps (300_000, sized to catch a hang, not to race the runner).
       // MEASURED on ubuntu-latest (PR #31): fixture 2.78 s, crate 3.96 s,
       // against 739/1,676 ms here.
       //
       // Correcting the projection this comment used to carry: it said the 5 s
-      // default "would have failed both". It would not have — both legs come
+      // default "would have failed both". It would not have. Both legs come
       // in UNDER 5 s. The crate leg's 1.26× margin is a flake waiting to
       // happen rather than a failure, which is reason enough for a real
       // budget, but the stronger claim was wrong and is retracted.
@@ -227,7 +227,7 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
   }
 
   /**
-   * The stylesheet LIST, which the normalizer throws away with the head —
+   * The stylesheet LIST, which the normalizer throws away with the head,
    * the axis the css prop parameterises, compared by tail after `/css/`
    * (order included: cascade order is a rendering property, not a freedom).
    * The vanilla and react-next guards carry the same leg.
@@ -264,10 +264,10 @@ describe("astro's PDP equals the master by normalized DOM, every tray, both snap
 });
 
 /**
- * The PDP PAGE is a faithful pass-through (pdp-variants slice 2 — the
+ * The PDP PAGE is a faithful pass-through (pdp-variants slice 2, the
  * editorial page-level test's twin, adopted from the same finding class):
  * the component proof above covers PdpDocument, but the shipped artifact is
- * src/pages/pdp/[slug]/index.astro — its getStaticPaths enumeration and its
+ * src/pages/pdp/[slug]/index.astro. Its getStaticPaths enumeration and its
  * prop hand-off are otherwise proven only by the plane-dependent suite.
  */
 describe("the PDP page passes the baked catalogue through faithfully", () => {
@@ -320,7 +320,7 @@ describe("the PDP page passes the baked catalogue through faithfully", () => {
 /**
  * The bake IS the catalogue (pdp-variants slice 3, adopted from the slice-2
  * anti-rigging lens): the pass-through test above compares getStaticPaths
- * against pdp.json — the bake's OWN output — so a truncated bake (a
+ * against pdp.json, the bake's OWN output, so a truncated bake (a
  * debugging .slice(), a "skip zero-image trays" filter, or a deliberate
  * shrink to flatter the build-time paradigm's build/dist cost) would pass
  * every gate while dozens of releases 404 in production. The slice's
@@ -329,7 +329,7 @@ describe("the PDP page passes the baked catalogue through faithfully", () => {
  * not restated.
  */
 describe("the PDP bake is the whole committed catalogue", () => {
-  it("pdp.json IS the committed snapshot — trays verbatim, freeze date included", async () => {
+  it("pdp.json IS the committed snapshot, trays verbatim, freeze date included", async () => {
     const bakedPath = join(import.meta.dirname, "..", "src", "data", "pdp.json");
     const baked = JSON.parse(readFileSync(bakedPath, "utf8")) as {
       name: "fixture" | "crate";
@@ -346,8 +346,8 @@ describe("the PDP bake is the whole committed catalogue", () => {
     expect(committed.details.length).toBeGreaterThan(0);
     expect(baked.details.length).toBe(committed.details.length);
     // DEEP equality, not an id list (slice-3 anti-rigging lens): the bake
-    // writes details.json verbatim, so a field-level shrink — stripped
-    // notes, truncated tracklists, dropped images — keeps every id, shrinks
+    // writes details.json verbatim, so a field-level shrink, stripped
+    // notes, truncated tracklists, dropped images, keeps every id, shrinks
     // dist for the whole catalogue, and would pass an id compare while
     // shipping mutated pages no other gate renders from the bake.
     expect(baked.details).toStrictEqual(committed.details);

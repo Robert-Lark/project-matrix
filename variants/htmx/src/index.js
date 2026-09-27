@@ -1,8 +1,8 @@
-// The htmx variant Worker: hypermedia — the server renders complete HTML per
+// The htmx variant Worker: hypermedia, the server renders complete HTML per
 // request (editorial-build slice E). Assets under /htmx/assets/* are served
 // assets-first from dist/ and never reach this script; everything else lands
 // here. The front Worker forwards the ORIGINAL request untouched, so the
-// /htmx/ prefix — routes, asset URLs, redirects — is this Worker's own duty.
+// /htmx/ prefix, routes, asset URLs, redirects, is this Worker's own duty.
 import {
   plpConditionHref,
   renderEditorialPage,
@@ -14,8 +14,8 @@ import { featuredIdFor, isFixtureCrate } from "./snapshot.mjs";
 
 const HTML = { "content-type": "text/html; charset=utf-8" };
 
-/** The PLP answers the SAME URL two ways — the whole document, or the
- *  `.pm-plp` partial when htmx asks (see `wantsPartial`) — so the request
+/** The PLP answers the SAME URL two ways, the whole document, or the
+ *  `.pm-plp` partial when htmx asks (see `wantsPartial`), so the request
  *  headers that decide are cache-key inputs. Without this a shared cache
  *  may hand a bare fragment to a cold browser navigation, or a whole
  *  document to a swap. Costs one response header; the alternative is a
@@ -24,14 +24,14 @@ const HTML_VARY_HX = { ...HTML, vary: "HX-Request, HX-History-Restore-Request" }
 
 /**
  * The partial's response headers. `x-pm-partial` is a DECLARATION, and it is
- * inert until the front Worker honours it — deliberately, because that file
+ * inert until the front Worker honours it, deliberately, because that file
  * is not this unit's to edit.
  *
  * The front Worker injects the switcher/HUD chrome into `div#pm-chrome-slot`
  * via HTMLRewriter on any `text/html` response, and asserts SLOT CARDINALITY
  * of exactly one, logging `chrome-slot-count` as an ERROR otherwise
- * (workers/front/src/index.js:147-183). A partial has no slot by design — it
- * is HTML that is not a page — so every htmx page-flip would log an error
+ * (workers/front/src/index.js:147-183). A partial has no slot by design. It
+ * is HTML that is not a page, so every htmx page-flip would log an error
  * against a Worker that is behaving correctly. That file already anticipates
  * this exact build: remix3's frame partials are passed through by a
  * variant-scoped path check, and the comment at :126-128 says the exception
@@ -47,12 +47,12 @@ const HTML_VARY_HX = { ...HTML, vary: "HX-Request, HX-History-Restore-Request" }
 const HTML_PARTIAL = { ...HTML_VARY_HX, "x-pm-partial": "1" };
 
 /**
- * Whether THIS request wants the partial — and the second condition is not
+ * Whether THIS request wants the partial, and the second condition is not
  * defensive padding, it is the whole reason this is a function.
  *
  * htmx keeps a sessionStorage cache of visited pages so the Back button can
- * restore one without a round trip. On a cache MISS — storage blocked, the
- * quota shed, or the entry evicted past `historyCacheSize` (10) — it
+ * restore one without a round trip. On a cache MISS, storage blocked, the
+ * quota shed, or the entry evicted past `historyCacheSize` (10). It
  * re-fetches the URL and swaps the answer into `getHistoryElement()`, which
  * is `document.body` unless the page declares `[hx-history-elt]` (this one
  * does not), with `swapStyle: 'innerHTML'`. And it sends that request with
@@ -84,7 +84,7 @@ function wantsPartial(request) {
 
 /** The host in the URL is unused by pm-edge's router (path-only dispatch);
  *  it exists only because `fetch` requires an absolute URL (the slice-B/D
- *  request-time precedent: this Worker binds pm-edge ITSELF — the front
+ *  request-time precedent: this Worker binds pm-edge ITSELF, the front
  *  Worker's own EDGE binding does not reach a variant server-side). */
 const edgeFetch = (env, path) => env.EDGE.fetch(`https://pm-edge${path}`);
 
@@ -115,22 +115,22 @@ async function loadEditorialData(env) {
  *
  * All four are knobs `workers/edge` actually implements
  * (`handlePlp`/`serveData`/`runKnob`, workers/edge/src/index.js:51-54,
- * 121-127), and forwarding them is not cosmetic — it is what makes this
+ * 121-127), and forwarding them is not cosmetic. It is what makes this
  * arm's published numbers mean what their labels say:
  *
- *  - `cache` — the switcher preset for this surface is
+ *  - `cache`, the switcher preset for this surface is
  *    `/htmx/plp/?cache=cold` (ADR-0005 §2) and the bench runner sets it on
  *    every cold-column visit (tools/bench-runner/src/batch.ts:80). Dropping
  *    it would have the edge serve the KV warm tier under a column labelled
  *    cold: the server-rendered arm would read faster than it is, which is
  *    rigging in the FLATTERING direction (ADR-0001 §9).
- *  - `run` — the batch's cache-isolation nonce (batch.ts:79). Dropped, this
+ *  - `run`, the batch's cache-isolation nonce (batch.ts:79). Dropped, this
  *    surface's warm column would be contaminated by every previous run's KV
  *    state instead of the one priming visit the column is defined by.
- *  - `n` — the data-volume knob (`nKnob: [24, 240]`), cell 5's variable.
- *  - `page` — pagination, the one navigation the data plane implements.
+ *  - `n`, the data-volume knob (`nKnob: [24, 240]`), cell 5's variable.
+ *  - `page`, pagination, the one navigation the data plane implements.
  *
- *  - `genre`, `style`, `format`, `sort`, `q` — ADR-0005 §5's five, honoured
+ *  - `genre`, `style`, `format`, `sort`, `q`, ADR-0005 §5's five, honoured
  *    by the data plane since 2026-09-04. Between 2026-08-28 and then this
  *    list deliberately OMITTED them: the edge read none of them, so
  *    forwarding their names "would not filter anything; it would only make
@@ -142,12 +142,12 @@ async function loadEditorialData(env) {
  * the facet-value validation live in the edge Worker, and two
  * implementations of one rule is how the served page and the beacon's
  * environment tag come to disagree. `profile` is NOT forwarded: it is the
- * chrome's snapshot selector, not a data-plane knob — the renderer carries
+ * chrome's snapshot selector, not a data-plane knob, the renderer carries
  * it in hrefs only.
  */
 const PLP_KNOBS = ["n", "page", "cache", "run", "genre", "style", "format", "sort", "q"];
 
-/** A tray 400 — a facet or sort value the snapshot does not hold. Distinct
+/** A tray 400, a facet or sort value the snapshot does not hold. Distinct
  *  from every other non-2xx (the data plane NOT answering) because the page
  *  must say a different thing: a 404, not a 503. */
 class PlpBadRequest extends Error {}
@@ -176,20 +176,20 @@ async function loadPlpData(env, url) {
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`);
   const data = await res.json();
   assertPlpPayload(path, data);
-  // The cache-state rides back out with the data — see CACHE_STATE below for
+  // The cache-state rides back out with the data, see CACHE_STATE below for
   // why dropping it would make this arm's published columns unfalsifiable.
   return { data, cacheState: res.headers.get("x-pm-cache-state") };
 }
 
 /**
- * The tray's SHAPE, checked where the data enters — because a
+ * The tray's SHAPE, checked where the data enters, because a
  * malformed-but-200 payload is the one failure this Worker's branded
  * boundary could not see.
  *
  * The editorial route already learned this: its `try` wraps the render
  * precisely so a degenerate tray throws inside the guard instead of
  * escaping as pm-front's plain-text 502. The PLP's render does NOT throw on
- * a bad payload — it interpolates. MEASURED: a payload identical to
+ * a bad payload. It interpolates. MEASURED: a payload identical to
  * `handlePlp`'s except `perPage` renamed renders a **200** page carrying
  * `Showing NaN–NaN of 240 releases` and every pagination href as
  * `?page=N&n=undefined`. Nothing throws, so the 503 never fires; `plp.js`
@@ -205,7 +205,7 @@ async function loadPlpData(env, url) {
  *
  * EXPORTED so the guard can drive it directly, and that is not incidental.
  * Driven only through `fetch`, the facets clauses are not independently
- * provable — every malformed-`facets` payload ALSO throws during template
+ * provable, every malformed-`facets` payload ALSO throws during template
  * interpolation, so the route answers 503 either way and a sabotage that
  * deletes those clauses produces no failure at all (measured; it is why
  * they are asserted here instead). Reached directly, each clause is a
@@ -228,7 +228,7 @@ export function assertPlpPayload(path, data) {
     Array.isArray(data.facets.styles) &&
     Array.isArray(data.facets.formats) &&
     // `applied` (2026-09-04): the rail's selected state is rendered from it,
-    // so a tray without it — a pre-`v2:` warm entry, were one ever served —
+    // so a tray without it, a pre-`v2:` warm entry, were one ever served,
     // is a 503 at the boundary, never a TypeError inside the template.
     data.applied !== null &&
     typeof data.applied === "object" &&
@@ -250,7 +250,7 @@ export function assertPlpPayload(path, data) {
  * `receipt.ts:51-52`). On every OTHER arm of the comparison the tray fetch
  * is client-side, so the edge tier's state is visible in the network log on
  * its own. On THIS arm the fetch happens inside the Worker, where nothing
- * external can see it — so the document header is the only place the served
+ * external can see it, so the document header is the only place the served
  * condition can surface at all. Without it every htmx PLP receipt records
  * `docCacheState: null`, and the cold/warm split rests on the runner having
  * ASKED for a condition with no evidence it GOT one.
@@ -276,11 +276,11 @@ export default {
       });
     }
 
-    // Normalize to the trailing-slash form, permanently — the same shape
+    // Normalize to the trailing-slash form, permanently, the same shape
     // qwik-city's router uses (its 301 is asserted in the origin suite);
     // a redirect that dropped the /htmx/ prefix would strand the visitor
     // on a path the front Worker routes nowhere. The Location is RELATIVE
-    // (RFC 9110 §10.2.2) so the one composed origin stays host-agnostic —
+    // (RFC 9110 §10.2.2) so the one composed origin stays host-agnostic,
     // an absolute URL here would bake in whichever host the front Worker
     // was reached on.
     if (url.pathname === "/htmx/editorial" || url.pathname === "/htmx/plp") {
@@ -299,8 +299,8 @@ export default {
         // request-time variant (the slice-B/D precedent): stay inside the
         // store's own shell, answer 503, never an unbranded stack page.
         // The RENDER sits inside the same guard (verify-slice finding): a
-        // malformed-but-200 tray — say a future re-freeze shipping the
-        // featured detail with zero images — would otherwise throw during
+        // malformed-but-200 tray, say a future re-freeze shipping the
+        // featured detail with zero images, would otherwise throw during
         // template interpolation and surface as pm-front's plain-text 502,
         // exactly the unbranded page this branch exists to prevent.
         // renderUnavailablePage takes no data, so the fallback cannot
@@ -309,7 +309,7 @@ export default {
       }
     }
 
-    // The catalogue grid — this variant's arm of the data-strategy
+    // The catalogue grid. This variant's arm of the data-strategy
     // comparison (ADR-0005 §1, "server loaders + PE"). The server does the
     // whole data fetch and returns finished HTML; the pagination links are
     // real links that htmx enhances into a partial swap, so an
@@ -327,7 +327,7 @@ export default {
         // Only when the edge actually sent one: inventing a value would be
         // worse than the absence it replaces.
         if (cacheState) headers[CACHE_STATE] = cacheState;
-        // A boosted swap pushes the REQUEST URL by default — for a boosted
+        // A boosted swap pushes the REQUEST URL by default, for a boosted
         // form that is the raw typed value in htmx's own encoding. The
         // address bar should name the condition the swap now shows, spelled
         // the way every link on the page spells it (the one href rule), so
@@ -336,7 +336,7 @@ export default {
         return new Response(body, { headers });
       } catch (err) {
         // A facet or sort value the snapshot does not hold: the plane
-        // ANSWERED (400), so this is a 404 that says so — never the
+        // ANSWERED (400), so this is a 404 that says so, never the
         // "data plane didn't answer" shell, which would report a hand-typed
         // `?genre=jazz` as an outage. `none`: not a warm-tier resource.
         if (err instanceof PlpBadRequest) {
@@ -345,7 +345,7 @@ export default {
             headers: { ...HTML, [CACHE_STATE]: "none" },
           });
         }
-        // `current: "plp"` — the fallback marks the surface the visitor is
+        // `current: "plp"`, the fallback marks the surface the visitor is
         // actually on. Editorial's own 503 above keeps the default and stays
         // byte-identical to what its receipts were measured against.
         return new Response(renderUnavailablePage({ current: "plp" }), {
@@ -355,7 +355,7 @@ export default {
       }
     }
 
-    // An unbuilt path under this variant's own prefix is a clean 404 — the
+    // An unbuilt path under this variant's own prefix is a clean 404, the
     // router is reached and answers (the qwik-block suite precedent).
     return new Response("not found\n", { status: 404 });
   },

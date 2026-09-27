@@ -3,11 +3,11 @@
 // the steps the registry entries take, then print the first-input's name and
 // the max event duration >= 40 ms (web-vitals 5.3.0's default gate).
 // Usage: node probe-first-input.mjs [before|after|rejected]
-//   before   — the first draft: a click to focus the card field; two clicks
+//   before  , the first draft: a click to focus the card field; two clicks
 //              in the recovery (the cell was the focusing click).
-//   after    — what ships (tools/bench-runner/src/collect.ts): programmatic
+//   after   . What ships (tools/bench-runner/src/collect.ts): programmatic
 //              focus, then keystrokes; two real clicks in the recovery.
-//   rejected — the programmatic priming (requestSubmit + fills, one click)
+//   rejected, the programmatic priming (requestSubmit + fills, one click)
 //              that made the successful submit the first input and was
 //              rejected because it manufactured CLS 0.099.
 // The suite's guard for the same claim drives the registry entries

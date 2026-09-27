@@ -4,7 +4,7 @@
  * `grep -c "checkout-" src/collect.ts` was 0: the surface whose spotlight is
  * INP under load had nothing to batch, and the decision map had recorded the
  * gap since the checkout build. The ids come from the ADR, so the ADR is read
- * here rather than the names re-typed — a renamed id on either side fails.
+ * here rather than the names re-typed, a renamed id on either side fails.
  *
  * What this file CANNOT do, stated: drive them. That needs a plane and a
  * browser and is the origin suite's `bench-checkout.browser.test.ts`. This
@@ -31,7 +31,7 @@ describe("the registry carries checkout's three ids", () => {
     }
   });
 
-  it("the names are the ADR's — read from docs/adr/0008, never re-typed here", () => {
+  it("the names are the ADR's, read from docs/adr/0008, never re-typed here", () => {
     const adr = readFileSync(
       join(repoRoot, "docs", "adr", "0008-store-surfaces-and-instrument.md"),
       "utf8",
@@ -42,7 +42,7 @@ describe("the registry carries checkout's three ids", () => {
   });
 
   it("the fill fixture covers exactly the ten ids checkout.js validates", () => {
-    // RULES in variants/vanilla/src/checkout.js — read off the file's `id:`
+    // RULES in variants/vanilla/src/checkout.js, read off the file's `id:`
     // entries so a rule added there without a fill value here fails. Comment
     // stripping is not needed for this shape: `{ id: "…"` opens each rule.
     const script = readFileSync(join(repoRoot, "variants", "vanilla", "src", "checkout.js"), "utf8");

@@ -3,16 +3,16 @@
  * re-implementation vs the reference master (checkout-vanilla).
  *
  * WHY THIS FILE EXISTS AT ALL, which is more of the point than what it
- * asserts: `@pm/vanilla` contributed ZERO tasks to turbo's 30 — verified
+ * asserts: `@pm/vanilla` contributed ZERO tasks to turbo's 30, verified
  * before this file landed (`turbo run lint typecheck test --dry=json` → 75
- * nodes, 30 with a real command, none of them this workspace) — so nothing
+ * nodes, 30 with a real command, none of them this workspace), so nothing
  * pre-merge ever read this package's own scripts. That is the precise gap
  * `pdp-controls` recorded after two of the PDP's four advertised
  * interactions shipped dead on ~500 deployed pages. The `test` script this
  * file gives the workspace makes the count 31, which is the honest number:
  * the 30 was a snapshot of a tree in which this variant was unguarded.
  *
- * Deliberately dependency-free — `node:test`, `node:assert`, no vitest, no
+ * Deliberately dependency-free, `node:test`, `node:assert`, no vitest, no
  * linkedom, no `@pm/drift-gate`. Two reasons, in order: the vanilla variant
  * IS the no-runtime, no-toolchain control and giving it a test toolchain
  * would blur that; and the comparison genuinely does not need a DOM, because
@@ -24,9 +24,9 @@
  * The reference renderer is reached by FILE URL here, never by package
  * specifier: `@pm/reference` exposes no JS entry point on purpose (ADR-0003
  * §1, asserted by `no-component-runtime.test.ts`). This workspace DOES now
- * declare `@pm/reference` — for the a11y section only, a singleton rendered
+ * declare `@pm/reference`, for the a11y section only, a singleton rendered
  * by the master renderer at build time (DIFF-TO-STARTER decision 6, ADR-0004
- * §2 addendum) — but the checkout is a re-typed benchmarked surface and its
+ * §2 addendum), but the checkout is a re-typed benchmarked surface and its
  * guard keeps the file-URL import so the two sides stay independent.
  *
  * `@pm/vanilla#test` is `"cache": false` in turbo.json (the entry this file
@@ -57,7 +57,7 @@ function stripDelivery(html) {
  * First point of divergence between two stripped documents, with context.
  *
  * `@pm/drift-gate` exports exactly this (`firstDomDivergence`) and this file
- * deliberately cannot import it — the package is a workspace dependency this
+ * deliberately cannot import it, the package is a workspace dependency this
  * variant does not and should not declare. Written here rather than skipped
  * because the sabotage pass proved the need: without it, a one-word drift
  * printed two 6 KB single-line blobs and the actual difference was invisible.
@@ -74,7 +74,7 @@ function firstDivergence(expected, actual, context = 70) {
   ].join("\n");
 }
 
-/** The stylesheet LIST, which the strip above throws away with the head —
+/** The stylesheet LIST, which the strip above throws away with the head,
  *  compared by tail after `/css/`, ORDER INCLUDED: cascade order is a
  *  rendering property, not a freedom. The vanilla, astro and react-next PDP
  *  guards all carry this leg. */
@@ -94,7 +94,7 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
   it("renderCheckoutPage matches renderCheckout after the delivery strip", () => {
     // The checkout is DATA-FREE: `renderCheckout` takes no snapshot at all
     // (`packages/reference/render/build.mjs:78` discards it), so unlike the
-    // editorial and PDP guards there is no fixture/crate loop here — there
+    // editorial and PDP guards there is no fixture/crate loop here. There
     // is exactly one page and one flavor of it.
     const master = stripDelivery(reference.renderCheckout({}));
     const variant = stripDelivery(renderCheckoutPage({ depth: 1 }));
@@ -137,7 +137,7 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
     assert.deepEqual(variant, master);
   });
 
-  it("the served markup carries no novalidate — the enhancement adds it", () => {
+  it("the served markup carries no novalidate, the enhancement adds it", () => {
     // checkout.mjs:9-12 is explicit: JS-off, native constraint validation is
     // the real behavior the page claims, so `novalidate` must NOT be in the
     // served document. It is set at wire-up, where this paradigm's own
@@ -153,8 +153,8 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
   });
 
   it("the express-shipping constant and the served option label are one number", () => {
-    // The price appears twice by necessity — as authored copy in the served
-    // markup and as arithmetic in the enhancement — and nothing else would
+    // The price appears twice by necessity, as authored copy in the served
+    // markup and as arithmetic in the enhancement, and nothing else would
     // notice them disagreeing. This is the only leg here that reads only
     // `variants/vanilla/**`, so it is the only one turbo can cache soundly.
     const script = readFileSync(
@@ -164,7 +164,7 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
     const declared = script.match(/const EXPRESS_SHIPPING = (\d+(?:\.\d+)?);/);
     assert.ok(declared, "EXPRESS_SHIPPING is not declared as a literal");
     const html = renderCheckoutPage({ depth: 1 });
-    const label = html.match(/Express — \$([\d,]+\.\d{2}), /);
+    const label = html.match(/Express, \$([\d,]+\.\d{2}), /);
     assert.ok(label, "the express option label does not state a price");
     assert.equal(Number(declared[1]), Number(label[1].replace(/,/g, "")));
   });
@@ -172,7 +172,7 @@ describe("vanilla's checkout equals the master textually (pre-merge)", () => {
 
 /**
  * The order-placed page (checkout-measure-prep, 2026-09-24): where a JS-off
- * "Place order" lands. Same guard, same strip, one page deeper — and two
+ * "Place order" lands. Same guard, same strip, one page deeper, and two
  * claims of its own: the master's `noindex` travels, and the Worker route
  * that makes the page reachable at all names exactly the paths the build
  * writes.
@@ -199,7 +199,7 @@ describe("vanilla's order-placed page equals its master textually (pre-merge)", 
     assert.deepEqual(variant, master);
   });
 
-  it("carries the master's noindex — and the form page carries none", () => {
+  it("carries the master's noindex, and the form page carries none", () => {
     const ROBOTS = '<meta name="robots" content="noindex">';
     assert.ok(reference.renderCheckoutPlaced({}).includes(ROBOTS), "the master is not noindex");
     assert.ok(renderCheckoutPlacedPage({ depth: 2 }).includes(ROBOTS), "the variant dropped noindex");
@@ -220,7 +220,7 @@ describe("vanilla's order-placed page equals its master textually (pre-merge)", 
 
   it("the Worker's POST route names the path the served form posts to, and the page the build writes", () => {
     // The behaviour (POST → 303 → 200) is the origin suite's to prove
-    // (checkout.test.ts, security-floor.test.ts) — and it HAS to be: the
+    // (checkout.test.ts, security-floor.test.ts), and it HAS to be: the
     // first draft of this route matched the form page's own URL, this pin
     // passed, and the plane answered 405 because a path with an asset behind
     // it never reaches the script. What this leg can honestly hold is the

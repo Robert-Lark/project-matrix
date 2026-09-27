@@ -4,7 +4,7 @@ import type { PlpPage, ReleaseDetail, SnapshotManifest } from "@pm/data-contract
 import { featuredIdFor } from "./snapshot";
 import { plpApiPath, type PlpCondition } from "./plp-condition";
 
-/** The variant binds pm-edge itself (wrangler.jsonc `services`) — the
+/** The variant binds pm-edge itself (wrangler.jsonc `services`), the
  *  front Worker's own EDGE binding doesn't reach a variant server-side
  *  (editorial-build PRD's per-slice binding duties). The host in the request
  *  URL is unused by pm-edge's router (path-only dispatch); it exists only
@@ -27,7 +27,7 @@ export async function loadFeatured(manifest: SnapshotManifest): Promise<ReleaseD
   return res.json();
 }
 
-/** One detail tray by id, or null when the plane has no such release — the
+/** One detail tray by id, or null when the plane has no such release, the
  *  PDP route turns that null into its 404 (the slug contract: parse the
  *  leading id, fetch, verify). Any other non-2xx is a data-plane failure and
  *  throws to the route's error boundary, exactly like loadFeatured. */
@@ -40,16 +40,16 @@ export async function loadDetail(id: number): Promise<ReleaseDetail | null> {
 
 /** The catalogue tray for one measurement condition (ADR-0005 §2: strategy is
  *  the PATH, condition is the QUERY). All three PLP routes fetch through this
- *  one function — the `cache=cold` bypass and the `?n=` volume knob reach the
+ *  one function, the `cache=cold` bypass and the `?n=` volume knob reach the
  *  data plane exactly as the visitor's URL asked, which is what makes the
- *  "Edge cache — KV" preset byte-identical code to the cold one with only the
+ *  "Edge cache, KV" preset byte-identical code to the cold one with only the
  *  serving tier flipped (ADR-0005 §1, the purest single-variable cell). */
 export async function loadPlp(condition: PlpCondition): Promise<PlpPage | null> {
   const path = plpApiPath(condition);
   const res = await edgeFetch(path);
   // A 400 is a facet or sort value the snapshot does not hold (ADR-0005 §5:
   // junk is a 400, never a key). The plane ANSWERED, so the route turns null
-  // into a 404 — never the error boundary's "the catalogue didn't answer",
+  // into a 404, never the error boundary's "the catalogue didn't answer",
   // which would report a hand-typed `?genre=jazz` as an outage (the
   // loadDetail precedent: 404 → null, everything else throws).
   if (res.status === 400) return null;

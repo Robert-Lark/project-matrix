@@ -1,5 +1,5 @@
 /**
- * The cost CLI — `pnpm cost …` from the repo root (built by esbuild to
+ * The cost CLI, `pnpm cost …` from the repo root (built by esbuild to
  * dist/cli.mjs).
  *
  *   pnpm cost from-receipt <receipt.json> \
@@ -11,7 +11,7 @@
  *     [--monthly-visits 3000] [--out report.json]
  *
  * Cache-hit ratio, region, the architecture-only host, and the per-target
- * real-world hosts are all REQUIRED — the §7 assumptions are explicit
+ * real-world hosts are all REQUIRED, the §7 assumptions are explicit
  * calculator inputs, never defaults hidden in code.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -64,12 +64,12 @@ function main(): number {
   const blank = (v: string | undefined) => v === undefined || v.trim() === "";
   if (!receiptPath || blank(values.card) || blank(values["cache-hit"]) || blank(values.region) || blank(values["architecture-host"]) || !values.host?.length) {
     console.error(
-      "from-receipt requires <receipt.json>, --card, --cache-hit, --region, --architecture-host, and one --host <path>=<hostId> per target — the assumptions are explicit inputs, never defaults (empty values are refused)",
+      "from-receipt requires <receipt.json>, --card, --cache-hit, --region, --architecture-host, and one --host <path>=<hostId> per target, the assumptions are explicit inputs, never defaults (empty values are refused)",
     );
     return 2;
   }
   if (values["monthly-visits"] !== undefined && values["monthly-visits"].trim() === "") {
-    console.error("--monthly-visits must carry a number when given — an empty value is not 0 visits");
+    console.error("--monthly-visits must carry a number when given, an empty value is not 0 visits");
     return 2;
   }
   const realWorldHosts: Record<string, string> = {};
@@ -82,7 +82,7 @@ function main(): number {
     const path = pair.slice(0, eq);
     if (path in realWorldHosts) {
       console.error(
-        `--host maps "${path}" twice (${realWorldHosts[path]} and ${pair.slice(eq + 1)}) — a duplicate mapping is refused, not last-wins`,
+        `--host maps "${path}" twice (${realWorldHosts[path]} and ${pair.slice(eq + 1)}), a duplicate mapping is refused, not last-wins`,
       );
       return 2;
     }

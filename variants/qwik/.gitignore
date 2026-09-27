@@ -1,5 +1,5 @@
 # build output (the client's public tree nests under dist/qwik/ because of
-# vite's `base` — see wrangler.jsonc)
+# vite's `base`, see wrangler.jsonc)
 dist/
 
 # the SSR build's output. Deliberately NOT inside dist/: dist/ IS this

@@ -16,14 +16,14 @@ allowBuilds:
 
 # @opennextjs/cloudflare's bundler step imports esbuild directly but does not
 # declare it as a dependency (relies on it being hoisted, which the
-# no-hoisting isolation below deliberately prevents) — editorial-build slice
+# no-hoisting isolation below deliberately prevents), editorial-build slice
 # B (react-next).
 packageExtensions:
   "@opennextjs/cloudflare":
     dependencies:
       esbuild: "^0.25.4"
   # @builder.io/qwik-city declares @builder.io/qwik in NEITHER dependencies nor
-  # peerDependencies — it relies entirely on the framework being hoisted, which
+  # peerDependencies. It relies entirely on the framework being hoisted, which
   # the isolation below deliberately prevents. Its post-build SSG step
   # (lib/static/node.mjs) then dies with ERR_MODULE_NOT_FOUND. Same class as the
   # entry above; found by editorial-build slice D (qwik).
@@ -32,7 +32,7 @@ packageExtensions:
   # qwik-city must resolve the SAME framework instance the app uses. A
   # `dependencies` entry has to name a version, and any literal there
   # (`"1.20.0"`) silently installs a SECOND copy the day variants/qwik bumps the
-  # framework — two cores, one of which nothing renders with. As a peer with
+  # framework, two cores, one of which nothing renders with. As a peer with
   # autoInstallPeers on, it resolves to whatever the consumer already has, which
   # is what upstream should have declared in the first place.
   "@builder.io/qwik-city":
@@ -40,7 +40,7 @@ packageExtensions:
       "@builder.io/qwik": "*"
   # @remix-run/render-middleware's PUBLISHED dist/lib/render.d.ts carries an
   # inline import type of "../../../fetch-router/src/lib/request-context.ts"
-  # — a relative path escaping the package into a SIBLING's raw TS source,
+  #, a relative path escaping the package into a SIBLING's raw TS source,
   # which itself imports @remix-run/route-pattern. render-middleware declares
   # only fetch-router, so under the isolation below tsc cannot resolve
   # route-pattern from that symlinked location and every consumer's typecheck
@@ -52,7 +52,7 @@ packageExtensions:
     peerDependencies:
       "@remix-run/route-pattern": "*"
   # apollo-link-rest@0.10.0-rc.2 imports `rxjs` in restLink.js:7 and declares
-  # it in NEITHER dependencies nor peerDependencies — it relies entirely on the
+  # it in NEITHER dependencies nor peerDependencies. It relies entirely on the
   # library being hoisted, which the isolation below deliberately prevents.
   # Turbopack then fails the build with "Module not found: Can't resolve
   # 'rxjs'". Fourth instance of this class (OpenNext/esbuild, qwik-city, remix
@@ -62,13 +62,13 @@ packageExtensions:
   # A PEER, not a dependency, for the qwik-city reason: rxjs is where
   # @apollo/client's own Observables come from (it is a peer of @apollo/client
   # too), and any literal version here would install a SECOND copy the day the
-  # exhibit bumps Apollo — two rxjs instances, one of which nothing recognises.
+  # exhibit bumps Apollo, two rxjs instances, one of which nothing recognises.
   "apollo-link-rest":
     peerDependencies:
       rxjs: "*"
 
 # Zero-bias dependency isolation (ADR-0004 §2): no hoisting at all, not even
-# pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules) — a
+# pnpm's hidden virtual-store hoist (node_modules/.pnpm/node_modules), a
 # workspace can resolve only what it declares, even through tooling that
 # exports NODE_PATH (vitest does). pnpm ≥10 reads this here, NOT from .npmrc.
 # Proven by tools/repo-checks/test/workspace-isolation.test.ts.

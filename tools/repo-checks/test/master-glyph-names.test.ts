@@ -1,8 +1,8 @@
 /**
  * No committed master ships a BARE GLYPH as an element's whole content.
  *
- * A lone "—" is not an accessible name. A screen reader announces it as "em
- * dash", or — with punctuation verbosity low, which is the common default —
+ * A lone "–" is not an accessible name. A screen reader announces it as "em
+ * dash", or, with punctuation verbosity low, which is the common default,
  * says nothing at all, so "this release has no price" and "the price failed
  * to render" become the same experience. `tracklist.css` has applied that
  * reasoning to empty duration cells since surface-design; `pdp.mjs`'s
@@ -12,17 +12,17 @@
  * Run against the masters on `origin/main` it reports SEVEN instances across
  * THREE sites: the PDP's unpriced amount (1), the release card's unpriced
  * price (5, in the PLP master), and checkout's cart total placeholder (1).
- * A fourth site — `pdp.mjs`'s null year — was repaired in the same pass but
+ * A fourth site, `pdp.mjs`'s null year, was repaired in the same pass but
  * this rule did NOT find it and cannot: all four resolved masters have years,
  * so no committed artifact renders that arm. It was found by reading. Saying
  * so matters, because "the guard found four" would credit the rule with the
  * one instance it is still blind to.
  *
- * The rule is deliberately not a list of glyphs to ban — an enumeration is a
+ * The rule is deliberately not a list of glyphs to ban, an enumeration is a
  * thing to forget to extend. Any element whose entire text is short and
  * carries neither a letter nor a digit is a glyph standing in for words, and
  * must either be hidden from assistive tech (with the words supplied beside
- * it — `lib.mjs` namedGlyph) or given a name of its own.
+ * it, `lib.mjs` namedGlyph) or given a name of its own.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -34,7 +34,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..")
 const surfaces = join(repoRoot, "packages", "reference", "surfaces");
 
 /** Every committed master, DERIVED FROM DISK. An earlier draft of this list
- *  was a hand-kept array under a comment claiming it was derived — exactly the
+ *  was a hand-kept array under a comment claiming it was derived, exactly the
  *  record-not-code shape `reference.test.ts` records ("eight" through three
  *  master additions), committed while asserting the opposite. */
 function committedMasters(): string[] {
@@ -51,7 +51,7 @@ function committedMasters(): string[] {
 
 const MASTERS = committedMasters();
 
-/** Letters and digits in ANY script — the crate carries CJK, Arabic, Greek
+/** Letters and digits in ANY script, the crate carries CJK, Arabic, Greek
  *  and Cyrillic titles, and none of those are bare glyphs. */
 const HAS_WORD_CHARACTER = /[\p{L}\p{N}]/u;
 
@@ -69,7 +69,7 @@ type El = {
   outerHTML: string;
 };
 
-/** Hidden from AT here or anywhere above — `aria-hidden` is inherited by the
+/** Hidden from AT here or anywhere above, `aria-hidden` is inherited by the
  *  whole subtree, so a glyph inside a hidden wrapper is already silent. */
 function hiddenFromAssistiveTech(el: El): boolean {
   for (let node: El | null = el; node; node = node.parentElement) {
@@ -95,7 +95,7 @@ function bareGlyphs(html: string): string[] {
   for (const raw of document.querySelectorAll("*")) {
     const el = raw as unknown as El;
     // Only LEAF text matters: an ancestor's textContent concatenates its
-    // children's, so <p><span aria-hidden>—</span><span>No price</span></p>
+    // children's, so <p><span aria-hidden>–</span><span>No price</span></p>
     // would otherwise read as the bare glyph plus words and be judged twice.
     if (el.children.length > 0) continue;
     const text = (el.textContent ?? "").trim();
@@ -125,9 +125,9 @@ describe("committed masters name every glyph they render", () => {
   it("the rule fires on the exact markup the PDP used to ship", () => {
     // The pre-pdp-controls unpriced amount, and the repair that replaced it.
     const before = `<!doctype html><html lang="en"><body><p class="pm-pdp__price">
-      <span class="pm-pdp__amount">—</span></p></body></html>`;
+      <span class="pm-pdp__amount">–</span></p></body></html>`;
     const after = `<!doctype html><html lang="en"><body><p class="pm-pdp__price">
-      <span class="pm-pdp__amount"><span aria-hidden="true">—</span><span
+      <span class="pm-pdp__amount"><span aria-hidden="true">–</span><span
       class="pm-sr-only">No price listed</span></span></p></body></html>`;
     expect(bareGlyphs(before)).toHaveLength(1);
     expect(bareGlyphs(before)[0]).toContain("pm-pdp__amount");
@@ -141,7 +141,7 @@ describe("committed masters name every glyph they render", () => {
       <span aria-label="Rating: 4 of 5">★</span>
       <td>A1</td>
       <dd>2 × Vinyl, LP, Album</dd>
-      <p>Your cart is empty — items appear here as you add them.</p>
+      <p>Your cart is empty, items appear here as you add them.</p>
       </body></html>`;
     expect(bareGlyphs(fine)).toEqual([]);
   });

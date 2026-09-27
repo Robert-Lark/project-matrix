@@ -1,5 +1,5 @@
 /**
- * The crate spec — the operational definition of the curated slice, as data
+ * The crate spec, the operational definition of the curated slice, as data
  * (rate-card precedent: no crate knowledge in code). The committed
  * crate.spec.json records Rob's choice (issue #9) so the capture is
  * reproducible from the spec + the frozen search checkpoints.

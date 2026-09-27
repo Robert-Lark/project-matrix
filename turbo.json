@@ -6,7 +6,7 @@
     // declared tolerance from workers/front/lab/fit.mjs, so the two guards on
     // that property cannot drift apart. That import crosses a workspace
     // boundary, and turbo's default input set is the package's own files plus
-    // its declared deps — so renaming the field would leave a STALE GREEN
+    // its declared deps, so renaming the field would leave a STALE GREEN
     // typecheck replayable from cache. Declared here for the same reason
     // @pm/front#build declares the crate manifest (verify-slice, skeptic lens).
     "@pm/origin-suite#typecheck": {
@@ -37,7 +37,7 @@
     "@pm/front#build": {
       "dependsOn": ["topo", "^build"],
       // The home surface's receipts are substituted from the crate manifest
-      // (ADR-0007) — without this input, a crate re-freeze that touches
+      // (ADR-0007), without this input, a crate re-freeze that touches
       // nothing under workers/front would replay a cached dist carrying the
       // OLD receipts, and the deploy leg would ship it before the post-deploy
       // smoke caught the drift.
@@ -46,7 +46,7 @@
       // miss the cache too.
       // The how-it-was-built page (how-it-was-built build, 2026-09-02) is
       // rendered from docs/ by @pm/reference's renderer, so docs/ ARE inputs
-      // of this task's dist and are declared as such — an undeclared input is
+      // of this task's dist and are declared as such, an undeclared input is
       // a lie in the build graph: a docs-only commit would replay a dist whose
       // page carries yesterday's index. The serving paths happen to survive
       // that lie (stamp-build.mjs re-renders the page on every re-stamp, and
@@ -69,7 +69,7 @@
       // from the labBundle-flagged surfaces. Declared as an output for the
       // same reason astro's src/data modules are: an undeclared build output
       // is hashed as a build INPUT, so every flavor switch would invalidate
-      // the cache this entry exists to serve — and a cache replay would
+      // the cache this entry exists to serve, and a cache replay would
       // otherwise restore a tree whose Worker import does not resolve.
       "outputs": ["dist/**", "generated/**"]
     },
@@ -79,7 +79,7 @@
       // variant builds (minted by the editorial build's slice A; every later
       // build-time variant declares it the same way): fixture default, crate
       // on the deploy job. The origin job and the deploy job share the
-      // turbo-origin-* cache family — without this env declaration (and the
+      // turbo-origin-* cache family, without this env declaration (and the
       // tray inputs below) the deploy job would replay the origin job's
       // fixture-flavored dist straight onto the crate-serving plane.
       "env": ["PM_SNAPSHOT"],
@@ -107,24 +107,24 @@
       // src/data/snapshot.json is as much a build OUTPUT as dist/ is:
       // scripts/prepare-build.mjs writes it (git-ignored) and the editorial
       // page statically imports it. Declaring it means a cache HIT restores
-      // it — without that, a hit replays only dist/, the script never runs,
+      // it, without that, a hit replays only dist/, the script never runs,
       // and the generated module is simply absent, so `astro check` fails
       // with ts(2307) (verify-slice finding; reproduced by deleting the file
       // and re-running a cache-hit build). Turbo's own check job happens to
       // stay green today because typecheck's hash is coupled to build's and
-      // hits alongside it — but that coupling is incidental, and the direct
+      // hits alongside it, but that coupling is incidental, and the direct
       // `pnpm run typecheck` inside this workspace fails immediately in that
       // state. Modelling the file as the output it is closes both.
       // public/assets/pm/** is deliberately NOT listed: nothing consumes it
       // after the build (Astro copies it INTO dist/, which is restored), so
       // declaring it would only duplicate ~1 MB of fonts in every cache entry.
       // src/data/pdp.json is the SECOND generated module (pdp-variants slice
-      // 2, the PDP bake) — same ts(2307) cache-hit trap as snapshot.json.
+      // 2, the PDP bake), same ts(2307) cache-hit trap as snapshot.json.
       "outputs": ["dist/**", "src/data/snapshot.json", "src/data/pdp.json"]
     },
     "@pm/astro#typecheck": {
       // `astro check` type-checks src/pages/editorial/index.astro, which
-      // statically imports the GENERATED src/data/snapshot.json — so the
+      // statically imports the GENERATED src/data/snapshot.json, so the
       // typecheck genuinely depends on this package's own build having run
       // (scripts/prepare-build.mjs writes it). Without this, a fresh checkout
       // fails with ts(2307) "Cannot find module '../../data/snapshot.json'":
@@ -135,11 +135,11 @@
     },
     "@pm/front#typecheck": {
       // The front Worker's typecheck (workers-hardening, 2026-09-25) reads
-      // ../generated/lab-bundles.js — the module build.mjs GENERATES from
-      // the labBundle-flagged surfaces and gitignores — so, exactly like
+      // ../generated/lab-bundles.js, the module build.mjs GENERATES from
+      // the labBundle-flagged surfaces and gitignores, so, exactly like
       // @pm/astro#typecheck above, it genuinely depends on this package's
       // own build having run: a fresh checkout otherwise fails with
-      // ts(2307) "Cannot find module '../generated/lab-bundles.js'" — green
+      // ts(2307) "Cannot find module '../generated/lab-bundles.js'", green
       // on any machine that has ever built, red in CI's `check` job, which
       // never builds first. `generated/**` is a declared output of the
       // build, so a cache HIT restores it too. Verified by deleting the
@@ -150,7 +150,7 @@
       // The pre-merge master-identity guard (variants/astro/test) renders the
       // editorial document for BOTH snapshots and compares each against the
       // reference renderer's own output. Its real inputs therefore span the
-      // reference render/ tree and both committed snapshots — a set that is
+      // reference render/ tree and both committed snapshots, a set that is
       // easy to under-declare, and an under-declared input here means turbo
       // replays a stale PASS while crate-flavored copy has actually drifted
       // (precisely the hole this guard exists to close). Uncached, like
@@ -158,7 +158,7 @@
       //
       // dependsOn build: the guard also renders the PAGE, which statically
       // imports the GENERATED src/data/snapshot.json, so the build that writes
-      // it must have run (verify-slice finding — the page was otherwise the one
+      // it must have run (verify-slice finding, the page was otherwise the one
       // thing nothing exercised pre-merge, so a crate-only page-wiring bug
       // could merge green and turn the post-deploy smoke red).
       "dependsOn": ["topo", "build"],
@@ -168,7 +168,7 @@
       // Same hazard as @pm/astro#test above, same fix. The checkout and PDP
       // master-identity guards in variants/vanilla/test render the reference
       // master and compare it to the variant's own render, so their real
-      // inputs span packages/reference/render/** — which the default
+      // inputs span packages/reference/render/**, which the default
       // `variants/vanilla/**` input set does not cover. Under-declared inputs
       // on THIS guard mean turbo replays a stale PASS while the master and
       // the variant have actually diverged: exactly the divergence the guard
@@ -186,7 +186,7 @@
       // the reference renderer's own output, and its honesty leg reads
       // workers/edge's PLP handler to assert which query params that Worker
       // implements. Its real inputs therefore span the reference render/
-      // tree, both committed snapshots AND a third workspace — a set that is
+      // tree, both committed snapshots AND a third workspace, a set that is
       // easy to under-declare, and an under-declared input here means turbo
       // replays a stale PASS while the contract has actually moved, which is
       // precisely the hole this guard exists to close. Uncached, like
@@ -195,14 +195,14 @@
       //
       // No dependsOn build, like qwik's and remix3's: nothing here imports
       // generated build output. htmx is a REQUEST-TIME variant, so there is
-      // no baked snapshot module to exist first — the guard drives the
+      // no baked snapshot module to exist first, the guard drives the
       // renderer and the Worker directly with tray data it reads itself.
       "cache": false
     },
     "@pm/qwik#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized: qwik is a REQUEST-TIME variant
-      // (editorial-build slice D — trays fetched through the edge Worker per
+      // (editorial-build slice D, trays fetched through the edge Worker per
       // request), so there is no PM_SNAPSHOT env declaration here, exactly as
       // for @pm/react-next#build below. But src/lib/snapshot.ts statically
       // imports the fixture's committed manifest.json/curation.json at build
@@ -217,8 +217,8 @@
       // dist/_worker.js, which imports ../server/entry.cloudflare-pages by
       // relative path (the adapter's own generate() hook writes it that way).
       // server/ deliberately lives OUTSIDE dist/ because dist/ is this
-      // Worker's public asset directory — a server bundle in there would be
-      // downloadable — so it has to be declared separately or a turbo cache
+      // Worker's public asset directory, a server bundle in there would be
+      // downloadable, so it has to be declared separately or a turbo cache
       // HIT would restore dist/ alone and `wrangler deploy` would fail to
       // resolve the import. (The @pm/astro#build precedent: declare every
       // build product, not just the obvious directory.)
@@ -227,10 +227,10 @@
     "@pm/remix3#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized: remix3 is a REQUEST-TIME variant
-      // (editorial-build slice F — trays fetched through the edge Worker per
+      // (editorial-build slice F, trays fetched through the edge Worker per
       // request), no PM_SNAPSHOT anywhere, exactly like @pm/qwik#build. And
       // like qwik's snapshot policy, src/snapshot.mjs statically imports the
-      // fixture's committed manifest.json/curation.json — but here wrangler
+      // fixture's committed manifest.json/curation.json, but here wrangler
       // bundles that module at dev/deploy time, OUTSIDE this build task
       // (build.mjs only assembles assets), so those files are not inputs;
       // nothing cached embeds them (the htmx precedent).
@@ -246,7 +246,7 @@
       // tree and both committed snapshots, so an under-declared input would
       // replay a stale PASS. Uncached, correctness over ~1s.
       //
-      // No dependsOn build: nothing here imports generated build output —
+      // No dependsOn build: nothing here imports generated build output,
       // the guard drives the Worker module directly (request-time variant,
       // no baked snapshot module).
       "cache": false
@@ -255,7 +255,7 @@
       // The pre-merge master-identity guard (variants/qwik/test) renders this
       // variant's components for BOTH snapshots and compares each against the
       // reference renderer's output. Its real inputs therefore span the
-      // reference render/ tree and both committed snapshots — a set that is easy
+      // reference render/ tree and both committed snapshots, a set that is easy
       // to under-declare, and an under-declared input means turbo replays a
       // stale PASS while crate-flavoured copy has actually drifted, which is
       // precisely the hole this guard exists to close. Uncached, like
@@ -264,20 +264,20 @@
       //
       // No dependsOn build, unlike @pm/astro#test: nothing here imports
       // generated build output. qwik is a REQUEST-TIME variant, so there is no
-      // baked snapshot module to exist first — the guard drives the components
+      // baked snapshot module to exist first, the guard drives the components
       // directly with tray data it reads itself.
       "cache": false
     },
     "@pm/react-next#build": {
       "dependsOn": ["topo", "^build"],
       // Not snapshot-parameterized for the TRAYS (request-time variant,
-      // editorial-build slice B — fetched through the edge Worker per
-      // request, no PM_SNAPSHOT env declaration needed here) — but
+      // editorial-build slice B, fetched through the edge Worker per
+      // request, no PM_SNAPSHOT env declaration needed here), but
       // src/lib/snapshot.ts statically imports the fixture's committed
       // manifest.json/curation.json at build time (to resolve the
       // featured-id policy without a hardcoded crate-name string); without
       // these as declared inputs, regenerating the fixture would replay a
-      // stale cached bundle (verify-slice finding — the
+      // stale cached bundle (verify-slice finding, the
       // @pm/vanilla#build precedent above, same hazard, narrower cause).
       "inputs": [
         "$TURBO_DEFAULT$",
@@ -294,7 +294,7 @@
       // and compares each against the reference renderer's own output, over a
       // tray it gets by driving the real edge Worker in-process. Its true
       // inputs therefore span packages/reference/render/**, workers/edge/src/**
-      // and both committed snapshots — a set that is easy to under-declare,
+      // and both committed snapshots, a set that is easy to under-declare,
       // and an under-declared input here means turbo replays a stale PASS
       // while the contract has actually drifted, which is precisely the hole
       // this guard exists to close. Uncached, like @pm/astro#test,
@@ -303,7 +303,7 @@
       //
       // No dependsOn build, unlike @pm/astro#test: nothing here imports
       // generated build output. react-next is a REQUEST-TIME variant, so there
-      // is no baked snapshot module to exist first — the guard drives the
+      // is no baked snapshot module to exist first, the guard drives the
       // components directly with tray data it mints itself.
       "cache": false
     },
@@ -323,7 +323,7 @@
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/tools/snapshot-fixture/snapshot/**",
         // The PDP master-set guards call loadSnapshot("crate") as well as
-        // ("fixture") — without this the crate trays can change and the
+        // ("fixture"), without this the crate trays can change and the
         // cached PASS replays against data the test never read (pdp-build
         // added the crate leg; this input did not follow it).
         "$TURBO_ROOT$/tools/snapshot-capture/crate/*.json",
@@ -339,7 +339,7 @@
     "@pm/edge#test": {
       // The data-plane guard (workers/edge/test/plp-params.test.js) drives the
       // Worker over BOTH committed snapshots and reads the crate by
-      // repo-relative path — a path turbo does not hash, because
+      // repo-relative path, a path turbo does not hash, because
       // @pm/snapshot-capture is not a dependency of @pm/edge (and should not
       // be: a capture tool's tree in the data plane's install for a test-only
       // read). Cached, a crate re-freeze would replay a stale PASS for exactly
@@ -356,7 +356,7 @@
     "@pm/bench-runner#test": {
       // The interactions guard (tools/bench-runner/test/interactions.test.ts,
       // checkout-measure-prep 2026-09-24) reads docs/adr/0008 and
-      // variants/vanilla/src/checkout.js by path — neither a dependency of
+      // variants/vanilla/src/checkout.js by path. Neither a dependency of
       // this package, so neither in its hash. Cached, an eleventh RULES entry
       // or a renamed id in the ADR would replay a stale PASS for exactly the
       // legs that hold the fill fixture and the id names to their sources.

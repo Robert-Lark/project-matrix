@@ -1,6 +1,6 @@
 /**
  * The canonical formatting rules, re-implemented for this variant
- * (ADR-0003 §1: a component is a spec, re-implemented per paradigm —
+ * (ADR-0003 §1: a component is a spec, re-implemented per paradigm,
  * `packages/reference/render/lib.mjs` is the rules of record and nothing here
  * imports it). The drift gate polices the result both ways: in CI against the
  * fixture master and on the deployed plane against the master re-rendered
@@ -14,7 +14,7 @@ import type { Price, ReleaseSummary } from "@pm/data-contract";
  * so this is that path's security boundary.
  *
  * Measured, not assumed: this is byte-identical to Astro's own `{expr}`
- * escaping — Astro escapes through `html-escaper`, which maps the same five
+ * escaping, Astro escapes through `html-escaper`, which maps the same five
  * characters to the same entities, apostrophe included (`&#39;`, decimal).
  * So markup written as Astro template expressions and markup built as a
  * string here escape identically, and both match the reference renderer.
@@ -32,7 +32,7 @@ export function esc(value: string | number): string {
 
 /** Price: USD renders as "$" + amount, exactly two decimals, "," thousands
  *  separator; non-USD falls back to "<amount> <CUR>". A null price is not a
- *  price of zero — the card renders an em dash and `stockLine` tells the
+ *  price of zero, the card renders an em dash and `stockLine` tells the
  *  honest story. */
 export function formatPrice(priceFrom: Price | null): string | null {
   if (priceFrom == null) return null;

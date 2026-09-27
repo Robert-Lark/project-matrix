@@ -1,5 +1,5 @@
 /**
- * Plain-text rendering of a cost report — the published arithmetic in
+ * Plain-text rendering of a cost report, the published arithmetic in
  * readable form (ADR-0001 §7 "publish the arithmetic"). The JSON report is
  * the artifact; this is the same content for a terminal.
  */
@@ -7,7 +7,7 @@ import type { CostReportT, PricedTargetT } from "./report";
 
 function money(n: number | null): string {
   if (n === null) return "unavailable";
-  // A tiny nonzero must never display as the load-bearing "$0" — same
+  // A tiny nonzero must never display as the load-bearing "$0", same
   // small-number path as cost.ts's fmt().
   if (n !== 0 && Math.abs(n) < 1e-4) return `$${n.toExponential(4).replace(/\.?0+e/, "e")}`;
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
@@ -23,7 +23,7 @@ function renderTarget(t: PricedTargetT): string[] {
   }
   if (t.unpriced.length > 0) {
     out.push(
-      `    UNPRICED (never estimated): ${t.unpriced.map((u) => u.meter).join(", ")} — priced subtotal ${money(t.pricedSubtotalUsdPer1MVisits)} is PARTIAL`,
+      `    UNPRICED (never estimated): ${t.unpriced.map((u) => u.meter).join(", ")}, priced subtotal ${money(t.pricedSubtotalUsdPer1MVisits)} is PARTIAL`,
     );
   }
   if (t.unmeasuredMeters.length > 0) {
@@ -39,7 +39,7 @@ export function renderReport(report: CostReportT): string {
   const out: string[] = [];
   out.push(`pm-cost-report ${report.date}`);
   out.push(
-    `measurement: receipt ${report.input.receiptDate} @ ${report.input.commit.sha.slice(0, 10)}${report.input.commit.dirty ? " (dirty)" : ""} — origin ${report.input.origin}, profile ${report.input.profileId}, n=${report.input.n}, runs=${report.input.runsPerUrl}, location ${report.input.runLocation}`,
+    `measurement: receipt ${report.input.receiptDate} @ ${report.input.commit.sha.slice(0, 10)}${report.input.commit.dirty ? " (dirty)" : ""}, origin ${report.input.origin}, profile ${report.input.profileId}, n=${report.input.n}, runs=${report.input.runsPerUrl}, location ${report.input.runLocation}`,
   );
   out.push(
     `prices: rate card "${report.card.id}" captured ${report.card.capturedAt} (${report.card.verifiedBy})`,

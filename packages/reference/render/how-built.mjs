@@ -1,28 +1,28 @@
 /**
- * How it was built — the process as evidence (ADR-0008 §8; the PRD at
+ * How it was built, the process as evidence (ADR-0008 §8; the PRD at
  * docs/prds/how-it-was-built-build.md is the contract).
  *
  * The surface INDEXES the record; it never copies it. Every list is generated
- * at render time from the file it names — the ADR index from docs/adr/*.md
+ * at render time from the file it names, the ADR index from docs/adr/*.md
  * frontmatter + titles, each ADR's corrections from its own `## Addendum`
  * headings, the phase list from docs/build-log.md, the reviews from
  * docs/reviews/, and the methodology sections from the served page's own
- * <h2 id> list (workers/front/methodology/index.html — that page KEEPS its
+ * <h2 id> list (workers/front/methodology/index.html, that page KEEPS its
  * URL and is indexed, PRD Decision 2). Nothing in the lists is retyped; the
  * prose between them is authored, and the page says so. The build line sits
- * in the <header> as the dek — prose.css's contract is "no classes inside
+ * in the <header> as the dek, prose.css's contract is "no classes inside
  * .pm-prose". Rendering whole ADRs as pages was declined (PRD Decision 1).
  *
  * ONE renderer, two heads (PRD Decision 4). The committed master
  * (render/build.mjs) and the served page (workers/front, written at build
  * attestation) are both this function. The front passes its own pre-composed
- * `head` — inlined CSS and /pm/ font paths, the home delivery shape (ADR-0007
- * §6) — and the build attestation `{sha, dirty}`, which pins every deep link
+ * `head`, inlined CSS and /pm/ font paths, the home delivery shape (ADR-0007
+ * §6), and the build attestation `{sha, dirty}`, which pins every deep link
  * to the served commit. The master passes neither, so its bytes stay stable
  * while docs move; its INDEX is pinned by test/reference.test.ts.
  *
  * Deep links are receipts (PRD Decision 1): `blob/{ref}/{path}` where `ref`
- * is the attested SHA — or `main` when the tree was dirty, said so on the
+ * is the attested SHA, or `main` when the tree was dirty, said so on the
  * page. Two anchor forms, by what GitHub can show:
  *  - an ADR is rendered, so an addendum links GitHub's own heading anchor
  *    (`#addendum--…`). The rule is github-slugger's, pinned in
@@ -30,7 +30,7 @@
  *  - the build log is NOT rendered by GitHub's blob view (its payload carries
  *    `richText: null, richTextTruncated: true` at 403 KB, checked 2026-09-02),
  *    so a heading fragment would scroll nowhere. A phase links the code view
- *    at the heading's own line (`?plain=1#L<n>`) — exact at a pinned SHA.
+ *    at the heading's own line (`?plain=1#L<n>`), exact at a pinned SHA.
  * tools/repo-checks re-derives every fragment from the named file (slug from
  * its headings, line from its text), so either kind rots loudly, offline.
  */
@@ -62,7 +62,7 @@ export function refFor(build) {
     !/^[0-9a-f]{40}$/.test(build.sha)
   ) {
     throw new Error(
-      `how-built: build attestation is malformed (${JSON.stringify(build)}) — expected {sha: <40 hex>, dirty: boolean}, the /_pm/build.json shape`,
+      `how-built: build attestation is malformed (${JSON.stringify(build)}), expected {sha: <40 hex>, dirty: boolean}, the /_pm/build.json shape`,
     );
   }
   return build.dirty ? "main" : build.sha;
@@ -71,7 +71,7 @@ export function refFor(build) {
 /**
  * GitHub's heading anchor for one heading's text (github-slugger): lowercase;
  * drop every character that is not a letter, mark, number, connector
- * punctuation, hyphen or space; spaces become hyphens. So `## Addendum — the
+ * punctuation, hyphen or space; spaces become hyphens. So `## Addendum, the
  * ruler's accounting fixes (2026-08-01, issue #16 + audit)` becomes
  * `addendum--the-rulers-accounting-fixes-2026-08-01-issue-16--audit`, which
  * is the id the rendered page carries (fetched 2026-09-02). Duplicate slugs
@@ -119,25 +119,25 @@ export function githubAnchors(markdown) {
 }
 
 /** A field the index renders must exist: `<time datetime="">` is invalid
- *  HTML and a line ending in " — " is a half-sentence, and no guard reads the
+ *  HTML and a line ending in ", " is a half-sentence, and no guard reads the
  *  text (verify-slice). Refuse the render, naming the file and the field. */
 function required(value, file, field) {
   if (value == null || value === "") {
-    throw new Error(`how-built: ${file} has no ${field} — the index renders it; add the field rather than ship an empty slot`);
+    throw new Error(`how-built: ${file} has no ${field}, the index renders it; add the field rather than ship an empty slot`);
   }
   return value;
 }
 
 /**
- * GitHub slugs a heading's RENDERED text — a link's label rather than its
- * URL, emphasis without its delimiters, entities decoded — while this rule
+ * GitHub slugs a heading's RENDERED text, a link's label rather than its
+ * URL, emphasis without its delimiters, entities decoded, while this rule
  * slugs the source. The two agree for every indexed heading today (pinned by
  * the fetched vectors in test/reference.test.ts) and would not for one that
  * carries inline markdown, so such a heading REFUSES the render rather than
  * minting a fragment that scrolls nowhere (verify-slice, correctness +
  * skeptic lenses). Underscores are kept by GitHub inside a word
  * (`snake_case`) and dropped as emphasis delimiters, so only delimiter
- * positions are refused. Applied to the headings this page LINKS by slug —
+ * positions are refused. Applied to the headings this page LINKS by slug,
  * the addenda; phases link by line, and the dedupe counter over other
  * headings only ever adds a numeric suffix.
  */
@@ -145,14 +145,14 @@ const INLINE_MARKDOWN = /\]\(|<|&[#A-Za-z0-9]+;|(?<!\w)_|_(?!\w)/;
 function assertSluggable(text, where) {
   if (INLINE_MARKDOWN.test(text)) {
     throw new Error(
-      `how-built: the ${where} heading "${text}" carries inline markdown (a link, HTML, an entity or _emphasis_) — GitHub slugs the rendered text and this renderer slugs the source, so decide the anchor rule for it before linking it`,
+      `how-built: the ${where} heading "${text}" carries inline markdown (a link, HTML, an entity or _emphasis_), GitHub slugs the rendered text and this renderer slugs the source, so decide the anchor rule for it before linking it`,
     );
   }
 }
 
 const blob = (ref, path, fragment) =>
   `${REPO_URL}/blob/${ref}/${path}${fragment ? `#${fragment}` : ""}`;
-/** The code view at one line — for a file GitHub's blob view will not render. */
+/** The code view at one line, for a file GitHub's blob view will not render. */
 const blobLine = (ref, path, line) => `${REPO_URL}/blob/${ref}/${path}?plain=1#L${line}`;
 
 function adrIndex(ref) {
@@ -168,7 +168,7 @@ function adrIndex(ref) {
       const status = required(src.match(/^status:\s*(\S+)/m)?.[1], file, "status:");
       // The corrections: every `## Addendum…` heading, linked to ITS anchor.
       // An index that showed ADR-0001 as one accepted line would hide five
-      // later corrections to it — the strongest evidence this page has.
+      // later corrections to it, the strongest evidence this page has.
       const addenda = githubAnchors(src)
         .filter((a) => a.level === 2 && /^Addendum\b/.test(a.text))
         .map((a, i) => ({
@@ -183,10 +183,10 @@ function adrIndex(ref) {
 function phaseIndex(ref) {
   const log = readFileSync(join(docsDir, "build-log.md"), "utf8");
   return githubAnchors(log)
-    .filter((a) => a.level === 2 && /^Phase \d+ — /.test(a.text))
+    .filter((a) => a.level === 2 && /^Phase \d+: /.test(a.text))
     .map((a) => ({
       // The id carries the phase NUMBER from the heading, not the list
-      // position — the reference test pins `id="phase-{n}"` per heading.
+      // position, the reference test pins `id="phase-{n}"` per heading.
       n: a.text.match(/^Phase (\d+)/)[1],
       text: a.text,
       href: blobLine(ref, "docs/build-log.md", a.line),
@@ -219,7 +219,7 @@ function reviewIndex(ref) {
 const HEADING_MARKERS = { "%%LAB_RUNS%%": "N" };
 
 /**
- * Every <h2> on the methodology page with its id — the contract this index
+ * Every <h2> on the methodology page with its id, the contract this index
  * and its guards read (the page's own header comment says so). Attribute
  * ORDER is free (`<h2 class="x" id="y">` indexes like `<h2 id="y">`), HTML
  * comments are stripped first (that header comment quotes <h2> markup), and
@@ -235,7 +235,7 @@ export function methodologyHeadings(html) {
     const id = m[1].match(/\bid="([^"]+)"/)?.[1];
     if (!id) {
       throw new Error(
-        `how-built: a methodology <h2> has no id ("${m[2].replace(/<[^>]+>/g, "").trim().slice(0, 60)}") — every section of /methodology/ is indexed by its id, so give it one`,
+        `how-built: a methodology <h2> has no id ("${m[2].replace(/<[^>]+>/g, "").trim().slice(0, 60)}"), every section of /methodology/ is indexed by its id, so give it one`,
       );
     }
     return { id, inner: m[2] };
@@ -256,7 +256,7 @@ function methodologySections() {
       .replace(/%%[A-Z_]+%%/g, (marker) => {
         if (!Object.hasOwn(HEADING_MARKERS, marker)) {
           throw new Error(
-            `how-built: methodology heading id="${id}" carries the marker ${marker}, which this index has no rendering for — decide what a figure-free page shows there (how-built.mjs HEADING_MARKERS)`,
+            `how-built: methodology heading id="${id}" carries the marker ${marker}, which this index has no rendering for, decide what a figure-free page shows there (how-built.mjs HEADING_MARKERS)`,
           );
         }
         return HEADING_MARKERS[marker];
@@ -305,7 +305,7 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
           <details open>
             <summary>Decision records</summary>
             <ul role="list">
-              ${toc(adrs.map((a) => `<li><a href="#${esc(a.stem)}">${esc(a.title.split(" — ")[0])}</a></li>`))}
+              ${toc(adrs.map((a) => `<li><a href="#${esc(a.stem)}">${esc(a.title.split(": ")[0])}</a></li>`))}
             </ul>
           </details>
           <details open>
@@ -317,7 +317,7 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
           <details open>
             <summary>Reviews</summary>
             <ul role="list">
-              ${toc(reviews.map((r) => `<li><a href="#${esc(r.id)}">${esc(r.title.split(" — ")[0])}</a></li>`))}
+              ${toc(reviews.map((r) => `<li><a href="#${esc(r.id)}">${esc(r.title.split(": ")[0])}</a></li>`))}
             </ul>
           </details>
           <details open>
@@ -340,15 +340,15 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
             <p class="pm-doc__build">${buildLine(build)}</p>
           </header>
           <div class="pm-prose">
-            <p>Every load-bearing decision behind this site — how measurement stays fair, why the data is frozen, how the rendering paradigms share one design system without sharing code — was written down when it was made, with the alternatives that lost. This page indexes that record: the architecture decision records and every correction later made to them, the build log's phases, the adversarial reviews, and the sections of the methodology page. Every list is generated from the file it names; nothing in the lists is retyped. The prose between the lists is written by hand.</p>
-            <p>The short version of the method: decide one thing per session, record it as an architecture decision record, attack the decision with a review before building on it — the panels are the project's own, not external referees — and let every published number carry a receipt. Read the corrections before the titles: an accepted decision that was later amended is the record arguing with itself, and that is the evidence this page exists to show. The store you're browsing is the working end of that process.</p>
+            <p>Every load-bearing decision behind this site (how measurement stays fair, why the data is frozen, how the rendering paradigms share one design system without sharing code) was written down when it was made, with the alternatives that lost. This page indexes that record: the architecture decision records and every correction later made to them, the build log's phases, the adversarial reviews, and the sections of the methodology page. Every list is generated from the file it names; nothing in the lists is retyped. The prose between the lists is written by hand.</p>
+            <p>The short version of the method: decide one thing per session, record it as an architecture decision record, attack the decision with a review before building on it, the panels are the project's own, not external referees, and let every published number carry a receipt. Read the corrections before the titles: an accepted decision that was later amended is the record arguing with itself, and that is the evidence this page exists to show. The store you're browsing is the working end of that process.</p>
             <h2 id="decision-records">Decision records</h2>
             <p>Each record links its own file at the pinned commit; the corrections listed beneath a record link the addendum that made them.</p>
             <ul>
               ${adrs
                 .map(
                   (a) =>
-                    `<li id="${esc(a.stem)}"><a href="${esc(a.href)}" rel="noopener">${esc(a.title)}</a> — <time datetime="${esc(a.date)}">${esc(a.date)}</time>, ${esc(a.status)}` +
+                    `<li id="${esc(a.stem)}"><a href="${esc(a.href)}" rel="noopener">${esc(a.title)}</a>, <time datetime="${esc(a.date)}">${esc(a.date)}</time>, ${esc(a.status)}` +
                     (a.addenda.length > 0
                       ? `\n                <ul>\n                  ${a.addenda
                           .map(
@@ -362,7 +362,7 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
                 .join("\n              ")}
             </ul>
             <h2 id="build-log">Build log</h2>
-            <p>The narrative record, phase by phase — including the failures and the reviews that caught them. Each link opens the log's source at that phase's own heading line; the file is too long for GitHub to render as a page:</p>
+            <p>The narrative record, phase by phase, including the failures and the reviews that caught them. Each link opens the log's source at that phase's own heading line; the file is too long for GitHub to render as a page:</p>
             <ul>
               ${phases
                 .map(
@@ -377,7 +377,7 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
               ${reviews
                 .map(
                   (r) =>
-                    `<li id="${esc(r.id)}"><a href="${esc(r.href)}" rel="noopener">${esc(r.title)}</a> — <time datetime="${esc(r.date)}">${esc(r.date)}</time></li>`,
+                    `<li id="${esc(r.id)}"><a href="${esc(r.href)}" rel="noopener">${esc(r.title)}</a>, <time datetime="${esc(r.date)}">${esc(r.date)}</time></li>`,
                 )
                 .join("\n              ")}
             </ul>
@@ -398,7 +398,7 @@ export function renderHowBuilt({ extraDepth = 0, head, build = null } = {}) {
       </div>`;
 
   return page({
-    title: "How it was built — Project Matrix",
+    title: "How it was built · Project Matrix",
     depth: 2 + extraDepth,
     css: ["components/prose.css", "surfaces/how-built.css"],
     current: null,

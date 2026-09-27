@@ -1,5 +1,5 @@
 /**
- * Astro's add-to-cart — this variant's implementation of the cart storage
+ * Astro's add-to-cart. This variant's implementation of the cart storage
  * contract (`packages/reference/render/shell.mjs` CART_CONTRACT is the contract
  * of record; `tools/origin-suite/suite/cart.browser.test.ts` asserts this
  * file's behavior against the imported constant, for every live variant).
@@ -8,10 +8,10 @@
  * enhancement. With JS off the button is honestly inert and the page states
  * nothing false. The cart survives a variant swap because `localStorage` is
  * same-origin and every variant agrees on one key and one value shape
- * (ADR-0004 §5) — five independent inventions would break that silently.
+ * (ADR-0004 §5), five independent inventions would break that silently.
  *
  * Astro bundles this module into the page's one `<script>` (TypeScript, import
- * resolution, `type="module"`). It is deliberately not an island — see
+ * resolution, `type="module"`). It is deliberately not an island, see
  * DIFF-TO-STARTER.md.
  */
 const KEY = "pm:cart";
@@ -30,7 +30,7 @@ const EMPTY: Cart = { v: VERSION, items: [] };
 
 /**
  * Contract recovery rule: a missing, unparseable, or schema-failing value IS
- * the empty cart — the next successful add overwrites it. Never throws, so a
+ * the empty cart, the next successful add overwrites it. Never throws, so a
  * corrupt value can't take the masthead down with it.
  */
 function read(): Cart {
@@ -70,7 +70,7 @@ const total = (cart: Cart): number => cart.items.reduce((n, item) => n + item.qt
 /**
  * Contract Badge + Label. The badge caps at "9+" because the slot reserves
  * `min-width: 2.4ch` (masthead.css) and an uncapped three-digit count would
- * widen it — a layout shift the shell must never manufacture. The exact number
+ * widen it, a layout shift the shell must never manufacture. The exact number
  * still reaches assistive tech through the anchor's accessible name, since the
  * count span itself is `aria-hidden`.
  */
@@ -103,7 +103,7 @@ function cartItem(): { id: number; title: string } | null {
 
 export function mountCart(): void {
   // Every shell page load repopulates the masthead from whatever is already
-  // stored — this is the mechanism that makes the cart survive a swap.
+  // stored. This is the mechanism that makes the cart survive a swap.
   renderCount(total(read()));
 
   const item = cartItem();
@@ -125,7 +125,7 @@ export function mountCart(): void {
     const count = total(cart);
     renderCount(count);
     const status = document.querySelector("[data-pm-status]");
-    // textContent, never HTML (contract) — the title is tray data.
-    if (status) status.textContent = `Added "${item.title}" to cart — ${count} in cart.`;
+    // textContent, never HTML (contract), the title is tray data.
+    if (status) status.textContent = `Added "${item.title}" to cart, ${count} in cart.`;
   });
 }

@@ -4,7 +4,7 @@ date: 2026-07-06
 ticket: measurement-methodology
 ---
 
-# Benchmark measurement methodology — fair metrics across rendering paradigms
+# Benchmark measurement methodology: fair metrics across rendering paradigms
 
 ## Context
 
@@ -13,7 +13,7 @@ Project Matrix builds one Discogs vinyl store across several rendering paradigms
 build) and publishes their performance/UX/infra-cost tradeoffs as evidence of
 staff-level architectural judgment. The entire thesis is only as credible as its
 numbers: a skeptical staff engineer must be unable to call the benchmark rigged.
-The hard part is *fairness across architectures that are not alike* — e.g. TTFB
+The hard part is *fairness across architectures that are not alike*, e.g. TTFB
 means something different for a prerendered static file (≈0 server work) than for
 an SSR function that renders per request and may cold-start. This ADR records the
 methodology; it does not build it.
@@ -25,14 +25,14 @@ README, and the Cloudflare/Vercel/Datadog pricing pages), not from model recall.
 ## Decision
 
 **1. Lab and field have split, non-overlapping roles.** Lab (synthetic, throttled,
-median-of-N, pinned config) is the *comparison engine* — the only numbers compared
+median-of-N, pinned config) is the *comparison engine*, the only numbers compared
 across variants, because determinism + reproducibility is what makes them
 un-riggable. Field/RUM is the *reality check* and the honest source of INP. Field
 numbers are shown per-variant as real-world spread, never as a cross-variant
 ranking (traffic mix is uncontrollable). Rationale: Core Web Vitals are
 "first and foremost, field metrics" but "many of them are also measurable in the
 lab" (web.dev/articles/vitals); INP is field-first and Lighthouse does not measure
-it — TBT "may be a reasonable proxy metric for INP, but it's not a substitute"
+it, TBT "may be a reasonable proxy metric for INP, but it's not a substitute"
 (web.dev/articles/inp). CWV are assessed at the 75th percentile, segmented
 mobile/desktop.
 
@@ -53,7 +53,7 @@ headline number for the render-axis cells.
 **4. Fairness controls.** Three published test profiles (fast-wifi+laptop,
 avg-broadband+desktop, slow-4G+mid-range-phone) applied identically at the
 automation layer; cold-cache and warm-cache as separate columns; median of ~7–10
-lab runs (never best-of), p75 for field; and the load-bearing rule — **only one
+lab runs (never best-of), p75 for field; and the load-bearing rule, **only one
 variable changes per comparison** (compare paradigms with environment frozen;
 demonstrate the environment flip with paradigm frozen).
 
@@ -64,7 +64,7 @@ travel-time (network) vs server think-time using the Navigation Timing sub-phase
 labeled callout. Tested from two locations (near + far) to reveal the edge's
 "close to everyone" advantage honestly. The narrative frames TTFB as *what each
 paradigm traded away* (static skips per-request work but can't personalize / can go
-stale), not a race — which is the thesis in one metric.
+stale), not a race, which is the thesis in one metric.
 
 **6. KB fairness.** Identical compression (Brotli) and identical assets on every
 host (the design-system zero-bias guarantee); our own instrumentation is stripped
@@ -77,7 +77,7 @@ harness; the price part is a dated, published rate card. We report two numbers: 
 *architecture-only* cost (the same rate card applied to every variant, isolating
 paradigm from vendor) and a *real-world* cost (each variant on its actual host).
 Everything normalizes to $/1M visits at a stated cache-hit ratio and region. We
-show the **actual charge to date** (honestly ≈$0 — portfolio traffic sits inside
+show the **actual charge to date** (honestly ≈$0, portfolio traffic sits inside
 every host's free tier, so the cost story is inherently an at-scale one) plus a
 **grounded extrapolation** validated by that small real usage. The full arithmetic,
 rate card, capture date, and assumptions are published so a skeptic can swap inputs
@@ -126,7 +126,7 @@ run as gospel).
 - Rate cards and captured pricing carry a date and will drift; the cost model is
   built to have its rate card swapped without touching the measured resource profile.
 
-## Addendum — strategy-review clarifications (2026-07-12)
+## Addendum: strategy-review clarifications (2026-07-12)
 
 The adversarial strategy review
 ([`docs/reviews/2026-07-12-strategy-review.md`](../reviews/2026-07-12-strategy-review.md))
@@ -134,14 +134,14 @@ found gaps between what this ADR promises and what its mechanisms guarantee. No 
 decision is reversed; the following sharpen them and bind downstream builds.
 
 **A. Lab throttling, named honestly (review finding 1).** The lab's profiles are
-applied via CDP network/CPU emulation at the automation layer — request-level
+applied via CDP network/CPU emulation at the automation layer, request-level
 emulation above the transport stack, which does not reproduce connection setup,
 request parallelism, or TCP slow-start. That limit is not paradigm-neutral: it
 interacts with round-trip count, the very variable the slow-network cells measure.
 Resolution: (a) the limit is stated in the methodology page's limits-of-data
 tooltip and in every receipt's `methodNotes` (the sub-phase caveat there already
-demonstrates it); (b) §9's WebPageTest cross-check is now specified, not decorative
-— **any cell verdict that depends on a throttled profile is confirmed
+demonstrates it); (b) §9's WebPageTest cross-check is now specified, not decorative,
+**any cell verdict that depends on a throttled profile is confirmed
 directionally by a packet-shaped WebPageTest run before publication, and both
 results ship with the cell.** If WPT disagrees with the runner on direction, the
 cell publishes no verdict. ADR-0004 carries the matching §6 clarification.
@@ -150,9 +150,9 @@ cell publishes no verdict. ADR-0004 carries the matching §6 clarification.
 only honest *population* INP and that Lighthouse cannot measure INP. But the lab
 CAN measure real INP under **scripted interactions**: the injected `web-vitals`
 ruler (§2) emits INP from real Event Timing entries when the runner drives the
-page. The Checkout cells therefore publish **lab INP (scripted)** — named exactly
+page. The Checkout cells therefore publish **lab INP (scripted)**, named exactly
 that, produced under the CPU-throttled profile with the interaction registry id in
-the receipt — alongside the field INP spread as the reality check. TBT is never
+the receipt, alongside the field INP spread as the reality check. TBT is never
 presented as INP.
 
 **C. A published noise rule (finding 17).** Receipts already carry raw runs; cells
@@ -164,16 +164,16 @@ No verdict adjectives ride on differences inside the noise.
 **D. Field display gate (finding 13).** §1's per-variant field spread displays
 only at or above a stated minimum sample (n ≥ 50 per variant/surface/profile
 segment, shown with the n); below it the HUD shows the sample count and no
-percentile — this ADR's own field-only rejection ("lacks the per-variant traffic
+percentile. This ADR's own field-only rejection ("lacks the per-variant traffic
 to reach a stable p75") applies to display, not just ranking.
 
 **E. Cost cells (finding 11).** Three bindings on §7: (1) published cost cells
 show the $/1M-visits number at a **cache-hit-ratio grid (0.5 / 0.9 / 0.99)**,
 never a single chosen h; (2) **no cost cell publishes until CPU-ms comes from the
-deployed plane's telemetry** (`$workers.cpuTimeMs`) — local workerd sampling
+deployed plane's telemetry** (`$workers.cpuTimeMs`), local workerd sampling
 profiles are for development only, and the first armed harvest includes a one-time
 calibration of sampling-profile vs platform meter; (3) §7's "grounded
-extrapolation *validated* by that small real usage" is corrected to **anchored** —
+extrapolation *validated* by that small real usage" is corrected to **anchored**,
 free-tier traffic validates meter accounting, not at-scale behavior.
 
 **F. Limits-of-data list, extended (findings 10, 16, 18, 19).** The methodology
@@ -181,28 +181,28 @@ page's limits tooltip additionally states: the origin computes over a ~500-relea
 frozen crate, so absolute server think-time and origin CPU-ms are floors, not
 production magnitudes (comparisons transfer; extrapolations don't); the injected
 chrome's *runtime* cost is measured once (with/without batch, one profile) and
-published as a stated constant — byte-stripping alone does not remove it from
+published as a stated constant, byte-stripping alone does not remove it from
 timing metrics; every lab number is a **Chromium** number (`web-vitals` + CDP);
 and the page carries a privacy paragraph naming exactly what the beacon collects
-(variant/surface/env/cache/location — no identifiers, no PII).
+(variant/surface/env/cache/location, no identifiers, no PII).
 
-## Addendum — the ruler's accounting fixes (2026-08-01, issue #16 + audit)
+## Addendum: the ruler's accounting fixes (2026-08-01, issue #16 + audit)
 
 The `bench-accounting-fix` unit (Rob's 2026-07-24 call: fix the ruler before the
 first editorial batch) resolved four measurement defects, widened by a
 whole-repo audit ([`docs/prototypes/audit-2026-08-01-and-next-unit-prompt.md`](../prototypes/audit-2026-08-01-and-next-unit-prompt.md)).
 No §1–§9 decision changes; these sharpen §3 (KB accounting) and §6 (KB
 fairness) and enforce §7 binding E in code. No benchmark number had published,
-so none of these had corrupted a real result — the point was to fix the ruler
+so none of these had corrupted a real result, the point was to fix the ruler
 first.
 
 **G. Inline resource bytes are attributed by uncompressed share (§3 defect 1).**
 
-> **SUPERSEDED — the attribution rule only; see addendum O.** The carve-out
+> **SUPERSEDED, the attribution rule only; see addendum O.** The carve-out
 > boundaries and classifications below (executable→JS, inert→data,
 > chrome→instrumentation) stand unchanged. The uncompressed-share RATIOS do
 > not: the stated limit ("exact only if each part compresses at the
-> document's average ratio") became measurable on the plane's own receipts —
+> document's average ratio") became measurable on the plane's own receipts,
 > the injected chrome violates it hardest, the bias runs toward flattering
 > the smallest published JS cells, and it scales with the chrome. Attribution
 > is now leave-one-out brotli marginals at a wire-calibrated quality,
@@ -210,7 +210,7 @@ first.
 
 The document response is ONE brotli stream, so its compressed `transferSize`
 cannot be split into per-part compressed sizes by measurement. It is attributed
-to buckets in proportion to each part's share of the UNCOMPRESSED served bytes —
+to buckets in proportion to each part's share of the UNCOMPRESSED served bytes,
 the one reproducible split that sums EXACTLY back to `transferSize` and
 double-counts nothing (`decomposeDocument`, tools/bench-runner). Three parts are
 carved out of what §3 previously dumped entirely into HTML: **inline executable
@@ -221,12 +221,12 @@ browser will not run: `application/json`, `qwik/json`, `importmap`, …) → the
 DATA bucket (serialized resumability/hydration state is data, not runtime, and
 must not inflate the JS headline a hostile reader is meant to trust); and the
 injected **instrumentation markup** (§6 below). Which paradigm delivers inline
-vs external, executable vs serialized, IS the render-axis variable (ADR-0003 §2)
-— this split makes it visible instead of hidden in the HTML total. **Limit,
+vs external, executable vs serialized, IS the render-axis variable (ADR-0003 §2),
+this split makes it visible instead of hidden in the HTML total. **Limit,
 stated in the receipt and the methodology page:** the share is exact only if
 each part compresses at the document's average ratio (JS and prose do not), so
-it is a stated, reproducible attribution — strictly more honest than reporting
-inline JS as zero — never a claim of per-byte compressed truth.
+it is a stated, reproducible attribution, strictly more honest than reporting
+inline JS as zero, never a claim of per-byte compressed truth.
 
 *Open cross-framework asymmetry, bound to the publication arc (verify-slice,
 conformance lens).* The executable/inert split above keys on whether the
@@ -236,7 +236,7 @@ frameworks: React's App Router delivers its serialized RSC hydration payload as
 *executable* `<script>self.__next_f.push([…])</script>` (no type → JS bucket),
 while Qwik delivers byte-equivalent serialized state as inert
 `<script type="qwik/json">` (→ DATA). So react-next's initial-JS headline is
-inflated by serialized data that Qwik's is not — two hydrating frameworks
+inflated by serialized data that Qwik's is not, two hydrating frameworks
 printing different initial-JS purely by serialization FORMAT. No code changes
 here (executable→JS is the honest byte rule, and nothing publishes this unit),
 but **the cross-framework initial-JS cell must not publish as an apples-to-apples
@@ -244,11 +244,11 @@ verdict until this is decided** in the publication arc: either classify known
 framework hydration payloads (React flight) as DATA by role, or publish the cell
 with an explicit caveat that the JS headline includes serialized hydration data
 for executable-payload frameworks but not inert-payload ones. Same class as the
-CSS-delivery deferral (ADR-0003 addendum) — recorded, not silently resolved.
+CSS-delivery deferral (ADR-0003 addendum), recorded, not silently resolved.
 
 **H. Instrumentation markup is stripped, extending §6's known-path rule.** §6
 strips our instrumentation from the counted total, but only the `/_pm/*` +
-`/api/beacon` SUBRESOURCE payloads were stripped — the front Worker's injected
+`/api/beacon` SUBRESOURCE payloads were stripped, the front Worker's injected
 chrome MARKUP (`<aside id="pm-chrome">…`, its `/_pm/` head links, the
 measurement script tag) rode inside the HTML byte bucket. It is now stripped the
 same way and reported under `instrumentationBytes`. The document byte bucket
@@ -257,7 +257,7 @@ must not carry the instrument's own markup.
 **I. Settle waits are signal-based, never a fixed proxy (§9; defects 4 + audit
 collect.ts:171/:254).**
 
-> **PARTLY SUPERSEDED — the interaction byte boundary only; see addendum R.**
+> **PARTLY SUPERSEDED, the interaction byte boundary only; see addendum R.**
 > The claim below was true of the vitals-beacon flush and of the post-load idle
 > settle. It was FALSE of the per-interaction byte boundary, which used a
 > document-lifecycle LATCH that had already closed during load and could
@@ -276,22 +276,22 @@ proxy" rule (tools/drift-gate/README.md) applied to the bench runner.
 **J. Local CPU: serving-path attribution, binding-E enforced in code (§7 defect
 2 + audit).** `LOCAL_PLANE_INSPECTORS` now registers every editorial variant
 Worker (pm-vanilla 9235, pm-react-next 9236, pm-astro 9237, pm-qwik 9238), not
-just front/placeholders/edge — the omission attributed ZERO CPU to whichever
+just front/placeholders/edge, the omission attributed ZERO CPU to whichever
 variant served the page while its comparators WERE sampled. A visit's cost is
-summed over its SERVING PATH ONLY — front + the variant resolved from the target
-path + edge — **not** the whole plane: profiling non-serving isolates would let a
+summed over its SERVING PATH ONLY, front + the variant resolved from the target
+path + edge, **not** the whole plane: profiling non-serving isolates would let a
 sibling suite's traffic on, say, pm-qwik contaminate a pm-vanilla number (and
 unequally, since the non-serving set differs per target), and would force the
 full plane up to bench one variant. That matches §7's stated "front + variant +
-edge" cost model (the earlier whole-plane sum silently violated it — verify-slice,
+edge" cost model (the earlier whole-plane sum silently violated it, verify-slice,
 anti-rigging lens). A missing SERVING-PATH inspector is a NAMED hard error, never
 a silent under-attribution; a non-serving one need not even be up (pm-blog stays
-out regardless — ADR-0009). And binding E ("local workerd sampling profiles are
+out regardless, ADR-0009). And binding E ("local workerd sampling profiles are
 development only") is enforced: `--local-cpu` against a non-loopback `--origin` is
 refused, so an idle-local CPU profile can never be emitted as if it measured a
 remote origin.
 
-## Addendum — first publication: environment, chrome constant, serialization caveat (2026-08-13)
+## Addendum: first publication: environment, chrome constant, serialization caveat (2026-08-13)
 
 The first editorial bench batch (arc step 2) published the editorial
 surface's readings. Three decisions the earlier addenda bound to "the
@@ -299,7 +299,7 @@ publication arc" are made and recorded here; no §1–§9 decision changes.
 
 **K. Run environment for official batches (issue #16's open design
 question, settled).** Official batches run OUT OF BAND on a quiet,
-single-purpose machine — never inside a CI gate. The post-deploy smoke
+single-purpose machine, never inside a CI gate. The post-deploy smoke
 asserts receipt SHAPE and provenance (structure, fence refusal, honest
 nulls), never performance magnitudes: a magnitude asserted on a shared
 runner goes red for reasons that are not regressions (the 2026-07-27
@@ -309,11 +309,11 @@ local machine, labeled exactly that in every receipt's `runLocation`; §9's
 pinned cloud runner, two-location protocol, and WebPageTest cross-check
 remain downstream obligations. Consequence, binding until the WPT
 cross-check exists (addendum A): throttled-profile timing cells publish
-numbers, never verdicts — the published fit line rides bytes, which no
+numbers, never verdicts, the published fit line rides bytes, which no
 throttle touches.
 
 *A second limit on the timing cells, stated because it is not obvious.*
-The batch measured the plane as it served at measurement time — carrying
+The batch measured the plane as it served at measurement time, carrying
 the PRE-publication chrome, since the publication had not shipped to it
 yet. The chrome that ships with these numbers is larger (receipt anchors
 and bands per cell), and its cost is the addendum-L constant. So the
@@ -322,7 +322,7 @@ something bounded by that constant; the BYTE cells are unaffected, because
 chrome bytes are stripped as instrumentation by known path (§6). This is
 inherent to publishing measurements of a plane you are about to change,
 and the honest resolution is the dated-snapshot model §9 already commits
-to: **re-run the batch against the deployed plane after this ships** —
+to: **re-run the batch against the deployed plane after this ships**,
 one command, and the receipts carry their own reproduce path.
 
 **L. The chrome constant (addendum F / ADR-0008 §5 obligation, measured).**
@@ -331,23 +331,23 @@ same kind of cost: a **processing** delta and a **wire** cost. Measured on
 `/vanilla/editorial/`, 7 runs per condition, slow-4g-mid-phone (the harshest
 published profile), 2026-08-14 at a clean `58d5101`: **+224 ms FCP,
 +216 ms LCP, 0 CLS, 0 ms long tasks, plus 1,908 bytes brotli on the wire.**
-The strip's geometric-inertness claim (ADR-0008 §1) holds — zero layout
+The strip's geometric-inertness claim (ADR-0008 §1) holds, zero layout
 shift either way. Artifact: `/_pm/lab/chrome-constant.json`.
 
-> **SUPERSEDED — see addendum N.** These figures were measured on a LOCAL
+> **SUPERSEDED, see addendum N.** These figures were measured on a LOCAL
 > composed origin. The constant that publishes is the deployed-plane
 > measurement: **+104 ms FCP / +104 ms LCP / 1,913 B brotli**, against a
 > byte-identical fragment. The "0 ms long tasks" figure above is a median
 > that hides a one-sided signal (0–64 ms across 7 runs, every non-zero
 > sample in the with-chrome condition). The "Bound obligation" closing this
-> addendum is discharged — and, per N, structurally re-incurred.
+> addendum is discharged, and, per N, structurally re-incurred.
 
 *Method, and why it changed twice.* Both conditions intercept the document
 and pay an identical hop; the without-condition replaces
 decomposeDocument's three instrumentation regions with inert comments of
 EQUAL byte length, so the document transfer term cancels and the timing
 delta is the chrome's processing + subresource cost (a render-blocking
-`/_pm/chrome.css`, the preloaded instrument mono, `measure.js` — all real
+`/_pm/chrome.css`, the preloaded instrument mono, `measure.js`, all real
 fetches from the real plane). What the chrome adds to the document on the
 wire is measured separately with brotli and reported beside it. Metrics
 come from the browser's own timeline in both conditions (the injected ruler
@@ -360,7 +360,7 @@ over, both caught by verify-slice: it served both conditions the DECODED
 document, so the chrome's ~8 KB crossed a throttled wire uncompressed and
 part of the delta was an artifact of the probe; and it ran against the
 DEPLOYED plane, which carries no publication and therefore renders the
-EMPTY-state chrome — ~3 KB smaller than the populated strip that ships.
+EMPTY-state chrome, ~3 KB smaller than the populated strip that ships.
 Re-compressing the fulfilled body is not available (Playwright's
 `route.fulfill` ignores a declared `content-encoding`; measured: a corrupt
 3,660-byte document with no chrome node, against 18,146 for a plain
@@ -370,7 +370,7 @@ front build REFUSES a constant measured against an unpopulated chrome**.
 
 *Origin, stated.* Because the constant must describe the chrome that
 ships, it is measured against a LOCAL composed origin serving this
-publication (`run-local.mjs PM_HOLD=1` — the only thing that builds every
+publication (`run-local.mjs PM_HOLD=1`, the only thing that builds every
 variant with the matching snapshot selector). Local first paint is not a
 production number; the DIFFERENCE is what publishes, and both conditions
 ran on the same plane under the same emulated network. **Bound
@@ -378,7 +378,7 @@ obligation:** re-measure against the deployed plane once this ships, when
 that plane can render the chrome being measured.
 
 **M. The addendum-G cross-framework asymmetry, resolved: publish with the
-stated caveat, never reclassify.** The executable→JS byte rule stands —
+stated caveat, never reclassify.** The executable→JS byte rule stands,
 classifying "known framework hydration payloads" as data by role would put
 a hand-maintained framework list inside the ruler, which is exactly the
 kind of judgment call a hostile reader calls rigging. Instead the caveat
@@ -386,7 +386,7 @@ is published where the numbers are read: the methodology page states the
 asymmetry in full (React flight state counts as JS because the browser
 executes it; Qwik's inert JSON counts as data), and the reading section of
 every populated chrome panel links that page directly ("How these numbers
-are made — and what they can't say" — §9's inline limits-of-data
+are made, and what they can't say", §9's inline limits-of-data
 affordance). No initial-JS comparison between two hydrating frameworks is
 published as a verdict without the caveat riding it; the editorial fit
 line names each paradigm's own cost and makes no react-next-vs-qwik claim.
@@ -395,12 +395,12 @@ line names each paradigm's own cost and makes no react-next-vs-qwik claim.
 Published receipts are committed at `workers/front/lab/receipts/` and
 served verbatim from `/_pm/lab/receipts/` (the excluded instrumentation
 path); the per-surface bundle at `/_pm/lab/editorial.json` is BUILT from
-those receipts by the front build — the served file and the bundle the
+those receipts by the front build, the served file and the bundle the
 Worker imports and hands `renderChrome` are the same artifact, so they
 cannot drift. The reading table's published value is the WARM column
 median (§5: steady-state is the headline; the linked receipt carries cold
 beside it), and **every cell publishes that median WITH its min–max band
-across the batch's runs — addendum C's first clause, which the first draft
+across the batch's runs, addendum C's first clause, which the first draft
 of this publication left unimplemented**: gating only the fit line let the
 table itself invite comparisons inside the noise (verify-slice measured the
 consequence: two LCP medians 44 ms apart whose bands overlapped
@@ -412,7 +412,7 @@ ADJACENT pair must be separable (checking only the spread's extremes is
 near-vacuous while the sentence enumerates all five), the
 no-interaction-fetch clause must hold in every variant's medians in both
 columns, AND every run must have RECORDED reaching network idle after the
-click — zero interaction bytes is also what a swallowed settle timeout
+click, zero interaction bytes is also what a swallowed settle timeout
 produces, so `interactionSettled` makes the claim falsifiable from the
 artifact instead of assumed. C2 discipline as build mechanism, not review
 policy. The build also refuses receipts minted from a dirty tree, receipts
@@ -421,15 +421,15 @@ disagree, a fit template naming variants the batch did not measure, and any
 unsubstituted value reaching the published sentence. **No publication is a
 legitimate state**: the bundle builds empty, the chrome keeps its designed
 empty states, and both pages compose an honest "not published yet"
-sentence rather than a number-shaped hole — the same rule every unbuilt
+sentence rather than a number-shaped hole, the same rule every unbuilt
 surface already follows.
 The methodology page (§9) lives at `/methodology/` as a front-Worker
-static singleton — the "How it was built" surface (ADR-0008 §8) is its
+static singleton, the "How it was built" surface (ADR-0008 §8) is its
 long-term home and is unbuilt; the standalone page is the recorded
 interim.
 
 **N. Both addendum-K and addendum-L obligations, DISCHARGED against the
-deployed plane — and what the discharge did not settle.** Measured
+deployed plane, and what the discharge did not settle.** Measured
 2026-08-14 at a clean `7c5be98`, the SHA main carried when the plane served
 it.
 
@@ -465,7 +465,7 @@ all ten effective URLs pre-warmed to compressed first, `interactionSettled`
 true on every run. K predicted timing up, bytes flat. **Bytes held. Timing
 did NOT move uniformly up:** across the 30 LCP medians (5 variants × 3
 profiles × cold+warm) the range is **−36 to +128 ms, with 26 up and 4
-down** — on slow-4g, the harshest published profile, BOTH build-time
+down**, on slow-4g, the harshest published profile, BOTH build-time
 variants moved down in both columns (warm: vanilla −20, astro −16; cold:
 vanilla −24, astro −36). Request-time TTFB moved **+29.7 to +72.2 ms**.
 The prediction held on the request-time variants and on the two faster
@@ -474,11 +474,11 @@ cost sits inside the profile's own noise. Recorded because an earlier
 draft of this discharge stated "+30 to +120 ms" and "timing cells moved
 up", both falsified by the receipts committed alongside them.
 
-*What the discharge did NOT settle — two open holes, both filed.*
+*What the discharge did NOT settle, two open holes, both filed.*
 (1) **The constant describes the chrome measured BEFORE the deploy it
 enables.** The front build regenerates the chrome fragment from the
 receipts, so the fragment that ships is not the fragment the probe hashed
-(here 11,931 B against 12,023 B — 0.8%, but the mechanism is unbounded and
+(here 11,931 B against 12,023 B, 0.8%, but the mechanism is unbounded and
 grows with each surface added to the strip). The build's only identity
 check is `populated`, which both fragments satisfy. The obligation is
 therefore structurally re-incurred by its own discharge, and calling it
@@ -490,11 +490,11 @@ not the tree under measurement. Both are recorded as open work on the
 `bench-instrumentation-dilution` unit's ticket, which is the next ruler
 change and the natural place to close them.
 
-## Addendum — the dilution fix: wire-priced attribution, and both addendum-N holes closed (2026-08-15, `bench-instrumentation-dilution`)
+## Addendum: the dilution fix: wire-priced attribution, and both addendum-N holes closed (2026-08-15, `bench-instrumentation-dilution`)
 
 The ruler unit. It supersedes addendum G's attribution rule (marked in
 place above), closes both holes addendum N filed, and invalidates every
-committed receipt — the editorial batch re-runs a third time on the fixed
+committed receipt, the editorial batch re-runs a third time on the fixed
 ruler, post-merge, per the runbook at the end of O. No §1–§9 decision
 changes; G's carve-out boundaries and classifications stand.
 
@@ -511,28 +511,28 @@ over-attributed it and under-attributed every other bucket. Against the
 settled estimator below, the old rule under-reported astro's inline-JS
 cell by **47.5%** (347 B → 661 B) and qwik's by **42.6%** (257 B → 448 B);
 on the external-recovery probe it read **40.5% low**. The bias scales with
-the chrome — the mechanism behind the published astro cell moving
-0.42 → 0.37 KB between batches with no astro change — and its direction
+the chrome, the mechanism behind the published astro cell moving
+0.42 → 0.37 KB between batches with no astro change, and its direction
 flatters the site's smallest published cells, which is the shape a hostile
 reader is entitled to call rigging. The ticket's earlier "34–47%" range
 was estimator-dependent; with the estimator settled, the measured range on
 the three shapes is **40.5–47.5%**.
 
 *The decision.* `transferSize` remains the authority on the LEVEL. The
-between-part RATIOS are each part's **leave-one-out marginal** — the bytes
+between-part RATIOS are each part's **leave-one-out marginal**, the bytes
 the compressed document loses when exactly that part's regions are removed,
-in document order — computed with brotli at the **quality calibrated per
+in document order, computed with brotli at the **quality calibrated per
 document** against the observed compressed body (`encodedBodySize`): scan
 q0–q11, keep the smallest absolute residual, record quality and residual in
 the receipt (`kb.docAttribution`). Largest-remainder apportionment keeps the
 partition exact and non-negative, unchanged. A document served uncompressed
-skips estimation entirely — per-part wire cost IS the uncompressed size, and
+skips estimation entirely, per-part wire cost IS the uncompressed size, and
 the rule degrades to exact truth, recorded as `uncompressed-share-identity`.
 
-*Why this estimator — measured, not argued.* Candidates were computed on
+*Why this estimator, measured, not argued.* Candidates were computed on
 the three live delivery shapes (vanilla external-single, astro inlined,
 qwik external-many + qwik/json) under two validity probes: (A) swap the
-chrome fragment on a fixed page — the recorded defect's own shape — and
+chrome fragment on a fixed page, the recorded defect's own shape, and
 watch the JS attribution; (B) inline a copy of vanilla's real `cart.js`
 and compare the attribution against the same file's actual external wire
 cost (1,351 B as Cloudflare serves it).
@@ -547,15 +547,15 @@ cost (1,351 B as Cloudflare serves it).
 The decision evidence is COMMITTED, not remembered:
 `tools/bench-runner/estimator-lab/` carries the candidate script and the
 exact Cloudflare-served bodies it ran over (sha256-manifested), so this
-table re-derives offline forever — the live pages will drift, the
+table re-derives offline forever, the live pages will drift, the
 evidence will not. Isolated-region compression carries the known
 small-region bias (astro's 1,278 B bundle compresses 2.23× alone against
 3.68× in context; the isolated parts sum to only 0.867× of the wire, a
 ×1.15 scale-up) and measured worst of the three replacements on both
-probes — rejected on the evidence, not on principle. Shapley is order-independent and splits shared
+probes, rejected on the evidence, not on principle. Shapley is order-independent and splits shared
 redundancy fairly, but measured no better than leave-one-out here, costs
 16 compressions per document against 5, and puts game theory on a
-methodology page — rejected as machinery the numbers don't pay for.
+methodology page, rejected as machinery the numbers don't pay for.
 Hard-coding q4 (Cloudflare's apparent dynamic quality) was rejected in
 favour of per-document calibration: the calibration is self-verifying,
 records its own residual, and follows the CDN if it changes.
@@ -568,19 +568,19 @@ Calibration closes most of it: q4 reproduces the Cloudflare wire within
 The residual is recorded per run, never assumed.
 
 *The new rule's own stated bias.* Disjoint parts' marginals do not sum to
-the whole — redundancy shared BETWEEN parts is saved only when the second
+the whole, redundancy shared BETWEEN parts is saved only when the second
 part goes, so it belongs to no single marginal. Measured shortfall on the
 live shapes: **0.942–0.952×** of the whole, so normalisation scales every
 part up ~×1.05–1.06 pro rata, slightly over-crediting parts that share
 more context than average. Bounded by the probes at ~2% on the cells
-measured — against 40–48% for the rule it replaces. The floors instruction
+measured, against 40–48% for the rule it replaces. The floors instruction
 on `/methodology/` stays until the batch re-runs, because the LIVE cells
 still carry old-rule numbers.
 
 *Coda (2026-08-16): the wire changed codecs the day this landed, and the
 gate caught it.* The first attested batch after the merge came back
 UNPUBLISHABLE by the unit's own Q gate: every document had ridden a
-**zstd** wire — Chromium negotiates zstd and Cloudflare serves it — while
+**zstd** wire, Chromium negotiates zstd and Cloudflare serves it, while
 every wire this addendum's evidence measured was brotli, because curl-
 and undici-shaped clients request br. Both wires are real; the ruler was
 fitting a brotli model to a zstd byte count and honestly recording the
@@ -590,26 +590,26 @@ computed with **the wire's own codec** at the calibrated setting
 (estimator `loo-wire-normalised`, with `codec` recorded beside quality,
 the calibration target, and the residual), and the publication gate
 refuses a split whose model codec does not match the wire it claims to
-have calibrated against — and one whose matched codec misses its own
+have calibrated against, and one whose matched codec misses its own
 recorded target by more than 2% (64 B floor): codec identity and fit
 quality are independent axes, and the refused batch proved the wrong
 codec can fit within ~1%. Content-coding tokens compare
 case-insensitively (RFC 9110), identically in the runner's model
 selection and the gate's lookup. Measured:
 zstd level 2 reproduces Cloudflare's zstd serving of the same page within
-**+4 B (0.08%)** — the zstd body is committed beside the brotli evidence
+**+4 B (0.08%)**, the zstd body is committed beside the brotli evidence
 in the estimator lab. The q4 figures above are correct for the brotli
 wire they were measured on; they are now scoped to it.
 
 *Runbook for the re-run (the receipts this invalidates).* (1) Merge
-deploys the fixed ruler, the attestation, and this publication — receipts
+deploys the fixed ruler, the attestation, and this publication, receipts
 unchanged, floors caveat live. (2) On a quiet machine, checkout at the
 merge SHA, clean: pre-warm all ten effective URLs under one nonce until
 compressed, then the three profiles (~7 minutes measured). New receipts
 carry `originCommit` and `docAttribution` by construction. (3) The new
 receipts change the chrome fragment, so the front build's identity gate
 (P) fires: re-measure the chrome constant against the local composed
-plane serving the new publication (the recorded interim), commit, merge —
+plane serving the new publication (the recorded interim), commit, merge,
 then re-measure against the deployed plane and commit that, the addendum
 L→N cycle now enforced by mechanism. (4) The floors sentence leaves
 `/methodology/` in the re-run commit, with its pin in
@@ -619,17 +619,17 @@ L→N cycle now enforced by mechanism. (4) The floors sentence leaves
 ships, by hash.** The chrome-constant probe records the measured fragment's
 sha256 AND its full render context (variant/surface/pathname/search read
 from the probed target and the fragment's own data attributes, including
-the serving colo). The front build re-renders the fragment — the real
+the serving colo). The front build re-renders the fragment, the real
 renderer, esbuild-bundled at build time, against the very lab-bundle
-artifact the Worker imports — under that recorded context, extracts it with
+artifact the Worker imports, under that recorded context, extracts it with
 the probe's own rule (`chromeFragmentOf`, single-sourced in `@pm/switcher`
 so the two sides cannot drift), and **REFUSES the build when the hashes
 differ**. `populated` alone could not tell a current fragment from a stale
-one (both the hashed and the shipping fragment satisfied it — N's 11,931 B
+one (both the hashed and the shipping fragment satisfied it, N's 11,931 B
 vs 12,023 B); the hash can. The refusal forces the explicit two-pass
 publish: build → measure against a plane serving THIS publication → commit
 the fresh artifact → rebuild. When the fragment itself changed, the plane
-that can serve it does not exist until deploy — the local composed plane is
+that can serve it does not exist until deploy, the local composed plane is
 the recorded interim (the addendum-L precedent, its honesty note already
 rendered by the methodology page), and the deployed-plane re-measure
 follows the deploy. The probe separately refuses a fragment that changes
@@ -637,19 +637,19 @@ mid-probe, and a constant whose wire quality could not be calibrated (a
 plane serving identity) is flagged `wireCalibrated: false` in the artifact
 rather than passed off as the deployed figure. The constant's wire figure
 itself now rides the same calibrated leave-one-out principle as the ruler
-(it always was a leave-one-out marginal — previously at an uncalibrated
+(it always was a leave-one-out marginal, previously at an uncalibrated
 default quality).
 
 **Q. Addendum-N hole 2 closed: the plane attests its build, and the runner
 refuses a cross-tree receipt.** The front Worker serves
-`/_pm/build.json` — `{kind, sha, dirty}` — stamped by the front build and
+`/_pm/build.json`, `{kind, sha, dirty}`, stamped by the front build and
 RE-stamped by both serving paths (the deploy script immediately before
 wrangler, and run-local after its turbo build), because a turbo cache
 replay restores a dist carrying the SHA of the commit that built it, and
 the attestation must describe the tree actually deploying. Batches and
 probes fetch it before anything measures, record it in the artifact as
 `originCommit` beside the local pin, and **refuse** when the origin's SHA
-disagrees with the local checkout or the origin does not attest — unless
+disagrees with the local checkout or the origin does not attest, unless
 the operator passes `--allow-cross-tree`, the explicit escape for
 deliberate cross-tree measurement, in which case the artifact carries the
 disagreement (or the null) in plain sight. The publication build refuses
@@ -657,7 +657,7 @@ to publish a receipt whose `originCommit` is null, dirty, or different
 from its commit pin; receipts minted before the attestation existed carry
 no field and are grandfathered until the re-run replaces them. Both the
 batch and the probe RE-fetch the attestation after their last run and
-refuse when it moved — push-to-main deploys the plane, so a deploy landing
+refuse when it moved, push-to-main deploys the plane, so a deploy landing
 mid-measurement would otherwise leave early runs measuring one tree and
 late runs another behind a start-of-batch attestation that still matches
 (verify-slice, this unit). The probe additionally binds every document of
@@ -667,29 +667,29 @@ has no reliable path back to the awaiting caller. The
 refusal was proven against the real plane this session: the deployed
 origin (which predates its own attestation) is refused by name, and the
 constant re-measured against it below carries `originCommit: null` with
-the escape — the bootstrap, visible in the artifact rather than smoothed
+the escape, the bootstrap, visible in the artifact rather than smoothed
 over.
 
 *The chrome constant, re-measured under both closed holes (2026-08-16Z
 artifact, pinned clean at this unit's code commit).* The deployed plane's
 fragment hashes byte-identical to what this tree's build renders (the P
-gate passes on it, and refuses a sabotaged hash by the fragment's name —
+gate passes on it, and refuses a sabotaged hash by the fragment's name,
 proven both ways this session), so the cross-tree bootstrap measures the
 right chrome by construction, not by luck. Figures: **+76 ms FCP, +76 ms
 LCP, 0 CLS; long tasks 0 ms MEDIAN, 0–57 ms across 7 runs, every non-zero
-sample in the with-chrome condition** — the same one-sided signal N
+sample in the with-chrome condition**, the same one-sided signal N
 recorded, now composed onto the methodology page from the artifact's own
 runs instead of hidden behind the median. The wire figure is **2,322 B at
 the calibrated q4** (residual +12 B on the 4,705 B compressed body). The
 superseded q11-default pricing understates the same fragment's wire cost
-on the same body by **17.1%** (1,925 B) — the uncalibrated default was
+on the same body by **17.1%** (1,925 B), the uncalibrated default was
 flattering the instrument, in the same direction and for the same reason
 as the dilution itself. The timing figures supersede N's +104/+104
 (measured against the same plane; the deltas moved with the plane's own
 run-to-run spread, which is why the constant publishes as an order of
-magnitude, never a per-profile equality — addendum F's scope note stands).
+magnitude, never a per-profile equality, addendum F's scope note stands).
 
-## Addendum — the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, `interaction-registry`)
+## Addendum: the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, `interaction-registry`)
 
 The unit that registered the PDP's two scripted interactions found that the
 guard behind the site's strongest published claim had never fired, and then
@@ -706,7 +706,7 @@ was true of the vitals-beacon flush and of the post-load idle settle. It was
 FALSE of the per-interaction byte boundary, which used
 `page.waitForLoadState("networkidle", { timeout: settleCapMs })`.
 
-That call is a document-load-lifecycle LATCH. Playwright's own typings say so —
+That call is a document-load-lifecycle LATCH. Playwright's own typings say so,
 "If the state has been already reached while loading current document, the
 method resolves immediately" (`playwright-core@1.61.1`
 `types/types.d.ts:5020`), and they mark `networkidle` **DISCOURAGED**. No
@@ -719,7 +719,7 @@ either timing alone is the proof; the mechanism argument is not needed.
 
 The consequence is the precise failure `interactionSettled` (addendum M) was
 added to make impossible. `pdp-gallery-switch` fetches a 25,194 B image, and
-the runner recorded **`interactionBytes: 0` with `interactionSettled: true`** —
+the runner recorded **`interactionBytes: 0` with `interactionSettled: true`**,
 the flag asserting that zero as VERIFIED. **When a guard can pass vacuously it
 is not a guard** (§9), and this one had passed vacuously on every run the
 project has ever published.
@@ -736,12 +736,12 @@ bytes, and it fails against the latched wait.
 The replacement, `armNetworkQuiescence`, tracks in-flight requests from the
 page's own `request`/`requestfinished`/`requestfailed` events, is armed before
 the navigation so nothing is missed, and resolves only after a fresh quiet
-window measured FROM the call — so each boundary gets its own window. The
+window measured FROM the call, so each boundary gets its own window. The
 window stays **500 ms**, the same one `networkidle` names, so the boundary's
 DEFINITION is unchanged and only the mechanism moves. Two caps, deliberately
 different: the pre-interaction side gets 30 s and **throws** on cap-out
 (matching the effective bound the superseded calls carried, and refusing rather
-than letting `initialJsBytes` — the published headline — fall at an arbitrary
+than letting `initialJsBytes`, the published headline, fall at an arbitrary
 moment); the interaction side keeps 3 s and records `interactionSettled:
 false`, which refuses publication instead of corrupting a number.
 
@@ -752,14 +752,14 @@ cascade" described a mechanism that did not exist. Measured: a genuine
 quiescence wait in its place surfaces **0 new resource entries and 0 bytes on
 all four PDP and all five editorial variants** (re-derived this session against
 the deployed plane, entry counts 23–34 on the PDP and 16–23 on editorial, every
-delta exactly zero) — the `requestIdleCallback` passes plus the entry-count
+delta exactly zero), the `requestIdleCallback` passes plus the entry-count
 stability check already gave the cascade its time. Editorial receipts' VALUES stand; only their
 `interactionSettled` attestation was unearned, which is a record problem, not a
 number problem. Receipts dated before 2026-08-28 therefore prove "nothing was
 fetched for the click" only where the interaction is independently known not to
 fetch; the receipt's own `methodNotes` now says so, in the artifact.
 
-**S. The browser HTTP cache is held at what a first-time visitor has — not at
+**S. The browser HTTP cache is held at what a first-time visitor has, not at
 OFF, which is no visitor at all.** §4 has always said the browser cache is a
 held-constant rather than a measured axis, and every run is a fresh browser
 context. What was never stated, because it was never intended, is that the
@@ -768,19 +768,19 @@ runner was holding it at DISABLED for the whole visit.
 Lab/field isolation (§1, §6) requires that a measured visit never DELIVERS a
 vitals beacon, and that was done with a `page.route` glob over `/api/beacon`.
 Playwright's typings state the price: **"Enabling routing disables http cache"**
-(`types/types.d.ts:4063`). The routing is not URL-scoped at the browser — every
-request is paused so the glob can be matched in JS — so one beacon route took
+(`types/types.d.ts:4063`). The routing is not URL-scoped at the browser, every
+request is paused so the glob can be matched in JS, so one beacon route took
 the cache away from every request of every measured visit.
 
 *The defect, measured.* Qwik's PDP gallery re-writes `src` on all five thumbs
-with the value each already holds — **9 mutations, of which 5 are
+with the value each already holds, **9 mutations, of which 5 are
 identical-value `src` writes, against 4 mutations and none identical for each
 of the other three; all five thumb `<img>` nodes survive on every variant
 (marker-property test, 5/5), so it is a re-render and not a replacement**
 (MutationObserver over `.pm-gallery`, deployed plane, all four variants, and
 deliberately WITHOUT the cache-disabling route, so the DOM behaviour is
 established independently of its byte consequence). With the cache
-ON the browser serves them from memory and the click costs **25,194 B** — the
+ON the browser serves them from memory and the click costs **25,194 B**, the
 stage image alone, byte-identical to vanilla, react-next and astro. With the
 cache OFF the same five no-op writes become five real downloads and the click
 reads **52,032 B**. One variable, `page.route` on or off, reproduced on the
@@ -791,7 +791,7 @@ as flattering one (§9), and this one was the instrument's, not a judgement
 call.
 
 To be precise about what survives the fix rather than only what disappears:
-the five re-writes still HAPPEN, and they are still visible in the receipt —
+the five re-writes still HAPPEN, and they are still visible in the receipt,
 qwik's PDP visit counts 33 requests against vanilla's 23, astro's 22 and
 react-next's 29. What the cache changes is that those five cost **zero bytes**,
 which is what a real visitor experiences. The paradigm difference is a request
@@ -799,7 +799,7 @@ count, honestly recorded; it was never 26,838 B.
 
 The replacement, `armBeaconCapture`, pauses ONLY the beacon URL, at the
 browser, through CDP's own pattern filter (`Fetch.enable` with
-`patterns:[{urlPattern:"*/api/beacon*"}]`), and always fulfils with 204 — a
+`patterns:[{urlPattern:"*/api/beacon*"}]`), and always fulfils with 204, a
 paused request never emits `requestfinished`, so leaving one paused would wedge
 the very quiescence tracker R installs. Lab traffic still never reaches the RUM
 collector.
@@ -817,8 +817,8 @@ after: every initial-JS median within 1 B (1808/1808, 154084/154084, 737/736,
 29119/29119, 18846/18846), every interaction median 0 in both columns both
 ways. The ±1 B moves are the leave-one-out attribution's own rounding
 (addendum O), not a shift. A `sendBeacon` request never appears in resource
-timing in ANY capture mode — measured with routing, with CDP interception, and
-with no capture at all: zero `/api/beacon` entries in all three — so the
+timing in ANY capture mode, measured with routing, with CDP interception, and
+with no capture at all: zero `/api/beacon` entries in all three, so the
 mechanism swap cannot move `instrumentationBytes` or the instrumentation
 request count either.
 
@@ -831,13 +831,13 @@ rather than discovered.
 
 *The generalisation this forces on the fit templates.* With the boundary
 measuring and the cache on, a surface whose interaction legitimately fetches
-now measures a real, non-zero, cross-variant-CONSTANT figure — and the
+now measures a real, non-zero, cross-variant-CONSTANT figure, and the
 publication build's refusal was hardcoded to "every median must be zero", which
 made such a surface unpublishable by construction rather than publishable with
 the fetch STATED. Surfaces now DECLARE `interactionFetch` in their fit template
 (`"none"`, or `{kind:"constant", toleranceBytes}`), and the declaration is
 **required**: a generalisation that can be omitted is a way to opt out of a
-check. A constant that measures zero everywhere is refused by name — that is
+check. A constant that measures zero everywhere is refused by name, that is
 the `"none"` claim wearing a looser word.
 
 **T. The INP row is not like-for-like across paradigms when a handler is
@@ -863,7 +863,7 @@ under the runner's own profile, all times in ms from the event's own
 
 The three synchronous paradigms mutate the DOM inside the handler, so the next
 paint carries the result and the entry reads 24 ms. Qwik's DOM change lands at
-9.9 ms — after the ~8 ms paint that closed its entry — and it records **8 ms**
+9.9 ms, after the ~8 ms paint that closed its entry, and it records **8 ms**
 while its visible update arrives at **34.6 ms**, the LATEST of the four. The
 cell reads lowest where the work finishes last.
 
@@ -871,7 +871,7 @@ The same asymmetry exists on the editorial surface (`editorial-add-to-cart`:
 qwik's DOM change at 22.0 ms against 1.0–3.5 ms for the others), but there the
 late change happens to fall INSIDE the measured window and the cell reads 24 ms
 like the rest. **So the direction and size of the discrepancy are a race with
-the frame boundary, not a stable property** — which is why this publishes as a
+the frame boundary, not a stable property**, which is why this publishes as a
 stated limit on the metric rather than as a correction to one variant's cell.
 The number is a standard metric measured the standard way; what it cannot
 support is the reading "this paradigm responds faster". `/methodology/` carries
@@ -891,13 +891,13 @@ on addendum M's precedent. Two further measurements refuted that:
 
 **A cell that swings 0 → 24 across conditions for one column while the others
 hold still is not measuring a property of the paradigm**, and switching to the
-other interaction does not escape it — add-to-cart reads 8 ms on the default
+other interaction does not escape it, add-to-cart reads 8 ms on the default
 profile too, so this belongs to the surface's handlers rather than to the
 chosen click. And 0 ms is not a number a caveat rescues: a reader sees
 "instant" for the paradigm whose visible update lands last.
 
 **So the PDP publishes no INP row at all**, declared in its fit template as
-`interactionTiming: {publish: false, reason}` and dropped at BUNDLE time — the
+`interactionTiming: {publish: false, reason}` and dropped at BUNDLE time, the
 value a reader must not read is not in the artifact either. Withheld LOUDLY,
 which is the whole difference from dropping the cell quietly: the row itself
 carries the reason, the fit sentence refuses the timing comparison in its own
@@ -908,20 +908,20 @@ must carry none and must say why on the page).
 
 **Editorial KEEPS its INP row**, and that is a measurement rather than a
 courtesy: all five variants read 24 ms across every profile in the committed
-receipts, seven runs each. The asymmetry exists there too — qwik's DOM change
-lands at 22.0 ms against 1.0–3.5 ms — but it falls inside the measured window,
+receipts, seven runs each. The asymmetry exists there too, qwik's DOM change
+lands at 22.0 ms against 1.0–3.5 ms, but it falls inside the measured window,
 so the cell is like-for-like. Withholding a stable row would be
 over-correction; the criterion is stated, per-surface, and checkable.
 
 Owed forward, not taken here: a click-to-visible-paint reading would be
 like-for-like where INP is not, and it is what would let the PDP publish an
 interaction-timing cell at all. It is a new receipt field, a new reading row
-and a new publication path — a unit, not a clause. Recorded so the gap is a
+and a new publication path, a unit, not a clause. Recorded so the gap is a
 decision rather than an omission.
 
 **Two consequences for the reading table, both structural.** `READING_METRICS`
 has no interaction-bytes row, so the published "interaction cell" IS the INP
-row — and the table never said which interaction produced it. Harmless while
+row, and the table never said which interaction produced it. Harmless while
 editorial was the only publishing surface with exactly one interaction; an
 honesty gap the moment a second surface publishes a different click into an
 identically-labeled row, whose only remedy would be downloading the receipt,
@@ -933,7 +933,7 @@ thing in each column.
 Second: `/methodology/`'s batch statement and run count were both derived from
 the editorial receipts alone. That was true while editorial was the only
 publication and becomes a correctness bug the moment a second surface
-publishes — a reader on a PDP page follows the methodology link and reads a
+publishes, a reader on a PDP page follows the methodology link and reads a
 description of a batch that is not the one behind the numbers they just read,
 falsified by the receipt links on those very cells. Both are per-surface now,
 each naming its surface's own interaction, and the run count stays a bare
@@ -947,7 +947,7 @@ work, which is the pattern every verify-slice run since `pdp-controls` has
 repeated, and three were claims in the drafts of this very text:
 
 - A `/methodology/` sentence typed "all five variants read 24 ms across every
-  profile", which the site's own served bundle falsifies one click away —
+  profile", which the site's own served bundle falsifies one click away,
   react-next's warm median is 32 ms on average broadband, and runs span 24–32.
   It is derived from the receipts now rather than typed, so it also cannot go
   stale at the next batch.
@@ -963,32 +963,32 @@ repeated, and three were claims in the drafts of this very text:
   parallel load; the first full run after the new legs landed timed the
   pre-existing `reproduce` leg out at exactly 300003 ms. The new file roughly
   doubles the origin suite's browser work. Its second batch dropped to one run
-  per column and the reproduce budget went to 600 s, both recorded — and the
+  per column and the reproduce budget went to 600 s, both recorded, and the
   final measurement is 143.02 s (fixture) and 143.13 s (crate), 510 tests each.
 
 **The bound obligation this addendum creates, and it is structural rather than
 advisory.** `harness.quiescence: "in-flight-tracked"` is now stamped on every
 receipt by the code that does the tracking, so a publication gate can require
 the MECHANISM instead of reading a date and inferring one. Receipts minted
-before the fix carry no such field and cannot grow one retroactively — absence
+before the fix carry no such field and cannot grow one retroactively, absence
 IS the weaker guarantee, stated rather than deduced.
 
 The gate that REQUIRES it is not in this unit, and the reason is a deadlock
 rather than a preference: it would refuse editorial's three committed receipts,
 which the front build needs, and editorial cannot be re-measured until this
-code merges — its receipts were minted against the DEPLOYED plane at a clean
+code merges. Its receipts were minted against the DEPLOYED plane at a clean
 SHA (verified in the artifact), and the addendum-Q provenance gate refuses a
 local checkout measuring a plane on a different tree. So the gate lands in the
 same commit as the re-run receipts that satisfy it. **Publishing anything from
-a pre-2026-08-28 receipt's `interactionSettled` remains unearned until then** —
+a pre-2026-08-28 receipt's `interactionSettled` remains unearned until then**,
 an exposure this unit did not create and does not widen; it is what main
 publishes today. If the re-run is declined, the gate cannot land and this
 paragraph is the record of why.
 
-## Addendum — the transport floor's bytes, named (2026-09-18, `security-floor`)
+## Addendum: the transport floor's bytes, named (2026-09-18, `security-floor`)
 
 **U. Three response headers ride every measured response, identically, and
-the byte discipline names them — including the fact that the ruler cannot
+the byte discipline names them, including the fact that the ruler cannot
 see them.** ADR-0004's addendum of the same date puts a security-header
 floor on every response the composed origin serves
 (`x-content-type-options: nosniff` · `referrer-policy:
@@ -1001,21 +1001,21 @@ static table (RFC 7541 Appendix A, 61 entries) holds none of the three, so
 the first response on a connection carries them as Huffman literals and
 every later response one dynamic-table index byte each; on HTTP/3, QPACK's
 static table (RFC 9204 Appendix A) already indexes `x-content-type-options:
-nosniff` (61) and `x-frame-options: deny` (97) — our `DENY` spelling misses
+nosniff` (61) and `x-frame-options: deny` (97), our `DENY` spelling misses
 the value match and costs a literal value once per connection. Those
 compressed figures are read off the RFC tables, not measured: the plane
 deploys on merge, and the runner cannot see header frames.
 
-**The ruler cannot see them either — this is the fact the first draft of
+**The ruler cannot see them either. This is the fact the first draft of
 this addendum had backwards.** Resource Timing's `transferSize` is the
 runner's byte authority (addendum O), and the spec defines it as "the size
 (in octets) of the fetched resource … includes the response header fields
-plus the response payload body" — then replaces the header component with a
+plus the response payload body", then replaces the header component with a
 constant: the algorithm returns the encoded body size plus 300 octets, and
 "the constant number added to `transferSize` replaces exposing the total
 byte size of the HTTP headers, as that might expose the presence of certain
-cookies" (w3c.org/TR/resource-timing, fetched 2026-09-18). Chromium — the
-browser the runner drives — implements exactly that: `static const size_t
+cookies" (w3c.org/TR/resource-timing, fetched 2026-09-18). Chromium, the
+browser the runner drives, implements exactly that: `static const size_t
 kHeaderSize = 300;` and `return encoded_body_size + kHeaderSize;`
 (`third_party/blink/renderer/core/timing/performance_resource_timing.{h,cc}`,
 fetched the same day). So add or remove any number of response-header bytes
@@ -1024,49 +1024,49 @@ real on the wire and invisible to every KB cell, before and after this
 unit. It is named here so the discipline is complete, not because it is
 measured into a number. Constancy still holds and still matters for the
 timing cells (a header the transport carries is a header every variant
-carries, byte-identical by construction — one module, applied at the seam,
+carries, byte-identical by construction, one module, applied at the seam,
 `set` not `append`), and the chrome constant (addenda L, N, P) is a
 with-versus-without delta measured on one plane and is unmoved. §6's
 known-path rule is unaffected: headers are not instrumentation and are not
-stripped — they are the transport, held constant like the rest of it
+stripped. They are the transport, held constant like the rest of it
 (ADR-0004 §3). **Flagged, not fixed here:** addendum O's phrase
 "headers-included `transferSize`" and the runner's fallback comments that
 repeat it (`tools/bench-runner/src/collect.ts`) rest on the same reading of
 the spec this paragraph corrects; the fallback's arithmetic is unaffected
-(it never subtracts a header size), the words are — a measurement-pass
+(it never subtracts a header size), the words are, a measurement-pass
 line, verified by the skeptic lens on 2026-09-18.
 
-## Addendum — checkout's three ids: what each INP cell measures, and the fetch two of them make (2026-09-24, `checkout-measure-prep`)
+## Addendum: checkout's three ids: what each INP cell measures, and the fetch two of them make (2026-09-24, `checkout-measure-prep`)
 
 **V. Addendum B promised "lab INP (scripted)" for checkout with the registry
 id in the receipt; the ids now exist, and their definitions bound what a
 cell can claim.** Three entries in `tools/bench-runner/src/collect.ts`, each
-settling on a DOM state the enhancement itself produces — never on a timer
-or the address bar — and each measured on the held plane before its comment
+settling on a DOM state the enhancement itself produces, never on a timer
+or the address bar, and each measured on the held plane before its comment
 was written.
 
-- **`checkout-type-card`** — the card field focused PROGRAMMATICALLY, then
+- **`checkout-type-card`**: the card field focused PROGRAMMATICALLY, then
   SIXTEEN real keystrokes (`pressSequentially`), settling on the formatter's
   own output ("4242 4242 4242 4242"). Programmatic focus, not a click, and
   the reason is the ruler's own gate (below): the first input of the visit
-  must BE a keystroke, or the cell is the click that focused the field — an
+  must BE a keystroke, or the cell is the click that focused the field, an
   interaction that runs no handler. Under the gate, the cell is the first
   keystroke's own entry, and any later keystroke that reaches 40 ms.
   Fetches nothing.
-- **`checkout-submit-invalid`** — one click on the pristine form, settling
+- **`checkout-submit-invalid`**: one click on the pristine form, settling
   on the focus move to the error summary (§7's contract: ten rules checked,
   `aria-invalid` and an error paragraph per field, ten links, focus). One
   interaction; the cell is that handler.
-- **`checkout-fix-and-submit`** — the invalid submit, every field corrected
+- **`checkout-fix-and-submit`**: the invalid submit, every field corrected
   with Playwright's `fill`, then the submit that succeeds: two REAL clicks,
   settling on the announcement the email hint promises. Under the gate
   (below) the first click is the visit's first input and always counts; the
-  second — ten fields re-checked, ten error states cleared, the summary
-  removed, the order announced — counts only when it reaches 40 ms. So on a
+  second, ten fields re-checked, ten error states cleared, the summary
+  removed, the order announced, counts only when it reaches 40 ms. So on a
   fast paradigm this cell reads the same click `checkout-submit-invalid`
   does, and separates from it only where the recovery's handler is slow
   enough to be seen: the condition this surface's spotlight names. The fills
-  between the clicks are no input at all — `fill` (CDP `Input.insertText`)
+  between the clicks are no input at all, `fill` (CDP `Input.insertText`)
   dispatches `input` events and no key events, and ten fills produced 0
   event-timing entries with an `interactionId`.
 
@@ -1075,29 +1075,29 @@ was written.
   the successful submit produced **CLS 0.099**: the summary's render is a
   layout shift no input precedes, so the metric counts it, where a real
   click excludes it under the 500 ms recent-input rule. The fills' blur
-  clean-ups are not the reason — each fill's trusted `change` event is
+  clean-ups are not the reason. Each fill's trusted `change` event is
   itself an excluding input (the Layout Instability spec's list names
   `change`, fetched 2026-09-24), so they never count either way; the skeptic
   lens corrected the first draft's attribution. The instrument must never
   manufacture the CLS it reports (ADR-0008 §1), so the priming is a real
   click, and ADR-0005 §3's "unmeasured priming prefix" still has no
-  mechanism in this runner — the fills are the closest thing to one, and
+  mechanism in this runner, the fills are the closest thing to one, and
   only because they are not inputs.
 
 **The ruler's gate, which decided the designs above.** The pinned
 `web-vitals` (5.3.0; `packages/measurement/src/client.ts` calls `onINP` with
-no options) observes `event` entries with `durationThreshold: 40` — its
-default — plus the `first-input` entry, always. Two consequences, both
+no options) observes `event` entries with `durationThreshold: 40`. Its
+default, plus the `first-input` entry, always. Two consequences, both
 measured on the held plane: an interaction under 40 ms is invisible to INP
 unless it is the visit's FIRST input (and under 16 ms the browser reports no
 `event` entry at all); so on a fast paradigm the cell IS the first-input
 entry, and the id's name must name that interaction. Driven the way the
 first draft drove them, `checkout-type-card`'s first input was the
 `pointerdown` that focused the field (24 ms) and every keystroke sat under
-the gate — the cell was the click. Driven as above, the first input is the
+the gate, the cell was the click. Driven as above, the first input is the
 `keydown` on the card (8 ms). For `checkout-fix-and-submit` the first input
 is the INVALID submit's click, with the successful submit counted only if it
-reaches 40 ms — stated in the entry, because the alternative manufactured
+reaches 40 ms, stated in the entry, because the alternative manufactured
 CLS. The gate is the ruler's and stays: every
 published INP cell on this site was made under it, and changing it here
 would make checkout's cells a different metric from editorial's.
@@ -1107,25 +1107,25 @@ the summary's title draw U+26A0 (⚠) as a non-colour cue; Familjen Grotesk
 does not carry it, and `fonts.css` serves a one-glyph face scoped by
 `unicode-range`, which the browser requests on the first error render and
 never before. Measured: `PMWarnGlyph.U26A0.woff2`, 1,212 B body, **1,512 B
-`transferSize`** — the body plus the 300 octets the spec substitutes for
+`transferSize`**, the body plus the 300 octets the spec substitutes for
 headers (addendum U). It is the same file, byte for byte, from every
 variant's own copied tokens tree: glyph mass, invariant by construction,
 the `pdp-gallery-switch` shape rather than a paradigm difference. The
-checkout fit template does not exist yet — it is the measurement pass's to
-write — and when it does it must declare `interactionFetch: { kind:
+checkout fit template does not exist yet. It is the measurement pass's to
+write, and when it does it must declare `interactionFetch: { kind:
 "constant" }` for the two submit ids and `"none"` for the keystroke id;
 addendum S made the declaration mandatory precisely so a surface cannot
 opt out of this check, and the origin suite's `bench-checkout.browser`
-leg derives the face's size from the served `fonts.css` and pins body + 300
-— on the LOCAL plane only: the bench legs are skipped on the post-deploy
+leg derives the face's size from the served `fonts.css` and pins body + 300,
+on the LOCAL plane only: the bench legs are skipped on the post-deploy
 smoke by design (heavy pages exercising the harness), so the deployed
 plane's transfer of that face is unmeasured until the measurement pass
 mints against it and its own receipt says what the wire carried.
 
 **What was measured, and what is NOT published.** Six visits through
 `measureVisit` on the held plane, one per id per profile, INP present in
-every one — 16 / 48 / 40 ms (type-card / submit-invalid / fix-and-submit) on `avg-broadband-desktop`, 8 / 64 / 48 ms on
-`slow-4g-mid-phone` — CLS 0 in all six, interaction bytes 0 / 1,512 /
+every one, 16 / 48 / 40 ms (type-card / submit-invalid / fix-and-submit) on `avg-broadband-desktop`, 8 / 64 / 48 ms on
+`slow-4g-mid-phone`, CLS 0 in all six, interaction bytes 0 / 1,512 /
 1,512. These are drivability evidence from a loaded local machine, one run
 each, and no receipt carries them; the batch, the medians and the addendum-T
 like-for-like test (Chromium closes the entry at the first paint after the

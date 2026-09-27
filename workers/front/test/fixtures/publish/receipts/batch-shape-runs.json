@@ -22,7 +22,7 @@
   "runsPerUrl": 5,
   "harness": {"browser": "chromium", "browserVersion": "fixture", "settleMs": 500, "quiescence": "in-flight-tracked"},
   "methodNotes": [
-    "fixture receipt for the publication gate's refusal tests — never minted, never published"
+    "fixture receipt for the publication gate's refusal tests, never minted, never published"
   ],
   "targets": [
     {

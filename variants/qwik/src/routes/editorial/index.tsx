@@ -7,18 +7,18 @@ import { essayFor } from "../../lib/essays";
 import { isFixtureCrate } from "../../lib/snapshot";
 
 /**
- * Trays are fetched through the edge Worker at REQUEST time — SSR is this
+ * Trays are fetched through the edge Worker at REQUEST time, SSR is this
  * paradigm's real shape on this surface (ADR-0002 §7), and `routeLoader$` is
  * Qwik City's own mechanism for server data a route needs before it renders.
  *
  * The payload is PROJECTED to the fields the page actually renders, not passed
- * through whole — and the reason is narrower than it first looks, because it
+ * through whole, and the reason is narrower than it first looks, because it
  * was measured rather than assumed. The initial page's inline resumability
  * state (`<script type="qwik/json">`) does NOT carry loader results: it is 339
  * bytes, holding only the cart store and the props of the three `component$`
  * boundaries. What DOES carry the whole loader result is the route's
  * client-navigation payload, `/qwik/editorial/q-data.json` (955 bytes with
- * this projection) — so returning the entire detail tray would ship the
+ * this projection), so returning the entire detail tray would ship the
  * tracklist, every image variant, and every field this surface never shows to
  * any visitor who reaches this page through a Qwik City link. Projecting is
  * both the idiomatic loader shape and the honest one, and it does not change a
@@ -54,7 +54,7 @@ export default component$(() => {
           <p class="pm-page__kicker">Staff pick</p>
           <h1>This page couldn't load</h1>
           <p>
-            The store's data plane didn't answer. This is a simulated demo storefront — nothing was
+            The store's data plane didn't answer. This is a simulated demo storefront. Nothing was
             ordered, nothing was lost.
           </p>
         </div>
@@ -79,5 +79,5 @@ export const head: DocumentHead = ({ resolveValue }) => {
   const title = editorial.failed
     ? "This page couldn't load"
     : essayFor(editorial.isFixture).title;
-  return { title: `${title} — Long Decay Records` };
+  return { title: `${title} · Long Decay Records` };
 };

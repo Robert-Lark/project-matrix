@@ -2,7 +2,7 @@
 //
 // Public pages: script-src 'self' keeps injected-markup XSS dead even though
 // style-src allows inline styles (Shiki's highlighted spans carry style
-// attributes — that is what 'unsafe-inline' buys, and scripts stay locked).
+// attributes, that is what 'unsafe-inline' buys, and scripts stay locked).
 // Admin pages add connect-src (autosave fetch) and frame-src 'self' (the
 // live preview iframe), and are never indexable.
 
@@ -10,7 +10,7 @@
 // lib.mjs, switcher chrome.ts, front tokens-source.mjs, the vanilla, htmx
 // and astro renderers). Until the workers-hardening unit (2026-09-25) this
 // one skipped the single quote; every call site was in a double-quoted
-// attribute or text content (audited 2026-08-29 and again 2026-09-25 —
+// attribute or text content (audited 2026-08-29 and again 2026-09-25,
 // no `='${…}'` in workers/blog/src), so nothing was exploitable, and it is
 // aligned as defense in depth: the next single-quoted attribute a template
 // grows is not a security review.

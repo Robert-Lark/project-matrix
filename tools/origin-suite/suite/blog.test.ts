@@ -1,5 +1,5 @@
 /**
- * Blog plane (ADR-0009) — additive suite file; every store contract lives
+ * Blog plane (ADR-0009), additive suite file; every store contract lives
  * elsewhere and is untouched. Two layers:
  *
  * 1. Read-only contracts that must hold at ANY origin (local + deployed
@@ -7,8 +7,8 @@
  *    bytes (the non-contamination fence), the admin is nothing but a
  *    login wall, and the feed answers.
  *
- * 2. The write path — login, autosave, CSRF refusal, publish, public read,
- *    preview link, slug-change redirect, media round-trip — which needs the
+ * 2. The write path, login, autosave, CSRF refusal, publish, public read,
+ *    preview link, slug-change redirect, media round-trip, which needs the
  *    fixture credential and therefore runs only where PM_BLOG_CREDENTIAL is
  *    set (run-local.mjs sets it; the post-deploy smoke deliberately does
  *    not, so the suite never writes to production).
@@ -31,7 +31,7 @@ describe("blog plane: dispatch + non-contamination", () => {
 
   it("blog HTML passes through byte-identical (no chrome injection)", async () => {
     // Assert the INJECTION ARTIFACTS (the exact markup the front Worker's
-    // HTMLRewriter emits), never bare substrings — a legitimate blog post
+    // HTMLRewriter emits), never bare substrings, a legitimate blog post
     // ABOUT the benchmark may mention '/_pm/' or 'pm-chrome' as prose or
     // code, and markdown cannot produce these raw tags (sanitize strips
     // link/div injection shapes).
@@ -46,7 +46,7 @@ describe("blog plane: dispatch + non-contamination", () => {
     expect(res.status).toBe(404);
   });
 
-  it("prefix matching is exact — /blogfoo is not this plane's traffic", async () => {
+  it("prefix matching is exact, /blogfoo is not this plane's traffic", async () => {
     // Through the composed origin /blogfoo is the front Worker's 404; this
     // guards the blog worker's own boundary for direct/preview access.
     const res = await get("/blogfoo");
@@ -142,7 +142,7 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
     expect(csrf).not.toBe("");
   });
 
-  it("creates a draft (POST — no state change on GET)", async () => {
+  it("creates a draft (POST, no state change on GET)", async () => {
     const res = await authed("/blog/admin/new", {
       method: "POST",
       body: new URLSearchParams({ csrf, kind: "essay" }),
@@ -250,7 +250,7 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
 
   it("refuses a file the byte sniffer cannot read, whatever type the client declared (400)", async () => {
     // Security floor, 2026-09-18 (audit task 3): a text file declared
-    // image/png used to upload with NULL dimensions — a zero-CLS hole.
+    // image/png used to upload with NULL dimensions, a zero-CLS hole.
     const text = new TextEncoder().encode("this is a text file wearing an image/png label\n");
     const form = new FormData();
     form.append("file", new File([text], "notes.png", { type: "image/png" }), "notes.png");
@@ -262,7 +262,7 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
 
   it("stores the type the BYTES are, not the type the client declared", async () => {
     // PNG bytes declared image/jpeg: the extension, the R2 content-type and
-    // the media row all say PNG — `file.type` is never consulted.
+    // the media row all say PNG, `file.type` is never consulted.
     const png = Uint8Array.from(atob(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
     ), (c) => c.charCodeAt(0));
@@ -362,7 +362,7 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
     expect(res.headers.get("content-type")).toBe("application/zip");
     const bytes = new Uint8Array(await res.arrayBuffer());
     expect([bytes[0], bytes[1], bytes[2], bytes[3]]).toEqual([0x50, 0x4b, 0x03, 0x04]);
-    // STORE'd entries sit raw in the archive — names and words included.
+    // STORE'd entries sit raw in the archive, names and words included.
     const text = new TextDecoder("latin1").decode(bytes);
     expect(text).toContain(`posts/${slug}-moved.md`);
     expect(text).toContain("media.json");
@@ -395,7 +395,7 @@ describe.skipIf(!CREDENTIAL)("blog plane: the write path (fixture credential)", 
 });
 
 // The cron leg needs the blog worker's own dev server (`wrangler dev
-// --test-scheduled` exposes /__scheduled on 8791) — local composition only;
+// --test-scheduled` exposes /__scheduled on 8791), local composition only;
 // the deployed smoke can't and shouldn't fire production's trigger.
 const BLOG_DEV = !process.env.PM_ORIGIN || ORIGIN.includes("127.0.0.1")
   ? "http://127.0.0.1:8791"
@@ -466,7 +466,7 @@ describe.skipIf(!CREDENTIAL || !BLOG_DEV)("blog plane: scheduled publishing (loc
     });
     expect(cancelled.status).toBe(200);
 
-    // Schedule for a moment already in the past — due on the next tick.
+    // Schedule for a moment already in the past, due on the next tick.
     const at = new Date(Date.now() - 60_000).toISOString();
     const due = await authed(`/blog/admin/api/posts/${postId}/schedule`, {
       method: "POST",
@@ -479,7 +479,7 @@ describe.skipIf(!CREDENTIAL || !BLOG_DEV)("blog plane: scheduled publishing (loc
     const fired = await fetch(`${BLOG_DEV}/__scheduled?cron=*/5+*+*+*+*`);
     expect(fired.status).toBe(200);
 
-    // publishDue runs under waitUntil — poll briefly rather than race it.
+    // publishDue runs under waitUntil, poll briefly rather than race it.
     let page: Response | null = null;
     for (let i = 0; i < 20; i += 1) {
       page = await get(`/blog/${slug}`);
@@ -539,13 +539,13 @@ describe.skipIf(!CREDENTIAL || !BLOG_DEV)("blog plane: scheduled publishing (loc
 // the same count could write the same count + 1 and under-count. What this
 // leg proves: under twenty parallel wrong credentials on the composed plane
 // the bucket locks, every attempt is refused and no cookie is minted. What
-// it does NOT prove — recorded from the sabotage table, not assumed: it
+// it does NOT prove, recorded from the sabotage table, not assumed: it
 // does not distinguish the atomic statement from the read-modify-write it
 // replaced; on local D1 the burst was serialised enough for the racy code
 // to reach the threshold too (three runs of three). The discriminating
 // proof is workers/blog/test/auth.test.js (one statement; twenty interleaved
 // increments count twenty). Local only: the burst writes twenty failures
-// into the plane's D1 and locks a bucket for thirty minutes — on the deployed
+// into the plane's D1 and locks a bucket for thirty minutes, on the deployed
 // plane that is a production write and a real IP locked out, and the smoke
 // never writes to production. The bucket rides in `cf-connecting-ip`, which
 // local dev passes through verbatim (Cloudflare overwrites it at the edge),
@@ -555,7 +555,7 @@ describe.skipIf(!BLOG_DEV)("blog plane: the login lockout survives a parallel bu
   // file, and a bucket a previous run locked would answer 429 to the control
   // leg below. The bucket is the header's verbatim value (auth.js
   // clientBucket), so two random hosts in the IPv6 documentation prefix
-  // (RFC 3849) make a collision negligible — a Date.now()-derived TEST-NET
+  // (RFC 3849) make a collision negligible, a Date.now()-derived TEST-NET
   // host was a 1-in-126 dice roll against a 30-minute lock (verify-slice).
   const run = crypto.randomUUID().replaceAll("-", "");
   const BUCKET_IP = `2001:db8:${run.slice(0, 4)}:${run.slice(4, 8)}::a`;
@@ -575,13 +575,13 @@ describe.skipIf(!BLOG_DEV)("blog plane: the login lockout survives a parallel bu
       expect(res.headers.get("set-cookie")).toBeNull();
     }
     // The twenty-first attempt meets the lockout. (Not a discriminator: the
-    // read-modify-write code reached the threshold on local D1 too — see the
+    // read-modify-write code reached the threshold on local D1 too, see the
     // describe's header.)
     const after = await attempt();
     expect(after.status).toBe(429);
   });
 
-  it("the burst locked ITS bucket only — a neighbouring bucket's first wrong attempt is a 403, not a 429", async () => {
+  it("the burst locked ITS bucket only, a neighbouring bucket's first wrong attempt is a 403, not a 429", async () => {
     const res = await get("/blog/admin/login", {
       method: "POST",
       redirect: "manual",

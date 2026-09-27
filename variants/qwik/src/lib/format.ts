@@ -1,13 +1,13 @@
 /**
  * The canonical formatting rules, re-implemented for this variant
- * (ADR-0003 §1: a component is a spec, re-implemented per paradigm —
+ * (ADR-0003 §1: a component is a spec, re-implemented per paradigm,
  * `packages/reference/render/lib.mjs` is the rules of record and nothing here
  * imports it). The drift gate polices the result both ways: in CI against the
  * fixture master and on the deployed plane against the master re-rendered
  * from the resolved snapshot (ADR-0008 §9).
  *
  * There is no `esc()` here, unlike slices A and C. Every interpolated value
- * reaches the DOM as a JSX expression, which Qwik escapes itself — and
+ * reaches the DOM as a JSX expression, which Qwik escapes itself, and
  * measured against a scaffold, byte-identically to the reference renderer's
  * `esc()`: `& < > " '` become `&amp; &lt; &gt; &quot; &#39;` in both text and
  * attribute values, apostrophe decimal. (Astro's html-escaper matches too;
@@ -19,7 +19,7 @@ import type { Price, ReleaseSummary } from "@pm/data-contract";
 
 /** Price: USD renders as "$" + amount, exactly two decimals, "," thousands
  *  separator; non-USD falls back to "<amount> <CUR>". A null price is not a
- *  price of zero — the card renders an em dash and `stockLine` tells the
+ *  price of zero, the card renders an em dash and `stockLine` tells the
  *  honest story. */
 export function formatPrice(priceFrom: Price | null): string | null {
   if (priceFrom == null) return null;

@@ -1,10 +1,10 @@
 /*
- * Component module — PLP release card. Renders a ReleaseSummary tray
+ * Component module, PLP release card. Renders a ReleaseSummary tray
  * (see docs/prototypes/data-contract/schema.ts), byte-identical everywhere.
  *
  * Consumes SEMANTIC tokens only. Authored as its own module so each paradigm
- * can deliver it its native way — Astro/Svelte scope it, Vite/Next split &
- * tree-shake it, vanilla concatenates or inlines it — WITHOUT changing the
+ * can deliver it its native way, Astro/Svelte scope it, Vite/Next split &
+ * tree-shake it, vanilla concatenates or inlines it, WITHOUT changing the
  * computed result (ADR-0003: "repackage, don't re-value").
  *
  * Naming: `pm-` BEM. State styles off native attributes/pseudo-classes, never

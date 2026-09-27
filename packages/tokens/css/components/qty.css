@@ -1,9 +1,9 @@
 /*
- * Component module — quantity stepper. A labelled native spinbutton with two
+ * Component module, quantity stepper. A labelled native spinbutton with two
  * named buttons; the input works JS-off, the buttons are per-paradigm
  * behavior (they update the input's value, which announces itself).
  *
- * Canonical markup — the glyph is aria-hidden and the sr-only span carries the
+ * Canonical markup, the glyph is aria-hidden and the sr-only span carries the
  * whole accessible name. A BARE glyph makes the name "−Decrease quantity"
  * (pdp-build; the same pattern the tracklist header uses for its "#"):
  *   <div class="pm-qty">

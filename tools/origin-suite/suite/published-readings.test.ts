@@ -7,18 +7,18 @@
  *    carries a COMPLETE receipt (C2 as data, not just as type), every
  *    receipt URL it names dereferences to a clean, SHA-pinned v1 bench
  *    receipt, and the served values EQUAL what those receipts derive (warm
- *    median — the served bundle is generated from the receipts at build, so
+ *    median, the served bundle is generated from the receipts at build, so
  *    a mismatch means the pipeline lied);
- *  - the chrome renders the SAME numbers the bundle carries — under the
- *    default profile and under an explicit ?profile= — with the receipt
+ *  - the chrome renders the SAME numbers the bundle carries, under the
+ *    default profile and under an explicit ?profile=, with the receipt
  *    framing + methodology link replacing the empty state ONLY where a
  *    bundle exists (the placeholder sample surface keeps its empty state,
  *    asserted in chrome.test.ts);
  *  - the fit line's copy discipline: the derived sentence with its receipt
- *    link, or bandsOverlap's designed state — never a bare verdict;
+ *    link, or bandsOverlap's designed state, never a bare verdict;
  *  - /methodology/ is a chrome-free static singleton whose stated chrome
  *    constant equals the served probe artifact (numbers substituted from
- *    committed artifacts, never typed — the home-receipts rule);
+ *    committed artifacts, never typed, the home-receipts rule);
  *  - home's publication flips render values derived from the served bundle.
  */
 import { describe, expect, it } from "vitest";
@@ -58,15 +58,15 @@ async function servedLabFile(): Promise<{ surface: string; profiles: Record<stri
 
 /**
  * Whether the plane is serving a PUBLICATION at all. "No published runs" is
- * a legitimate served state — it is what every unbuilt surface shows, and
+ * a legitimate served state. It is what every unbuilt surface shows, and
  * what this surface shows between a code change and the batch that
- * re-measures it — so the assertions about published values gate on it
+ * re-measures it, so the assertions about published values gate on it
  * rather than encoding "a publication must exist" as a repo invariant. The
  * bundle's own presence is asserted unconditionally below, and the
  * chrome-side empty state is covered by chrome.test.ts.
  */
 // Resolved at COLLECTION time (top-level await), because `it.skipIf` reads
-// its condition while collecting — a value set in beforeAll would always
+// its condition while collecting, a value set in beforeAll would always
 // still be false here.
 const hasPublication = await (async () => {
   const res = await fetch(`${ORIGIN}/_pm/lab/editorial.json`);
@@ -90,7 +90,7 @@ const esc = (v: string) =>
  * `editorial-` filename gate). `labBundle` in SURFACE_CONTROLS is the whole
  * registration: the front build emits /_pm/lab/{surface}.json for every
  * flagged surface and the Worker embeds it, so these legs are the
- * registry-completeness tie — flag a surface without wiring the pipeline and
+ * registry-completeness tie, flag a surface without wiring the pipeline and
  * they fail, exactly as PDP_SERVING ties the serving floor.
  */
 const LAB_SURFACES = Object.entries(SURFACE_CONTROLS)
@@ -103,7 +103,7 @@ const UNFLAGGED_SURFACES = Object.keys(SURFACE_CONTROLS).filter(
 /**
  * Where each lab surface's own page lives, so an EMPTY publication can be
  * proven to render the chrome's designed empty state rather than a hole or a
- * crash. A flagged surface with no entry FAILS the completeness leg below —
+ * crash. A flagged surface with no entry FAILS the completeness leg below,
  * a row is a runtime requirement, not an honor-system edit.
  */
 const SURFACE_PAGE: Record<string, (snap: Awaited<ReturnType<typeof loadServedSnapshot>>) => string> = {
@@ -123,7 +123,7 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
       const res = await get(`/_pm/lab/${surface}.json`);
       expect(res.status, `/_pm/lab/${surface}.json`).toBe(200);
       const file = await res.json();
-      // The bundle names the surface it belongs to — the Worker keys
+      // The bundle names the surface it belongs to, the Worker keys
       // LAB_BUNDLES off this field, so a mislabeled artifact would serve one
       // surface's numbers under another's table.
       expect(file.surface).toBe(surface);
@@ -150,27 +150,27 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
     },
   );
 
-  it("every lab surface has a page entry here (completeness — no unproven surface)", () => {
+  it("every lab surface has a page entry here (completeness, no unproven surface)", () => {
     for (const surface of LAB_SURFACES) {
       // Object.hasOwn, not a bare index: surface keys index a plain object,
       // and the repo's recurring prototype-key class ("constructor" 502'd
       // instead of 404ing) is why every registry lookup here uses it.
       expect(
         Object.hasOwn(SURFACE_PAGE, surface),
-        `no SURFACE_PAGE entry for "${surface}" — add its page path so its empty/published state is proven`,
+        `no SURFACE_PAGE entry for "${surface}", add its page path so its empty/published state is proven`,
       ).toBe(true);
     }
   });
 
   /**
-   * BOTH directions, every surface, every run — replacing an empty-only leg
+   * BOTH directions, every surface, every run, replacing an empty-only leg
    * that verify-slice caught reproducing the DESCRIBED_VARIANTS anti-pattern
    * this repo already removed once (pdp.test.ts:44-50). That leg skipped any
    * PUBLISHED surface, so `SURFACE_PAGE.editorial` was never dereferenced on
    * any run and a typo'd path passed; and it would have fallen to ZERO
    * assertions the day the PDP batch lands and both surfaces are published,
    * while still counting among the green legs. Its "non-vacuity" line was
-   * `expect(Array.isArray(empties)).toBe(true)` — true for every possible
+   * `expect(Array.isArray(empties)).toBe(true)`, true for every possible
    * value, including the empty array it was meant to catch.
    *
    * Here every registered surface is fetched on every run and asserted
@@ -211,8 +211,8 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
       }
 
       // The INP row, BOTH directions (ADR-0001 addendum T). A surface either
-      // publishes the metric — and then every column carries a reading and the
-      // row names the interaction it was driven by — or WITHHOLDS it, and then
+      // publishes the metric, and then every column carries a reading and the
+      // row names the interaction it was driven by, or WITHHOLDS it, and then
       // no column carries one AND the row says why. Withheld quietly is the
       // failure this asserts against: four unexplained em-dashes under the
       // line "Every number above links its receipt" reads as a broken cell,
@@ -228,7 +228,7 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
       } else {
         expect(
           inpCells.some(Boolean),
-          `${surface} withholds its INP row but its bundle still carries a reading — the value a reader must not read must not be in the artifact either`,
+          `${surface} withholds its INP row but its bundle still carries a reading, the value a reader must not read must not be in the artifact either`,
         ).toBe(false);
         expect(timing!.reason, `${surface} withholds INP with no reason`).toBeTruthy();
         expect(body, `${surface} withholds INP without saying so on the page`).toContain(
@@ -239,8 +239,8 @@ describe("the lab pipeline is per-surface, driven by the SURFACE_CONTROLS regist
   );
 });
 
-describe("/_pm/lab/editorial.json — the publication is complete and receipt-backed", () => {
-  it("is served on the instrumentation path in either state — published or not", async () => {
+describe("/_pm/lab/editorial.json, the publication is complete and receipt-backed", () => {
+  it("is served on the instrumentation path in either state, published or not", async () => {
     const res = await get("/_pm/lab/editorial.json");
     expect(res.status).toBe(200);
     const file = await res.json();
@@ -258,7 +258,7 @@ describe("/_pm/lab/editorial.json — the publication is complete and receipt-ba
       const bundle = file.profiles[id]!;
       expect(bundle.profile).toBe(id);
       // Columns are exactly the surface's live variants (never a fenced
-      // exhibit, never a planned cell) — derived, not typed.
+      // exhibit, never a planned cell), derived, not typed.
       expect(Object.keys(bundle.columns).sort()).toEqual(
         [...SURFACE_CONTROLS.editorial!.variants].sort(),
       );
@@ -299,7 +299,7 @@ describe("/_pm/lab/editorial.json — the publication is complete and receipt-ba
         expect(receipt.profile.id).toBe(bundle.profile);
         // The served bundle equals what the receipt derives: warm-median
         // initial JS, rounded exactly as the build rounds (the bundle is
-        // GENERATED from this receipt — a mismatch is a lying pipeline).
+        // GENERATED from this receipt, a mismatch is a lying pipeline).
         for (const target of receipt.targets) {
           const med = target.columns.warm.medians;
           const cell = bundle.columns[target.variant]!;
@@ -317,7 +317,7 @@ describe("/_pm/lab/editorial.json — the publication is complete and receipt-ba
     }
   });
 
-  it.skipIf(!hasPublication)("all published receipts pin ONE commit SHA — one publication, one batch discipline", async () => {
+  it.skipIf(!hasPublication)("all published receipts pin ONE commit SHA, one publication, one batch discipline", async () => {
     const file = await servedLabFile();
     const shas = new Set<string>();
     for (const bundle of Object.values(file.profiles)) {
@@ -355,7 +355,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     }
   });
 
-  it.skipIf(!hasPublication)("?profile= selects that profile's bundle — numbers switch with the snapshot selector", async () => {
+  it.skipIf(!hasPublication)("?profile= selects that profile's bundle, numbers switch with the snapshot selector", async () => {
     const file = await servedLabFile();
     for (const [id, bundle] of Object.entries(file.profiles)) {
       const body = await (await get(`/vanilla/editorial/?profile=${id}`)).text();
@@ -372,9 +372,9 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     //
     // Driven from the REGISTRY, not from a literal. This loop read
     // `/{variant}/editorial/` until 2026-08-28, so the day a second surface
-    // published a bundle its fragment — different column count, different
+    // published a bundle its fragment, different column count, different
     // `proves` string, its own fit sentence, and now an interaction-labeled
-    // INP row — would have been served to every measured page of that surface
+    // INP row, would have been served to every measured page of that surface
     // and checked by nothing. That is the same shape as the anti-pattern this
     // file already retired once: a check whose coverage silently fails to grow
     // with the registry (verify-slice, this slice's own review).
@@ -387,7 +387,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
       })),
     );
     // NOT `pages.length >= LAB_SURFACES.length`, which every branch of the
-    // ternary satisfies for every input including an EMPTY registry (0 >= 0) —
+    // ternary satisfies for every input including an EMPTY registry (0 >= 0),
     // a tautology placed to defend coverage, which is the anti-pattern this
     // file's own comments condemn (verify-slice, skeptic lens). Assert the
     // surfaces actually covered.
@@ -397,7 +397,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
     );
     for (const id of PROFILE_IDS) {
       for (const { surface, variant, path } of pages) {
-        // kv-exempt: lab surfaces (editorial, pdp) via vanilla/remix3 — static pages, or the un-nonced server-side PDP fetch that is the measurement-pass known; never the PLP warm tier
+        // kv-exempt: lab surfaces (editorial, pdp) via vanilla/remix3, static pages, or the un-nonced server-side PDP fetch that is the measurement-pass known; never the PLP warm tier
         const body = await (await get(`${path}?profile=${id}`)).text();
         const fragment = body.match(
           /<aside id="pm-chrome"[\s\S]*?<\/aside><script src="\/_pm\/measure\.js" defer><\/script>/,
@@ -422,7 +422,7 @@ describe("the chrome renders the published readings (C2 populated, end to end)",
   });
 });
 
-describe("/methodology/ — the ADR-0001 §9 page, chrome-free, numbers from artifacts", () => {
+describe("/methodology/, the ADR-0001 §9 page, chrome-free, numbers from artifacts", () => {
   it("serves the page with the limits-of-data framing and no injected chrome", async () => {
     const res = await get("/methodology/");
     expect(res.status).toBe(200);
@@ -436,21 +436,21 @@ describe("/methodology/ — the ADR-0001 §9 page, chrome-free, numbers from art
     // The dilution correction (ADR-0001 §3 addendum, 2026-08-15) is stated
     // the same way: the estimator by name, and the record that the batch
     // re-ran on the fixed ruler (the floors caveat left the page in the
-    // same commit as the re-run's receipts — this pin moved with it).
+    // same commit as the re-run's receipts. This pin moved with it).
     expect(body).toContain("leave-one-out");
     expect(body).toContain("re-ran on the fixed ruler");
     expect(body).not.toContain("data-pm-chrome");
     expect(body).not.toContain('id="pm-chrome-slot"');
   });
 
-  it("states the chrome constant, or states plainly that none is published — both directions", async () => {
+  it("states the chrome constant, or states plainly that none is published. Both directions", async () => {
     // BOTH directions, on every run. An absent constant is a LEGAL state (the
     // front build's own existsSync guard makes it one) and it is the state the
     // tree is in for exactly one commit whenever the chrome fragment changes:
     // the addendum-N-hole-1 identity gate refuses a constant that describes a
     // fragment the build no longer ships, so re-measuring means publishing
     // nothing in between. A leg that only checked the populated direction went
-    // red on that legal state and said nothing at all about the empty one —
+    // red on that legal state and said nothing at all about the empty one,
     // the same shape as the DESCRIBED_VARIANTS anti-pattern this suite already
     // retired once (publication-pipeline unit).
     const res = await get("/_pm/lab/chrome-constant.json");

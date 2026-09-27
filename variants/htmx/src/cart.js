@@ -1,8 +1,8 @@
-// htmx add-to-cart — this variant's implementation of the cart storage
+// htmx add-to-cart. This variant's implementation of the cart storage
 // contract (packages/reference/render/shell.mjs CART_CONTRACT is the
 // contract of record; the origin suite asserts this file's behavior against
 // it). Recorded, not disguised (editorial-build ISSUE E): the cart is CLIENT
-// state, which hypermedia does not own — htmx swaps server HTML, and there
+// state, which hypermedia does not own, htmx swaps server HTML, and there
 // is no server cart (ADR-0004 §5: localStorage holds the cart ONLY, so it
 // survives a variant swap). The honest idiomatic shape is exactly this
 // minimal plain script, riding beside the htmx runtime rather than
@@ -13,7 +13,7 @@
   const KEY = "pm:cart";
 
   // Contract recovery rule: a missing, unparseable, or schema-failing value
-  // is the EMPTY cart — the next successful add overwrites it.
+  // is the EMPTY cart, the next successful add overwrites it.
   const read = () => {
     try {
       const cart = JSON.parse(localStorage.getItem(KEY) ?? "");
@@ -40,7 +40,7 @@
   const renderCount = (n) => {
     // Badge caps at "9+" (contract): the slot reserves min-width 2.4ch, so
     // an uncapped 3-digit count would shift layout on population. The exact
-    // number rides the anchor's aria-label — the count span is aria-hidden.
+    // number rides the anchor's aria-label, the count span is aria-hidden.
     for (const slot of document.querySelectorAll("[data-pm-cart-count]")) {
       slot.textContent = n > 0 ? (n > 9 ? "9+" : String(n)) : "";
     }
@@ -76,6 +76,6 @@
     renderCount(n);
     const status = document.querySelector("[data-pm-status]");
     // textContent, never HTML (contract; the title is tray data).
-    if (status) status.textContent = `Added "${item.title}" to cart — ${n} in cart.`;
+    if (status) status.textContent = `Added "${item.title}" to cart, ${n} in cart.`;
   });
 })();

@@ -16,7 +16,7 @@ export const PICKS: Pick[] = [
     artist: 'Max Richter',
     label: 'Deutsche Grammophon',
     year: 2015,
-    blurb: 'Eight hours of post-minimalist rest — the overnight landmark.',
+    blurb: 'Eight hours of post-minimalist rest, the overnight landmark.',
   },
   {
     title: 'A Winged Victory for the Sullen',
@@ -37,7 +37,7 @@ export const PICKS: Pick[] = [
     artist: 'Nils Frahm',
     label: 'Erased Tapes',
     year: 2011,
-    blurb: 'Close-miked felted piano — mechanism as instrument.',
+    blurb: 'Close-miked felted piano, mechanism as instrument.',
   },
   {
     title: 'And Their Refinement of the Decline',

@@ -1,6 +1,6 @@
 /**
  * Structural guards for the ADR-0003 invariants this package carries. These
- * are cheap string-level checks on the shipped CSS — the real rendering proof
+ * are cheap string-level checks on the shipped CSS, the real rendering proof
  * is the drift gate (issue #6); these fail fast when someone breaks the token
  * ARCHITECTURE (tiers, seams, a11y gating) rather than its values.
  */
@@ -63,7 +63,7 @@ describe("two-tier token seam (ADR-0003 §3)", () => {
     ]);
   });
 
-  it("component and surface modules consume SEMANTIC tokens only — never a --pm-* primitive", () => {
+  it("component and surface modules consume SEMANTIC tokens only, never a --pm-* primitive", () => {
     for (const file of componentFiles) {
       const css = readFileSync(join(pkgRoot, "css/components", file), "utf8");
       // Primitives (--pm-*) may only be referenced inside tokens.css itself.
@@ -140,7 +140,7 @@ describe("reduced-motion gating is intact (ADR-0003 §5)", () => {
 describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
   it("every @font-face file exists and is self-hosted in this package", () => {
     // Three faces: Familjen Grotesk + the two scoped Inter-subset fallbacks
-    // ("PM Warn Glyph" U+26A0, "PM Crate Symbols" — crate-glyph-coverage).
+    // ("PM Warn Glyph" U+26A0, "PM Crate Symbols", crate-glyph-coverage).
     const srcs = [...fontsCss.matchAll(/src:\s*url\("([^"]+)"\)/g)].map(
       (m) => m[1]!,
     );
@@ -156,15 +156,15 @@ describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
     expect(tokensCss).toMatch(/--pm-font-metric:\s*"Familjen Grotesk"/);
     // VALUE-level checks, not just label hygiene: a reverted/never-poured
     // palette must fail HERE, not only in the pixel drift gate. Two
-    // load-bearing Catalogue primitives (ADR-0006 §1–§2) — the warm-paper
-    // surface and the slate-water accent — that differ from the old neutral
+    // load-bearing Catalogue primitives (ADR-0006 §1–§2), the warm-paper
+    // surface and the slate-water accent, that differ from the old neutral
     // placeholder (#ffffff / #3b5bdb). Update these two when the palette is
     // re-poured (the drift gate is still the exhaustive proof; these are the
     // cheap static tripwire).
     expect(tokensCss).toMatch(/--pm-neutral-0:\s*#fdfcfa/i);
     expect(tokensCss).toMatch(/--pm-accent-500:\s*#3d5d70/i);
     // Label hygiene: the aesthetic cites its rationale of record and carries
-    // no placeholder warning — this inverts the old issue #2 guard, which
+    // no placeholder warning. This inverts the old issue #2 guard, which
     // kept the stand-in labeled until a real decision existed.
     expect(tokensCss).toContain("ADR-0006");
     expect(tokensCss).not.toContain("PLACEHOLDER");
@@ -201,8 +201,8 @@ describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
 
   it("the crate text symbols (⅓ ℗ …) are wired to a scoped self-hosted face", () => {
     // crate-glyph-coverage decision (surface-design DRAFT §4.1): nine crate
-    // codepoints Familjen lacks — chiefly U+2153 ⅓ ("33 ⅓ RPM") and U+2117 ℗
-    // — ship as "PM Crate Symbols", an Inter subset like the warn glyph,
+    // codepoints Familjen lacks, chiefly U+2153 ⅓ ("33 ⅓ RPM") and U+2117 ℗
+    //, ship as "PM Crate Symbols", an Inter subset like the warn glyph,
     // unicode-range-scoped so it never touches Familjen's letterforms. The
     // crate's Arabic/CJK stay on a DECIDED per-OS system fallback (see
     // fonts/coverage.json `crateSystemFallback` + fonts/README.md). This
@@ -222,7 +222,7 @@ describe("the font as a controlled constant (ADR-0003 §7–§8)", () => {
     expect(tokensCss).toMatch(
       /--pm-font-metric:\s*"Familjen Grotesk",\s*"PM Warn Glyph",\s*"PM Crate Symbols",\s*system-ui/,
     );
-    // same source family as the warn glyph — the Inter OFL covers both
+    // same source family as the warn glyph, the Inter OFL covers both
     expect(existsSync(join(pkgRoot, "fonts/LICENSE-OFL-Inter.txt"))).toBe(true);
   });
 });

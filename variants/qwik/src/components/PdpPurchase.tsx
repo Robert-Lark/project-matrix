@@ -5,13 +5,13 @@ import { addToCartQty } from "../lib/pdp-cart";
 /**
  * The quantity stepper + add-to-cart. The input is UNCONTROLLED (the DS
  * rule: state lives on the native attribute, never a framework variable),
- * and the clamp rides qwik's `onChange$` — which IS the native commit event
+ * and the clamp rides qwik's `onChange$`, which IS the native commit event
  * (Enter, the spinner, leaving the field), the vanilla-parity semantics the
  * react-next slice had to attach by hand after verify-slice reproduced its
  * blur-only draft diverging on Enter-commit.
  *
  * `max` does NOT constrain typed input (the field is in no form, so
- * constraint validation never runs) — the clamp is this enhancement's.
+ * constraint validation never runs), the clamp is this enhancement's.
  * A successful add updates the shared CartContext store (badge + status),
  * exactly as editorial's AddToCartButton does; a failed setItem changes
  * nothing and announces nothing (the contract).
@@ -90,10 +90,10 @@ export const PdpPurchase = component$<{ id: number; title: string; sold: boolean
               const wanted = clamp(el);
               const count = addToCartQty(id, wanted);
               // Storage failed (quota, storage off): state unchanged,
-              // nothing announced — the contract's own rule.
+              // nothing announced, the contract's own rule.
               if (count === null) return;
               cart.count = count;
-              cart.message = `Added "${title}" to cart — ${count} in cart.`;
+              cart.message = `Added "${title}" to cart, ${count} in cart.`;
             }}
           >
             {sold ? "None for sale" : "Add to cart"}

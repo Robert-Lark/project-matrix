@@ -1,13 +1,13 @@
-// The editorial page — the canonical markup contract
+// The editorial page, the canonical markup contract
 // (packages/reference/surfaces/editorial/ is the spec of record) rendered by
 // Remix 3 Handle components, plus this exhibit's TWO fenced subtrees: the
-// plaque (the boundary, top of main — the label reads before the content,
+// plaque (the boundary, top of main, the label reads before the content,
 // the a11y-section label-first principle) and the frames demo (the paradigm,
-// after the article — the store wins the page, apparatus is the appendix).
+// after the article, the store wins the page, apparatus is the appendix).
 // Everything outside [data-pm-fenced] is the master's DOM: the fence
 // excludes NUMBERS, not visual identity (FINDINGS §4).
 //
-// The cart data hook rides a JSON script element (delivery, not contract —
+// The cart data hook rides a JSON script element (delivery, not contract,
 // ADR-0008 freedoms) through the serializer's typed innerHTML escape hatch:
 // script content is RAWTEXT in HTML, so entity-escaped children would
 // corrupt the JSON; `<` is escaped as < so a tray string can never
@@ -49,7 +49,7 @@ export function EditorialPage(handle: Handle<{ data: EditorialData; pick: number
         />
         <figcaption>
           {featured.artist}
-          {" — "}
+          {", "}
           {featured.title}
           {" ("}
           {label?.name ?? ""}
@@ -74,7 +74,7 @@ export function EditorialPage(handle: Handle<{ data: EditorialData; pick: number
     );
 
     return (
-      <Document title={`${essay.title} — Long Decay Records`} scripts={scripts}>
+      <Document title={`${essay.title} · Long Decay Records`} scripts={scripts}>
         <FrontierPlaque />
         <article class="pm-editorial">
           <header class="pm-editorial__head">
@@ -99,7 +99,7 @@ export function EditorialPage(handle: Handle<{ data: EditorialData; pick: number
                 </button>
               </div>
               <p class="pm-editorial__feature-note">
-                {"The only interactive element on this page — that's the experiment."}
+                {"The only interactive element on this page. That's the experiment."}
               </p>
             </div>
           </aside>

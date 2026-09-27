@@ -1,5 +1,5 @@
 /**
- * A script's CODE, with comments removed — the one comment stripper the
+ * A script's CODE, with comments removed, the one comment stripper the
  * repo-checks guards share (extracted from pdp-controls-wired.test.ts by
  * checkout-measure-prep, 2026-09-24, when the cart-trio guard needed it too).
  *
@@ -7,7 +7,7 @@
  * controls-wired guard passing a sabotage it should have failed. Its
  * attribute checks were `script.includes("aria-invalid")` over the RAW file,
  * and every vanilla enhancement explains its own state attributes in prose
- * directly above the line that writes them — so rewiring `aria-invalid` to
+ * directly above the line that writes them, so rewiring `aria-invalid` to
  * `data-invalid` left two occurrences, both in comments, and the guard
  * reported green. `pdp.js` names `aria-pressed` in the comment above the
  * zoom toggle for the same reason, so deleting the toggle and keeping its
@@ -20,7 +20,7 @@
  * is meant to strengthen. Known limit, stated: a REGEX literal containing a
  * quote character would confuse the scanner. No registered enhancement
  * contains one (checked), and if one ever does, the failure mode is a false
- * ALARM — a guard that fails loudly — not a false pass.
+ * ALARM, a guard that fails loudly, not a false pass.
  *
  * Shared on purpose, unlike the CSS-linking helpers the two stylesheet guards
  * keep separate: those are ORACLES that must be able to fail independently;

@@ -1,7 +1,7 @@
 /**
  * The rate-card contract (ADR-0001 §7): the PRICE half of the cost model,
  * fully separated from the measured resource profile. A card is a dated
- * DATA file — swapping prices means swapping the file, never touching code
+ * DATA file, swapping prices means swapping the file, never touching code
  * (rate cards drift by design; the date is load-bearing).
  *
  * Each host maps the vendor's billing meters onto the measured profile via
@@ -9,14 +9,14 @@
  * converts, showing its work), and DECLARES the meters the profile cannot
  * account (`unmeasured`) so they surface as limits-of-data instead of
  * silently vanishing. Every rate carries the exact quote + URL it was
- * verified from — the anti-rigging trail extends into the price side.
+ * verified from, the anti-rigging trail extends into the price side.
  */
 import { z } from "zod";
 
 export const RATE_CARD_VERSION = 1;
 
 /** Which measured quantity a rate multiplies. `visits` is the unit itself
- *  (exactly 1 per visit) — for per-visit meters like an SSR document's
+ *  (exactly 1 per visit), for per-visit meters like an SSR document's
  *  function invocation, where the assumption must be stated on the rate. */
 export const BASES = ["requests", "cpuMs", "egressBytes", "visits"] as const;
 export type Basis = (typeof BASES)[number];
@@ -54,7 +54,7 @@ const Rate = z.object({
 });
 export type RateT = z.infer<typeof Rate>;
 
-/** A vendor meter the measured profile genuinely cannot account — declared
+/** A vendor meter the measured profile genuinely cannot account, declared
  *  with its price so the report can state what the number leaves out. */
 const UnmeasuredMeter = z.object({
   meter: z.string().min(1),
@@ -106,7 +106,7 @@ export const RateCard = z.object({
   kind: z.literal("pm-rate-card"),
   cardVersion: z.literal(RATE_CARD_VERSION),
   id: z.string().min(1),
-  /** The DATE — a rate card is only meaningful dated (ADR-0001 §7). */
+  /** The DATE, a rate card is only meaningful dated (ADR-0001 §7). */
   capturedAt: z.string().min(1),
   /** How the figures were verified (the provenance of the price side). */
   verifiedBy: z.string().min(1),
@@ -121,12 +121,12 @@ export type RateCardT = z.infer<typeof RateCard>;
 export function parseRateCard(json: unknown): RateCardT {
   const card = RateCard.parse(json);
   // Duplicate hostIds would price with whichever block findHost sees
-  // first — an append-without-delete card edit must fail at parse time.
+  // first, an append-without-delete card edit must fail at parse time.
   const seenHosts = new Set<string>();
   for (const host of card.hosts) {
     if (seenHosts.has(host.hostId)) {
       throw new Error(
-        `rate card ${card.id}: hostId "${host.hostId}" appears more than once — replace the block, don't append`,
+        `rate card ${card.id}: hostId "${host.hostId}" appears more than once, replace the block, don't append`,
       );
     }
     seenHosts.add(host.hostId);
@@ -150,23 +150,23 @@ export function parseRateCard(json: unknown): RateCardT {
       }
     }
     // Every measured basis must be covered for every card region: a host
-    // that charges nothing for a dimension states $0 with a quote — free
+    // that charges nothing for a dimension states $0 with a quote, free
     // is a fact about the vendor, never a default hidden in code. The
-    // visits basis isn't required, but its duplicate check runs here too —
+    // visits basis isn't required, but its duplicate check runs here too,
     // a card must fail at PARSE time, not mid-report on some input combo.
     for (const basis of BASES) {
       for (const region of card.regions) {
         const matches = ratesFor(host, basis, region);
         if (basis !== "visits" && matches.length === 0) {
           throw new Error(
-            `rate card ${card.id}: host ${host.hostId} has no "${basis}" rate covering region "${region}" — state $0 with the vendor's quote if the vendor does not charge it`,
+            `rate card ${card.id}: host ${host.hostId} has no "${basis}" rate covering region "${region}", state $0 with the vendor's quote if the vendor does not charge it`,
           );
         }
       }
     }
     // Checkable free-plan allowances must convert at parse time for the
-    // same reason (stated-only caps — basis-less, per-invocation, or
-    // "unlimited" — are never converted, so any unit is fine there).
+    // same reason (stated-only caps, basis-less, per-invocation, or
+    // "unlimited", are never converted, so any unit is fine there).
     for (const a of host.freePlan?.allowances ?? []) {
       const checkable =
         a.basis !== undefined && a.period !== "invocation" && a.allowance !== "unlimited";

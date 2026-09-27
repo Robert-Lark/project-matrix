@@ -1,11 +1,11 @@
 /*
- * Component module — mode demo (a11y section, global-state modes). The
+ * Component module, mode demo (a11y section, global-state modes). The
  * emulation toggle is ADDITIVE-ONLY and scoped to the demo stage: it applies
  * a CSS emulation INSIDE the stage so the mechanism is visible, and the real
- * OS media query always continues to apply — the honesty caveat is a promise
- * the implementation keeps ("your OS setting is the real thing — these demos
+ * OS media query always continues to apply, the honesty caveat is a promise
+ * the implementation keeps ("your OS setting is the real thing. These demos
  * never override it"). Toggle state rides aria-pressed (page JS; vanilla
- * singleton). The chrome carries no mode toggles — recorded ADR-0004 §7
+ * singleton). The chrome carries no mode toggles, recorded ADR-0004 §7
  * amendment.
  *
  * Canonical markup:
@@ -13,7 +13,7 @@
  *     <h3 class="pm-mode__title" id="…">Forced colors</h3>
  *     <div class="pm-mode__walkthrough">…</div>
  *     <p class="pm-mode__caveat">This button emulates the mode with CSS so
- *        you can watch the mechanism; your OS setting is the real thing —
+ *        you can watch the mechanism; your OS setting is the real thing,
  *        these demos never override it.</p>
  *     <button class="pm-mode__toggle" type="button" aria-pressed="false">
  *        Emulate forced colors</button>
@@ -79,8 +79,8 @@
 
 /* ── The emulations: ADDITIVE-ONLY, stage-scoped, ONE state ────────────────
    Keyed on the toggle's own `aria-pressed` through the adjacent-sibling
-   combinator — the canonical markup above places the stage directly after
-   its toggle — so the emulation has exactly one state and it is the
+   combinator, the canonical markup above places the stage directly after
+   its toggle, so the emulation has exactly one state and it is the
    accessible one: a visual state that cannot exist without the programmatic
    one (ADR-0003 §5; gallery.css scales its stage from the same attribute).
    The page's script writes `aria-pressed` and nothing else.
@@ -89,15 +89,15 @@
    applies to :root (tokens.css), never the reverse: with the toggle off no
    declaration below matches, so an OS setting the real query has already
    honoured stays honoured. That is what makes the caveat a kept promise
-   ("your OS setting is the real thing — these demos never override it"). */
+   ("your OS setting is the real thing. These demos never override it"). */
 
-/* Forced colors — tokens.css `@media (forced-colors: active)`: the SEMANTIC
+/* Forced colors, tokens.css `@media (forced-colors: active)`: the SEMANTIC
    seam remapped to CSS system colors, scoped to the stage. The custom-property
    declarations are the media query's, verbatim, and a repo-check
    (tools/repo-checks a11y-controls-behave) holds the two blocks equal so this
    copy cannot drift from the seam it demonstrates. The two plain declarations
    after them paint the stage itself the way a forced-colors page paints its
-   canvas — the stage normally inherits the paper. */
+   canvas, the stage normally inherits the paper. */
 .pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="forced-colors"] {
   --color-surface:      Canvas;
   --color-surface-sunk: Canvas;
@@ -113,12 +113,12 @@
   color: var(--color-text);
 }
 
-/* Zoom and reflow — WCAG 1.4.10's 320 CSS px, as the stage's inline size,
+/* Zoom and reflow, WCAG 1.4.10's 320 CSS px, as the stage's inline size,
    so the wrap the walkthrough describes happens where the visitor can watch
    it. `box-sizing: border-box` because the dashed FRAME is what the visitor
    reads as the emulated viewport: the tokens set no global box-sizing, so
    without it a 320px content box measures 362px at the frame (320 + padding
-   + border — observed in the browser leg, 2026-09-03) under a label that says
+   + border, observed in the browser leg, 2026-09-03) under a label that says
    320. `max-inline-size: 100%`: a viewport already narrower than the
    emulation is never asked to overflow. */
 .pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="reflow"] {
@@ -127,7 +127,7 @@
   max-inline-size: 100%;
 }
 
-/* Reduced motion — tokens.css `@media (prefers-reduced-motion: reduce)`
+/* Reduced motion, tokens.css `@media (prefers-reduced-motion: reduce)`
    collapses the two duration tokens at :root; the same two, inside the
    stage, so the specimen button's hover transition reads them collapsed. */
 .pm-mode__toggle[aria-pressed="true"] + .pm-mode__stage[data-pm-mode="reduced-motion"] {

@@ -21,7 +21,7 @@
  *    contract); fixing every field and resubmitting announces the order
  *    without leaving the page; the chrome survives all of it under a CPU
  *    throttle;
- *  - the geometry: a populated cart moves NOTHING on the phone profile — the
+ *  - the geometry: a populated cart moves NOTHING on the phone profile, the
  *    form's box and the summary's box are where they were, and the
  *    layout-instability metric reads exactly 0. Before this unit a three-item
  *    cart moved the form 25 px and scored 0.0214 on the held plane (the
@@ -33,13 +33,13 @@
  * Parameterised over every LIVE checkout variant (the cart suite's idiom):
  * `["vanilla"]` today; react-next and htmx join with no edit when they move
  * `plannedVariants → variants`. Selectors are the canonical markup every
- * paradigm re-implements. Beacons intercepted (the cart suite's precedent —
+ * paradigm re-implements. Beacons intercepted (the cart suite's precedent,
  * JS-on loads of a measured surface against the production plane on the
  * smoke would otherwise land synthetic RUM). Fresh context per test.
  *
  * Settling: every in-page wait is on a DOM state the enhancement itself
- * produces — the formatted value, the focused summary, the announcement, the
- * line count — never the address bar or a timer (the htmx settle-race
+ * produces, the formatted value, the focused summary, the announcement, the
+ * line count, never the address bar or a timer (the htmx settle-race
  * lesson). The two exceptions are the JS-off legs, where the browser
  * navigates or refuses to: the positive waits on the placed page's own
  * response and URL, and the negative counts POST requests (zero) rather than
@@ -74,11 +74,11 @@ interface PricedLine {
 
 let browser: Browser;
 let contract: CartContract;
-/** The reference's price rule (lib.mjs formatPrice) — the oracle for every
+/** The reference's price rule (lib.mjs formatPrice), the oracle for every
  *  total below, imported rather than re-typed. */
 let formatPrice: (p: { amount: number; currency: string }) => string;
 /** Three priced releases from the SERVED snapshot, quantities 3·2·1 so the
- *  summary renders three lines and six units — past the old floor's slack. */
+ *  summary renders three lines and six units, past the old floor's slack. */
 let lines: PricedLine[];
 let subtotal: number;
 
@@ -100,7 +100,7 @@ beforeAll(async () => {
   const priced = snap.summaries.filter((s) => s.priceFrom?.currency === "USD").slice(0, 3);
   if (priced.length < 3) {
     throw new Error(
-      "[checkout] the served snapshot has fewer than three USD-priced releases — the populated-cart legs " +
+      "[checkout] the served snapshot has fewer than three USD-priced releases, the populated-cart legs " +
         "would render fewer lines than the geometry proof needs; the suite fails closed, it never skips",
     );
   }
@@ -115,7 +115,7 @@ const units = (l: PricedLine[]) => l.reduce((n, x) => n + x.qty, 0);
 const usd = (amount: number) => formatPrice({ amount, currency: "USD" });
 
 /** A JS-on page with the beacon intercepted and, optionally, a cart stored
- *  BEFORE the page's own script runs (addInitScript) — a returning visitor,
+ *  BEFORE the page's own script runs (addInitScript), a returning visitor,
  *  not a page mutated after load. `catalogueRequests` counts what the
  *  enhancement asked the plane for. */
 async function open(
@@ -161,14 +161,14 @@ for (const variant of CHECKOUT_VARIANTS) {
       expect(await page.locator(".pm-cart__empty").isHidden()).toBe(false);
       // The served list shares the reserved cell with the empty copy and is
       // hidden while empty (cart-summary.css `:empty`), so the copy owns the
-      // cell alone — selectable, not covered by an empty scroll box.
+      // cell alone, selectable, not covered by an empty scroll box.
       expect(await page.locator(".pm-cart__lines").evaluate((el) => getComputedStyle(el).display)).toBe("none");
-      expect(await total(page)).toContain("—");
+      expect(await total(page)).toContain("–");
       expect(catalogueRequests(), "the empty cart fetched the catalogue it does not need").toBe(0);
       await context.close();
     }, 60_000);
 
-    it("a stored cart populates the badge, the label and the summary on load — priced by the reference's own rule, one catalogue fetch", async () => {
+    it("a stored cart populates the badge, the label and the summary on load, priced by the reference's own rule, one catalogue fetch", async () => {
       const context = await browser.newContext();
       const { page, catalogueRequests } = await open(context, PAGE, { v: contract.version, items: lines.map(({ id, qty }) => ({ id, qty })) });
       await linesRendered(page, lines.length);
@@ -185,12 +185,12 @@ for (const variant of CHECKOUT_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("the shipping radio moves the total by exactly the price its own label states — and back", async () => {
+    it("the shipping radio moves the total by exactly the price its own label states, and back", async () => {
       const context = await browser.newContext();
       const { page } = await open(context, PAGE, { v: contract.version, items: lines.map(({ id, qty }) => ({ id, qty })) });
       await linesRendered(page, lines.length);
       // The oracle is the served LABEL, not the script's constant: the option
-      // reads "Express — $12.00, 2 days", and the total must move by that.
+      // reads "Express, $12.00, 2 days", and the total must move by that.
       const label = await page.locator('.pm-format__option:has(input[value="express"]) .pm-format__label').textContent();
       const stated = Number(label!.match(/\$([\d,]+\.\d{2})/)![1]!.replace(/,/g, ""));
       expect(stated).toBeGreaterThan(0);
@@ -201,7 +201,7 @@ for (const variant of CHECKOUT_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("a malformed stored value reads as the empty cart on this surface too (recovery rule) — and asks for nothing", async () => {
+    it("a malformed stored value reads as the empty cart on this surface too (recovery rule), and asks for nothing", async () => {
       const context = await browser.newContext();
       const { page, catalogueRequests } = await open(context, PAGE, { v: 99, items: "nope" });
       await page.waitForLoadState("networkidle");
@@ -213,7 +213,7 @@ for (const variant of CHECKOUT_VARIANTS) {
   });
 
   describe(`/${variant}/checkout/: the controls do what the markup says (JS on)`, () => {
-    it("the card and expiry format as you type — real keystrokes, the hint's own promise", async () => {
+    it("the card and expiry format as you type, real keystrokes, the hint's own promise", async () => {
       const context = await browser.newContext();
       const { page } = await open(context, PAGE);
       const card = page.locator("#card");
@@ -306,12 +306,12 @@ for (const variant of CHECKOUT_VARIANTS) {
     for (const profileId of ["slow-4g-mid-phone", "avg-broadband-desktop"] as const) {
       it(`${profileId}: with the catalogue fetch held across first paint, the form and the summary stay put and layout-shift reads 0`, async () => {
         const profile = PROFILES[profileId];
-        // JS ON at the profile's viewport — the bench runner's context options,
+        // JS ON at the profile's viewport, the bench runner's context options,
         // not the drift gate's (which are JS-off by design).
         const context = await browser.newContext(profileContextOptions(profile));
         const page = await context.newPage();
         await page.route("**/api/beacon", (route) => route.fulfill({ status: 204 }));
-        // HOLD the catalogue so the page paints EMPTY first, then populates —
+        // HOLD the catalogue so the page paints EMPTY first, then populates,
         // otherwise a fast plane resolves the fetch before first paint and a
         // real shift is never observable. Routing disables the HTTP cache; this
         // is a geometry probe, not a measurement.
@@ -347,7 +347,7 @@ for (const variant of CHECKOUT_VARIANTS) {
         };
         expect(before.form, "no form box").not.toBeNull();
         expect(before.cart, "no summary box").not.toBeNull();
-        expect(before.total, "no total row box — null would equal null below").not.toBeNull();
+        expect(before.total, "no total row box, null would equal null below").not.toBeNull();
         release();
         await linesRendered(page, lines.length);
         await page.evaluate(() => document.fonts.ready);
@@ -357,13 +357,13 @@ for (const variant of CHECKOUT_VARIANTS) {
           cart: await page.locator(".pm-cart").boundingBox(),
           total: await page.locator(".pm-cart__total").boundingBox(),
         };
-        // The direct geometric claim first — it does not depend on the metric.
+        // The direct geometric claim first. It does not depend on the metric.
         expect(after.form, "populating the cart moved the form").toEqual(before.form);
         expect(after.cart, "populating the cart resized the summary").toEqual(before.cart);
         expect(after.total, "populating the cart moved the total row").toEqual(before.total);
         // Then the metric, drained: takeRecords() collects entries the
         // observer has not yet delivered (the first probe of this unit read
-        // 0 by reading too early — the lesson this drain carries).
+        // 0 by reading too early, the lesson this drain carries).
         const shifts = await page.evaluate(() => {
           const w = window as unknown as { __pmShifts: { value: number; recent: boolean }[]; __pmObserver: PerformanceObserver };
           for (const e of w.__pmObserver.takeRecords() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
@@ -379,7 +379,7 @@ for (const variant of CHECKOUT_VARIANTS) {
       }, 90_000);
     }
 
-    it("slow-4g-mid-phone: a six-item cart scrolls INSIDE the summary — the cell is the track the sheet derives, the total does not move", async () => {
+    it("slow-4g-mid-phone: a six-item cart scrolls INSIDE the summary, the cell is the track the sheet derives, the total does not move", async () => {
       const snap = await loadServedSnapshot();
       const six = snap.summaries.filter((s) => s.priceFrom?.currency === "USD").slice(0, 6);
       expect(six.length, "fewer than six priced releases in the served snapshot").toBe(6);
@@ -410,7 +410,7 @@ for (const variant of CHECKOUT_VARIANTS) {
       const scroll = await list.evaluate((el) => ({ scrollHeight: el.scrollHeight, clientHeight: el.clientHeight, overflowY: getComputedStyle(el).overflowY }));
       expect(scroll.overflowY).toBe("auto");
       expect(scroll.scrollHeight, "six lines did not overflow the reserved cell").toBeGreaterThan(scroll.clientHeight);
-      // The cell is exactly the middle track the sheet derives — read from
+      // The cell is exactly the middle track the sheet derives, read from
       // the computed grid, not from the first line's height (a long title
       // wraps a line taller than a thumb, and the first six priced titles
       // happening to be short is a property of this snapshot, not a rule).
@@ -434,7 +434,7 @@ for (const variant of CHECKOUT_VARIANTS) {
     }, 90_000);
   });
 
-  describe(`/${variant}/checkout/: JS OFF — the path the variant exists to prove`, () => {
+  describe(`/${variant}/checkout/: JS OFF, the path the variant exists to prove`, () => {
     it("an empty submit is blocked by native validation: ten invalid controls, no navigation", async () => {
       const context = await browser.newContext({ javaScriptEnabled: false });
       const page = await context.newPage();
@@ -457,7 +457,7 @@ for (const variant of CHECKOUT_VARIANTS) {
       await context.close();
     }, 60_000);
 
-    it("a filled form's native POST lands on the placed page through the 303 — a real page, not a 405", async () => {
+    it("a filled form's native POST lands on the placed page through the 303, a real page, not a 405", async () => {
       const context = await browser.newContext({ javaScriptEnabled: false });
       const page = await context.newPage();
       await page.goto(PAGE, { waitUntil: "load" });
@@ -474,7 +474,7 @@ for (const variant of CHECKOUT_VARIANTS) {
       await page.waitForURL(`**/${variant}/checkout/placed/`);
       expect(await page.locator("h1.pm-page__title").textContent()).toBe("Order placed");
       // The document the browser is on was reached by GET, so a refresh
-      // re-GETs it rather than re-posting — the 303's whole point.
+      // re-GETs it rather than re-posting, the 303's whole point.
       await page.reload({ waitUntil: "load" });
       expect(new URL(page.url()).pathname).toBe(`/${variant}/checkout/placed/`);
       expect(await page.locator("h1.pm-page__title").textContent()).toBe("Order placed");

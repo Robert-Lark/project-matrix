@@ -1,4 +1,4 @@
-// Front routing Worker — the ADR-0004 §3/§7 mechanism, minimally.
+// Front routing Worker, the ADR-0004 §3/§7 mechanism, minimally.
 // Dispatches /{variant}/* to the bound variant Worker, then injects the
 // switcher/HUD chrome into #pm-chrome-slot via HTMLRewriter (text/html only).
 
@@ -50,7 +50,7 @@ export default {
   },
 };
 
-// Anchor-link switcher (works JS-off) + HUD stub — ADR-0004 §7. Links rewrite
+// Anchor-link switcher (works JS-off) + HUD stub, ADR-0004 §7. Links rewrite
 // only the {variant} path segment, keeping surface/id/query intact.
 function chromeHtml(current, url) {
   const links = Object.keys(VARIANTS)

@@ -1,11 +1,11 @@
 /*
- * Home surface — page composition (home-surface ticket, ADR-0007).
+ * Home surface, page composition (home-surface ticket, ADR-0007).
  * ----------------------------------------------------------------------------
  * A free-composition singleton off the benchmarked matrix (ADR-0004 §7), built
  * FROM the Catalogue tokens (ADR-0006): every color is a shared
  * primitive/semantic token or a color-mix() derivation of one (the disc's
  * vinyl-surface tints and all its paper/ink alphas), so a re-pour of the
- * primitive tier moves this page with it — page-level composition may reach
+ * primitive tier moves this page with it, page-level composition may reach
  * primitives directly (the reference render's demo scaffolding sets the
  * precedent); no new --pm-* primitive is minted. The fluid type ramps are
  * page-level clamp() compositions anchored to the token scale (the hero floor
@@ -15,7 +15,7 @@
  * Your-visit band), drawn from the primitive neutral scale's own dark end.
  *
  * Motion is progressive enhancement throughout: scroll-driven animations are
- * double-gated behind @supports and prefers-reduced-motion (no JS fallback —
+ * double-gated behind @supports and prefers-reduced-motion (no JS fallback,
  * the effects are decorative); hover/focus transitions read --motion-* tokens,
  * which the shared reduced-motion gate collapses.
  */
@@ -32,7 +32,7 @@ html { scroll-padding-block-start: var(--pm-space-5); }
 
 :root {
   /* Vinyl-surface tints and alphas: ALL derivations of the poured neutrals,
-     so a future re-pour of the primitive tier moves the disc with it — no
+     so a future re-pour of the primitive tier moves the disc with it, no
      literal hex or rgba anywhere in this file. */
   --home-vinyl-core: color-mix(in srgb, var(--pm-neutral-950) 97%, var(--pm-neutral-0));
   --home-deadwax: color-mix(in srgb, var(--pm-neutral-950) 98%, var(--pm-neutral-0));
@@ -157,7 +157,7 @@ a:focus-visible {
   inline-size: clamp(20rem, 40vw, 38rem);
   aspect-ratio: 1;
   margin-inline-start: auto;
-  /* Pin the disc to the viewport's right edge with a constant overhang —
+  /* Pin the disc to the viewport's right edge with a constant overhang,
      the record stays half out of its sleeve at every width: shell gutter
      ((100vw − 68rem)/2, floored at 0) + shell padding + a third of the disc. */
   margin-inline-end: calc(-1 * (max((100vw - 68rem) / 2, 0px) + clamp(1.25rem, 4vw, 2.5rem) + 12rem));
@@ -237,7 +237,7 @@ a:focus-visible {
   box-shadow: inset 0 1px 2px var(--home-ink-40);
 }
 
-/* The record turns as the page is read — scroll-driven, compositor-only,
+/* The record turns as the page is read, scroll-driven, compositor-only,
    double-gated. Firefox (no scroll-timeline) simply gets a still disc. */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: scroll()) {
@@ -394,7 +394,7 @@ a:focus-visible {
 /* ── Built by ──────────────────────────────────────────────────────────── */
 .cares { list-style: none; margin: 0 0 var(--pm-space-5); padding: 0; max-inline-size: 44rem; }
 .cares li { margin-block-end: var(--space-stack-xs); }
-.cares li::before { content: "— "; color: var(--color-text-muted); }
+.cares li::before { content: "– "; color: var(--color-text-muted); }
 .links { display: flex; flex-wrap: wrap; gap: var(--space-inset); margin: 0; }
 
 /* ── Colophon ──────────────────────────────────────────────────────────── */

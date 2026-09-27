@@ -1,6 +1,6 @@
 // Throwaway build: assemble the static variant's dist from source + the
 // shared design system. Copying @pm/tokens into the variant's own assets IS
-// the paradigm's delivery model (ADR-0003 §2 — each paradigm delivers the
+// the paradigm's delivery model (ADR-0003 §2. Each paradigm delivers the
 // shared CSS its native way; a static site ships copies).
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 // .../@pm/tokens/css/tokens.css → .../@pm/tokens (resolved through this
-// package's own declared dependency — isolation-honest).
+// package's own declared dependency, isolation-honest).
 const tokensRoot = dirname(
   dirname(
     createRequire(join(root, "package.json")).resolve(

@@ -1,9 +1,9 @@
 // The Remix 3 fenced frontier exhibit: a hand-rolled Workers entry
-// (editorial-build slice F; ADR-0004 second addendum — Remix 3 has NO
+// (editorial-build slice F; ADR-0004 second addendum, Remix 3 has NO
 // official Workers deployment target, and the spike proved the full render
 // path runs on workerd with no compat flags; the ~20-line entry in
 // src/worker.ts IS the whole "adapter"). Trays are fetched through the edge
-// Worker at REQUEST time (ADR-0002 §7) — the front Worker's own EDGE binding
+// Worker at REQUEST time (ADR-0002 §7), the front Worker's own EDGE binding
 // doesn't reach a variant server-side, so this Worker binds pm-edge itself
 // (the slice-B precedent).
 //
@@ -13,7 +13,7 @@
 // `assets`: nothing in this Worker's own code fetches the asset layer (the
 // htmx precedent).
 //
-// Deliberately NO nodejs_compat flag — the spike's verified claim is that
+// Deliberately NO nodejs_compat flag, the spike's verified claim is that
 // the pinned beta's core render path is web-standard; if a future pin bump
 // ever needs the flag, that fact belongs in DIFF-TO-STARTER.md and the
 // spike's FINDINGS.

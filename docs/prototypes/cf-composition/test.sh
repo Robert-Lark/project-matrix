@@ -27,7 +27,7 @@ expect_status() {
     if [ "${code}" = "$2" ]; then
         echo "PASS: $3"
     else
-        echo "FAIL: $3 — expected HTTP $2 for $1, got ${code}" >&2
+        echo "FAIL: $3, expected HTTP $2 for $1, got ${code}" >&2
         FAILURES=$((FAILURES + 1))
     fi
 }
@@ -39,7 +39,7 @@ expect_contains() {
     if echo "${body}" | grep -qF "$2"; then
         echo "PASS: $3"
     else
-        echo "FAIL: $3 — expected '$2' in body of $1" >&2
+        echo "FAIL: $3, expected '$2' in body of $1" >&2
         FAILURES=$((FAILURES + 1))
     fi
 }
@@ -49,7 +49,7 @@ expect_not_contains() {
     local body
     body=$(curl -s "${BASE_URL}$1")
     if echo "${body}" | grep -qF "$2"; then
-        echo "FAIL: $3 — did NOT expect '$2' in body of $1" >&2
+        echo "FAIL: $3, did NOT expect '$2' in body of $1" >&2
         FAILURES=$((FAILURES + 1))
     else
         echo "PASS: $3"
@@ -64,7 +64,7 @@ ATTEMPTS=0
 until curl -s -o /dev/null "${BASE_URL}/"; do
     ATTEMPTS=$((ATTEMPTS + 1))
     if [ "${ATTEMPTS}" -ge 30 ]; then
-        echo "Error: dev server not reachable after 30s — run 'npm run dev' first" >&2
+        echo "Error: dev server not reachable after 30s, run 'npm run dev' first" >&2
         exit 1
     fi
     sleep 1
@@ -72,15 +72,15 @@ done
 echo "Dev server is up"
 
 echo ""
-echo "— Front Worker: own assets (home) —"
+echo "-- Front Worker: own assets (home) --"
 expect_status "/" 200 "home page served"
 expect_not_contains "/" "data-pm-chrome" \
     "home bypasses the front script (assets-first): no chrome injected"
 
 echo ""
-echo "— Static variant through service binding —"
+echo "-- Static variant through service binding --"
 expect_status "/vanilla/pdp/1/" 200 "prefix-nested asset served via binding"
-expect_contains "/vanilla/pdp/1/" "vanilla variant — pdp 1" \
+expect_contains "/vanilla/pdp/1/" "vanilla variant, pdp 1" \
     "correct nested asset content"
 expect_contains "/vanilla/pdp/1/" "data-pm-chrome" \
     "chrome injected into static variant HTML"
@@ -98,14 +98,14 @@ else
 fi
 
 echo ""
-echo "— Non-HTML passthrough (content-type guard) —"
+echo "-- Non-HTML passthrough (content-type guard) --"
 expect_status "/vanilla/styles.css" 200 "CSS asset served via binding"
 expect_contains "/vanilla/styles.css" "passthrough probe" "CSS content intact"
 expect_not_contains "/vanilla/styles.css" "data-pm-chrome" \
     "CSS untouched by HTMLRewriter"
 
 echo ""
-echo "— SSR variant through service binding —"
+echo "-- SSR variant through service binding --"
 expect_status "/ssr/pdp/1/" 200 "SSR variant reachable via binding"
 expect_contains "/ssr/pdp/1/?n=240&cache=warm" "n=240" \
     "query param n forwarded intact"
@@ -125,11 +125,11 @@ else
 fi
 
 echo ""
-echo "— Front 404 for unknown prefixes —"
+echo "-- Front 404 for unknown prefixes --"
 expect_status "/nope/x" 404 "unknown variant prefix rejected by front script"
 
 echo ""
-echo "— PROBE (informational, never fails the suite) —"
+echo "-- PROBE (informational, never fails the suite) --"
 # Assets-only Worker (no script) as a service-binding target. Either outcome
 # is a documented finding; the fallback pattern is variant-static's one-line
 # ASSETS forwarder script.

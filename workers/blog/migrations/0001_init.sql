@@ -88,7 +88,7 @@ CREATE TABLE login_attempts (
   locked_until TEXT
 );
 
--- Published slug changes leave a 301 behind — URLs never break (ADR-0009 §6).
+-- Published slug changes leave a 301 behind, URLs never break (ADR-0009 §6).
 CREATE TABLE redirects (
   from_slug TEXT PRIMARY KEY,
   to_slug TEXT NOT NULL,

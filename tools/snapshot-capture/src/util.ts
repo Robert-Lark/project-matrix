@@ -4,7 +4,7 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Same rule as the fixture generator — slugs stay comparable across snapshots. */
+/** Same rule as the fixture generator, slugs stay comparable across snapshots. */
 export function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -14,7 +14,7 @@ export function slugify(s: string): string {
 
 /**
  * Discogs disambiguates duplicate artist/label names with a numeric suffix
- * ("Signal (2)"). That suffix is database bookkeeping, not the name — strip it
+ * ("Signal (2)"). That suffix is database bookkeeping, not the name, strip it
  * at normalization (undocumented convention; verified empirically at capture).
  */
 export function stripNameDisambiguation(name: string): string {
@@ -23,7 +23,7 @@ export function stripNameDisambiguation(name: string): string {
 
 /**
  * Free-text fields can carry Discogs markup ([a=Artist], [l=Label], [url=…]…,
- * [b]/[i]) — seen in the docs' label-profile example. No variant ships a
+ * [b]/[i]), seen in the docs' label-profile example. No variant ships a
  * Discogs-markup parser (normalize ONCE, ADR-0002 §6), so notes are reduced to
  * plain text at capture. \r\n is transport noise → \n.
  */

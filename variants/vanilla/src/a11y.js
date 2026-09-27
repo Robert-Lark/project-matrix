@@ -5,19 +5,19 @@
 // §7) and on this surface it is FULLY CONFORMANT on its own: every DS-OFF
 // twin sits inside a closed <details> this script never opens, every toggle
 // is served unpressed, and every demo box reads correctly with nothing
-// running. Everything here is enhancement — JS-off, the demos are honestly
+// running. Everything here is enhancement, JS-off, the demos are honestly
 // static, and the live-region walkthrough says so on the page.
 //
 // What this script must never do, because the page promises it will not:
 //  - Override the OS setting. The emulations are ADDITIVE and STAGE-SCOPED:
 //    the only state written is each toggle's own `aria-pressed`, and
 //    mode-demo.css applies the emulation to the ADJACENT stage from that one
-//    attribute (one state, the accessible one — ADR-0003 §5). Nothing here
+//    attribute (one state, the accessible one, ADR-0003 §5). Nothing here
 //    touches <html>, <body>, :root, a class, or an inline style; with a
 //    toggle off no rule matches, so a real media query stays in force.
 //  - Announce for the DS-OFF live-region twin. That twin writes the same text
-//    into a plain element and is silent to assistive tech BY DESIGN — the
-//    silence is the exhibit — so each demo writes into its OWN output slot,
+//    into a plain element and is silent to assistive tech BY DESIGN, the
+//    silence is the exhibit, so each demo writes into its OWN output slot,
 //    never into the shell's status region.
 //  - Touch the real cart. The demo buttons say "Add to cart" because the
 //    specimen is the store's own component; the count here is the demo's and
@@ -35,7 +35,7 @@
 
   /* ── The cart badge (CART_CONTRACT, read-only on this surface) ─────────
      "On every shell page load the enhancement populates each
-     [data-pm-cart-count] slot" — the cart survives a swap onto this page
+     [data-pm-cart-count] slot", the cart survives a swap onto this page
      too. Contract recovery rule: a missing, unparseable, or schema-failing
      value is the EMPTY cart. */
   const read = () => {
@@ -82,7 +82,7 @@
    *  `[data-pm-status]` is `.pm-sr-only` geometry (masthead.css: 1×1,
    *  clipped), so an answer routed there is silent to everyone who is looking
    *  rather than listening; and a single page-level line leaves the answer one
-   *  to three viewports above the button — on the page whose subject is
+   *  to three viewports above the button, on the page whose subject is
    *  whether a control can be hit. No section-level line is a no-op rather
    *  than a fallback to the page: a silent write is the failure being fixed.
    *  textContent, never HTML. */
@@ -92,8 +92,8 @@
   };
 
   /* ── The live-region demo (element-demos) ─────────────────────────────
-     Both buttons write the SAME sentence — the store's own announcement
-     shape (CART_CONTRACT.announce), stated as a demo — into their own
+     Both buttons write the SAME sentence, the store's own announcement
+     shape (CART_CONTRACT.announce), stated as a demo, into their own
      output slot. The DS-ON slot is role="status" and is announced; the
      DS-OFF slot is a plain element and is not. Same text, same moment; the
      only difference is the one the walkthrough names. */
@@ -104,7 +104,7 @@
     let added = 0;
     button.addEventListener("click", () => {
       added += 1;
-      out.textContent = `Added "A sample record" to the demo cart — ${added} in the demo cart.`;
+      out.textContent = `Added "A sample record" to the demo cart, ${added} in the demo cart.`;
     });
   }
 
@@ -113,7 +113,7 @@
      attribute that is BOTH the accessible state and the selector
      mode-demo.css applies the emulation from, so the visual state cannot
      exist without the programmatic one. This is the whole of what the
-     toggle does — the stage is never touched by script. */
+     toggle does, the stage is never touched by script. */
   for (const toggle of document.querySelectorAll(".pm-mode__toggle[data-pm-mode-toggle]")) {
     toggle.addEventListener("click", () => {
       toggle.setAttribute(
@@ -125,12 +125,12 @@
 
   /* ── Specimen controls ────────────────────────────────────────────────
      The focus, target-size and mode-stage demos render the store's own
-     button as a SPECIMEN: the exhibit is how it renders — its ring, its
-     target, its colours under a mode — not what it does. A button that does
+     button as a SPECIMEN: the exhibit is how it renders. Its ring, its
+     target, its colours under a mode, not what it does. A button that does
      nothing when pressed is still a dead control by this repo's own
      standard (pdp-controls), and on an accessibility exhibit that is the
      worst possible bug, so pressing one gets an honest answer in the page's
-     own VISIBLE status line — which is what makes "you hit it" true for the
+     own VISIBLE status line, which is what makes "you hit it" true for the
      pointer users the target-size demo is about, rather than only for a
      screen reader. The live-region buttons are excluded: they have their own
      slots, and routing them here would announce the DS-OFF twin. */
@@ -141,7 +141,7 @@
    *
    *  Load-bearing: the two twins of the focus compare are the SAME component
    *  with the SAME label ("Add to cart") and they share one answer line, so a
-   *  message built from the label alone is byte-identical for both — and a
+   *  message built from the label alone is byte-identical for both, and a
    *  live region does not re-announce unchanged text, so the second press
    *  would say nothing at the exact moment the visitor is comparing them.
    *
@@ -149,7 +149,7 @@
    *  line sat at the top of the page and a sentence had to say which
    *  comparison it came from; now the line lives inside the demo's own
    *  section, so repeating the heading above it is words the reader has
-   *  already read — and length is not free: every character is height the
+   *  already read, and length is not free: every character is height the
    *  line has to reserve, and unreserved height is a layout shift on the
    *  page whose own reflow demo is about layout. */
   const placeOf = (el) => {
@@ -161,7 +161,7 @@
   for (const specimen of document.querySelectorAll(SPECIMEN)) {
     // Per-control press count. A live region does not re-announce text that
     // has not changed, and the target-size demo's own walkthrough invites
-    // repeats ("try it on a phone, or with a tremor") — so a second press of
+    // repeats ("try it on a phone, or with a tremor"), so a second press of
     // the SAME control has to say something new or it says nothing at all.
     // Counting is also the honest answer to "did that do anything?": no, and
     // here is how many times it has now not done it.
@@ -172,7 +172,7 @@
       const times = presses === 1 ? "" : ` (${presses} presses)`;
       respond(
         specimen,
-        `Specimen: "${specimen.textContent.trim()}", ${placeOf(specimen)}. You hit it — nothing was added or saved.${times}`,
+        `Specimen: "${specimen.textContent.trim()}", ${placeOf(specimen)}. You hit it. Nothing was added or saved.${times}`,
       );
     });
   }

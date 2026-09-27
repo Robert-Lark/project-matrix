@@ -1,17 +1,17 @@
 /*
- * Project Matrix — design-system prototype · TOKENS (two-tier)
+ * Project Matrix, design-system prototype · TOKENS (two-tier)
  * ----------------------------------------------------------------------------
  * The single CSS custom-property token system every variant consumes,
  * byte-identical. This file proves the ARCHITECTURE, not the aesthetic.
  *
  *   ⚠ PLACEHOLDER AESTHETIC. Every value in the PRIMITIVE tier below is a
  *   neutral stand-in. The real look is decided in the `aesthetic-direction`
- *   ticket and poured into these primitives — components never change, because
+ *   ticket and poured into these primitives, components never change, because
  *   they reference only SEMANTIC tokens. That swappability is the point.
  *
  * Tiers (ADR-0003):
- *   1. PRIMITIVE — raw scale (palette, type, space…). Never used by a component.
- *   2. SEMANTIC  — the aliases components consume (--color-text, --space-inset…).
+ *   1. PRIMITIVE, raw scale (palette, type, space…). Never used by a component.
+ *   2. SEMANTIC , the aliases components consume (--color-text, --space-inset…).
  *                  The ONE seam for theming + forced-colors.
  */
 
@@ -29,9 +29,9 @@
   --pm-neutral-950: #0f1113;
   --pm-accent-500:  #3b5bdb;  /* PLACEHOLDER accent */
   --pm-accent-700:  #2c4299;
-  --pm-danger-600:  #b42318;  /* status colour — NEVER used alone; paired w/ text+icon */
+  --pm-danger-600:  #b42318;  /* status colour, NEVER used alone; paired w/ text+icon */
 
-  /* Type scale — rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
+  /* Type scale, rem so it honours user zoom + text-resize (WCAG 1.4.4 / 1.4.10) */
   --pm-font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;  /* PLACEHOLDER family */
   --pm-font-metric: ui-monospace, "SF Mono", Menlo, monospace;             /* tabular figures: prices, HUD */
   --pm-size-0: 0.75rem;
@@ -102,7 +102,7 @@
   --focus-offset: var(--pm-focus-offset);
   --target-min:   var(--pm-target-min);
 
-  /* Motion — gated below by prefers-reduced-motion */
+  /* Motion, gated below by prefers-reduced-motion */
   --motion-fast: var(--pm-dur-fast);
   --motion-base: var(--pm-dur-base);
   --motion-ease: var(--pm-ease);
@@ -120,7 +120,7 @@
 
 /* ── Forced colors (Windows High Contrast) ──────────────────────────────────
    Remap the SEMANTIC tier to CSS system colors in ONE place. Every component
-   adapts for free — the whole reason for the two-tier seam. Meaning that rode
+   adapts for free, the whole reason for the two-tier seam. Meaning that rode
    on hue (e.g. --color-danger) collapses to CanvasText here, because the real
    signal is carried by text + icon in the component, never by colour alone.
    (System-color keyword list to be re-verified against the CSS Color

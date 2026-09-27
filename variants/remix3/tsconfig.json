@@ -7,8 +7,8 @@
     "module": "ESNext",
     // Bundler resolution, not the spike's NodeNext: this workspace's
     // consumers are bundlers and vitest (wrangler's esbuild bundles the
-    // Worker; the guards run under vitest), and @pm/drift-gate — which the
-    // guard imports — ships extensionless relative imports NodeNext
+    // Worker; the guards run under vitest), and @pm/drift-gate, which the
+    // guard imports, ships extensionless relative imports NodeNext
     // rejects (the repo-checks/qwik precedent).
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
@@ -16,7 +16,7 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    // remix/ui's own JSX runtime — the reason this variant's guards live in
+    // remix/ui's own JSX runtime, the reason this variant's guards live in
     // its OWN workspace rather than tools/repo-checks (the astro precedent:
     // hosting a framework's compiler in repo-checks would route every
     // repo-wide guard through it).

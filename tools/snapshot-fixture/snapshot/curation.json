@@ -1,8 +1,8 @@
 {
   "spec": {
     "slug": "synthesized-placeholder-fixture",
-    "description": "Deterministic synthesized fixture crate — obviously-fake ensembles on four placeholder labels, branch-covering every rendering path the real crate contains (surface-design DRAFT §6).",
-    "decidedBy": "generate.mjs — fixed PRNG seed 20260709, pinned capture date",
+    "description": "Deterministic synthesized fixture crate, obviously-fake ensembles on four placeholder labels, branch-covering every rendering path the real crate contains (surface-design DRAFT §6).",
+    "decidedBy": "generate.mjs, fixed PRNG seed 20260709, pinned capture date",
     "labels": [
       "Placeholder Records",
       "Fixture Sound",
@@ -83,5 +83,5 @@
   "reserveSize": 0,
   "tombstones": [],
   "featured": 9000016,
-  "featuredNote": "The editorial/PDP reference renders read `featured`: a committed release id whose detail tray is multi-format (3 formats), priced, and carries a 5-image gallery. Field introduced by the fixture; the crate's frozen curation.json predates it — treat as optional."
+  "featuredNote": "The editorial/PDP reference renders read `featured`: a committed release id whose detail tray is multi-format (3 formats), priced, and carries a 5-image gallery. Field introduced by the fixture; the crate's frozen curation.json predates it, treat as optional."
 }

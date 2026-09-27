@@ -1,6 +1,6 @@
 /**
  * The commit pin (ADR-0001 §9): numbers are published as dated snapshots
- * tied to commit SHAs. A dirty tree is recorded honestly — a receipt that
+ * tied to commit SHAs. A dirty tree is recorded honestly, a receipt that
  * hides uncommitted changes would be the opposite of anti-rigging.
  */
 import { execFileSync } from "node:child_process";

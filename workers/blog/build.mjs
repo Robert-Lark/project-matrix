@@ -1,5 +1,5 @@
 // Assemble dist for Workers Static Assets. Assets nest under /blog/ because
-// pm-front forwards the ORIGINAL request untouched (ADR-0009 §1) — the URL
+// pm-front forwards the ORIGINAL request untouched (ADR-0009 §1), the URL
 // path IS the dist path. esbuild bundles the CM6 editor as split ESM
 // (grammar chunks load on demand); the worker script itself is bundled by
 // wrangler.
@@ -30,7 +30,7 @@ copyFileSync(
 );
 
 // Self-hosted faces (ADR-0009 §7): latin variable subsets only, straight out
-// of the Fontsource packages — blog.css owns the @font-face declarations.
+// of the Fontsource packages, blog.css owns the @font-face declarations.
 mkdirSync(join(dist, "static", "fonts"), { recursive: true });
 const FONTS = [
   ["@fontsource-variable/fraunces", "fraunces-latin-opsz-normal.woff2"],

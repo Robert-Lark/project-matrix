@@ -8,7 +8,7 @@
  *
  * What the bytes ARE, because the first draft of this file asserted zero for
  * all three and the plane said otherwise: the two submit ids fetch ONE
- * resource — the one-glyph face for U+26A0 (⚠), which every field error and
+ * resource, the one-glyph face for U+26A0 (⚠), which every field error and
  * the summary title draw as a non-colour cue (field.css, error-summary.css)
  * and which fonts.css scopes by `unicode-range` so the browser asks for it on
  * the first error render and never before. 1,212 B body, 1,512 B
@@ -18,16 +18,16 @@
  * addendum U; Chromium `kHeaderSize = 300`). The keystroke id fetches
  * nothing. The fit template is keyed by SURFACE and publishes ONE interaction
  * (ADR-0001 addendum T), so whichever of the three checkout publishes, its
- * `interactionFetch` declaration follows from this leg — constant for a
- * submit id, none for the keystrokes — and this is what keeps it honest.
+ * `interactionFetch` declaration follows from this leg, constant for a
+ * submit id, none for the keystrokes, and this is what keeps it honest.
  *
  * INP here is the visit's first-input entry unless an interaction reaches
  * the ruler's 40 ms gate (ADR-0001 addendum V), so each entry is built to
  * make its first input the interaction it names; this leg asserts only that
  * the entry arrived, never a value.
  *
- * ONE visit per id, `avg-broadband-desktop`, through `measureVisit` — the
- * function `runBatch` calls per run — rather than a batch: the claim is
+ * ONE visit per id, `avg-broadband-desktop`, through `measureVisit`, the
+ * function `runBatch` calls per run, rather than a batch: the claim is
  * "drivable and measured", which one visit states as completely as seven,
  * and this file already adds three heavy visits to the suite. No receipt is
  * written and no batch is minted; that is the measurement pass's, after this
@@ -92,7 +92,7 @@ beforeAll(async () => {
     });
     samples.set(id, sample);
     // Printed for a single-file run (vitest's default reporter shows it; the
-    // suite's non-TTY log carries no console output — checked on the final
+    // suite's non-TTY log carries no console output, checked on the final
     // runs). One run, never a published number; the reproducing step for
     // both profiles is docs/prototypes/checkout-measure-prep/
     // probe-samples.browser.test.ts.
@@ -116,8 +116,8 @@ describe.skipIf(REMOTE)("checkout's three ids are drivable and measured (ADR-000
     it(`${id}: one measured visit yields a real INP with the boundary attested, and CLS 0`, () => {
       const sample = samples.get(id)!;
       // The chrome's own web-vitals build reported the interaction: a number,
-      // never null — "there is nothing to batch" was the audit's finding.
-      expect(sample.webVitals.INP, "no INP arrived — the interaction produced no event-timing entry").not.toBeNull();
+      // never null, "there is nothing to batch" was the audit's finding.
+      expect(sample.webVitals.INP, "no INP arrived, the interaction produced no event-timing entry").not.toBeNull();
       expect(sample.webVitals.INP).toBeGreaterThanOrEqual(0);
       expect(sample.interactionSettled).toBe(true);
       // The page the instrument measures manufactures no shift; the error
@@ -126,7 +126,7 @@ describe.skipIf(REMOTE)("checkout's three ids are drivable and measured (ADR-000
       expect(sample.webVitals.CLS).toBe(0);
     });
 
-    it(`${id}: interaction bytes are exactly what it fetches — ${fetches === "none" ? "nothing" : "the one-glyph ⚠ face, and nothing else"}`, () => {
+    it(`${id}: interaction bytes are exactly what it fetches, ${fetches === "none" ? "nothing" : "the one-glyph ⚠ face, and nothing else"}`, () => {
       const sample = samples.get(id)!;
       if (fetches === "none") {
         expect(sample.kb.interactionBytes).toBe(0);
@@ -134,13 +134,13 @@ describe.skipIf(REMOTE)("checkout's three ids are drivable and measured (ADR-000
       }
       // Non-vacuity in the direction that matters: the face is real bytes.
       expect(warnGlyphBytes).toBeGreaterThan(0);
-      // Body plus the spec's header constant — one same-origin fetch, not
+      // Body plus the spec's header constant, one same-origin fetch, not
       // from cache (a fresh context per visit), so the arithmetic is exact.
       expect(sample.kb.interactionBytes).toBe(warnGlyphBytes + HEADER_OCTETS);
     });
   }
 
-  it("both submit ids cost the same bytes — one resource, fetched once, on the first error render", () => {
+  it("both submit ids cost the same bytes, one resource, fetched once, on the first error render", () => {
     const invalid = samples.get("checkout-submit-invalid")!.kb.interactionBytes;
     const fixed = samples.get("checkout-fix-and-submit")!.kb.interactionBytes;
     expect(invalid).toBeGreaterThan(0);
@@ -152,8 +152,8 @@ describe.skipIf(REMOTE)("checkout's three ids are drivable and measured (ADR-000
  * The guard for the redesign above: each registry entry is DRIVEN as the
  * runner drives it, while `first-input` and every `event` entry with an
  * `interactionId` are observed, and the first input must be the interaction
- * the id names. Without this, the first draft of `checkout-type-card` — a
- * click to focus the card field before typing — passed every other leg while
+ * the id names. Without this, the first draft of `checkout-type-card`, a
+ * click to focus the card field before typing, passed every other leg while
  * the cell measured that click (the verification pass's correctness lens read
  * the ruler's 40 ms gate and caught it). `checkout-fix-and-submit` keeps two
  * real clicks on purpose; this leg pins that its fills are not inputs.
@@ -188,7 +188,7 @@ describe.skipIf(REMOTE)("each entry's FIRST input is the interaction its name pr
     await INTERACTIONS[id]!(page);
     // The first-input entry is dispatched after the input's presentation;
     // wait for it as a signal (the runner waits for the same entry), never
-    // read the list early — the first draft of this leg did and saw [].
+    // read the list early, the first draft of this leg did and saw [].
     await page
       .waitForFunction(() => (window as unknown as { __pmFirst: unknown[] }).__pmFirst.length > 0, undefined, { timeout: 10_000 })
       .catch(() => {
@@ -205,7 +205,7 @@ describe.skipIf(REMOTE)("each entry's FIRST input is the interaction its name pr
 
   it("checkout-type-card: the first input is a keystroke on the card field, not the click that focused it", async () => {
     const o = await observe("checkout-type-card");
-    expect(o.first, "no first-input entry — the keystrokes were not real inputs").toHaveLength(1);
+    expect(o.first, "no first-input entry, the keystrokes were not real inputs").toHaveLength(1);
     expect(o.first[0]!.name).toBe("keydown");
     expect(o.first[0]!.target).toBe("card");
   }, 120_000);
@@ -217,7 +217,7 @@ describe.skipIf(REMOTE)("each entry's FIRST input is the interaction its name pr
     expect(o.first[0]!.target).toBe("BUTTON");
   }, 120_000);
 
-  it("checkout-fix-and-submit: two real clicks — the first input is the invalid submit's pointer, the fills are no input at all", async () => {
+  it("checkout-fix-and-submit: two real clicks, the first input is the invalid submit's pointer, the fills are no input at all", async () => {
     // A programmatic priming (`requestSubmit()` + fills, one real click) was
     // tried and rejected: it manufactured CLS 0.099 (collect.ts records it).
     // So the first input is the FIRST click, and the ten fills between the

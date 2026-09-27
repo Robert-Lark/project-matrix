@@ -7,7 +7,7 @@ import { PdpPurchase } from "./PdpPurchase";
 
 /**
  * The PDP article, as a Qwik INLINE component (the EditorialArticle
- * precedent: presentational markup is a plain function — no lazy chunk, no
+ * precedent: presentational markup is a plain function, no lazy chunk, no
  * serialized props; the three pieces with real interactivity are the
  * `component$` boundaries slotted in). `packages/reference/render/pdp.mjs`
  * is the contract of record; the four masters under
@@ -16,12 +16,12 @@ import { PdpPurchase } from "./PdpPurchase";
  * The degenerate arms are contract too, including the three no committed
  * master gates (lib.mjs pdpRenderClass's recorded gap): an absent notes
  * section, a null track duration (sr-only "No duration listed"), and a null
- * year (named em-dash) — implemented from pdp.mjs source, precisely because
+ * year (named em-dash), implemented from pdp.mjs source, precisely because
  * no fixture master takes those arms.
  */
 
 /** A glyph standing in for absent data with the name it needs to be heard
- *  (lib.mjs namedGlyph, ported — authored literals only, never tray data). */
+ *  (lib.mjs namedGlyph, ported, authored literals only, never tray data). */
 function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
   return (
     <>
@@ -32,7 +32,7 @@ function NamedGlyph({ glyph, name }: { glyph: string; name: string }) {
 }
 
 /** One notes paragraph: the master escapes then turns single newlines into
- *  <br> — interleaving real <br> elements between split lines reproduces
+ *  <br>, interleaving real <br> elements between split lines reproduces
  *  that as DOM (strings never sit adjacent). */
 function NotesParagraph({ text }: { text: string }) {
   const lines = text.trim().split("\n");
@@ -57,7 +57,7 @@ export function PdpArticle({ detail: d }: { detail: PdpRelease }) {
           <p class="pm-pdp__artist">{d.artist}</p>
           <p class="pm-pdp__price">
             <span class="pm-pdp__amount">
-              {price ?? <NamedGlyph glyph="—" name="No price listed" />}
+              {price ?? <NamedGlyph glyph="–" name="No price listed" />}
             </span>{" "}
             <span class="pm-pdp__stock">{stockLine(d.numForSale)}</span>
           </p>
@@ -68,7 +68,7 @@ export function PdpArticle({ detail: d }: { detail: PdpRelease }) {
             <dt>Format</dt>
             <dd>{formatComposition(d.formats)}</dd>
             <dt>Year</dt>
-            <dd>{d.year ?? <NamedGlyph glyph="—" name="No year listed" />}</dd>
+            <dd>{d.year ?? <NamedGlyph glyph="–" name="No year listed" />}</dd>
             <dt>Genre</dt>
             <dd>{[...d.genres, ...d.styles].join(", ")}</dd>
           </dl>
@@ -127,7 +127,7 @@ export function PdpArticle({ detail: d }: { detail: PdpRelease }) {
             <strong>The live-origin demonstration</strong>
           </p>
           <p class="pm-plaque__claim">
-            {"The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead — the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number."}
+            {"The price above is real captured data, served the way production serves catalog data. This button asks the live Discogs API for today's price instead: the real cost of a dynamic origin, on demand. A live call can't be reproduced run-to-run, so what it returns is never fed into a benchmark number."}
           </p>
           <p class="pm-plaque__claim">
             <LiveOriginDemo id={d.id} />

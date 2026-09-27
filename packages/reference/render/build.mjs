@@ -2,7 +2,7 @@
  * Render the surface golden masters (ADR-0003 §6; surface-design session).
  *
  *   node render/build.mjs                 → fixture masters into surfaces/
- *                                           (the COMMITTED spec of record —
+ *                                           (the COMMITTED spec of record,
  *                                           CI-visible; regeneration-checked
  *                                           by reference.test.ts)
  *   node render/build.mjs --snapshot crate [--origin https://…]
@@ -35,7 +35,7 @@ const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
  * degenerate branches, which are the COMMON path in both snapshots
  * (single-format 439/500 crate, unpriced 44/500, 1-image 90/500). The gate
  * only ever compares a variant against a master, so a single rich master left
- * every degenerate branch ungated by construction — see `pdpMasterIds`.
+ * every degenerate branch ungated by construction, see `pdpMasterIds`.
  *
  * They nest UNDER the pdp surface (`pdp/unpriced/…`) rather than becoming
  * sibling surfaces: there is one PDP surface with four rendered states, and
@@ -43,13 +43,13 @@ const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
  * which is exactly what `extraDepth` exists for.
  */
 export const PDP_MASTERS = {
-  "": "the rich path — multi-format, priced, full gallery (the featured release)",
+  "": "the rich path, multi-format, priced, full gallery (the featured release)",
   // Since ADR-0008 addendum A cut the format radio group, the multi/single
   // axis is a CONTENT difference, not a structural one: every master renders
   // the same <dt>Format</dt> pair, and this one carries a single component
   // where the rich path lists several, "; " separated (lib.mjs
   // formatComposition). `pdpRenderClass` still models the axis for exactly
-  // that reason — a one-component composition is the branch 439 of the
+  // that reason, a one-component composition is the branch 439 of the
   // crate's 500 releases take.
   "single-format": "one format component in the meta list's Format pair",
   unpriced: "named em-dash amount · 'none for sale' · the CTA disabled",
@@ -61,7 +61,7 @@ const pdpPage = (slot) => (s, o) =>
     ...o,
     id: pdpMasterIds(s)[slot],
     // A nested master sits one directory deeper than pdp/index.html, so its
-    // relative @pm/tokens links need one more "../" — the renderer's own
+    // relative @pm/tokens links need one more "../", the renderer's own
     // parameter, never a second literal.
     extraDepth: (o.extraDepth ?? 0) + (slot === "" ? 0 : 1),
   });
@@ -77,7 +77,7 @@ export const SURFACE_PAGES = {
   "plp/index.html": (s, o) => renderPlp(s, o),
   "checkout/index.html": (s, o) => renderCheckout(o),
   // The JS-off landing of "Place order" (checkout-measure-prep): a second
-  // master of the checkout surface, nested like the PDP's degenerate ones —
+  // master of the checkout surface, nested like the PDP's degenerate ones,
   // one surface, two rendered pages, SURFACE_CONTROLS keys off surfaces.
   "checkout/placed/index.html": (s, o) => renderCheckoutPlaced(o),
   "a11y/index.html": (s, o) => renderA11yIndex(o),
@@ -89,7 +89,7 @@ export const SURFACE_PAGES = {
 /**
  * Render every surface master from one loaded snapshot (lib.mjs
  * `loadSnapshot`). Returns { "editorial/index.html": "<!doctype html>…", … }
- * — exactly the bytes the CLI writes, so the regeneration test can hold the
+ *, exactly the bytes the CLI writes, so the regeneration test can hold the
  * committed masters to `renderAll(loadSnapshot("fixture"))` byte-for-byte.
  */
 export function renderAll(snapshot, { origin = "", extraDepth = 0 } = {}) {
@@ -101,7 +101,7 @@ export function renderAll(snapshot, { origin = "", extraDepth = 0 } = {}) {
   );
 }
 
-// CLI (the only filesystem writer) — guarded so importing this module (the
+// CLI (the only filesystem writer), guarded so importing this module (the
 // regeneration test does) renders nothing and writes nothing.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const snapArg = process.argv.indexOf("--snapshot");

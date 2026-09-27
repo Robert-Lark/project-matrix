@@ -74,7 +74,7 @@ jobs:
           include-hidden-files: true
 
   # Deploy to the canonical plane from main (ADR-0004 §1), then re-run the
-  # suite against the REAL deployed origin — the post-deploy smoke that
+  # suite against the REAL deployed origin, the post-deploy smoke that
   # retires the spike's one accepted residual risk (FINDINGS §5). Gated on
   # the Cloudflare secrets; skips loudly (not silently) until they exist.
   deploy:
@@ -104,7 +104,7 @@ jobs:
           restore-keys: |
             turbo-origin-${{ runner.os }}-
 
-      # Secrets are scoped to the steps that need them — never to pnpm
+      # Secrets are scoped to the steps that need them, never to pnpm
       # install or builds, which execute third-party lifecycle scripts.
       - run: pnpm install --frozen-lockfile
 
@@ -118,7 +118,7 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Deploy skipped — CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID repo secrets are not set. The canonical plane is not yet receiving deploys (issue #3 deploy leg; setup steps in workers/README.md)."
+            echo "::warning::Deploy skipped, CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID repo secrets are not set. The canonical plane is not yet receiving deploys (issue #3 deploy leg; setup steps in workers/README.md)."
           fi
 
       - name: Build worker dists (variants + measurement bundle + front /_pm assets)
@@ -127,7 +127,7 @@ jobs:
         # snapshot-parameterized (build-time) variant must bake the crate's
         # trays here. Which builds those are is DERIVABLE, deliberately not
         # enumerated in this comment: they are exactly the turbo tasks
-        # declaring `env: ["PM_SNAPSHOT"]` (grep turbo.json) — an enumerated
+        # declaring `env: ["PM_SNAPSHOT"]` (grep turbo.json), an enumerated
         # list goes stale the moment another build-time variant lands, and a
         # stale list here is dangerous rather than untidy: it is the evidence
         # someone would use to conclude a variant's `deploy` may safely
@@ -152,9 +152,9 @@ jobs:
 
       # Service-binding targets first: the front Worker's bindings must
       # resolve. Edge deploys BEFORE any variant that binds it itself
-      # (react-next, qwik, htmx, and remix3 — the request-time variants,
+      # (react-next, qwik, htmx, and remix3, the request-time variants,
       # editorial-build slices B, D, E, and F, bind pm-edge directly rather
-      # than through the front Worker) — reordered here from "edge last" once
+      # than through the front Worker), reordered here from "edge last" once
       # such a variant existed.
       - name: Deploy service-bound Workers (edge + variants)
         if: steps.creds.outputs.present == 'true'
@@ -172,7 +172,7 @@ jobs:
           pnpm --filter @pm/htmx run deploy
           pnpm --filter @pm/remix3 run deploy
 
-      # The blog plane (ADR-0009): resources, then schema, then the Worker —
+      # The blog plane (ADR-0009): resources, then schema, then the Worker,
       # and all of it before the front Worker, whose BLOG binding must
       # resolve. Create-guards follow the pm-snapshot pattern above.
       - name: Deploy blog Worker (resources + migrations first)
@@ -182,7 +182,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # No d1-create guard: wrangler.jsonc pins the database id, so a
-          # freshly-created db could never satisfy the binding — the migrate
+          # freshly-created db could never satisfy the binding, the migrate
           # step below is the loud failure if the database is missing.
           pnpm --filter @pm/blog exec wrangler r2 bucket create pm-blog-media \
             || echo "bucket exists (a real auth failure would fail the deploy below)"
@@ -213,7 +213,7 @@ jobs:
             if [ "$CODE" = "200" ]; then echo "origin ready"; exit 0; fi
             echo "waiting ($i): got $CODE"; sleep 3
           done
-          echo "::error::Deployed origin never answered 200 — smoke would report a readiness race, not an architecture failure"
+          echo "::error::Deployed origin never answered 200, smoke would report a readiness race, not an architecture failure"
           exit 1
 
       - uses: actions/cache@v4
@@ -234,7 +234,7 @@ jobs:
           PM_EXPECT_BROTLI: "1"
 
       # The drift gate's failure evidence (expected/actual/diff screenshots +
-      # normalized-DOM extracts) is written to .dev-logs/drift/ — without this
+      # normalized-DOM extracts) is written to .dev-logs/drift/, without this
       # upload a deployed-origin drift failure would be destroyed with the
       # runner and unreproducible after the next deploy replaces the plane.
       - name: Upload smoke evidence on failure

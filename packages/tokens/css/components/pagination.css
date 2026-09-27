@@ -1,6 +1,6 @@
 /*
- * Component module — pagination. Plain anchors preserving the FULL condition
- * (n, filters, sort ride the query — the URL is the measurement condition,
+ * Component module, pagination. Plain anchors preserving the FULL condition
+ * (n, filters, sort ride the query, the URL is the measurement condition,
  * ADR-0004 §5). Works JS-off everywhere.
  *
  * Canonical markup:

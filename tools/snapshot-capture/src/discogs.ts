@@ -1,17 +1,17 @@
 /**
  * The paced Discogs client. Facts it encodes (verified against
- * https://www.discogs.com/developers, research pass 2026-07-10 — auth/rate
+ * https://www.discogs.com/developers, research pass 2026-07-10, auth/rate
  * area adversarially confirmed 19/19):
  *
  * - Auth: `Authorization: Discogs token=<token>` header. The token is sent
- *   ONLY to the API host — image URLs are signed CDN URLs that need no auth
+ *   ONLY to the API host, image URLs are signed CDN URLs that need no auth
  *   (per Discogs staff), and shipping the credential to other hosts would
  *   widen its exposure for nothing. The query-param token alternative is
  *   never used (tokens must not appear in URLs, logs, or checkpoints).
  * - Rate limit: 60/min authenticated, a MOVING average over a 60s window,
  *   reported via X-Discogs-Ratelimit[-Used/-Remaining]. "Your application
  *   should take our global limit into account and throttle its requests
- *   locally" — so the client self-paces below the limit and additionally
+ *   locally", so the client self-paces below the limit and additionally
  *   parks for a full window when Remaining runs low.
  * - 429 semantics are undocumented (no Retry-After promised): honor
  *   Retry-After when present, otherwise park for a full window.
@@ -50,7 +50,7 @@ export function loadToken(): string {
   );
 }
 
-/** A non-retryable upstream status (4xx) — callers decide tombstone vs fatal. */
+/** A non-retryable upstream status (4xx), callers decide tombstone vs fatal. */
 export class HttpStatusError extends Error {
   constructor(
     public readonly status: number,
@@ -82,7 +82,7 @@ export class DiscogsClient {
   constructor(opts: ClientOptions = {}) {
     this.apiBase = opts.apiBase ?? "https://api.discogs.com";
     this.#tokenProvider = opts.token ?? loadToken;
-    // 1100ms between request starts ≈ 54/min — self-throttled under the 60/min
+    // 1100ms between request starts ≈ 54/min, self-throttled under the 60/min
     // moving window, per the docs' own instruction.
     this.#minIntervalMs = opts.minIntervalMs ?? 1100;
     this.#log = opts.log ?? (() => {});
@@ -118,7 +118,7 @@ export class DiscogsClient {
       } catch (err) {
         if (++transientRetries > MAX_TRANSIENT_RETRIES) throw err;
         const backoff = Math.min(2 ** transientRetries * 1000, 30_000);
-        this.#log(`network error on ${logUrl} — retry ${transientRetries} in ${backoff}ms`);
+        this.#log(`network error on ${logUrl}, retry ${transientRetries} in ${backoff}ms`);
         this.#park(backoff);
         continue;
       }
@@ -126,12 +126,12 @@ export class DiscogsClient {
 
       // Park ONLY when the header is actually present: image-CDN responses
       // don't carry the ratelimit headers, and Number(null) === 0 would read
-      // as "window spent" and park a full minute after EVERY image (probed —
+      // as "window spent" and park a full minute after EVERY image (probed,
       // it turns a ~25-minute image sweep into ~25 hours).
       const remainingHeader = res.headers.get("x-discogs-ratelimit-remaining");
       const remaining = remainingHeader === null ? NaN : Number(remainingHeader);
       if (Number.isFinite(remaining) && remaining <= 1) {
-        this.#log(`rate window nearly spent (remaining=${remaining}) — parking ${WINDOW_MS}ms`);
+        this.#log(`rate window nearly spent (remaining=${remaining}), parking ${WINDOW_MS}ms`);
         this.#park(WINDOW_MS);
       }
 
@@ -141,7 +141,7 @@ export class DiscogsClient {
         const retryAfter = Number(res.headers.get("retry-after"));
         const wait =
           Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 + 1000 : WINDOW_MS;
-        this.#log(`429 on ${logUrl} — waiting ${wait}ms (retry ${rateRetries})`);
+        this.#log(`429 on ${logUrl}, waiting ${wait}ms (retry ${rateRetries})`);
         this.#park(wait);
         continue;
       }
@@ -150,7 +150,7 @@ export class DiscogsClient {
         await res.body?.cancel();
         if (++transientRetries > MAX_TRANSIENT_RETRIES) throw new HttpStatusError(res.status, url);
         const backoff = Math.min(2 ** transientRetries * 1000, 30_000);
-        this.#log(`${res.status} on ${logUrl} — retry ${transientRetries} in ${backoff}ms`);
+        this.#log(`${res.status} on ${logUrl}, retry ${transientRetries} in ${backoff}ms`);
         this.#park(backoff);
         continue;
       }
@@ -163,14 +163,14 @@ export class DiscogsClient {
     }
   }
 
-  /** GET an API path (leading slash, query included) — authenticated, paced. */
+  /** GET an API path (leading slash, query included), authenticated, paced. */
   async getJson(pathAndQuery: string): Promise<unknown> {
     const res = await this.#request(new URL(pathAndQuery, this.apiBase).toString(), true);
     return res.json();
   }
 
   /**
-   * GET a binary asset by full URL (signed image CDN URL, fetched verbatim —
+   * GET a binary asset by full URL (signed image CDN URL, fetched verbatim,
    * "changing any aspect of the URL will result in a bad request"). No token:
    * the credential never leaves the API host.
    */

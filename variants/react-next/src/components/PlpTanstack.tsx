@@ -25,7 +25,7 @@ import {
 } from "../lib/plp-condition";
 
 /**
- * Strategy 2 — **client cache, TanStack Query v5** (ADR-0005 §1's lead).
+ * Strategy 2, **client cache, TanStack Query v5** (ADR-0005 §1's lead).
  *
  * The data layer lives in the BROWSER. Same page, same markup, same edge
  * bypass as `PlpPlain`; the only architectural move is that a query cache now
@@ -35,11 +35,11 @@ import {
  * on a revisit it answers from memory (cell 2).
  *
  * THE CONFIG IS PUBLISHED, NOT DEFAULT (ADR-0005 §4). `staleTime` is the
- * shared `PLP_STALE_TIME_MS` — five minutes — and the reason is measured, not
+ * shared `PLP_STALE_TIME_MS`, five minutes, and the reason is measured, not
  * stylistic: under the library default (`staleTime: 0`, "consider cached data
  * as stale") a revisit paints instantly from cache but STILL refetches in the
  * background, which the prototype measured at 1 request / 11.6 KB. "Revisit =
- * 0 bytes" is only true of a stated config, so the config is stated — here, in
+ * 0 bytes" is only true of a stated config, so the config is stated. Here, in
  * the ADR, and in the cell copy.
  *
  * SEEDED, NOT REFETCHED. The QueryClient is created once per mount and
@@ -49,16 +49,16 @@ import {
  *
  * ASSERTED, not described. An earlier draft of this paragraph said "Measured:
  * `useQuery` returns `isPending: false, isFetching: false` during SSR", read
- * off a throwaway probe that no longer existed — and by this file's own
+ * off a throwaway probe that no longer existed, and by this file's own
  * reasoning that is worth nothing: `renderToStaticMarkup` runs no effects, so
  * NO arm fires a request during it and an `isFetching` reading proves nothing
  * about a real mount either way. What decides whether a mount refetches in
  * the background is whether the cached entry is STALE, and the guard asserts
  * exactly that: not stale under the published window, stale under the
- * library's default — the difference ADR-0005 §4 exists to record.
+ * library's default, the difference ADR-0005 §4 exists to record.
  *
- * WHAT CANNOT BE MEASURED YET, STATED PLAINLY. This arm's headline cell — "a
- * client cache makes revisits free (0 requests / 0 bytes)" — is only
+ * WHAT CANNOT BE MEASURED YET, STATED PLAINLY. This arm's headline cell, "a
+ * client cache makes revisits free (0 requests / 0 bytes)", is only
  * measurable through a named interaction-registry entry split into an
  * unmeasured priming prefix and a measured step (ADR-0005 §3). `INTERACTIONS`
  * (`tools/bench-runner/src/collect.ts:33`) is still the flat
@@ -67,7 +67,7 @@ import {
  * drive; the NUMBER is not approximated and the cell is not published.
  */
 /** The cache key one condition occupies. Exported so the pre-merge guard can
- *  assert the SEED against the exact key the component reads — a guard that
+ *  assert the SEED against the exact key the component reads, a guard that
  *  rebuilt the key itself would prove only that two copies agree. */
 export function plpQueryKey(condition: PlpCondition): readonly unknown[] {
   return ["plp", plpCacheKey(condition)];
@@ -93,8 +93,8 @@ export function createSeededQueryClient(
  * The EXACT options the component hands `useQuery`, as a function, so the
  * published config is checkable rather than merely written down. The seed leg
  * proves the client's DEFAULT `staleTime`; the component overrides it
- * per-query, so a per-query `staleTime: 0` — the library default whose
- * background refetch ADR-0005 §4 exists to rule out — passed every assertion
+ * per-query, so a per-query `staleTime: 0`, the library default whose
+ * background refetch ADR-0005 §4 exists to rule out, passed every assertion
  * until this function existed (found by sabotage).
  */
 export function plpQueryOptions(condition: PlpCondition) {
@@ -130,7 +130,7 @@ export function PlpTanstackInner({
 
   // One seam for every control (page, facet, sort, search): the next
   // CONDITION becomes the query key; the push happens when the DATA lands,
-  // not here — see usePushWhenSettled. Pushing on click made the URL and the
+  // not here, see usePushWhenSettled. Pushing on click made the URL and the
   // `aria-current` marker disagree for the whole in-flight window.
   const goTo = useCallback((next: PlpCondition) => setCurrent(next), []);
 
@@ -142,7 +142,7 @@ export function PlpTanstackInner({
   // Back/Forward: re-derive the condition the browser restored, or the grid
   // and the address bar describe different pages.
   usePopstateCondition(setCurrent);
-  // The address bar moves when the CONTENT does — the cold arm's behaviour.
+  // The address bar moves when the CONTENT does, the cold arm's behaviour.
   // "Settled" is read off the PAYLOAD's applied query (ADR-0005 addendum
   // Q2), not off `page` alone: a facet click keeps the page at 1, so a
   // page-only comparison would have pushed the new URL while the previous

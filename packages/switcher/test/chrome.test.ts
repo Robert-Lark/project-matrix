@@ -23,7 +23,7 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
   it("rewrites only the variant segment, preserving surface and query", () => {
     const html = renderChrome(ctx);
     expect(html).toContain('href="/placeholder-ssr/sample/?n=240&amp;cache=cold"');
-    // Current variant is marked, not linked — the SWITCHER row has no
+    // Current variant is marked, not linked, the SWITCHER row has no
     // self-link (profile links elsewhere legitimately keep the current path).
     const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
     expect(switcherRow).toContain('aria-current="page">placeholder-static<');
@@ -35,7 +35,7 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
     expect(html).not.toContain("vanilla");
   });
 
-  it("an unregistered surface renders honestly — no switcher offer, no lab table", () => {
+  it("an unregistered surface renders honestly, no switcher offer, no lab table", () => {
     const html = renderChrome({ ...ctx, surface: "nope" });
     expect(html).not.toContain("placeholder-ssr");
     expect(html).toContain("An unregistered surface");
@@ -46,7 +46,7 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
 
   it("a planned matrix cell is a disclosure, never an offer (no anchor)", () => {
     // checkout, not editorial: slice E completed the editorial surface, so
-    // it no longer HAS planned cells to disclose — this guard follows the
+    // it no longer HAS planned cells to disclose. This guard follows the
     // sparse frontier. Checkout is now PARTLY built (the checkout-vanilla
     // unit moved `vanilla` into `variants` and left `react-next`/`htmx`
     // planned), which is why it still works here and is in fact the better
@@ -69,8 +69,8 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
   });
 
   it("live anchors and planned disclosures coexist in one reading table (synthetic mixed surface)", () => {
-    // No REAL surface is mid-build right now — slice E completed editorial,
-    // and pdp/plp/checkout have no live cells yet — so the mixed state the
+    // No REAL surface is mid-build right now, slice E completed editorial,
+    // and pdp/plp/checkout have no live cells yet, so the mixed state the
     // per-variant suite blocks covered until slice E (live anchors BESIDE
     // dead planned headers) would otherwise be exercised nowhere until
     // PDP's first slice re-enters it (verify-slice finding, seams lens).
@@ -80,7 +80,7 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
     controls["__test-mixed"] = {
       variants: ["vanilla", "qwik"],
       plannedVariants: ["htmx"],
-      proves: "synthetic mixed fixture — never shipped",
+      proves: "synthetic mixed fixture, never shipped",
     };
     try {
       const html = renderChrome({
@@ -91,7 +91,7 @@ describe("switcher anchors (ADR-0004 §4–§5, §7)", () => {
       });
       // The planned cell is a dead labeled header in the table…
       expect(html).toContain(`htmx<span class="pm-chrome__note"> not built yet</span>`);
-      // …while the live sibling anchors (query preserved — the swap is a
+      // …while the live sibling anchors (query preserved, the swap is a
       // pure variant-segment rewrite) and the current cell is marked.
       const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
       expect(switcherRow).toContain('aria-current="page">vanilla<');
@@ -125,16 +125,16 @@ describe("the reading (ADR-0004 §6; C2)", () => {
     expect(html).toContain("No published runs yet");
   });
 
-  it("every lab cell without a published reading is an em-dash with SR text — never a bare number slot", () => {
+  it("every lab cell without a published reading is an em-dash with SR text, never a bare number slot", () => {
     const html = renderChrome(ctx);
     const cells = html.match(/pm-chrome__none/g) ?? [];
     expect(cells.length).toBeGreaterThan(0);
     expect(html).toContain("no published run"); // caption-level, not per-cell
     // The fit line ships its designed empty state (no verdict without receipt).
-    expect(html).toContain("No verdict — nothing is published for this page yet.");
+    expect(html).toContain("No verdict. Nothing is published for this page yet.");
   });
 
-  it("the profile selector states what it is — a snapshot selector, never a throttle", () => {
+  it("the profile selector states what it is, a snapshot selector, never a throttle", () => {
     const html = renderChrome(ctx);
     expect(html).toContain("never re-throttles this page");
   });
@@ -149,7 +149,7 @@ describe("fenced variant exhibit (editorial-build slice F; ADR-0005 §7 / ADR-00
     location: "local",
   };
 
-  it("the switcher lists the exhibit as a tagged fenced anchor — the offer carries the boundary", () => {
+  it("the switcher lists the exhibit as a tagged fenced anchor, the offer carries the boundary", () => {
     const html = renderChrome(editorialCtx);
     const switcherRow = html.match(/data-pm-switcher>[\s\S]*?<\/nav>/)?.[0] ?? "";
     expect(switcherRow).toContain('class="pm-chrome__cell pm-chrome__cell--fenced"');
@@ -162,7 +162,7 @@ describe("fenced variant exhibit (editorial-build slice F; ADR-0005 §7 / ADR-00
     const table = html.match(/<table[\s\S]*?<\/table>/)?.[0] ?? "";
     expect(table).not.toContain("remix3");
     // Counts derive from variants/plannedVariants alone: five live, five
-    // planned — the fenced exhibit moves neither number.
+    // planned, the fenced exhibit moves neither number.
     expect(html).toContain("Served by 5 of 5 planned variants today.");
   });
 
@@ -204,7 +204,7 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
   it("strategy columns come from the presets; the fenced exhibit is never a column", () => {
     const html = renderChrome(plpCtx);
     expect(html).toContain("No caching (cold)");
-    expect(html).toContain("Edge cache — KV");
+    expect(html).toContain("Edge cache: KV");
     // Fenced Apollo exhibit: labeled in Controls, excluded from the cells.
     const table = html.match(/<table[\s\S]*?<\/table>/)?.[0] ?? "";
     expect(table).not.toContain("Apollo");
@@ -217,7 +217,7 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     expect(html).toMatch(/href="\/react-next\/plp\/plain\/\?cache=cold&amp;n=240"/);
   });
 
-  it("the n knob keeps filters, sort and search but drops `page` — a density change re-paginates", () => {
+  it("the n knob keeps filters, sort and search but drops `page`, a density change re-paginates", () => {
     // Page 8 at n=24 is past the end at n=240; carrying it would land the
     // visitor on the honest empty "0" page from an instrument control.
     const html = renderChrome({
@@ -233,7 +233,7 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     }
   });
 
-  it("strategy presets carry the visitor's whole condition — only `cache` moves with the preset", () => {
+  it("strategy presets carry the visitor's whole condition, only `cache` moves with the preset", () => {
     // Switching strategy from a filtered, dense, nonced page used to land on
     // the unfiltered first page at n=24 (`path + preset.query` replaced the
     // whole query), on the one surface whose axis the switcher is.
@@ -254,13 +254,13 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     expect(hrefs["No caching (cold)"]).toBe(
       "/react-next/plp/plain/?cache=cold&genre=Jazz&style=Modal&n=240&page=2&run=r1&profile=slow-4g-mid-phone",
     );
-    expect(hrefs["Client cache — TanStack Query"]).toContain("/react-next/plp/tanstack/?cache=cold&genre=Jazz");
-    expect(hrefs["Edge cache — KV"]).toBe(
+    expect(hrefs["Client cache: TanStack Query"]).toContain("/react-next/plp/tanstack/?cache=cold&genre=Jazz");
+    expect(hrefs["Edge cache: KV"]).toBe(
       "/react-next/plp/plain/?genre=Jazz&style=Modal&n=240&page=2&run=r1&profile=slow-4g-mid-phone",
     );
     // The current preset (loaders, cold) is a span, not an anchor.
-    expect(html).toContain('aria-current="page">Server-rendered — loaders + PE</span>');
-    expect(hrefs["Server-rendered — loaders + PE"]).toBeUndefined();
+    expect(html).toContain('aria-current="page">Server-rendered: loaders + PE</span>');
+    expect(hrefs["Server-rendered: loaders + PE"]).toBeUndefined();
     // And from the bare edge condition the cold presets still spell exactly `?cache=cold`.
     const bare = renderChrome({ ...plpCtx, search: "" });
     expect(bare).toContain('href="/react-next/plp/tanstack/?cache=cold"');
@@ -270,13 +270,13 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
   it("readout and replay slots state the absence, not a milestone that passed", () => {
     // Both rows used to say these "land with the store's PLP build". This IS
     // that build and it ships neither, so the copy would have been a promise
-    // the page itself falsified — the same defect class as a dead control,
+    // the page itself falsified, the same defect class as a dead control,
     // one layer up. They now use the reading table's own `not built yet`.
     const html = renderChrome(plpCtx);
     expect(html).toContain("data-pm-hud-interaction");
     expect(html).toContain("data-pm-hud-replay");
-    expect(html).toContain("per-interaction byte readout — not built yet");
-    expect(html).toContain("the published sequence, runnable in-page — not built yet");
+    expect(html).toContain("per-interaction byte readout, not built yet");
+    expect(html).toContain("the published sequence, runnable in-page, not built yet");
     expect(html).not.toContain("lands with the store's PLP build");
   });
 
@@ -284,7 +284,7 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
     // Registering react-next made `cells` non-empty, which retired the
     // fallback branch that had been marking the fenced Apollo preset current
     // by accident. Without the fenced arm, `/react-next/plp/apollo/` renders
-    // three anchors and NO aria-current — the switcher losing track of where
+    // three anchors and NO aria-current, the switcher losing track of where
     // the visitor is. Matched on path alone: the Apollo preset has only a
     // `?cache=cold` arm, so the query-less URL must work too.
     for (const search of ["?cache=cold", ""]) {
@@ -303,14 +303,14 @@ describe("data-strategy surface (ADR-0005 §2/§8)", () => {
       expect(row).toContain("Misapplication exhibit");
     }
     // And it is still not counted: the count reads `variants`, never cells.
-    // Both PLP arms are live now, so that is 2 of 2 — the fenced exhibit
+    // Both PLP arms are live now, so that is 2 of 2, the fenced exhibit
     // adds a cell and adds nothing to the count, which is the whole rule.
     expect(renderChrome(plpCtx)).toContain("Served by 2 of 2");
   });
 });
 
 describe("beacon tag stamping", () => {
-  it("the environment tag is canonicalized — aliases collapse to the served condition", () => {
+  it("the environment tag is canonicalized, aliases collapse to the served condition", () => {
     const html = renderChrome({ ...ctx, search: "?n=0240&cache=cold" });
     expect(html).toContain('data-pm-environment="n=240|cache=cold"');
     expect(html).toContain('data-pm-cache-state="cold"');
@@ -332,7 +332,7 @@ describe("beacon tag stamping", () => {
 });
 
 describe("geometry + budget (panel findings, hostile lens)", () => {
-  it("live vitals render in both the bar mini and the panel — measure.js updates all slots", () => {
+  it("live vitals render in both the bar mini and the panel, measure.js updates all slots", () => {
     const html = renderChrome(ctx);
     const lcpSlots = html.match(/data-pm-hud-live="LCP"/g) ?? [];
     expect(lcpSlots.length).toBe(2);
@@ -343,7 +343,7 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
   it("the fragment stays inside its byte budget (ADR-0001 addendum F discipline)", () => {
     // The chrome rides every measured page's HTML; its size is a stated
     // constant, not a creeping variable (its wall-clock cost is re-measured
-    // per ADR-0001 addendum F before any publication). Budget: 13 KiB —
+    // per ADR-0001 addendum F before any publication). Budget: 13 KiB,
     // raised from 12 by the first editorial publication, when the populated
     // state stopped being an estimate: a receipt anchor per cell PLUS the
     // min-max band ADR-0001 addendum C requires took the largest real
@@ -362,10 +362,10 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
   });
 
   it("the budget holds for a FULLY populated bundle, measured in bytes", () => {
-    // Types erase and the empty state is the smallest render — the budget
+    // Types erase and the empty state is the smallest render, the budget
     // must hold when every cell carries a receipt (verify-slice, skeptic
     // lens). Worst-case realistic receipt URLs, byte-measured (not UTF-16
-    // code units — the fragment carries em-dashes and interpuncts).
+    // code units, the fragment carries em-dashes and interpuncts).
     const receipt = {
       profile: "slow-4g-mid-phone" as const,
       date: "2026-08-01",
@@ -377,9 +377,9 @@ describe("geometry + budget (panel findings, hostile lens)", () => {
     const columns: Record<string, Record<string, { value: number; unit: "ms" | "KB" | ""; receipt: typeof receipt }>> = {};
     for (const col of [
       "No caching (cold)",
-      "Client cache — TanStack Query",
-      "Server-rendered — loaders + PE",
-      "Edge cache — KV",
+      "Client cache: TanStack Query",
+      "Server-rendered: loaders + PE",
+      "Edge cache: KV",
     ]) {
       columns[col] = {};
       for (const m of metrics) columns[col][m] = { value: 12345.6789, unit: "ms", receipt };
@@ -436,7 +436,7 @@ describe("published readings (first editorial batch; C2 populated states)", () =
     );
     expect(html).toContain("154.85&nbsp;KB");
     // Metrics without a published reading (TTFB…, and all of astro/qwik/htmx)
-    // still render the designed em-dash — a partial bundle publishes nothing
+    // still render the designed em-dash, a partial bundle publishes nothing
     // it doesn't carry.
     expect(html).toContain("pm-chrome__none");
   });
@@ -466,7 +466,7 @@ describe("published readings (first editorial batch; C2 populated states)", () =
     expect(html).not.toContain("the costs differ");
   });
 
-  it("a bundle for a profile the URL did not select renders NOTHING — the lockstep guard", () => {
+  it("a bundle for a profile the URL did not select renders NOTHING, the lockstep guard", () => {
     // The Worker resolves ?profile= with the same algorithm as this renderer;
     // if they ever drift, the failure must be visible em-dashes, never one
     // profile's numbers under another profile's selected cell.
@@ -477,14 +477,14 @@ describe("published readings (first editorial batch; C2 populated states)", () =
     });
     expect(html).not.toContain("1.69");
     expect(html).toContain("No published runs yet");
-    expect(html).toContain("No verdict — nothing is published for this page yet.");
+    expect(html).toContain("No verdict. Nothing is published for this page yet.");
   });
 });
 
 describe("injection safety", () => {
   it("prototype keys in client-controlled segments cannot crash the renderer", () => {
     // verify-slice correctness lens: bare record lookups resolved inherited
-    // Object.prototype members — ?profile=constructor 502'd every page.
+    // Object.prototype members, ?profile=constructor 502'd every page.
     for (const evil of ["constructor", "__proto__", "toString"]) {
       const byProfile = renderChrome({ ...ctx, search: `?profile=${evil}` });
       expect(byProfile).toContain("No published runs yet");
@@ -505,8 +505,8 @@ describe("injection safety", () => {
 });
 
 describe("the interaction cell's three new render branches (ADR-0001 addendum T)", () => {
-  // These branches carry the PDP's ENTIRE published headline — its INP row is
-  // withheld and its byte figure can be deleted by the band-overlap rule — and
+  // These branches carry the PDP's ENTIRE published headline. Its INP row is
+  // withheld and its byte figure can be deleted by the band-overlap rule, and
   // none of them was reachable from the origin suite until a post-merge batch
   // exists. A typo in any of the three would have shipped uncaught
   // (verify-slice, skeptic lens). Unit-tested here, where it blocks a merge.
@@ -566,7 +566,7 @@ describe("the interaction cell's three new render branches (ADR-0001 addendum T)
     });
     expect(html).toContain("not comparable on this surface");
     expect(html).toContain("pm-chrome__th--noted");
-    // The withheld row must NOT fall back to naming the interaction — that is
+    // The withheld row must NOT fall back to naming the interaction, that is
     // the quiet failure: the row looks fine and says the wrong thing.
     expect(html).not.toContain("pdp-gallery-switch");
     // And four em-dashed cells, not a reading.
@@ -587,7 +587,7 @@ describe("the interaction cell's three new render branches (ADR-0001 addendum T)
       },
     });
     expect(overlapping).toContain("Indistinguishable at this sample size.");
-    // 25194 / 1024 = 24.6 KB — the same number in every column, which is not a
+    // 25194 / 1024 = 24.6 KB, the same number in every column, which is not a
     // ranking, so the overlap rule does not reach it.
     expect(overlapping).toContain("24.6");
     expect(overlapping).toContain("the same bytes, not a ranking");
@@ -610,10 +610,10 @@ describe("the interaction cell's three new render branches (ADR-0001 addendum T)
 });
 
 describe("the PLP n knob IS the warm set (ADR-0005 addendum, 2026-09-04)", () => {
-  it("SURFACE_CONTROLS.plp.nKnob is PLP_N.warmed itself — one derivation with the edge Worker and the bench runner", () => {
+  it("SURFACE_CONTROLS.plp.nKnob is PLP_N.warmed itself, one derivation with the edge Worker and the bench runner", () => {
     // A literal copy of the set sat here with nothing pinning it to the tier
     // (verify-slice, seams lens, 2026-09-18): a later `[24, 120, 240]` would
-    // have put an "Edge cache — KV" preset on the instrument that the tier
+    // have put an "Edge cache: KV" preset on the instrument that the tier
     // never serves warm, while the bench runner refused the same n. Identity,
     // not equality: the knob must BE the derivation, not agree with it today.
     const knob = SURFACE_CONTROLS.plp!.nKnob!;
@@ -627,7 +627,7 @@ describe("the PLP n knob IS the warm set (ADR-0005 addendum, 2026-09-04)", () =>
 });
 
 describe("the registry's key set IS the beacon surface roster (security floor, 2026-09-18)", () => {
-  it("SURFACE_CONTROLS has exactly SURFACE_NAMES as keys — a surface registered here is one the collector accepts", () => {
+  it("SURFACE_CONTROLS has exactly SURFACE_NAMES as keys, a surface registered here is one the collector accepts", () => {
     // The compile-time pin is `satisfies Record<SurfaceName, …>` in config.ts;
     // this is the same fact where a test run can see it.
     expect(Object.keys(SURFACE_CONTROLS).sort()).toEqual([...SURFACE_NAMES].sort());

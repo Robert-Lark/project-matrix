@@ -1,7 +1,7 @@
 /**
  * The six `measureVisit` samples quoted in ADR-0001 addendum V and the
  * decision-map node (three checkout ids × two profiles: INP, CLS, interaction
- * bytes) — a REPRODUCING step, not a suite leg. It is a vitest file because
+ * bytes), a REPRODUCING step, not a suite leg. It is a vitest file because
  * `measureVisit` and the profiles resolve only inside the origin-suite
  * workspace; to run it, copy it into `tools/origin-suite/suite/` (it starts
  * with `zz-` there so it sorts last), hold a plane, and run it alone:

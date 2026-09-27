@@ -3,18 +3,18 @@ import type { ReactNode } from "react";
 // Fonts are a controlled constant (ADR-0003 §8): the canonical loading
 // markup (packages/tokens/fonts/loading-markup.html) ships verbatim, only
 // the base path differing. Rendered as plain <link> elements in an explicit
-// <head> — not a CSS `import`, which Next's bundler would hash/process,
+// <head>, not a CSS `import`, which Next's bundler would hash/process,
 // breaking byte identity with the served files (scripts/copy-tokens.mjs
 // copies them untouched into public/). Verified empirically: rendering
 // these as children of <body> (the first attempt) does NOT get hoisted
-// into <head> by React — they stay exactly where authored — so an explicit
+// into <head> by React, they stay exactly where authored, so an explicit
 // <head> sibling of <body> is what actually places them there. Next's own
 // Metadata-API output (title, viewport meta) merges into this same <head>
 // without conflict.
 //
 // One Document, one `css` parameter (pdp-build): the sheet list is the ONE
 // thing the two surfaces' documents legitimately differ in, and the first
-// draft hardcoded editorial's list in the root layout — the same defect
+// draft hardcoded editorial's list in the root layout, the same defect
 // astro's Shell solved with a `css` prop. Each route group's root layout
 // passes its surface's list; the lists live beside the component so the
 // pre-merge stylesheet-list guard can import them without rendering Next.
@@ -62,7 +62,7 @@ export const PLP_CSS: readonly string[] = [
 /** The fenced Apollo exhibit's list: the PLP's, plus the plaque the exhibit
  *  labels itself with. It is a SEPARATE list, and therefore a separate route
  *  group with its own root layout, because the PLP master links no plaque
- *  sheet — adding it to `PLP_CSS` would put an unused sheet on the two
+ *  sheet, adding it to `PLP_CSS` would put an unused sheet on the two
  *  benchmarked strategies and break the stylesheet-list identity leg that
  *  exists to catch exactly that (the `format-switch.css` failure mode). */
 export const PLP_APOLLO_CSS: readonly string[] = [...PLP_CSS, "components/plaque.css"];

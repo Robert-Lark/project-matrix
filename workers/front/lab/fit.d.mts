@@ -6,7 +6,7 @@
  * The concrete need: `tools/origin-suite/suite/bench-interaction.browser.test.ts`
  * asserts the PDP's cross-variant interaction constant, and the publication
  * build asserts the same property from `interactionFetch.toleranceBytes`. Two
- * guards on one property with two independently-typed thresholds is a trap —
+ * guards on one property with two independently-typed thresholds is a trap,
  * the build publishes a spread the suite goes red on, and whoever hits it has
  * to decide which comment is the policy (verify-slice, conformance lens). One
  * number, one place, imported.
@@ -20,8 +20,8 @@ export interface FitSpec {
    * The registry id of the ONE interaction this surface's batch may be
    * driven by (ADR-0001 addendum T). Missing from this declaration from
    * 2026-08-28 until the workers-hardening unit checked fit.mjs against it
-   * (2026-09-25): the template set it, the build read it, and the d.mts —
-   * a second copy of the shape — said nothing. Now fit.mjs is held to this
+   * (2026-09-25): the template set it, the build read it, and the d.mts,
+   * a second copy of the shape, said nothing. Now fit.mjs is held to this
    * interface by `tsc --checkJs`, so the two cannot drift again.
    */
   interactionId: string;
@@ -29,7 +29,7 @@ export interface FitSpec {
   interactionTiming: { publish: true } | { publish: false; reason: string };
   /** The EXACT variant set the sentence names. */
   requires: readonly string[];
-  /** Composed from receipt-derived values at build — never typed. */
+  /** Composed from receipt-derived values at build, never typed. */
   sentence: (
     kb: Record<string, number>,
     facts: { interactionId: string; interactionBytes: number; interactionKb: number },

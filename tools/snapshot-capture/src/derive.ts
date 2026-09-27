@@ -1,13 +1,13 @@
 /**
- * Phase 5 — image derivatives. The serving assets, generated locally from the
+ * Phase 5, image derivatives. The serving assets, generated locally from the
  * retained originals (no API traffic).
  *
  * Derivative spec (issue #9): the reference render's release-card media is the
- * dimension anchor — 600×600 — so derivatives fit inside 600×600 preserving
+ * dimension anchor, 600×600, so derivatives fit inside 600×600 preserving
  * aspect ratio (never upscaled), encoded AVIF (the fixture's format; the edge
  * Worker serves content-type from seed metadata). True output dimensions ride
  * as data in the trays (honest CLS). A follow-up may refine sizing once
- * aesthetic-direction / the PDP build fix final component dimensions —
+ * aesthetic-direction / the PDP build fix final component dimensions,
  * re-derivation starts here, never at Discogs.
  */
 import sharp from "sharp";
@@ -23,14 +23,14 @@ export function derivativeName(id: number, k: number): string {
 
 /**
  * The 160px thumb tier (surface-design DRAFT §6): PDP gallery thumbs 2–5
- * render into ~72px slots — serving the 600px derivative there costs ~100 KB
+ * render into ~72px slots, serving the 600px derivative there costs ~100 KB
  * of oversized fetches per PDP (kill-condition-1 surface). Thumbs are minted
  * from the retained originals, exactly like the 600px tier ("re-derivation
  * starts here, never at Discogs").
  *
  * The trays are NOT touched: the frozen snapshot stays frozen. A render
- * derives the thumb src by convention — `src.replace(/\.avif$/, ".thumb.avif")`
- * — so `123-primary.avif` pairs with `123-primary.thumb.avif`.
+ * derives the thumb src by convention, `src.replace(/\.avif$/, ".thumb.avif")`
+ *, so `123-primary.avif` pairs with `123-primary.thumb.avif`.
  */
 export function thumbName(id: number, k: number): string {
   return derivativeName(id, k).replace(/\.avif$/, ".thumb.avif");
@@ -49,7 +49,7 @@ export async function derivePhase(
     for (let k = 1; k <= plan.spec.maxImagesPerRelease; k++) {
       const original = originals.get(`${id}-${k}`);
       if (!original) {
-        if (k === 1) throw new Error(`[derive] no primary original for ${id} — run images first`);
+        if (k === 1) throw new Error(`[derive] no primary original for ${id}, run images first`);
         continue;
       }
       const out = paths.derivative(dirs, derivativeName(id, k));

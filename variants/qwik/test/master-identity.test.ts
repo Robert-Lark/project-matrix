@@ -4,24 +4,24 @@
  * the same hole for their own variants).
  *
  * Why it exists: variant-owned content is re-typed by design (no shared
- * component runtime, ADR-0003 §1) and the browser drift gate polices identity —
+ * component runtime, ADR-0003 §1) and the browser drift gate polices identity,
  * but CI's browser legs only ever serve the FIXTURE. Crate-flavored text
  * (CRATE_ESSAY and its twin in `src/lib/essays.tsx`) would otherwise first be
  * compared on the deployed plane, AFTER merge, so a one-word crate-copy edit
- * would merge green and turn the post-deploy smoke red — violating the PRD's
+ * would merge green and turn the post-deploy smoke red, violating the PRD's
  * standing rule. The crate TRAYS are committed, so this guard needs no browser,
  * no server, and no image bytes.
  *
  * The mechanism is Qwik's OWN render-to-string entry point:
  * `renderToString` from `@builder.io/qwik/server`, the same function the
  * streaming server render is built on. That makes this the most direct of the
- * four guards — slice A could call a string-returning render function, slice B
+ * four guards, slice A could call a string-returning render function, slice B
  * had to drive `react-dom/server` over a deliberately framework-neutral module,
  * slice C needed Astro's Container API, and this one just asks the framework to
  * render.
  *
  * Comparison policy is the drift gate's own normalizer (`PAGE_NORMALIZE`), run
- * over `linkedom` instead of a browser — the slice-B precedent, and required
+ * over `linkedom` instead of a browser, the slice-B precedent, and required
  * here for two reasons a byte-compare could not survive: Qwik emits `class`
  * after an element's other attributes, and every `component$` host carries a
  * `q:key`. Both are exactly what `PERMITTED_NOISE["qwik"]` and the normalizer's
@@ -32,7 +32,7 @@
  * This renders the SHELL + ARTICLE, wrapped in a hand-authored
  * `<html lang="en"><head></head><body>…</body></html>` (the slice-B guard's
  * shape). It therefore does not prove the `<html>`/`<body>` attributes or the
- * `<head>` contents — those come from `root.tsx` and `entry.ssr.tsx` and are
+ * `<head>` contents. Those come from `root.tsx` and `entry.ssr.tsx` and are
  * proven against the SERVED page by the drift gate and editorial.test.ts, in
  * both snapshot modes. What this guard is for is the crate-flavoured COPY, and
  * copy lives in the article.
@@ -58,12 +58,12 @@ import { featuredIdFor, isFixtureCrate } from "../src/lib/snapshot";
 
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
 const QWIK_NOISE = PERMITTED_NOISE["qwik"]!;
-/** The element `renderToString` wraps the rendered fragment in — unwrapped
+/** The element `renderToString` wraps the rendered fragment in, unwrapped
  *  before normalizing, so the comparison sees the master's own tree depth. */
 const CONTAINER = "body > div[q\\:container]";
 
 /**
- * `PAGE_NORMALIZE` is written to run INSIDE a driven browser page — it is
+ * `PAGE_NORMALIZE` is written to run INSIDE a driven browser page. It is
  * self-contained by construction and reads `document`/`Node` as globals rather
  * than parameters. linkedom supplies same-shape globals for a plain HTML
  * string; install them for the one synchronous call, then restore.
@@ -71,7 +71,7 @@ const CONTAINER = "body > div[q\\:container]";
 function normalizeHtml(html: string, noise: NoiseSpec, unwrap?: string): string {
   const { document, Node } = parseHTML(html);
   if (unwrap !== undefined) {
-    // Replace the render's container element with its own children — a DOM
+    // Replace the render's container element with its own children, a DOM
     // operation rather than string surgery, so the surrounding indentation the
     // normalizer emits is computed from the real tree depth.
     const container = document.querySelector(unwrap);
@@ -102,7 +102,7 @@ interface Snapshot {
 }
 
 async function loadSnapshot(name: "fixture" | "crate"): Promise<Snapshot> {
-  // Plain-JS build tooling with a main-module-guarded CLI — importing renders
+  // Plain-JS build tooling with a main-module-guarded CLI, importing renders
   // and writes nothing (the @pm/reference regeneration test's own pattern).
   const lib = await import(
     pathToFileURL(join(repoRoot, "packages", "reference", "render", "lib.mjs")).href
@@ -111,7 +111,7 @@ async function loadSnapshot(name: "fixture" | "crate"): Promise<Snapshot> {
 }
 
 /** Render the variant's own components for one snapshot's data, exactly as the
- *  route does — same projection function, same essay selector, same featured-id
+ *  route does, same projection function, same essay selector, same featured-id
  *  policy, so a divergence here is a divergence in what ships. */
 async function renderVariant(snapshot: Snapshot): Promise<string> {
   const crate = snapshot.manifest.crate;
@@ -128,12 +128,12 @@ async function renderVariant(snapshot: Snapshot): Promise<string> {
     // A fragment container. `containerTagName: "body"` would be the tidier
     // shape but Qwik rejects it ("<body> can not be rendered because its parent
     // is not a <html> element"), so the container is a `<div>` that
-    // `normalizeHtml` unwraps below — the real container element on the served
+    // `normalizeHtml` unwraps below, the real container element on the served
     // page is `<html>`, and this guard makes no claim about it.
     containerTagName: "div",
     qwikLoader: { include: "never" },
     // Qwik serializes every resumable handler as "<chunk>#<symbol>", and
-    // outside a production build no chunk exists — the render aborts with
+    // outside a production build no chunk exists, the render aborts with
     // "QRLs can not be dynamically resolved, because it does not have a chunk
     // path". `symbolMapper` is the documented hook for supplying that mapping,
     // and a deterministic stub is the honest choice HERE: bundle layout is a
@@ -180,7 +180,7 @@ describe("qwik editorial equals the master by normalized DOM, both snapshots (pr
     expect(essayFor(true).title).not.toBe(essayFor(false).title);
   });
 
-  it("the registered noise is what makes the comparison pass — not the normalizer alone", async () => {
+  it("the registered noise is what makes the comparison pass, not the normalizer alone", async () => {
     // Non-vacuity for the registration, in the one place it can be shown
     // without a browser: the SAME rendered markup must FAIL under NO_NOISE.
     // Otherwise a registration that had gone empty or wrong would still let
@@ -195,11 +195,11 @@ describe("qwik editorial equals the master by normalized DOM, both snapshots (pr
 });
 
 /**
- * The PDP's version of the guard (pdp-variants slice 3) — the same
+ * The PDP's version of the guard (pdp-variants slice 3), the same
  * renderToString mechanism, over EVERY detail tray in BOTH snapshots (the
  * unit's standing shape: 740 pages, covering the render-class combinations
  * the crate has and the fixture does not, plus the three KNOWINGLY UNGATED
- * arms — absent notes, null duration, null year — that no committed master
+ * arms, absent notes, null duration, null year, that no committed master
  * exercises). Same disclosed scope as the editorial guard: shell + article;
  * the head/html attributes are proven against the SERVED page by the drift
  * gate and pdp.test.ts.
@@ -243,7 +243,7 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
 
       // Non-vacuity (the unit's standing rule): real PDP markup was compared,
       // the fenced plaque rode the comparison on both sides (CANONICAL
-      // content here — never dropped), and the format CONTROL stays gone
+      // content here, never dropped), and the format CONTROL stays gone
       // while the format DATA survives (ADR-0008 addendum A).
       const sample = normalizeHtml(
         await renderVariantPdp(snapshot.details[0]),
@@ -254,7 +254,7 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
       expect(sample).toContain("pm-gallery__zoom");
       expect(sample).toContain("data-pm-fenced");
       expect(sample).not.toContain("pm-format");
-      // 300_000 across the whole catalogue-sweep class — a budget sized to
+      // 300_000 across the whole catalogue-sweep class, a budget sized to
       // catch a HANG, not fitted to a measurement. MEASURED on ubuntu-latest
       // (PR #31, the first run in which these legs ever executed): fixture
       // 26.07 s, crate 13.51 s, against 2,748/6,480 ms here.
@@ -263,7 +263,7 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
       // against its old 60 s budget and would have failed. That was a
       // PROJECTION from a single 9× scalar, and the run above falsified it:
       // the crate leg had 4.4× margin under 60 s. The durable lesson is why
-      // the scalar was wrong — real local→CI ratios span 2.1× to 15.5× on one
+      // the scalar was wrong, real local→CI ratios span 2.1× to 15.5× on one
       // runner in one run, and the ordering even inverts (this crate leg is
       // slower than its fixture twin locally and FASTER on CI, first-test
       // compile cost dominating on the slower machine). So no budget here is
@@ -272,7 +272,7 @@ describe("qwik's PDP equals the master by normalized DOM, every tray, both snaps
   }
 
   /**
-   * The stylesheet LIST — the axis root.tsx's surface pick parameterises.
+   * The stylesheet LIST, the axis root.tsx's surface pick parameterises.
    * The guard compares the exported PDP_STYLESHEETS map (the single source
    * root.tsx renders from) against the master's tails; the SERVED head is
    * proven by pdp.test.ts's stylesheet leg on the plane.

@@ -1,10 +1,10 @@
 /*
- * Component module — store footer. The shared shell's close: the store
+ * Component module, store footer. The shared shell's close: the store
  * fiction stated plainly (solo-first honesty) + the site's own links.
  *
  * Canonical markup:
  *   <footer class="pm-footer">
- *     <p class="pm-footer__fiction">A working store on frozen Discogs data —
+ *     <p class="pm-footer__fiction">A working store on frozen Discogs data,
  *       nothing ships, checkout is simulated.</p>
  *     <nav class="pm-footer__nav" aria-label="About this site">
  *       <a href="/">What is this?</a> …

@@ -1,4 +1,4 @@
-// Blog plane Worker — ADR-0009. Public reading surface + the CMS, one
+// Blog plane Worker, ADR-0009. Public reading surface + the CMS, one
 // script: the wall (auth.js) decides before any write reaches storage, and
 // every route under /blog/admin/* that lacks a session sees only a login
 // page. Arrives via pm-front's BLOG binding with the original /blog/* path.
@@ -24,7 +24,7 @@ import {
 } from "./public/pages.js";
 
 // Checked as JS (tsconfig.json `checkJs`; ADR-0004 addendum, 2026-09-25):
-// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts —
+// `Env` is wrangler's generated binding interface (cloudflare-env.d.ts,
 // DB, MEDIA, ASSETS, and ADMIN_CREDENTIAL_HASH from the committed local
 // .dev.vars fixture), the rows are db.js's typedefs, and every request body
 // is read as `Record<string, unknown>` and checked field by field.
@@ -39,11 +39,11 @@ function log(level, event, fields) {
   else console.log(line);
 }
 
-// Every type here is one dimensions.js can sniff — an un-sniffed format
+// Every type here is one dimensions.js can sniff, an un-sniffed format
 // would silently break the zero-CLS-by-construction rule. AVIF joined once
 // the ISOBMFF ispe walk landed (dimensions.js). Keyed by the type the
 // SNIFFER reports (security floor, 2026-09-18): the client's `file.type` is
-// never consulted — an upload whose bytes the sniffer cannot read is a 400,
+// never consulted, an upload whose bytes the sniffer cannot read is a 400,
 // whatever type it declared.
 /** @type {Readonly<Record<string, string>>} */
 const MEDIA_TYPES = {
@@ -162,7 +162,7 @@ async function handlePublic(request, env, url, sub) {
   return notFound();
 }
 
-/** The request body as an object, `{}` when it is not one — every field is
+/** The request body as an object, `{}` when it is not one, every field is
  *  `unknown` until a route checks it.
  *  @param {Request} request @returns {Promise<Record<string, unknown>>} */
 async function readJson(request) {
@@ -178,7 +178,7 @@ async function readJson(request) {
 
 /** A body field as text, or the fallback: the preview and PUT bodies are
  *  untrusted JSON, and a number where text is expected renders as its
- *  digits — the behaviour the routes always had, now stated.
+ *  digits, the behaviour the routes always had, now stated.
  *  @param {unknown} value @param {string | null} fallback */
 const textOr = (value, fallback) => (value == null ? fallback : String(value));
 
@@ -195,7 +195,7 @@ async function handleAdminApi(request, env, url, sub, session) {
   }
 
   // The words in their most portable shape: front-matter markdown, one file
-  // per post, zipped without compression (zip.js) — a pure read, so GET.
+  // per post, zipped without compression (zip.js), a pure read, so GET.
   if (sub === "/api/export.zip" && method === "GET") {
     const bytes = zipStore(await exportMarkdownEntries(env));
     return new Response(bytes, {
@@ -225,7 +225,7 @@ async function handleAdminApi(request, env, url, sub, session) {
   }
 
   // The live preview IS the publish pipeline: same renderMarkdown, same
-  // postPage template, same CSS — a full document for the preview iframe.
+  // postPage template, same CSS, a full document for the preview iframe.
   if (sub === "/api/render" && method === "POST") {
     const body = await readJson(request);
     const kind = body.kind;
@@ -273,8 +273,8 @@ async function handleAdminApi(request, env, url, sub, session) {
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
     // The stored type, extension and dimensions all come from the BYTES
-    // (security floor, 2026-09-18). Before this, `file.type` — client-
-    // controlled — chose the extension and the served content-type, and a
+    // (security floor, 2026-09-18). Before this, `file.type`, client-
+    // controlled, chose the extension and the served content-type, and a
     // `null` sniff still uploaded with null dimensions, forfeiting the
     // zero-CLS-by-construction rule the comment above claims. A declared
     // `image/png` over text is a 400 here; PNG bytes declared `image/jpeg`
@@ -336,7 +336,7 @@ async function handleAdminApi(request, env, url, sub, session) {
       const body = await readJson(request);
       const revision = await getRevision(env, id, String(body.revision_id ?? ""));
       if (!revision) return json({ error: "not found" }, { status: 404 });
-      // Snapshot the CURRENT text before overwriting — the writing since
+      // Snapshot the CURRENT text before overwriting, the writing since
       // the last autosave revision exists only in posts.body_md, and this
       // is the promise the restore dialog makes.
       const current = await getPost(env, id);
@@ -446,7 +446,7 @@ async function handleAdmin(request, env, url, sub) {
     return adminPage(dashboard({ posts: await listAdmin(env), csrf: session.csrf_token }));
   }
 
-  // Creating a draft is a state change — POST + CSRF, never GET (security
+  // Creating a draft is a state change, POST + CSRF, never GET (security
   // floor: no state changes on GET).
   if (sub === "/new" && request.method === "POST") {
     const form = await request.formData();
@@ -488,14 +488,14 @@ export default {
   /** @param {Request} request @param {Env} env */
   async fetch(request, env) {
     const url = new URL(request.url);
-    // Exactly /blog or /blog/* — "/blogfoo" is not this plane's traffic.
+    // Exactly /blog or /blog/*, "/blogfoo" is not this plane's traffic.
     if (url.pathname !== "/blog" && !url.pathname.startsWith("/blog/")) {
       return notFound();
     }
     const path = url.pathname.slice("/blog".length);
 
     try {
-      // Static bytes — explicit delegation, the script stays the wall for
+      // Static bytes, explicit delegation, the script stays the wall for
       // everything routed (run_worker_first). The public css/fonts and the
       // login page's admin.css are world-readable; the EDITOR bundle sits
       // behind the session like every other admin surface.

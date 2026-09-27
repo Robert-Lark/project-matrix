@@ -1,15 +1,15 @@
 /**
- * The shared shell — canonical markup every store surface wraps itself in
+ * The shared shell, canonical markup every store surface wraps itself in
  * (surface-design session, 2026-07-17). These template functions ARE the
  * markup contract: each paradigm re-implements this DOM in its own idiom and
  * must emit it byte-identically (ADR-0003 §1); the rendered masters under
  * ../surfaces/ are the spec of record the drift gate holds everyone to.
  *
- * Variant-page skeleton (what a paradigm serves — masters differ ONLY by the
+ * Variant-page skeleton (what a paradigm serves, masters differ ONLY by the
  * two lines marked ✂):
  *   <body>
  *     <a class="pm-skip pm-button" href="#main">Skip to content</a>
- *     <div id="pm-chrome-slot"></div>            ✂ variants only — the skip
+ *     <div id="pm-chrome-slot"></div>            ✂ variants only, the skip
  *                                                  link stays FIRST focusable
  *     <div class="pm-page"> masthead · main · status · footer </div>
  *     …paradigm scripts…                         ✂ variants only
@@ -19,7 +19,7 @@
  * destination surface's DESIGNATED HOST variant: the sparse matrix means a
  * same-variant link 404s wherever the variant doesn't build that surface,
  * and a Worker redirect would silently swap the variant under a
- * URL-as-receipt (both rejected — session ADR). Within-surface condition
+ * URL-as-receipt (both rejected, session ADR). Within-surface condition
  * links (facets, sort, pages) stay relative/query-only.
  */
 import {
@@ -44,21 +44,21 @@ export const HOSTS = {
 
 /**
  * The cart storage contract (ADR-0008 §7; minted by the editorial build's
- * slice A). The canonical SERVED state is empty — everything below is
+ * slice A). The canonical SERVED state is empty. Everything below is
  * per-paradigm CLIENT enhancement, and every variant plus every later
  * cart-bearing build (PDP, checkout, the masthead everywhere) re-implements
  * exactly this behavior. Five independent inventions would break
  * cart-survives-the-swap silently: `localStorage` is same-origin, so one
- * key + one value shape is the whole mechanism (ADR-0004 §5 — localStorage
+ * key + one value shape is the whole mechanism (ADR-0004 §5, localStorage
  * holds the cart ONLY).
  *
  * - Storage: `localStorage[CART_CONTRACT.key]`, JSON:
- *   `{"v":1,"items":[{"id":<releaseId>,"qty":<integer ≥ 1>}]}` — one entry
+ *   `{"v":1,"items":[{"id":<releaseId>,"qty":<integer ≥ 1>}]}`, one entry
  *   per release id; adding an id already present increases its `qty` by the
  *   quantity added.
  * - Quantity added (pdp-build, 2026-08-14): a surface WITHOUT a quantity
  *   control adds exactly 1 (editorial's single-unit button). A surface WITH
- *   one adds the CHOSEN quantity, clamped to the input's own min/max — the
+ *   one adds the CHOSEN quantity, clamped to the input's own min/max, the
  *   PDP is the only such surface today and the only writer of `qty > 1`.
  *   Recorded here because this comment is the contract three more PDP
  *   variants re-implement from: it previously said only "increments", so a
@@ -73,24 +73,24 @@ export const HOSTS = {
  * - Uniqueness (pdp-controls, 2026-08-15): "one entry per release id" was
  *   stated above from the beginning but was NOT part of the checked rule, so
  *   a duplicate id passed validation and the two implementations then
- *   disagreed about it — `{"v":1,"items":[{"id":7,"qty":1},{"id":7,"qty":1}]}`
+ *   disagreed about it, `{"v":1,"items":[{"id":7,"qty":1},{"id":7,"qty":1}]}`
  *   plus one add gives **3 on editorial** (it bumps the FIRST match) and
  *   **4 on the PDP** (it bumps EVERY match). No writer here can produce that
  *   value, which is exactly why it survived: an unguarded true statement.
  *   The rule now checks what it always claimed, so the two readers cannot
- *   disagree — the divergence is removed rather than documented. Cost, paid
+ *   disagree, the divergence is removed rather than documented. Cost, paid
  *   knowingly: one `Set` size compare in each of the seven `read()`s, on
  *   client bytes the editorial batch publishes.
  * - Count: the sum of `qty` over `items`. On every shell page load the
  *   enhancement populates each `[data-pm-cart-count]` slot with
- *   `badge(count)` — empty string when 0 (the canonical empty state).
+ *   `badge(count)`, empty string when 0 (the canonical empty state).
  *   The badge caps at "9+": the slot reserves `min-width: 2.4ch`
- *   (masthead.css), so an uncapped 3-digit count would widen it — a layout
+ *   (masthead.css), so an uncapped 3-digit count would widen it, a layout
  *   shift the shell must never manufacture (ADR-0008's zero-CLS posture).
  *   The exact number still reaches everyone: visually the cart page, and
  *   for AT through the label below.
  * - Label: whenever the count renders, the paradigm sets the cart anchor's
- *   `aria-label` to `cartLabel(count)` — the count span is `aria-hidden`,
+ *   `aria-label` to `cartLabel(count)`, the count span is `aria-hidden`,
  *   so without this a screen-reader user hears only "Cart"
  *   (masthead.css's header names exactly this duty). Count 0 removes the
  *   attribute (the accessible name falls back to the anchor text).
@@ -110,14 +110,14 @@ export const CART_CONTRACT = {
   /** null at 0 = REMOVE the attribute (name falls back to the anchor text). */
   cartLabel: (count) =>
     count === 0 ? null : `Cart, ${count} ${count === 1 ? "item" : "items"}`,
-  announce: (title, count) => `Added "${title}" to cart — ${count} in cart.`,
+  announce: (title, count) => `Added "${title}" to cart, ${count} in cart.`,
 };
 
 /** The @pm/tokens sheets EVERY master links, in cascade order, ahead of its
  *  own `css` list (fonts.css rides with the font markup, not here). Named so
  *  a consumer that composes its own <head> for a page this package renders
  *  (the a11y section served by @pm/vanilla, 2026-09-03) receives the full
- *  ordered list through `page()`'s head callback instead of re-typing it —
+ *  ordered list through `page()`'s head callback instead of re-typing it,
  *  the stylesheet-order guards compare the two lists tail-for-tail. */
 export const SHELL_SHEETS = [
   "tokens.css",
@@ -147,7 +147,7 @@ export function head({ title, depth, css, noindex = false }) {
 
 /** current: which masthead link (if any) marks aria-current="page".
  *  slot: emit the variants-only `<div id="pm-chrome-slot"></div>` after the
- *  skip link (the first ✂ line of the skeleton above) — the front Worker
+ *  skip link (the first ✂ line of the skeleton above), the front Worker
  *  fills it; masters never carry it (reference.test.ts pins the absence). */
 export function shell({ current, content, slot = false }) {
   const link = (href, label, key) =>
@@ -168,7 +168,7 @@ ${content}
     </main>
     <p class="pm-status" role="status" data-pm-status></p>
     <footer class="pm-footer">
-      <p class="pm-footer__fiction">A working store on frozen Discogs data — nothing ships, checkout is simulated.</p>
+      <p class="pm-footer__fiction">A working store on frozen Discogs data. Nothing ships. Checkout is simulated.</p>
       <nav class="pm-footer__nav" aria-label="About this site">
         <a href="/">What is this?</a>
         <a href="${HOSTS.a11y}">Accessibility, shown</a>
@@ -180,7 +180,7 @@ ${content}
 }
 
 /** One page, assembled. `head` (optional) is a consumer-composed <head>
- *  inner that REPLACES the canonical relative-link head — the front Worker
+ *  inner that REPLACES the canonical relative-link head, the front Worker
  *  serves how-it-was-built with inlined CSS and /pm/ font paths (the home
  *  delivery shape, ADR-0007 §6) while the committed master keeps `head()`.
  *  The body is identical either way; the served-vs-master drift leg
@@ -191,7 +191,7 @@ ${content}
  *  receives the page's own metadata with `css` as the COMPLETE ordered sheet
  *  list (SHELL_SHEETS + this page's modules), so a consumer serving a page
  *  from its own asset base composes the head without a second copy of the
- *  list (the vanilla variant's a11y section, 2026-09-03 — DIFF-TO-STARTER
+ *  list (the vanilla variant's a11y section, 2026-09-03, DIFF-TO-STARTER
  *  decision 6).
  *
  *  `slot` and `scripts` are the skeleton's two ✂ lines, variants only: the
@@ -199,7 +199,7 @@ ${content}
  *  the end of <body>. Both default OFF, so every committed master renders
  *  exactly as before (the regeneration test holds the bytes) and the
  *  delivery strip the identity guards apply (head, scripts, the slot) is
- *  precisely what these add — nothing else may differ. */
+ *  precisely what these add. Nothing else may differ. */
 export function page({
   title,
   depth,
@@ -240,7 +240,7 @@ export function releaseCard(summary, { imgAttrs = "", origin = "" } = {}) {
     <p class="pm-release-card__artist">${esc(summary.artist)}</p>
     <p class="pm-release-card__meta">${esc(metaLine(summary))}</p>
     <div class="pm-release-card__foot">
-      <span class="pm-release-card__price">${price ?? namedGlyph("—", "No price listed")}</span>
+      <span class="pm-release-card__price">${price ?? namedGlyph("–", "No price listed")}</span>
       <span class="pm-release-card__stock">${esc(stockLine(summary.numForSale))}</span>
     </div>
   </div>

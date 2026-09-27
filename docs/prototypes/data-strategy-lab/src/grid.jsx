@@ -1,6 +1,6 @@
 /**
  * The ONE grid component every client strategy page renders (the prototype's
- * zero-bias move: identical page, only the data layer swapped — so the built
+ * zero-bias move: identical page, only the data layer swapped, so the built
  * bundles differ ONLY by the data library, and the byte delta is the library).
  *
  * Text-only on purpose: image delivery is strategy-invariant (outside the
@@ -27,7 +27,7 @@ export function Grid({ data, page, status, onPrev, onNext }) {
                 <h2>{r.title}</h2>
                 <p>
                   {r.artist}
-                  {r.year ? ` — ${r.year}` : ""}
+                  {r.year ? `, ${r.year}` : ""}
                 </p>
                 <p>
                   {r.priceFrom

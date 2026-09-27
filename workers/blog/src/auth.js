@@ -1,6 +1,6 @@
 // The wall (ADR-0009 §5): one high-entropy credential verified against a
 // SHA-256 hash held in a Worker secret, server-side revocable sessions in
-// D1, custom-header CSRF, and a rate-limited login. Single author — there
+// D1, custom-header CSRF, and a rate-limited login. Single author. There
 // is no username dimension and nothing to enumerate.
 
 import { newToken, sha256Hex } from "./ids.js";
@@ -22,7 +22,7 @@ function plusMs(ms) {
 }
 
 // The ONE constant-time compare, for the credential hash AND the CSRF token
-// (security floor, 2026-09-18 — until then the token was compared with
+// (security floor, 2026-09-18, until then the token was compared with
 // `===`). `crypto.subtle.timingSafeEqual` is the Workers runtime's own
 // (workerd-only: Node's SubtleCrypto has no such method, so the unit test
 // installs one with the same contract). It THROWS on a length mismatch, so
@@ -58,8 +58,8 @@ export async function checkLockout(env, request) {
 }
 
 // One statement, so the increment is atomic (security floor, 2026-09-18).
-// The previous shape was read-modify-write — SELECT the count, add one in
-// JS, UPSERT it back — so a parallel burst of wrong credentials read the
+// The previous shape was read-modify-write, SELECT the count, add one in
+// JS, UPSERT it back, so a parallel burst of wrong credentials read the
 // same count and wrote the same count + 1: twenty attempts could land as
 // one, and the documented 5-per-10-minutes lockout never fired. Harmless
 // against a 256-bit credential, but the guard was not sabotage-proof by the
@@ -69,7 +69,7 @@ export async function checkLockout(env, request) {
 //   in window  → count + 1, window kept
 //   window old → 1, window restarts now
 //   new count ≥ MAX_FAILURES → locked_until = now + LOCKOUT, else NULL.
-// Proven on real SQLite (node:sqlite) in test/auth.test.js — its one-statement
+// Proven on real SQLite (node:sqlite) in test/auth.test.js. Its one-statement
 // and twenty-interleaved-increments legs are the guard that bites (both fail
 // under read-modify-write). The origin suite's 20-parallel burst exercises
 // the lockout end-to-end on the plane's D1 but does NOT distinguish the two
@@ -103,7 +103,7 @@ async function clearFailures(env, request) {
 }
 
 // Returns a Set-Cookie value on success, null on failure. The submitted
-// credential is hashed and compared constant-time against the secret hash —
+// credential is hashed and compared constant-time against the secret hash,
 // the credential itself exists nowhere on the server.
 /** @param {Env} env @param {Request} request @param {string} credential @returns {Promise<LoginResult>} */
 export async function login(env, request, credential) {
@@ -192,7 +192,7 @@ export async function logoutAll(env) {
 // Mutations require the per-session CSRF token in a custom header (setting
 // it cross-origin forces a preflight that will fail), and any browser-sent
 // Sec-Fetch-Site must be same-origin. Login/logout forms carry the token as
-// a field instead — same bar, no JS required. The token is compared through
+// a field instead, same bar, no JS required. The token is compared through
 // the same constant-time helper the credential uses (security floor,
 // 2026-09-18): one compare discipline for every secret the wall holds.
 /** @param {Request} request @param {SessionRow} session @param {string | null} [formToken] */

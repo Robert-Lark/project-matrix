@@ -7,7 +7,7 @@ import { esc } from "../src/html.js";
 import { crc32, zipStore } from "../src/zip.js";
 
 describe("esc: the five characters, like every other escaper in the repo (workers-hardening, 2026-09-25)", () => {
-  it("escapes & < > \" and — the one this file used to skip — the single quote", () => {
+  it("escapes & < > \" and, the one this file used to skip, the single quote", () => {
     expect(esc(`Tom & Jerry <b>"say"</b> it's`)).toBe("Tom &amp; Jerry &lt;b&gt;&quot;say&quot;&lt;/b&gt; it&#39;s");
   });
 
@@ -84,7 +84,7 @@ describe("imageDimensions", () => {
 // The upload path keys the stored type off the sniffed bytes, never off the
 // client's `file.type` (security floor, 2026-09-18). These legs hold the
 // sniffer to the FORMAT half of that contract: the type it names is the type
-// the magic bytes are, and bytes it cannot read are null — a 400 upstream.
+// the magic bytes are, and bytes it cannot read are null, a 400 upstream.
 describe("sniffImage: the type comes from the bytes", () => {
   const png = Uint8Array.from(atob(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -118,7 +118,7 @@ describe("sniffImage: the type comes from the bytes", () => {
     expect(sniffImage(webp)).toEqual({ type: "image/webp", width: 7, height: 4 });
   });
 
-  it("text bytes are null whatever the client declared — the 400 upstream", () => {
+  it("text bytes are null whatever the client declared, the 400 upstream", () => {
     const text = new TextEncoder().encode("hello, this is a text file pretending to be image/png\n");
     expect(sniffImage(text)).toBeNull();
   });
@@ -143,7 +143,7 @@ describe("sniffImage: the type comes from the bytes", () => {
   // signature and refuse an empty box, or "the type comes from the bytes"
   // is true of three bytes.
   it("a text file that merely starts with 'GIF' is not a GIF", () => {
-    const text = new TextEncoder().encode("GIF is a format I like, honestly — this is prose\n");
+    const text = new TextEncoder().encode("GIF is a format I like, honestly. This is prose\n");
     expect(sniffImage(text)).toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe("sniffImage: the type comes from the bytes", () => {
     expect(sniffImage(pngWith([0x41, 0x42, 0x43, 0x44], 3, 2))).toBeNull();
   });
 
-  it("the WHOLE 8-byte PNG signature is read — \\x89PNG with wrong bytes 4–7 is refused even with IHDR present", () => {
+  it("the WHOLE 8-byte PNG signature is read, \\x89PNG with wrong bytes 4–7 is refused even with IHDR present", () => {
     const wrongTail = pngWith(IHDR, 3, 2);
     wrongTail.set([0x0d, 0x0a, 0x0d, 0x0a], 4); // CR LF CR LF instead of CR LF SUB LF
     expect(sniffImage(wrongTail)).toBeNull();
@@ -328,7 +328,7 @@ describe("postFrontMatter", () => {
       slug: "hello",
       kind: "essay",
       status: "draft",
-      title: 'He said: "no" — twice',
+      title: 'He said: "no", twice',
       dek: "",
       series: null,
       series_part: 2,
@@ -339,7 +339,7 @@ describe("postFrontMatter", () => {
       updated_at: "2026-07-18T00:00:00Z",
     });
     expect(fm.startsWith("---\n")).toBe(true);
-    expect(fm).toContain('title: "He said: \\"no\\" — twice"');
+    expect(fm).toContain('title: "He said: \\"no\\", twice"');
     expect(fm).toContain("series_part: 2");
     expect(fm).toContain('tags: ["records","hi-fi"]');
     expect(fm).not.toContain("dek:");

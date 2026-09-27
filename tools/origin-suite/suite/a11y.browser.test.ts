@@ -1,11 +1,11 @@
 /**
- * The a11y section in a real browser (a11y-section build, 2026-09-03) — the
+ * The a11y section in a real browser (a11y-section build, 2026-09-03), the
  * claims linkedom cannot check (tools/repo-checks a11y-controls-behave says
  * which): focus order, computed styles, and what a real OS preference does.
  *
  *  - Finding 21, observed: with JS OFF (the served page alone), Tab never
- *    lands inside a closed DS-OFF twin; opening one — the visitor's
- *    deliberate act, native <details>, no script — puts its controls in the
+ *    lands inside a closed DS-OFF twin; opening one, the visitor's
+ *    deliberate act, native <details>, no script, puts its controls in the
  *    tab order. "Natively unfocusable until opened" is a browser fact, so it
  *    is asserted in one.
  *  - The enhancement, JS on: the live-region demo writes its own slots and
@@ -18,7 +18,7 @@
  *    collapsed durations stand with the toggle off AND on, and releasing the
  *    toggle does not re-enable motion; under a real forced-colors preference
  *    the page is already remapped and the toggle changes nothing. Additive
- *    only — the OS wins.
+ *    only, the OS wins.
  *  - The cart survives the swap onto this page: the badge reads storage.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -43,7 +43,7 @@ afterAll(async () => {
 });
 
 const DEMO_SENTENCE = (n: number) =>
-  `Added "A sample record" to the demo cart — ${n} in the demo cart.`;
+  `Added "A sample record" to the demo cart, ${n} in the demo cart.`;
 
 /** Computed values inside one mode's stage. */
 const stageCardBackground = (page: Page, mode: string) =>
@@ -72,7 +72,7 @@ const stageWidth = (page: Page, mode: string) =>
 /** EVERY element and EVERY attribute, with the one attribute a toggle may
  *  write masked out. Total for the same reason the linkedom guard went total
  *  (F-S5): the first draft sampled `<html>`/`<body>` attributes, classes and
- *  inline styles, which is narrower than the claim it backs — a toggle that
+ *  inline styles, which is narrower than the claim it backs, a toggle that
  *  set `aria-hidden` on the honesty caveat, or `hidden` on a twin, moved
  *  nothing it looked at. The chrome subtree is excluded: it is injected
  *  instrumentation with its own live HUD, and its readout legitimately
@@ -99,7 +99,7 @@ const documentFingerprint = (page: Page) =>
     });
   });
 
-describe("element-demos: the stripped twins are unfocusable until opened (JS off — the served page alone)", () => {
+describe("element-demos: the stripped twins are unfocusable until opened (JS off, the served page alone)", () => {
   it("Tab never enters a closed twin; opening one puts its controls in the tab order", async () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
@@ -116,7 +116,7 @@ describe("element-demos: the stripped twins are unfocusable until opened (JS off
         const el = document.activeElement;
         if (!el || el === document.body) return "body";
         // "Inside a closed twin" means inside its CONTENT box: the <summary> is
-        // inside the closed <details> too and is focusable by design — it is
+        // inside the closed <details> too and is focusable by design. It is
         // the control that opens the twin. The first draft flagged all five.
         const inOff = el.closest(".pm-compare__box--off") !== null;
         const inClosed = inOff && el.closest("details.pm-compare__off:not([open])") !== null;
@@ -127,9 +127,9 @@ describe("element-demos: the stripped twins are unfocusable until opened (JS off
     }
     expect(visited.length, "the tab walk never reached the footer").toBeLessThan(150);
     expect(visited.length).toBeGreaterThan(10);
-    // The twins' summaries ARE in the order — reachable on purpose. Counted by
+    // The twins' summaries ARE in the order, reachable on purpose. Counted by
     // their text, not by tag: the injected chrome carries a <details> of its
-    // own (observed 2026-09-03 — six summaries on the page, five of them twins).
+    // own (observed 2026-09-03, six summaries on the page, five of them twins).
     expect(visited.filter((v) => v.startsWith("summary") && v.includes("Open the stripped twin")).length).toBe(5);
     // …and the DS-ON controls are: a button, an input.
     expect(visited.some((v) => v.startsWith("button Add to cart"))).toBe(true);
@@ -138,7 +138,7 @@ describe("element-demos: the stripped twins are unfocusable until opened (JS off
     expect(visited.filter((v) => v.includes("IN-CLOSED-TWIN"))).toEqual([]);
     expect(visited.filter((v) => v.includes("IN-OFF-BOX"))).toEqual([]);
 
-    // Open the focus demo's twin — native <details>, no script running — and
+    // Open the focus demo's twin, native <details>, no script running, and
     // Tab once from its summary: the stripped button is now the next stop.
     const summary = page.locator('section[aria-labelledby="demo-focus"] details.pm-compare__off summary');
     await summary.click();
@@ -173,7 +173,7 @@ describe("the enhancement, JS on", () => {
     expect(await page.getAttribute('[data-pm-demo-out="status-on"]', "role")).toBe("status");
     expect(await page.textContent("[data-pm-status]")).toBe("");
     // The DS-OFF twin: opened deliberately, pressed, same sentence, plain
-    // element, shell silent — the silence IS the exhibit.
+    // element, shell silent, the silence IS the exhibit.
     await page.click('section[aria-labelledby="demo-live"] details.pm-compare__off summary');
     await page.click('[data-pm-demo="status-off"]');
     expect(await page.textContent('[data-pm-demo-out="status-off"]')).toBe(DEMO_SENTENCE(1));
@@ -181,8 +181,8 @@ describe("the enhancement, JS on", () => {
     expect(await page.textContent("[data-pm-status]")).toBe("");
     // Nothing reached the real cart.
     expect(await page.evaluate(() => localStorage.getItem("pm:cart"))).toBeNull();
-    // A specimen answers in ITS OWN section, names itself, and — the half no
-    // linkedom guard can check — the line it answers in is a real box on the
+    // A specimen answers in ITS OWN section, names itself, and, the half no
+    // linkedom guard can check, the line it answers in is a real box on the
     // page rather than the shell's 1x1 clipped one (F1/F3, verification pass).
     const focus = 'section[aria-labelledby="demo-focus"]';
     await page.click(`${focus} .pm-compare__box:not(.pm-compare__box--off) button`);
@@ -200,9 +200,9 @@ describe("the enhancement, JS on", () => {
     }, focus);
     // The sentence names the control and the SIDE; the demo's name is the
     // heading the line sits under, deliberately not repeated (every character
-    // is reserved height — see the zero-shift leg below).
+    // is reserved height, see the zero-shift leg below).
     expect(answer.text).toBe(
-      'Specimen: "Add to cart", DS-on. You hit it — nothing was added or saved.',
+      'Specimen: "Add to cart", DS-on. You hit it. Nothing was added or saved.',
     );
     expect(answer.w, "the answer line is a real box, not 1px").toBeGreaterThan(100);
     expect(answer.h).toBeGreaterThan(20);
@@ -212,7 +212,7 @@ describe("the enhancement, JS on", () => {
     await context.close();
   }, 60_000);
 
-  it("mode-demos: each toggle emulates inside its own stage — computed style moves there and nowhere else — and releases cleanly", async () => {
+  it("mode-demos: each toggle emulates inside its own stage, computed style moves there and nowhere else, and releases cleanly", async () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(MODE_DEMOS, { waitUntil: "load" });
@@ -260,11 +260,11 @@ describe("the enhancement, JS on", () => {
     await context.close();
   }, 60_000);
 
-  it("under a real reduced-motion preference the collapsed durations stand with the toggle off AND on — releasing it never re-enables motion", async () => {
+  it("under a real reduced-motion preference the collapsed durations stand with the toggle off AND on, releasing it never re-enables motion", async () => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     const page = await context.newPage();
     await page.goto(MODE_DEMOS, { waitUntil: "load" });
-    // The OS setting, honoured by tokens.css at :root — page-wide, toggle off.
+    // The OS setting, honoured by tokens.css at :root, page-wide, toggle off.
     expect(await stageButtonDuration(page, "reduced-motion")).toBeLessThan(0.001);
     expect(await stageButtonDuration(page, "forced-colors")).toBeLessThan(0.001);
     await page.click('[data-pm-mode-toggle="reduced-motion"]');
@@ -280,7 +280,7 @@ describe("the enhancement, JS on", () => {
   it("under a real forced-colors preference tokens.css's SEAM is what remapped the page, and the toggle adds nothing", async () => {
     // F-5: the first draft compared painted background colours, which
     // Chromium's own forced-colors mode overrides whatever the author CSS
-    // says — so it would have passed with tokens.css's `@media
+    // says, so it would have passed with tokens.css's `@media
     // (forced-colors: active)` block deleted, proving the browser rather than
     // the design system. Custom PROPERTY values are the non-vacuous signal:
     // Chromium forces used colours, it does not rewrite `--color-*`, so a
@@ -334,14 +334,14 @@ describe("the enhancement, JS on", () => {
 
   it("filling an answer line shifts NOTHING below it, at every width down to 320px", async () => {
     // F-4/F-A7: `min-height` was 3em, which held at 412px and 1440px and
-    // failed at 360px and 320px — the longest message the script can build
+    // failed at 360px and 320px, the longest message the script can build
     // wrapped to a third line, the box went 73 to 96px, and the next demo
     // moved down 23px. 320px is the width WCAG 1.4.10 and this page's own
     // reflow demo are about. The reserve is three lines now, and this leg is
     // what keeps a copy edit from quietly spending it: the longest string the
     // code can produce is written in and the following section must not move.
     const WORST =
-      'Specimen: "Save for later", the stage. You hit it — nothing was added or saved. (99 presses)';
+      'Specimen: "Save for later", the stage. You hit it. Nothing was added or saved. (99 presses)';
     for (const width of [320, 360, 412, 1440]) {
       const context = await browser.newContext({ viewport: { width, height: 800 } });
       const page = await context.newPage();

@@ -3,13 +3,13 @@
  * workspace's own contract (workers-hardening, 2026-09-25). The gate
  * (workers/front/lab/publish.mjs) reads a handful of fields and its typedef
  * names only those; the fixtures mirror a real committed receipt field for
- * field, and this leg is what says so — parsed by the same Zod schema
+ * field, and this leg is what says so, parsed by the same Zod schema
  * `reproduce` refuses malformed receipts with, so a fixture that invented a
  * field the runner never writes, or dropped one it always does, fails here
  * rather than proving the gate against an artifact that could never exist.
  *
  * Rows the generator flags `schemaValid: false` are the deliberate
- * exceptions — a wrong `kind`, a second receiptVersion, a null run value —
+ * exceptions, a wrong `kind`, a second receiptVersion, a null run value,
  * and each is asserted to FAIL the schema, so the flag cannot go stale.
  *
  * Cross-workspace read by path: `@pm/bench-runner#test` is uncached in

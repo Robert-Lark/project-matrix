@@ -1,14 +1,14 @@
 /**
- * Composed-origin integration suite (issue #3) — extends the spike's
+ * Composed-origin integration suite (issue #3), extends the spike's
  * 18-assertion suite (docs/prototypes/cf-composition/test.sh, the prior art).
  * Outside-in at the composed origin: plain HTTP, no Worker internals (PRD
- * testing decisions — the composition seam is the contract).
+ * testing decisions, the composition seam is the contract).
  *
  * Base URL: PM_ORIGIN (default: local cross-process dev via run-local.mjs).
  * PM_EXPECT_BROTLI=1 (the post-deploy smoke) upgrades the value-agnostic
  * content-encoding parity assertion to "specifically Brotli" (ADR-0001 §6).
  *
- * Chrome-injection assertions are deliberately absent — the chrome slice
+ * Chrome-injection assertions are deliberately absent, the chrome slice
  * (issue #5) owns the HTMLRewriter leg; until then the slot stays empty.
  */
 import { execFileSync } from "node:child_process";
@@ -57,14 +57,14 @@ describe("front Worker: own assets + dispatch", () => {
     expect(typeof attestation.dirty).toBe("boolean");
     // Shape only, deliberately: the local suite runs on work-in-progress
     // trees (dirty, HEAD moving), and the post-deploy smoke asserts shape,
-    // never magnitudes. The EQUALITY check — origin SHA versus the checkout
-    // that minted a receipt — is the bench runner's refusal at mint time,
+    // never magnitudes. The EQUALITY check, origin SHA versus the checkout
+    // that minted a receipt, is the bench runner's refusal at mint time,
     // not a plane invariant.
   });
 
   it("the home surface's on-page receipts match the committed crate manifest", async () => {
     // Home is a crate-receipt surface: its etched/inline numbers come from
-    // tools/snapshot-capture/crate/manifest.json at build time (ADR-0007) —
+    // tools/snapshot-capture/crate/manifest.json at build time (ADR-0007),
     // a hand-typed SHA is how a wrong receipt ships. Asserted against the
     // COMMITTED manifest (home's build source) rather than the served one:
     // in CI the origin serves the fixture, while home always carries the
@@ -82,7 +82,7 @@ describe("front Worker: own assets + dispatch", () => {
       source: string;
     };
     const body = await (await get("/")).text();
-    // Context-anchored assertions: a bare number is vacuously satisfiable —
+    // Context-anchored assertions: a bare number is vacuously satisfiable,
     // "500" alone matches `--pm-accent-500` in the inlined tokens CSS, so a
     // hand-typed wrong count could ship green. The deadwax etch string is
     // the one place all four receipt fields appear together.
@@ -98,12 +98,12 @@ describe("front Worker: own assets + dispatch", () => {
   it("home's catalogue rows match SURFACE_CONTROLS completion state (ADR-0007 §1, §4)", async () => {
     // The row flip is a unit-completion duty (editorial PRD duties; ADR-0007
     // §4: "In build" → "Public today" as surfaces land) and it fires at
-    // SURFACE completion — the surface's `plannedVariants` gone — not at
+    // SURFACE completion, the surface's `plannedVariants` gone, not at
     // first serve. Derived from the same registry the chrome renders from,
     // never typed, so a surface that completes without flipping its row (the
     // 2026-08-29 audit found three) goes red here. Matrix surfaces only: the
     // singletons differ: a11y's one designated host variant IS its completion
-    // (a11y-section build, 2026-09-03 — `variants: ["vanilla"]`, no planned
+    // (a11y-section build, 2026-09-03, `variants: ["vanilla"]`, no planned
     // cells), so its row is derived here like the matrix rows; how-it-was-built
     // is served by the front Worker, not a variant, so its `variants` is empty
     // by design and its row is pinned by name in how-it-was-built.test.ts.
@@ -129,7 +129,7 @@ describe("front Worker: own assets + dispatch", () => {
       if (complete) {
         expect(status, `${name} is complete in SURFACE_CONTROLS, so its row is live`).toContain("Public today");
         expect(status).not.toContain("In build");
-        // A live row opens the surface on THIS origin — never a GitHub document.
+        // A live row opens the surface on THIS origin, never a GitHub document.
         expect(status, `${name}: a live row links a same-origin path`).toMatch(/href="\/[^"]*"/);
       } else {
         const owed = controls!.plannedVariants?.length ?? 0;
@@ -140,7 +140,7 @@ describe("front Worker: own assets + dispatch", () => {
   });
 
   it("home's canonical font leg at /pm/* is byte-identical to @pm/tokens", async () => {
-    // ADR-0003 §8: fonts are a controlled constant — identical files
+    // ADR-0003 §8: fonts are a controlled constant, identical files
     // everywhere. The variant copies are asserted elsewhere; this covers the
     // one leg the home surface adds (base path /pm/, ADR-0007 §6).
     const pkgFont = readFileSync(
@@ -187,7 +187,7 @@ describe("the shared surface (both variants, same page)", () => {
 
   it("a variant swap is a pure prefix rewrite onto the same surface", async () => {
     // Same measurement condition under the other paradigm (ADR-0004 §4–§5):
-    // both serve /{variant}/sample/ and render the same sample components —
+    // both serve /{variant}/sample/ and render the same sample components,
     // the reference render's grid verbatim (both cards), so the drift gate
     // (issue #6) has a congruent subtree to compare.
     const a = await (await get("/placeholder-static/sample/")).text();
@@ -213,7 +213,7 @@ describe("permitted paradigm noise (drift-gate raw material, ADR-0003 §6)", () 
     expect(body).toContain("ph-x7f3a2");
   });
 
-  it("static output is the clean control — no noise", async () => {
+  it("static output is the clean control, no noise", async () => {
     const body = await (await get("/placeholder-static/sample/")).text();
     expect(body).not.toContain("data-ph-hydrate");
     expect(body).not.toContain("ph:ssr-boundary");
@@ -252,7 +252,7 @@ describe("fidelity through the service-binding hop (ADR-0004 §5)", () => {
 describe("non-HTML passthrough (byte-identical)", () => {
   // BOTH variants: the SSR variant's asset hop (binding → script → own
   // ASSETS binding, spike hardening 1) is the one composition hop the spike
-  // could never verify in production — the post-deploy smoke must cover it.
+  // could never verify in production, the post-deploy smoke must cover it.
   for (const variant of ["placeholder-static", "placeholder-ssr"]) {
     it(`${variant}: the tokens stylesheet arrives byte-identical to its source`, async () => {
       const res = await get(`/${variant}/assets/pm/css/tokens.css`);
@@ -309,7 +309,7 @@ describe("transport parity (ADR-0001 §6)", () => {
 });
 
 describe("observability posture at the seam", () => {
-  it("an unexpected variant error returns a generic message — no details, no stack", async () => {
+  it("an unexpected variant error returns a generic message, no details, no stack", async () => {
     const res = await get("/placeholder-ssr/sample/boom");
     expect(res.status).toBe(500);
     const body = await res.text();
