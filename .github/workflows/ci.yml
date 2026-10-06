@@ -1,24 +1,37 @@
 name: CI
 
+# Every action is pinned to a commit SHA, with the release it resolves to
+# in a trailing comment (repo hygiene, 2026-10-05). The deploy job holds the
+# Cloudflare secrets, and a mutable tag (`@v4`) lets whoever controls that
+# tag change what runs with them; a SHA cannot move. Renew a pin by resolving
+# the tag again (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`, then
+# `git/tags/<sha>` when the ref is an annotated tag) and updating both the
+# SHA and the comment. The runner image is pinned for the same reason:
+# `ubuntu-latest` moves between images; `ubuntu-24.04` is the image it
+# named on 2026-10-05 (actions/runner-images README). The leg in
+# tools/repo-checks/test/repo-hygiene.test.ts refuses a tag, a branch, a
+# short SHA, a pin with no release comment, a `-latest` runner and any
+# `runs-on:` form it cannot read; a local `./` action and a digest-pinned
+# `docker://` image carry their own pin and pass.
 on:
   push:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
 
       # Turborepo's content-addressed cache, persisted across CI runs so
       # unchanged workspaces are replayed, not rebuilt (ADR-0004 §2).
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -32,18 +45,18 @@ jobs:
   # The composed-origin integration suite against local cross-process dev
   # (issue #3): one wrangler dev per Worker, plain HTTP at the seam.
   origin:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .turbo
           key: turbo-origin-${{ runner.os }}-${{ github.sha }}
@@ -55,7 +68,7 @@ jobs:
       # The chrome checks drive a real Chromium (JS-on HUD readout, JS-off
       # functionality, beacon on visibility-hidden). The browser build is
       # cached; `playwright install` skips the download on a hit.
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -66,7 +79,7 @@ jobs:
 
       - name: Upload dev logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: origin-dev-logs
           path: tools/origin-suite/.dev-logs/
@@ -80,7 +93,7 @@ jobs:
   deploy:
     needs: [check, origin]
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # One SHA per deploy (ADR-0004 §2): overlapping main pushes must not
     # interleave their wrangler deploys into a mixed-SHA plane. Deploys queue;
     # a superseded pending deploy is dropped in favor of the newest.
@@ -88,16 +101,16 @@ jobs:
       group: deploy-canonical-plane
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: pnpm
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .turbo
           key: turbo-origin-${{ runner.os }}-${{ github.sha }}
@@ -216,7 +229,7 @@ jobs:
           echo "::error::Deployed origin never answered 200, smoke would report a readiness race, not an architecture failure"
           exit 1
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         if: steps.creds.outputs.present == 'true'
         with:
           path: ~/.cache/ms-playwright
@@ -239,7 +252,7 @@ jobs:
       # runner and unreproducible after the next deploy replaces the plane.
       - name: Upload smoke evidence on failure
         if: failure() && steps.creds.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: smoke-dev-logs
           path: tools/origin-suite/.dev-logs/

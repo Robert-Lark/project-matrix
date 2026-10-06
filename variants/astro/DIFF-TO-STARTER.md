@@ -147,7 +147,11 @@ for `create-next-app`).
    `outputs: ["dist/**"]` (the copied tokens included, because Astro copies
    `public/` into the output), so a cache hit RESTORES a complete dist, while
    react-next's `public/assets/pm/` was an undeclared, git-ignored input that
-   a cache hit never recreated. The post-deploy smoke is the backstop either
+   a cache hit never recreated. (Since 2026-10-05, repo hygiene, slice B's
+   `deploy` has this same bare shape: its point 19 records why the rebuild
+   was there and why `.open-next/**` as the declared output, which carries
+   the copied tokens, makes it unnecessary; `tools/repo-checks/test/
+   repo-hygiene.test.ts` holds every variant to it.) The post-deploy smoke is the backstop either
    way: it re-renders the master from whatever `/api/snapshot` reports and
    compares the served page (ADR-0008 §9). The remaining "what if `dist/` is
    not there at all" case was checked rather than assumed: with the directory
