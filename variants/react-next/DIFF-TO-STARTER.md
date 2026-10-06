@@ -96,23 +96,15 @@ is deprecated, repo archived 2025-09-29).
    `next dev` or `opennextjs-cloudflare preview`), matching every other
    variant's `dev` script shape exactly, so `run-local.mjs`'s generic
    `pnpm run dev` spawn + port-registry story holds unchanged. `deploy` is
+   bare `opennextjs-cloudflare deploy` (since 2026-10-05, repo hygiene): it
+   deploys the `.open-next/` output the CI "Build worker dists" step built
+   or restored from turbo's cache, and builds nothing itself, the rule
+   `.github/workflows/ci.yml` states for every variant and
+   `tools/repo-checks/test/repo-hygiene.test.ts` holds. Until then it was
    `node scripts/copy-tokens.mjs && opennextjs-cloudflare build &&
-   opennextjs-cloudflare deploy`, NOT OpenNext's documented `build &&
-   deploy` pair verbatim; the `copy-tokens.mjs` prefix is load-bearing, not
-   redundant (verify-slice finding, caught before this was ever
-   deployed): CI's "deploy" job runs `pnpm --filter @pm/react-next run
-   deploy` directly, entirely outside turbo. It does NOT inherit
-   whatever turbo did in the earlier "Build worker dists" step. On a
-   normal push, the "deploy" job's turbo cache is a guaranteed HIT (it
-   shares the exact `turbo-origin-${{ runner.os }}-${{ github.sha }}` key
-   the "origin" job already populated for the same SHA), so that earlier
-   step doesn't even re-run `@pm/react-next`'s "build" script, meaning
-   `public/assets/pm/` (copy-tokens.mjs's git-ignored output, not a
-   declared turbo output) never exists on the deploy job's runner at all.
-   Without the fix, `deploy`'s bare `opennextjs-cloudflare build` would
-   then re-run `next build` fresh, find nothing in `public/`, and bundle
-   a Worker with all 9 CSS files and 2 fonts 404ing, a completely
-   unstyled production page, on the first real deploy.
+   opennextjs-cloudflare deploy`, a rebuild with the token copy in front of
+   it; point 19 carries why the copy was there and why neither is needed
+   once `deploy` does not build.
 7. **`@pm/tokens`/`@pm/data-contract` as workspace dependencies**, plus
    `@cloudflare/workers-types` + a generated, committed `cloudflare-env.d.ts`
    (`wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts`,
@@ -238,8 +230,9 @@ is deprecated, repo archived 2025-09-29).
     and reported ~16,000 errors from files nobody was ever meant to lint.
     Same class of exclusion as the pre-existing `**/dist/**` pattern, for
     the two new kinds of build output this slice introduces.
-19. **`deploy` runs `copy-tokens.mjs` too, not just `build`, a
-    production-breaking gap, found by verify-slice, not by inspection.**
+19. **(Superseded 2026-10-05, see the end of this point.) `deploy` runs
+    `copy-tokens.mjs` too, not just `build`, a production-breaking gap, found
+    by verify-slice, not by inspection.**
     CI's "deploy" job runs `pnpm --filter @pm/react-next run deploy`
     directly, entirely outside turbo's cache/dependency graph. It does
     NOT inherit whatever the earlier "Build worker dists" turbo step did.
@@ -253,6 +246,27 @@ is deprecated, repo archived 2025-09-29).
     ship a Worker with all 9 CSS files and 2 fonts 404ing: a completely
     unstyled production page, on the first real deploy. Fixed by making
     `deploy` copy the tokens itself first, the same way `build` does.
+    Superseded 2026-10-05 (repo hygiene): `deploy` no longer builds at
+    all, so there is no fresh `next build` for a missing `public/` to
+    break. The restored `.open-next/assets` carries `public/` as the build
+    copied it (`.open-next/**` is the declared turbo output; checked on a
+    local build the same day: `.open-next/assets/react-next/assets/pm/`
+    holds the whole `@pm/tokens` tree, 27 CSS files and 3 woff2 fonts by
+    `find | wc -l`), and `opennextjs-cloudflare deploy` is OpenNext's "Deploy
+    a built OpenNext app" command, which runs no build: it reads the compiled
+    config at `.open-next/.build/open-next.config.edge.mjs`, and would populate
+    a remote cache from `.open-next/cache/` only if that config named one; this
+    variant's `defineCloudflareConfig()` has no cache override, so the step logs
+    "Incremental cache does not need populating" and reads no cache tree. Both
+    paths are inside the declared output anyway, and a turbo cache replay
+    restores both dot-paths (checked the same day by
+    deleting `.open-next/.build` and `.open-next/cache` and replaying: 1,193
+    files back, the compiled config among them). What that gives up:
+    a rebuild inside `deploy` would have papered over an incomplete cache
+    restore; now such a restore fails the deploy loudly instead, which is
+    what the CI guardrail asks for, because a rebuild inside `deploy` runs
+    outside the one step that sets `PM_SNAPSHOT` and would ship fixture
+    pages the day this variant bakes a snapshot.
 20. **`@pm/react-next#build`'s turbo task gained explicit `inputs`** for
     the fixture's `manifest.json`/`curation.json` (`src/lib/snapshot.ts`'s
     static imports resolving the featured-id policy), without them, a

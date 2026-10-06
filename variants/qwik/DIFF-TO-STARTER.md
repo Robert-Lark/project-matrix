@@ -215,16 +215,27 @@ silently reconciled; no ADR is affected.
     rather than a bare `**/server/**`, which would silently exempt any future
     hand-written `server/` directory from lint.
 
-11. **`deploy` REBUILDS** (`prepare-build` + both vite builds + `wrangler
-    deploy`), the slice-B shape, and deliberately the inverse of slice C's.
-    Astro's `deploy` must not rebuild because CI's deploy step does not set
-    `PM_SNAPSHOT`, so a rebuild there would overwrite crate-baked pages with
-    fixture ones. That hazard cannot exist here: **this variant has no
-    `PM_SNAPSHOT` at all.** Nothing in its build output is snapshot-flavoured,
-    because a request-time variant resolves its trays per request (ADR-0002 §7)
-   , which is also why `turbo.json` declares no `env` for `@pm/qwik#build`,
-    matching `@pm/react-next#build`. Rebuilding is therefore free of the astro
-    risk and removes any dependence on a cache restore having been complete.
+11. **`deploy` is bare `wrangler deploy` (since 2026-10-05, repo hygiene);
+    it deliberately does NOT rebuild.** Until then it rebuilt (`prepare-build`
+    + both vite builds + `wrangler deploy`, the slice-B shape) on this
+    argument: Astro's `deploy` must not rebuild because CI's deploy step
+    does not set `PM_SNAPSHOT`, so a rebuild there would overwrite
+    crate-baked pages with fixture ones, and that hazard could not exist
+    here because this variant has no `PM_SNAPSHOT` at all (a request-time
+    variant resolves its trays per request, ADR-0002 §7, which is also why
+    `turbo.json` declares no `env` for `@pm/qwik#build`), so rebuilding
+    was free of the astro risk and removed any dependence on a cache
+    restore having been complete. The CI workflow's own rule won: which
+    builds are snapshot-parameterized is derivable and changes as variants
+    land, a `deploy` that rebuilds runs outside the one step that sets
+    `PM_SNAPSHOT`, and the day this variant bakes anything the rebuild
+    ships fixture pages to the crate plane with nothing in front of the
+    post-deploy smoke to catch it. Completeness of the restore is what
+    point 10's `outputs` declaration (`dist/**` + `server/**`) is for, checked
+    the same day by deleting `dist/.assetsignore` (the dotfile that keeps
+    `_worker.js` out of the public assets) and the whole `server/` tree and
+    replaying from turbo's cache: both came back. `tools/repo-checks/test/
+    repo-hygiene.test.ts` holds every variant's `deploy` to one deploy command.
 
 12. **The load-time cart read is `useOnDocument("qinit", …)`, not
     `useVisibleTask$`.** Both work; `eslint-plugin-qwik`'s own

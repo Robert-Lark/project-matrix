@@ -12,7 +12,7 @@
     "build.client": "vite build",
     "build.server": "vite build -c adapters/cloudflare-workers/vite.config.ts",
     "dev": "wrangler dev --port 8795 --inspector-port 9238",
-    "deploy": "node scripts/prepare-build.mjs && pnpm run build.client && pnpm run build.server && wrangler deploy",
+    "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

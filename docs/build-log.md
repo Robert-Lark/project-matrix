@@ -9038,3 +9038,167 @@ every instrument reading; their `methodNotes` carry the glyph. Editing a
 minted receipt is not this sweep's call; the measurement pass re-mints them
 on the fixed ruler anyway. The blog's posts live in D1, not in the tree; the
 templates are clean, the posts are whatever was typed.
+
+### The sweep that measured its own waste, and the three calls that stayed Rob's (2026-10-05)
+
+The 2026-08-29 audit put this ninth and the runbook ran it last: five one-liners
+(`docs/prototypes/repo-hygiene-prompt.md`) and three items only Rob can decide,
+with one instruction attached, pull the Discogs Terms check forward, because an
+application link should not go out with it open. Unit 10 ran in the worktree
+`.claude/worktrees/repo-hygiene` off `f0be557` (origin/main after the em-dash
+sweep, PR #52; the brief named `b894710` and said not to trust it). Every figure
+the prompt carried was re-derived first: 24 parked worktrees, as it said (`git
+worktree list` prints 26 lines, counting the main checkout and this unit's own);
+4,741 linted files where it said 4,153; and its item 5 already landed as
+`360f90a` on 2026-09-01 (porcelain 0 on a clean checkout).
+
+**The Terms, first.** Fetched 2026-10-05 as page text (the help-centre article
+endpoint, 25,114 B, hashed in the record), not from a summary model and not from
+training data: the API Terms of Use ("Last Updated: May 27th, 2025") forbid
+displaying Content "more than six (6) hours older than the information on Our
+online properties" and storing it "longer than is necessary to provide a service
+to Your application's users"; require two notices, "This application uses
+Discogs' API but is not affiliated with, sponsored or endorsed by Discogs"
+prominently and "Data provided by Discogs." with a hyperlink "directly next to
+any data"; and split the Content into CC0 Data (release, artist and label text,
+"made available under the CC0 No Rights Reserved license", also in the monthly
+dumps under CC0 with no staleness clause) and Restricted Data, which names
+"Marketplace Data ... pricing ... and sales history" and "Images", and may not be
+transferred to a third party or used commercially. The plane serves 500 releases
+frozen 2026-07-11, 456 of them with a price, 1,817 images served as 3,634
+self-hosted files (`jq length` over `images-index.json`), and neither notice
+(`grep` over every served template: 0 hits). The frozen snapshot
+is ADR-0002 §1; the clause reads against it on its face, and only a written
+answer from Discogs closes that. Put to Rob as one question with four options and
+a recommendation (ask Discogs, record deferred); **his answer: defer, no call
+yet.** The quotes, the hashes and what each clause means as read are in
+`docs/prototypes/repo-hygiene/discogs-tos-2026-10-05.md`; the `domain-cutover`
+node carries the short form under its sub-decision (e), which stays open.
+
+**One-liner 1, measured before it was fixed.** In the main checkout, the one the
+parked worktrees sit under, `eslint .` visited 4,741 files, 4,465 of them inside
+`.claude/worktrees/` (94.2%), in 37.41 s; with the one pattern the fix adds,
+passed on the command line so the shared checkout was never edited, 276 files in
+2.45 s (medians of three runs each; `eslint-timing-2026-10-05.md`). The waste was
+the smaller problem: turbo's `//#lint` inputs never included `.claude/`, so the
+task's PASS depended on files its cache key did not hash, and a worktree holding
+a lint error could hide behind a cached green or make local red contradict CI,
+whose checkouts have no worktrees. `.claude/worktrees/**` joins the ignores in
+`eslint.config.mjs`, and the leg that keeps it there lints a planted
+`no-unused-vars` error through stdin AS a worktree path and expects nothing back,
+with a control that lints the same bytes AS a repo path and expects the error, so
+a probe that could see nothing fails the control. Before the fix the worktree
+path reported the error (the sabotage row that deletes the line shows it).
+
+**One-liner 2, the stale PASS nobody had hit.** Two linted `.d.mts` files
+(`workers/front/lab/fit.d.mts`, `variants/remix3/src/snapshot.d.mts`) were
+absent from the lint task's resolved inputs (turbo's own `--dry=json`: 280 on
+the clean worktree), so an edit to either left `//#lint`'s hash unchanged. The
+inputs gain `mts,cts`. The verify-slice pass then found the mirror image: on a
+built tree the same globs hashed 2,648 files against the 277 eslint linted,
+every `dist/`, `.next/`, `.open-next/` and qwik `server/` tree eslint ignores,
+so every local build moved the hash and `pnpm check` re-linted for nothing. The
+inputs now negate those classes, a second copy of eslint's ignore list kept
+honest by the leg, which does not pin an extension list: it asks eslint which
+files it lints (`--format json`) and turbo which files the task hashes, and
+holds the two sets equal apart from the `package.json` and `turbo.json` turbo
+adds to every root task, so drift in either direction fails by name. The
+equality found one more file: `workers/front/generated/lab-bundles.js`, build
+output eslint still linted, now ignored like the other build output, scoped to
+its one directory on the qwik `server/**` precedent (278 hashed against 276
+linted on the built tree, the difference turbo's two). A probe in the record
+directory shows the under-hashing mechanism itself: append one line to
+`fit.d.mts`, the hash moves on the fixed tree and does not on the old inputs.
+
+**One-liner 3, where two documents disagreed.** react-next's and qwik's `deploy`
+scripts rebuilt before deploying, and both variants' DIFF-TO-STARTER files
+recorded that as a decision (react-next points 6 and 19, the token copy that a
+verify-slice pass had put in front of the rebuild; qwik point 11, "this variant
+has no `PM_SNAPSHOT` at all", so Astro's fixture-over-crate hazard could not
+exist). `ci.yml`'s own comment says the opposite, that no variant's `deploy` may
+rebuild because which builds bake a snapshot is derivable and changes as variants
+land. The CI rule won: the old argument held only while each variant stayed
+request-time, and the day one bakes anything the rebuild ships fixture pages to
+the crate plane with nothing in front of the post-deploy smoke. Both scripts are
+one deploy command now; `opennextjs-cloudflare deploy` is OpenNext's "Deploy a
+built OpenNext app to Cloudflare Workers" command and runs no build (its source
+read in `node_modules`), and a local build showed `.open-next/assets/react-next/
+assets/pm/` carrying the whole tokens tree (27 CSS files, 3 fonts), so the copy
+step react-next's `deploy` ran is already inside the declared output, as is
+the compiled config (`.open-next/.build/open-next.config.edge.mjs`) the deploy
+command reads; it would populate a remote cache from `.open-next/cache/` only
+if that config named one, and this variant's does not (the step logs
+"Incremental cache does not need populating"). Deleting those dot-paths, and
+qwik's `dist/.assetsignore` and `server/`, then replaying from turbo's cache
+brought every one back. Both
+DIFF-TO-STARTER points record the reversal and what it gives up: an incomplete
+cache restore now fails the deploy loudly instead of being rebuilt over, which is
+what point 10's `outputs` declaration exists for. The front Worker's `deploy`
+still rebuilds (the attestation re-stamp, turbo.json's `@pm/front#build`
+comment) and is exempt by name, the exemption held live by its own leg. Cost,
+from the last green deploy on `main` (run 36288512096, 2026-09-27): react-next's
+deploy took 25.6 s and qwik's 9.2 s against 5 to 7 s for a variant that only
+uploads, so about 22 s of the 73 s deploy step was the two rebuilds; the repo is
+public, so that is wall-clock, not dollars.
+
+**One-liner 4, the pins.** Sixteen `uses:` lines across five actions resolved
+from their `v4` tags on 2026-10-05 with `gh api` (`git/ref/tags/v4`, dereferenced
+through `git/tags/<sha>` where the ref was an annotated tag): checkout `11d5960`
+(v4.4.0), pnpm/action-setup `b906aff` (v4.3.0), setup-node `49933ea` (v4.4.0),
+cache `0057852` (v4.3.0), upload-artifact `ea165f8` (v4.6.2), each full SHA with
+its release in a trailing comment; `runs-on: ubuntu-latest` three times becomes
+`ubuntu-24.04`, the image the alias named that day (actions/runner-images
+README). The leg refuses a tag, a branch, a short SHA, a pin without its release
+comment and a `-latest` runner. What it costs: renewals are by hand now; the
+header comment in `ci.yml` says how.
+
+**Items 6 and 7, Rob's.** Branch protection: `main` has none (404) and no
+rulesets (`[]`); PR #30's red merge of 2026-08-27 is the recorded incident, and
+a second shape turned up while reading: main run 36261255862 on `b894710` (PR
+#51's squash, 2026-09-26) deployed and then failed its post-deploy smoke on the
+qwik PDP "no button is inert" leg, unwatched, the third deployed smoke red on
+that file (two on the quantity stepper, this one a gallery thumb). A
+required-checks ruleset would not have caught that one; the smoke runs after
+the merge. **Rob chose "No, or defer", the option as offered; recorded as
+deferred, so it stays owed rather than closed.** The ruleset a yes would create
+is written out,
+unrun, in `branch-protection-2026-10-05.md`. The worktrees: 24 parked, 25.9 GB,
+24 `node_modules` copies, every branch merged (read off the PRs, since squash
+merges are not ancestors), one with porcelain output (`pdp-variants`, its
+crate-image symlink unignored by that branch's trailing-slash pattern), one stray
+folder that is not a worktree at all. **Rob: remove none, defer.** Nothing was
+removed; the inventory is `worktree-inventory-2026-10-05.md`.
+
+**Verification.** In the standing order.
+
+**`pnpm run check`:** 40 of 40 on the worktree before a line was edited (the
+count derived with `--dry=json | jq`: 40; this unit adds no task, its 13 legs
+join `@pm/repo-checks#test`, uncached) and 40 of 40 after the config edits with
+lint forced, `@pm/repo-checks` at 237 passed, 1 skipped, 20 files, the
+new file's 15 legs in 895 ms. The prompt's done-means names `pnpm check`
+timing; measured as the lint task through turbo with the cache bypassed
+(`turbo run lint --force`, three runs each, main checkout, the ignore passed
+through `--`): 37.06 s to 3.01 s medians, the whole of `pnpm check`'s drop,
+since typecheck and test do not read the ignore; this worktree has no nested
+worktrees, so the drop exists only in the main checkout
+(`eslint-timing-2026-10-05.md`).
+
+**The origin suite, alone.** A config-only unit still runs both modes: `//#lint`'s inputs and two `deploy` scripts are in play, and `run-local.mjs` builds every dist before it serves. On the edited tree, before verify-slice and before this entry: fixture-1 was the environment, not the code, and not wrangler's crash class either (0 refused connections, no "please create an issue" banner, the plane serving 200s at 60–86 ms throughout), while two browser legs in `chrome.browser.test.ts` ran 979 s and 981 s and every plain-fetch leg sharing that worker then failed at its 5 s timer, the shape of a frozen test worker, on a machine carrying a VM at 29% CPU and the Jamf daemon at 14%; torn down by PID after 19 min (129 processes, TERM then KILL, `pgrep` clean), the log kept, re-run before belief. fixture-2 **670 of 670** in 155 s; crate-2 **670 of 670** in 158 s; 0 refused connections, no banner, 0 leftover processes in both (`docs/prototypes/repo-hygiene/suite-runs-2026-10-05.md`). On the FINAL tree, after the verify-slice folds, both sabotage rounds and every record, with nothing edited after them but the suite-runs rows, the sentences that quote them, a comment reflow and one header clause: fixture-final **670 / 670, 26 files** in 166 s; crate-final-1 was the plane, not the code: wrangler 4.110's front dev server crashed under load, `tools/origin-suite/.dev-logs/front.log` ending in the "please create an issue" banner (which now names 4.147.0 as available), 172 `ECONNREFUSED 127.0.0.1:8787`, every browser leg at its 30 s timeout from the first test on, 338 failed at the hook cap; the failure class units 7, 8 and 9 recorded, re-run before belief; 0 leftover processes after teardown; crate-final-2 **670 / 670, 26 files** in 164 s; 0 `ECONNREFUSED`, no banner, 0 leftover processes.
+
+**The sabotage table** (`docs/prototypes/repo-hygiene/sabotage-2026-10-05.md`,
+every row with its exit code; the runner is unit 9's re-rowed, fresh backups per
+row, restores verified by byte equality, guards under `bash -c`). Round 1, over every new guard on the edited tree: 19 rows, 17 caught, 2 controls passed as designed, 0 missed. The rows that carry the unit's claims: the worktrees ignore deleted, misspelt or narrowed to one worktree each fails the stdin leg, and the deleted-line row is the pre-unit state, the planted error under a worktree path IS reported, so those files were linted before this unit; `mts,cts` removed from the lint inputs fails the hashed-input leg naming both `.d.mts` files, and the mechanism probe shows the stale PASS itself, `//#lint`'s hash unmoved by an edit to `fit.d.mts` on the old inputs and moved on the new (control); the `workers/**` input line deleted fails the same leg; react-next's and qwik's old rebuild scripts, a third variant given one, and `wrangler deploy --dry-run` each fail the one-command leg, and the front Worker's exemption made dead fails the liveness leg; a `@v4` tag, `ubuntu-latest`, a 39-hex SHA, a pin without its release comment, a branch ref and a `# v4` comment each fail the pin legs. Round 2, after the verify-slice folds and with the records in place: 16 rows, 10 caught, 6 controls passed as designed, 0 missed. The scoped `workers/front/generated/**` ignore deleted and the `!**/dist/**` negation deleted each fail the both-ways leg on the built tree (the fixed built tree passes, control); a `predeploy` build script and a wrangler `build.command` each fail the other-routes leg; a `-latest` runner behind a trailing comment and a block-form `runs-on` each fail the runner leg; a local `./` action passes the uses leg (control); this unit's node padded 1 KiB past the cap and its Status quoting a title one word off each fail the map legs; a line inserted above `## Phase 15` without regenerating the master fails the anchor leg, and the master's anchor edited by hand fails the regeneration pin. 35 rows across the two rounds: 27 caught, 8 controls, 0 missed.
+
+**verify-slice.** Four lenses, sequential, 88 minutes (`wf_0fc9257e-0a9`): 29 raw findings, correctness 8, conformance 7, seams 6, skeptic 8; 14 distinct, all folded, 0 refuted, 0 declined, each fold verified by its own pass (the guard re-run, the turbo dry run re-derived, sabotage round 2 below). Five were gaps in the new guard: the `runs-on` extractor dropped any line it could not parse, so a `-latest` runner behind a trailing comment or in block form passed (every key is read now and an unreadable form is reported; rows P7, P8); a `predeploy` script or a wrangler `build` key runs a build on deploy while the deploy line stays one command (both collected now; rows D6, D7); the pin leg refused a local `./` action or a digest-pinned docker image with an instruction nobody could follow (both allowed by name; control row P9); the lint-inputs leg checked only the under-hashing direction while the same globs hashed 2,648 build-output files eslint ignores on a built tree (negations mirroring eslint's ignores, the leg equal both ways, and the one build output eslint still linted, `workers/front/generated/`, ignored; rows E4, T4, T5); and a checkout under a symlinked directory would have false-failed that leg (`realpathSync`). Nine were record errors, each a number or sentence a reader could check and find wrong: 588 was the whole growth and 551 the worktree share; 1,817 images are 3,634 served files, in three places; "26 worktrees where it said 24" compared two measures and the prompt's 24 was right; the done-means' `pnpm check` timing stood in for by eslint's with no sentence saying so (measured now as the lint task through turbo, 37.06 s to 3.01 s); item 6 recorded as "no, or defer" in four places, which "no" would close and "defer" keep owed (recorded as deferred, the option quoted); the OpenNext deploy command described as populating a remote cache it never reads under this variant's config; astro's DIFF-TO-STARTER point 9 still teaching that slice B's `deploy` rebuilds; the prompt's "note where attribution lands" answered with candidates and no note (the landing spots as read are in the record and the (e) paragraph now); and "25 parked" in two comments where the records say 24 plus this unit's.
+
+**What this leaves.** The runbook is complete; unit 1's PR-2 and PR-3, the
+measurement pass, remain its own open work. For Rob, the three deferred calls
+with their evidence files, and carried forward unchanged: whether `pm-warm` is
+on the Free plan; the PDP `not-found.tsx` and `lib/plp-error.tsx` docblocks; the
+bench runner's uncapped CDP `send()`; three deployed smokes now red on the qwik
+PDP controls leg and the local INP-null bench flake; the deployed plane's
+compressed header bytes; addendum O's `transferSize` wording; the checkout fit
+template and its `interactionFetch` declaration; the cart line list's missing
+`tabindex`; wrangler 4.110's crashes under load (4.141.0 available); the
+fixtures' 1.3 MB on disk; and the two Discogs notices, owed whichever way (e)
+goes.

@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node scripts/copy-tokens.mjs && opennextjs-cloudflare build",
     "dev": "wrangler dev --port 8793 --inspector-port 9236",
-    "deploy": "node scripts/copy-tokens.mjs && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare deploy",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"

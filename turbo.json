@@ -16,15 +16,39 @@
         "$TURBO_ROOT$/workers/front/lab/fit.d.mts"
       ]
     },
+    // The inputs are the files eslint lints, both ways (repo hygiene,
+    // 2026-10-05). Under-hashing: typescript-eslint's file set adds .mts and
+    // .cts, and the two linted .d.mts files (workers/front/lab/fit.d.mts,
+    // variants/remix3/src/snapshot.d.mts) were linted but not hashed, so an
+    // edit to either replayed a stale PASS. Over-hashing: the bare globs also
+    // matched every built dist/, .next/, .open-next/ and qwik server/ tree
+    // eslint ignores (2,648 inputs on a built tree against 277 linted files,
+    // verify-slice), so every local build changed this task's hash and
+    // re-linted for nothing. The negations below mirror eslint.config.mjs's
+    // ignores for the classes the positive globs can reach; a second copy of
+    // that list, kept honest by tools/repo-checks/test/repo-hygiene.test.ts,
+    // which holds eslint's own file list equal to this task's resolved
+    // inputs (apart from the two files turbo hashes into every root task).
     "//#lint": {
       "inputs": [
         "eslint.config.mjs",
-        "*.{ts,tsx,js,mjs,cjs}",
-        ".github/**/*.{ts,js,mjs,cjs}",
-        "packages/**/*.{ts,tsx,js,mjs,cjs}",
-        "workers/**/*.{ts,tsx,js,mjs,cjs}",
-        "variants/**/*.{ts,tsx,js,mjs,cjs}",
-        "tools/**/*.{ts,tsx,js,mjs,cjs}"
+        "*.{ts,tsx,js,mjs,cjs,mts,cts}",
+        ".github/**/*.{ts,js,mjs,cjs,mts,cts}",
+        "packages/**/*.{ts,tsx,js,mjs,cjs,mts,cts}",
+        "workers/**/*.{ts,tsx,js,mjs,cjs,mts,cts}",
+        "variants/**/*.{ts,tsx,js,mjs,cjs,mts,cts}",
+        "tools/**/*.{ts,tsx,js,mjs,cjs,mts,cts}",
+        "!**/node_modules/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.open-next/**",
+        "!**/.astro/**",
+        "!**/coverage/**",
+        "!**/.wrangler/**",
+        "!workers/front/generated/**",
+        "!variants/qwik/server/**",
+        "!**/next-env.d.ts",
+        "!**/cloudflare-env.d.ts"
       ]
     },
     "topo": {

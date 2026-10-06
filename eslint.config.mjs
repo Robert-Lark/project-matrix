@@ -39,6 +39,25 @@ export default tseslint.config(
       // Agent-harness workflow scripts: they run in the Workflow sandbox
       // with injected globals (agent/phase/log/args), not as repo modules.
       ".claude/workflows/**",
+      // Git worktrees parked under .claude/worktrees/ (repo hygiene,
+      // 2026-10-05). On that day the main checkout carried 24 parked ones
+      // plus the unit's own, and `eslint .` visited 4,741 files, 4,465 of
+      // them inside those worktrees: 37.4 s against 2.45 s without them
+      // (medians of three runs each, derived, not typed). Worse than waste:
+      // turbo's `//#lint` inputs never
+      // included `.claude/`, so lint's PASS depended on local state its
+      // cache key ignored, and a failing worktree file could hide behind a
+      // cached green or make local red contradict CI (a CI checkout has no
+      // worktrees; `git ls-files .claude/worktrees | wc -l` is 0).
+      // tools/repo-checks/test/repo-hygiene.test.ts holds the ignore live.
+      ".claude/worktrees/**",
+      // The front Worker's LAB_BUNDLES module, written by workers/front/build.mjs
+      // from the labBundle-flagged surfaces (gitignored, a declared turbo output):
+      // build output like dist/**, found by the repo-hygiene leg that holds
+      // eslint's file list equal to turbo's lint inputs (2026-10-05). Scoped to
+      // the one directory, the qwik server/** precedent, not a bare
+      // "**/generated/**" that would exempt a future hand-written one.
+      "workers/front/generated/**",
     ],
   },
   js.configs.recommended,
