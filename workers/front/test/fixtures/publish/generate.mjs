@@ -239,6 +239,18 @@ export const CASES = [
   { id: "many-interactions", kind: "receipt", site: "many-interactions", mutate: (r) => { r.targets[3].interactionId = "pdp-add-to-cart"; }, expect: /drove more than one interaction/ },
   { id: "no-interaction-id", kind: "fit", site: "no-interaction-id", fit: (f) => ({ ...f, interactionId: undefined }), expect: /names no interactionId/ },
   { id: "wrong-interaction", kind: "receipt", site: "wrong-interaction", mutate: (r) => { for (const t of r.targets) t.interactionId = "body-click"; }, expect: /but this batch drove "body-click"/ },
+  // The MECHANISM behind every interactionSettled flag, attested in the
+  // artifact (harness.quiescence, bench-runner receipt.ts). UNCONDITIONAL: a
+  // receipt without it was minted under the pre-2026-08-28 networkidle
+  // latch, whose flags were earned by nothing (ADR-0001 addendum R), and
+  // absence is the exact shape of the three 1c543ac editorial receipts this
+  // gate retired (measurement pass PR-2, 2026-10-13).
+  { id: "no-quiescence-attestation", kind: "receipt", site: "no-quiescence-attestation", mutate: (r) => { delete r.harness.quiescence; }, expect: /does not attest harness\.quiescence "in-flight-tracked" \(found undefined\)/ },
+  // Another mechanism NAME is refused the same way: the gate compares
+  // against the literal, not against presence (a `=== undefined` mutant
+  // admits this). The runner's schema admits only the literal, so this
+  // fixture is schema-invalid by design, a receipt the runner cannot mint.
+  { id: "quiescence-other-mechanism", kind: "receipt", site: "no-quiescence-attestation", mutate: (r) => { r.harness.quiescence = "networkidle"; }, expect: /does not attest harness\.quiescence "in-flight-tracked" \(found "networkidle"\)/, schemaValid: false },
   { id: "unsettled-run", kind: "receipt", site: "unsettled-run", mutate: (r) => { r.targets[0].columns.cold.runs[1].interactionSettled = false; }, expect: /did not record reaching network quiescence/ },
   // ABSENT is unverified, not true: the runner's schema makes the flag
   // optional and says absent means unrecorded (receipt.ts), so the gate's

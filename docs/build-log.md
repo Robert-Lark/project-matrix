@@ -9202,3 +9202,284 @@ template and its `interactionFetch` declaration; the cart line list's missing
 `tabindex`; wrangler 4.110's crashes under load (4.141.0 available); the
 fixtures' 1.3 MB on disk; and the two Discogs notices, owed whichever way (e)
 goes.
+
+### The receipts that earned their flags, and the gate that could only land with them (2026-10-13)
+
+The 2026-08-29 audit put this first and the runbook ran it last, because the
+instrument it waited on kept being rebuilt under it. Every number the site
+published until today rode three editorial receipts minted 2026-08-17 at
+`1c543ac`, whose `interactionSettled: true` flags were produced by a latch that
+had already closed (ADR-0001 addendum R, "earned by nothing"), whose method
+note said the cold column measured the edge tier when it did not, and whose
+text carried fifteen em dashes each after the sweep that removed every other
+one. PR-1 (merged 2026-09-01 as #40, `7585237`) corrected the sentence and
+fenced the Apollo route; it could not re-mint, because
+`tools/bench-runner/src/origin-commit.ts` refuses a receipt whose checkout is
+not the tree the plane attests, and the corrected sentence had to be deployed
+before a receipt could carry it. This entry is PR-2: the editorial re-run, the
+PDP's first receipts, and the publication gate that requires the quiescence
+mechanism, in one commit, which is the only shape the gate can land in. PR-3,
+the chrome constant, waits on this commit's deploy for the same reason.
+
+**The tree, and the plane.** The pass ran in the worktree
+`.claude/worktrees/measurement-pass-receipts` on branch
+`measurement-pass-receipts`, created at `origin/main` = `a0ae215` (unit 10's
+merge, #53), porcelain 0, `pnpm install --offline`, `pnpm run check` 40 of 40
+before anything was touched (31 cached, 14.0 s). `/_pm/build.json` on the
+deployed plane answered `a0ae215`, `dirty: false`, by `curl` and by a Node
+`fetch` under `NODE_EXTRA_CA_CERTS`, so the mint SHA and the checkout were the
+same tree, the precondition `origin-commit.ts` enforces. The runner itself
+re-fetches the attestation after a batch's last run and refuses if it moved
+(`batch.ts`, the mid-batch deploy guard); no merge to `main` happened during
+the windows, and every receipt records agreement. The UTC day was young
+(00:21 UTC at the first probe, 17:21 on the machine's clock), which matters
+because `publish.mjs` refuses a surface whose three receipts span two UTC
+dates. Chromium was Playwright 1.61.1's pinned revision 1228, 149.0.7827.55,
+the same build the retired receipts named.
+
+**The mint, as it ran.** The ten editorial effective URLs
+(`?n=24&run=editorial-batch4-2026-10-13`, with and without `&cache=cold`, the
+exact string `batch.ts` builds) served `content-encoding: br` on the first
+pre-warm pass, so the slice-C uncompressed-first-hit class was already
+absent; a one-run throwaway under a `warmup-` nonce took 14 s and came back
+attested, settled, and was deleted. The average-broadband profile minted in
+four minutes (00:27 to 00:31 UTC). The fast-wifi profile then ran for
+twenty-two minutes and was REFUSED by the runner: "the network never went
+quiet for 500 ms within this visit's 30000 ms pre-interaction budget" on a
+vanilla cold visit, `collect.ts`'s `LOAD_QUIET_CAP_MS`, which throws rather
+than mint a sample whose initial/interaction split would be arbitrary. Five
+`curl`s to the same URL afterwards answered in 118 to 252 ms, no leftover
+browser process, load at 4. That is the plane-or-network failure class the
+runbook says to re-run before believing, and the twenty-two minutes against
+four say the stall was not one visit. Rob's instruction at that point:
+caffeinate the machine until the task ends. `caffeinate -dimsu -t 43200` ran
+from then on, so neither idle sleep nor App Nap could be the cause on the
+re-run, and fast-wifi then minted in 4 m 22 s and slow-4G in 4 m 36 s, all
+three on one UTC date. A load spike to 17 at 00:29 UTC was Apple's
+`mediaanalysisd` at 317% and the VM at 103%, not the runner (the headless
+shell sat under 1%); it is recorded because the receipts say `local-dev`,
+unpinned, and a reader is owed the machine's state. The PDP ran the same way:
+eight effective URLs per nonce pre-warmed to brotli on the first pass, the
+gallery batch (`pdp-batch1-2026-10-13`, `pdp-gallery-switch`, release 896191,
+the priced five-image slug ADR-0008 §11 names) and then the add-to-cart batch
+(`pdp-add-to-cart-2026-10-13`), three profiles each, the gallery batches in 3 m 14 s, 3 m 12 s and 4 m 23 s and the add-to-cart batches in 3 m 07 s, 3 m 09 s and 4 m 06 s, 01:40 to 02:02 UTC. The
+plane attested `a0ae215` clean before the first batch and after the last.
+The timeline, the refused run's message, the pre-warm output and every
+receipt's done-check are in `docs/prototypes/measurement-pass/mint-2026-10-13.md`.
+
+**What the editorial receipts say.** Seventy runs per profile (five targets,
+two columns, seven runs), `interactionSettled: true` on all 210, interaction
+bytes 0 in both columns for every variant, `harness.quiescence:
+"in-flight-tracked"` on all three, zero em dashes. Warm initial-JS medians:
+vanilla 1,847 B, astro 769 B, htmx 19,959 to 19,962 B, qwik 30,369 to 30,370 B,
+react-next 158,655 to 158,765 B, the profile-to-profile spread being a few
+bytes of header and the per-run bands not overlapping between any adjacent
+pair, so the fit sentence builds. Against the retired 1c543ac set (vanilla
+1,858, astro 771 to 776, htmx 19,971 to 20,009, qwik 30,392 to 30,400,
+react-next 158,617 to 158,700) the cells moved by 2 to 148 B, and that is the
+plane, not the ruler: the byte estimator has been ADR-0001 addendum O's since
+2026-08-17, and what changed in between is served copy (the em-dash sweep,
+#52) and two deploys of react-next's bundle. INP is where the new mechanism shows: the retired set read 24 ms in every
+column but one (react-next 32 on average broadband), every valued run in
+both columns between 24 and 32, two runs absent; the new set's warm medians
+are 24 or 32 in every column, the warm runs behind them span 24 to 40 with
+three absent (vanilla one, astro two), and across both columns 201 of 210
+runs produced a value, 16 to 40 ms, nine absent. That last sentence is the
+one the methodology page derives and prints (`%%LAB_INP_SPREAD%%`, both
+columns, `jq`-checked here against the page's own words), absent rather
+than zero, the median over the runs that produced a value. `lab/fit.mjs`'s comment beside editorial's
+`interactionTiming` declaration stated the old spread as a fact ("24 ms
+throughout … between 24 and 32 ms"); the receipts one directory away now
+refute it, so the comment states both batches and leaves the published
+figure to the build, which derives `%%LAB_INP_SPREAD%%` from the receipts
+and was the reason the page never carried the stale number.
+
+**What the PDP receipts say, and what they are the first of.** No PDP
+receipt had ever been minted: the pdp-build unit blocked the byte headline
+behind the dilution fix, pdp-variants and pdp-controls shipped surfaces with
+no numbers, and the interaction-registry unit registered the two ids and
+then found the ruler wrong twice. These three are the surface's first, fifty-six
+runs per profile (four targets, two columns, seven runs), every run settled,
+one nonce, one date. The interaction cell is the one the fit template
+declares a constant: `pdp-gallery-switch` fetched 25,194 B in every single
+run of every variant in both columns, 168 runs, spread 0 B against the
+declared 64 B tolerance, the same full-size AVIF the thumb's 160 px
+derivative never requested, which is why ADR-0001 addendum R made this a
+declared constant rather than a hardcoded zero-check. Warm initial-JS
+medians: vanilla 4,577 to 4,653 B, astro 1,692 B, qwik 34,979 to 35,035 B,
+react-next 160,235 to 160,309 B, bands disjoint, so the fit sentence builds
+and `/_pm/lab/pdp.json` is non-empty for the first time. The INP row is
+withheld as `fit.mjs` declares, and the receipts show exactly the mechanism
+the declaration cites: vanilla, react-next and astro read 24 ms in every
+column with runs between 16 and 32, while qwik's warm median is 8 ms on
+average broadband (runs 8, 8, 8, 8, 8, 0, 8) and 8 ms on slow-4G (runs 8, 8,
+8, 0, 0, 8, 8) against 24 ms on fast-wifi, one column swinging 0 to 24
+across conditions while three hold at 24, Chromium closing the entry on a
+paint that carries nothing because the resumed handler returned having only
+scheduled its render. The raw per-run values publish in the receipts; the
+derived cell does not, and the row says so.
+
+**The gate, and why it could only land now.** `tools/bench-runner/src/git.ts`
+flips `commit.dirty` on any porcelain output, staged or not, and
+`publish.mjs` refuses a dirty receipt, so the gate could not be staged before
+minting; and an unconditional gate cannot merge alone, because it refuses the
+three committed receipts the front build needs. So the nine receipts were
+minted on a clean tree first, and only then was a tracked file edited. The
+gate is one `if` in `workers/front/lab/publish.mjs`, in `bundleFromReceipt`,
+placed immediately before the per-run `interactionSettled` loop it gives
+meaning to: `receipt.harness?.quiescence !== "in-flight-tracked"` throws,
+with the value it found in the message (`found undefined` for the 1c543ac
+shape, `found "networkidle"` for a renamed mechanism), under the marker
+`// refusal: no-quiescence-attestation`. Unconditional, because the
+absence-tolerant reading the runner's schema comment proposed ("a publication
+gate treats its ABSENCE as the weaker pre-fix guarantee") would have let the
+three retired receipts keep publishing, which is the exact thing this pass
+exists to stop; that comment in `receipt.ts` now says the gate refuses
+absence, and the schema keeps the field optional only so `reproduce` and the
+cost calculator can still parse an old artifact. The gate module's `Receipt`
+typedef gains `harness`, the one field the gate reads (`tsc --checkJs` holds
+the typedef to what the gate touches). Two rows join
+`workers/front/test/fixtures/publish/generate.mjs`, `no-quiescence-attestation`
+(the field deleted) and `quiescence-other-mechanism` (the field set to
+`"networkidle"`, flagged `schemaValid: false` because the runner's schema admits
+only the literal, so the bench-runner's own fixture leg asserts it is a
+receipt the runner cannot mint); `CASES` 60 to 62, throw sites 47 to 48,
+fixtures on disk regenerated (54 files, 42 receipts and 12 chrome constants, from 52), and the marker map leg
+holds the throw and the rows together in both directions. The runbook's own
+proof ran as written: `git stash push -- workers/front/lab/receipts` restored
+the three tracked 1c543ac files, `pnpm --filter @pm/front run build` exited
+non-zero naming the attestation on `editorial-avg-broadband-desktop.json`
+(sorted readdir, the first file), `git stash pop`, and the build passed on the
+re-minted six, `/_pm/lab/pdp.json` non-empty for the first time
+(`gate-bites-2026-10-13.txt`). One limit, stated in the gate's comment and
+held as a sabotage row rather than left as silence (the skeptic lens asked):
+the attestation is the runner's WORD in the artifact, `batch.ts` writes the
+literal, so the three retired receipts restored from git with the key added
+by hand admit through every check (row R6, an expected miss, all three files
+so the surface does not trip the span rule instead). Nothing in a JSON file
+can prove which code wrote it; review and `pnpm bench reproduce` are what
+hold that, and the record says so instead of claiming mechanism-level proof.
+
+**The evidence that is not a publication.** `pdp-add-to-cart`'s three receipts
+are committed under `workers/front/lab/unpublished/` with a README, outside
+the one directory `build.mjs` reads. The runbook called this location a
+convention with no precedent; the two refusals that keep the directory honest
+are now proven rather than assumed: filed under their own name into
+`lab/receipts/`, the build refuses by filename (`publish.mjs` parses
+`pdp-add-to-cart-avg-broadband-desktop.json` as surface `pdp` and refuses the
+profile half, `filename-profile`; its instruction to rename is misleading for
+this file, a nit the README states); written OVER the gallery receipt under
+its name, the build refuses by interaction (`wrong-interaction`, the fit
+template declares `pdp-gallery-switch`). Both are sabotage rows. What the
+evidence is FOR is the interaction-registry unit's decision that the PDP
+publishes no INP row: the add-to-cart click fetches nothing on any variant (interaction bytes 0 in every run), and its warm INP medians read 24 ms for vanilla, react-next and astro on every profile (react-next 32 on slow-4G) while qwik reads 8 ms on average broadband and on fast-wifi, every one of its fourteen runs there an 8, and 24 ms on slow-4G. The race does not depend on which click, and the evidence receipt says so in numbers a reader can open; the README beside them carries the table, run by run.
+
+**Mint SHA versus publish SHA.** Every receipt pins `a0ae215`, and this PR's
+merge will be a different SHA. That is by construction, not an oversight: a
+receipt names the tree it was MEASURED FROM, which `origin-commit.ts` forces
+to be the tree the plane was serving, and the commit that carries the receipt
+into the repo is necessarily later. `publish.mjs` never compares
+`receipt.commit.sha` to HEAD; it compares it to `originCommit.sha` (the
+cross-tree refusal) and across a surface's three receipts (the batch-span
+refusal), both proven again today on the real artifacts (rows R2 and R3).
+The decision map's node records X = `a0ae215` as the mint SHA and this merge
+as the publish SHA.
+
+**What else moved.** The em-dash guard's exemption for `lab/receipts/` is
+gone: the re-minted receipts carry none (`grep -c` 0 on all six), so the
+exemption was dead the moment they landed, and a planted glyph in a published
+receipt now fails the guard (row E1). The map's `interaction-registry` node,
+which ended "it is what main publishes today", now says the obligation was
+discharged here; the `workers-hardening` node's owed line records the two rows
+and the counts; both stay under the 7,168 B cap. ADR-0001's bound-obligation
+paragraph under addendum R gains a dated "landed" paragraph. The methodology
+page needed no edit: its batch statement, run count and INP spread are
+build-derived from the receipts, and its one disclosure sentence about the
+2026-08-28 mechanism change already named the field. Home's editorial line
+re-derives from the new default-profile receipt; home's PDP row keeps "Public
+today" with no measured line, because ADR-0007 gives the measured sentence to
+the editorial row by design and a PDP line is a content call, recorded in the
+node as not taken. The how-it-was-built master was regenerated after this
+entry was written, because the phase links are line anchors into this file;
+it came back byte-identical, since every linked heading sits above this
+entry. The README's surface table, which says of itself that the registry
+is right and the table is stale when they disagree, disagreed twice: the
+product-page row still said "the bundle is empty until the PDP batches run",
+and the search-and-filters row still said search, filters and sort do not
+serve, which has been false since the PLP data plane landed on 2026-09-18.
+Both rows now say what is true; the second was outside this pass's scope and
+is corrected here because leaving a known falsehood beside a corrected one
+would be the exact thing the table's own sentence forbids. The served home
+page carries the same falsehood on its PLP row ("filters not yet served",
+`workers/front/home/index.html`), found by the seams lens; that is ADR-0007
+copy on the front door, reviewed by a six-lens panel when it shipped, so it
+is recorded in the node as owed and left for Rob rather than edited here.
+
+**Verification.** In the runbook's order, every figure a tool's output.
+`pnpm run check`: 40 successful, 40 total, on the baseline (31 cached,
+14.0 s) and on the edited tree (22 cached, 14.1 s), and again on the final
+tree (23 cached, 13.4 s, after the verify-slice folds and the round-2 table, and once more after this paragraph was written). The two publication legs inside it carry the gate:
+`workers/front/test/publish-refusals.test.js` 76 tests (two new rows, the
+marker map holding 48 throw sites to 48 marker sites and the rows' site set)
+and `tools/bench-runner/test/publish-fixtures.test.ts` 43 (the
+`quiescence-other-mechanism` fixture asserted to FAIL the runner's schema,
+the other new fixture to pass it). The origin suite ALONE, pre-flight `pgrep`
+empty before and after each run: fixture mode 26 files, 670 of 670, 145.78 s;
+crate mode 26 files, 670 of 670, 144.56 s; zero `ECONNREFUSED` lines, no
+frozen worker, no INP-null flake (`suite-runs-2026-10-13.md`). The runbook's
+own gate proof, verbatim in `gate-bites-2026-10-13.txt`: with the three
+tracked 1c543ac files stashed back into `lab/receipts/`, the front build
+exited 1 on `editorial-avg-broadband-desktop.json` with the new refusal
+(`found undefined`); with the six re-minted receipts restored, exit 0, both
+lab bundles carrying three profiles, six receipts in `dist/_pm/lab/receipts/`
+and no `unpublished` under `dist`. The sabotage table
+(`sabotage-2026-10-13.md`, runner in the same directory): round 1, 22 rows,
+16 caught, 6 controls passed, 0 missed, exit codes printed, the summary line derived by the runner (the first heading said 15 and 7 by eye). The gate rows:
+the `if` deleted (G1), weakened to a presence check (G2), its marker removed
+(G3), its rows removed (G4), the schema flag removed (G5), the message
+reworded (G6), each failing the leg it should. The real-artifact rows, each
+the front build refusing a committed receipt: `harness.quiescence` deleted
+(R1, the attestation), `commit.sha` not the attested SHA (R2, cross-tree),
+both SHAs moved on one PDP receipt (R3, the surface spans two SHAs), an
+evidence receipt filed under its own name (R4, `filename-profile`) and
+written over the gallery receipt (R5, `wrong-interaction`). The em-dash
+guard with its exemption gone (E1), the cap on the two resolved nodes (N1)
+and the Status quote (N2), the log's line anchors (L1) and the master's
+regeneration (H1), each caught, with their controls passing. One stated
+side effect: a caught front-build row leaves `dist` partial, so the dist
+was rebuilt before anything read it, and the runner's header now says so.
+Verify-slice (`.claude/workflows/verify-slice.js` by scriptPath, four lenses
+in sequence, the scratchpad as the findings dir, probing inline meanwhile):
+23 raw findings, 12 distinct, 0 refuted, 11 folded and one recorded as owed (`verify-slice-2026-10-13.md` has the table). The two that mattered most were in this entry's own prose, a 7 B minimum that was 2 B and a warm-only INP span written as if it were the both-columns figure the page prints; the rest were a sabotage header tallied by eye (15 and 7 for 16 and 6), four stale comments and clauses, the evidence README's reproduce step, the node's cap headroom, the gate's unstated limit and the em-dash guard's blind spot over untracked files. Inline probes of my own, all recorded: no publication
+path skips the gate (`build.mjs` line 185 is the one call into
+`admitReceipt`, the only caller of `bundleFromReceipt`); the served
+methodology derives both surfaces' statements from the new receipts
+("The published pdp batch ran 2026-10-13 at commit a0ae215", the editorial
+INP spread "between 16 and 40 ms, medians 24 to 32"); the home line
+re-derives from the new default-profile receipt; a repo-wide grep for the
+retired receipts' claims found the README rows above and nothing else
+served; the em-dash guard walks `git ls-files`, so every untracked new file
+was grepped by hand (0 glyphs) and the guard re-run after staging. The build
+log is 770,957 B against the 786,432 B ceiling, under it, so the third
+observation stands and no re-observation was needed. Round 2 over the folded tree: 23 rows, 16 caught, 6 controls passed, 0 missed, 1 expected miss (R6), the counts printed by the runner, the tree restored byte for byte. The final tree, every fold in, ran the suite pair alone once more: fixture 670 of 670 in 144.58 s; the crate run's first attempt wedged, every browser leg dying on a 30 s `page.goto` timeout and every fetch suite's hook on its 300 s cap with zero refused connections and no wrangler banner, the front server still answering, a third plane-hang shape beside the two already recorded, killed by PID after 14 minutes and recorded as it happened; the re-run alone passed 670 of 670 in 144.02 s (`suite-runs-2026-10-13.md`, runs 3 to 5).
+
+**Left for Rob, carried forward.** PR-3: branch `measurement-pass-constant` at
+this PR's merge, the chrome constant probed on the deployed plane serving
+these receipts, the `BOOTSTRAP_CONSTANT_COMMIT` pin removed, ADR-0001
+addendum O's "headers-included `transferSize`" wording corrected, the node
+resolved under the cap: it sits at 6,400 B against 7,168 after this entry, so
+PR-3's own bullet must stay short or PR-3 must move this pass's narrative to a
+"`measurement-pass`: narrative moved from the decision map" sub-entry here
+and point at it from Status, the compaction shape the cap guard already
+checks both ways. Unchanged from the brief: the qwik quantity-stepper
+assertion that has failed four deployed post-deploy smokes while passing
+locally every time (likely a real hydration-timing defect on the deployed
+plane, worth its own unit); the Discogs API Terms (deferred 2026-10-05, no
+application link while open); branch protection on `main` and the 24 parked
+worktrees (both deferred, inventories written); wrangler 4.110's front
+crashes under load (4.147.0 available, a lockfile change with its own
+verification); whether `pm-warm` is on the Free plan; `CdpConnection.send()`
+without a timeout; the checkout line list without `tabindex`; the react-next
+`not-found.tsx` and `plp-error.tsx` slot claims; the deployed plane's h2/h3
+header bytes stated from RFC tables; the snapshot-capture node's 455 against
+the summaries' 456 priced releases.

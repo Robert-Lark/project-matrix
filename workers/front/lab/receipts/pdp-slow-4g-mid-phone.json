@@ -1,0 +1,3496 @@
+{
+  "kind": "pm-bench-receipt",
+  "receiptVersion": 1,
+  "date": "2026-10-13T01:51:45.140Z",
+  "commit": {
+    "sha": "a0ae215b46bb45f5dbb58c2a80bc6a44db10e7a7",
+    "dirty": false
+  },
+  "origin": "https://pm-front.robresearch87.workers.dev",
+  "originCommit": {
+    "sha": "a0ae215b46bb45f5dbb58c2a80bc6a44db10e7a7",
+    "dirty": false
+  },
+  "runLocation": {
+    "label": "local-dev",
+    "source": "unpinned developer machine (the pinned cloud runner + two-location protocol activate downstream, ADR-0001 §9)"
+  },
+  "profile": {
+    "id": "slow-4g-mid-phone",
+    "specVersion": 1,
+    "applied": {
+      "mechanism": "cdp-applied (Network.emulateNetworkConditions + Emulation.setCPUThrottlingRate)",
+      "latencyMs": 150,
+      "downloadBytesPerSec": 209715.2,
+      "uploadBytesPerSec": 96000,
+      "cpuMultiplier": 4,
+      "viewport": {
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "mobile": true
+      }
+    }
+  },
+  "environment": {
+    "n": 24,
+    "runNonce": "pdp-batch1-2026-10-13"
+  },
+  "runsPerUrl": 7,
+  "harness": {
+    "browser": "chromium",
+    "browserVersion": "149.0.7827.55",
+    "settleMs": 3000,
+    "quiescence": "in-flight-tracked"
+  },
+  "methodNotes": [
+    "settle is signal-based, never a fixed window: the interaction byte boundary waits for the network to go idle and the vitals-beacon flush waits for delivery to quiesce, each bounded by harness.settleMs so an absent signal surfaces as absent bytes / a null vital rather than hanging (ADR-0001 §9; tools/drift-gate/README.md 'wait for the real signal, never a proxy'). Any post-load idle work (e.g. Qwik's preloader) is awaited onto the INITIAL byte side before the boundary snapshot, so the initial/interaction split is deterministic across runs. MECHANISM, stated because it changed on 2026-08-28 and receipts minted before that date carry a weaker guarantee under this same sentence: quiescence is measured by tracking in-flight requests from the browser's own request/response events and requiring a fresh 500 ms window with nothing in flight, measured FROM each boundary. It was previously Playwright's waitForLoadState('networkidle'), which is a document-load-lifecycle LATCH, 'if the state has been already reached while loading current document, the method resolves immediately' (playwright-core types.d.ts), and no navigation occurs across a scripted interaction, so the post-click call returned in 24-49 ms (measured, four variants) and an interaction fetch still in flight was recorded as zero bytes with interactionSettled true. Receipts dated before 2026-08-28 therefore prove 'nothing was fetched for the click' only where the interaction is independently known not to fetch; from this date the flag measures it.",
+    "the browser HTTP cache is ON for the whole visit, and that also changed on 2026-08-28. Every run is a fresh browser context (a first-time visitor), and WITHIN that visit the cache then behaves normally, a subresource the page re-requests is served from it, exactly as a real visitor's would be. Until this date the runner captured the chrome's vitals beacons with Playwright's page routing, which the library documents as disabling the http cache (playwright-core types.d.ts: 'Enabling routing disables http cache') and which is not URL-scoped at the browser: one beacon route took the cache away from every request of the visit. Measured consequence on this project's own pages: a paradigm that re-assigns an image `src` to the value it already holds costs 0 B with the cache on and re-downloads the image with it off, which inflated one variant's measured interaction cost by 26,838 B (52,032 vs 25,194), an instrument artifact no visitor can experience. Beacons are now intercepted by URL pattern at the browser (CDP Fetch.enable scoped to /api/beacon), so lab traffic still never reaches the RUM collector and nothing else is intercepted. Editorial's published byte cells were re-measured across the change and did not move.",
+    "document bytes are decomposed (ADR-0001 §3 addendum, 2026-08-15, superseding addendum G's uncompressed-share rule): the single compressed document transferSize stays the authority on the TOTAL, and the split between html/js/data/STRIPPED instrumentation markup takes its ratios from leave-one-out marginals, what the compressed document loses when exactly that part is removed, computed with the WIRE'S OWN CODEC (brotli for a br wire, zstandard for the zstd wire Chromium negotiates, …) at the setting calibrated per document against the observed compressed body (codec, setting, and residual recorded per run in kb.docAttribution). Inline executable script counts as JS (an inlined bundle is not 0 KB), inline non-executable script (application/json, qwik/json, …) counts as data, and the injected chrome markup + its /_pm/ tags are stripped like the /_pm/ subresource payloads (ADR-0001 §6). An uncompressed document needs no estimate and uses exact uncompressed share. Stated bias: disjoint parts' marginals under-sum the whole (shared redundancy belongs to no single part, measured 0.94–0.95x on the live shapes), so normalisation scales parts up ~x1.05 pro-rata.",
+    "ttfb sub-phases (travelMs/serverMs) are attributed BENEATH any CDP network emulation: Chromium rebases navigation-timing under applied throttling (demonstrated 2026-07-10: a 500ms emulated latency delivers on the wall clock but responseStart still reads ~1ms), so the decomposition reflects the plane's REAL serving, compare it across variants, not against the profile's emulated RTT. FCP/LCP/INP paint/interaction timestamps are wall-clock and DO reflect the applied profile.",
+    "every run is a fresh browser context (first-time visitor): the browser HTTP cache is a held-constant, not a measured axis. What the cold/warm columns measure depends on the target, because the edge Worker keys its KV bypass on the TRAY request's own `cache=cold` (workers/edge serveData), not on the page URL the runner drives. The knob reaches the data plane only through a tray fetch that forwards it, today the PLP tray fetches (react-next plpApiPath, htmx PLP_KNOBS). Request-time editorial/PDP targets (react-next, qwik; htmx on editorial) fetch /api/pdp/{id} server-side with NO query string (react-next lib/edge.ts, qwik lib/edge.ts, htmx index.js): that fetch reads the canonical KV key in BOTH columns, and /api/snapshot sits outside the warm tier in both. Build-time targets (vanilla, astro) make no runtime data fetch, so cold≡warm by construction. The only browser-issued /api/ data fetch on those surfaces is the live-price button's, fenced from every number and driven by no scripted interaction. So on editorial and PDP the cold column exercises the edge data tier for NO target, the two columns there are two samples of one serving path, and ADR-0002 §8's cold=R2 intent is UNMEASURED there. The `?run=` nonce likewise isolates warm state only for fetches that carry it; un-nonced server-side fetches share the canonical key with every visitor.",
+    "PRECONDITION for a comparable re-run against a DEPLOYED plane: the effective URLs below must be warmed until they serve compressed before measuring. A brand-new URL's first hit is a cache MISS that Cloudflare serves UNCOMPRESSED (the class tools/origin-suite's wireEncoding warms against), and because the run nonce is part of the URL, a reproduce with a fresh nonce makes every URL brand new, so run 1 of every target pays an inflated, non-comparable transfer. `bench reproduce --nonce <this receipt's environment.runNonce>` re-drives the exact published URLs so they can be pre-warmed; without it the reproduction is same-paths/profile/runs/interaction with fresh cache state, not same-URL."
+  ],
+  "targets": [
+    {
+      "path": "/vanilla/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/",
+      "variant": "vanilla",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/vanilla/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13&cache=cold",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 79.5,
+                "serverMs": 45.09999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 1.299999713897705,
+                  "domainLookupEnd": 3.5,
+                  "connectStart": 3.5,
+                  "secureConnectionStart": 34.299999713897705,
+                  "connectEnd": 79.2999997138977,
+                  "requestStart": 79.5,
+                  "responseStart": 124.59999990463257,
+                  "responseEnd": 264.19999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 124.59999990463257,
+                "FCP": 868,
+                "LCP": 1384,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4577,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22222,
+                "totalBytes": 189228,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 65.19999980926514,
+                "serverMs": 50.30000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.8000001907348633,
+                  "connectStart": 1.8000001907348633,
+                  "secureConnectionStart": 29.59999990463257,
+                  "connectEnd": 65.09999990463257,
+                  "requestStart": 65.19999980926514,
+                  "responseStart": 115.5,
+                  "responseEnd": 248.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 115.5,
+                "FCP": 824,
+                "LCP": 1364,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2872,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 51,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22201,
+                "totalBytes": 189237,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 2,
+                  "calibrationTargetBytes": 4810,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 0,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62,
+                "serverMs": 50.5,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 29,
+                  "connectEnd": 62,
+                  "requestStart": 62,
+                  "responseStart": 112.5,
+                  "responseEnd": 241.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 112.5,
+                "FCP": 836,
+                "LCP": 1364,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22152,
+                "totalBytes": 189208,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62,
+                "serverMs": 49.299999713897705,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.0999999046325684,
+                  "connectStart": 2.0999999046325684,
+                  "secureConnectionStart": 28.899999618530273,
+                  "connectEnd": 62,
+                  "requestStart": 62,
+                  "responseStart": 111.2999997138977,
+                  "responseEnd": 250.09999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 111.2999997138977,
+                "FCP": 812,
+                "LCP": 1368,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4653,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22152,
+                "totalBytes": 189304,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 67.59999990463257,
+                "serverMs": 50.30000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.700000286102295,
+                  "connectStart": 2.700000286102295,
+                  "secureConnectionStart": 32.5,
+                  "connectEnd": 67.5,
+                  "requestStart": 67.59999990463257,
+                  "responseStart": 117.90000009536743,
+                  "responseEnd": 249.40000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 117.90000009536743,
+                "FCP": 816,
+                "LCP": 1364,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4653,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22222,
+                "totalBytes": 189304,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.5,
+                "serverMs": 45,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 1.8999996185302734,
+                  "connectStart": 1.8999996185302734,
+                  "secureConnectionStart": 27,
+                  "connectEnd": 59.5,
+                  "requestStart": 59.5,
+                  "responseStart": 104.5,
+                  "responseEnd": 243.7999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 104.5,
+                "FCP": 844,
+                "LCP": 1368,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4653,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22152,
+                "totalBytes": 189284,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 70.59999990463257,
+                "serverMs": 55.40000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 31.699999809265137,
+                  "connectEnd": 70.5,
+                  "requestStart": 70.59999990463257,
+                  "responseStart": 126,
+                  "responseEnd": 251.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 126,
+                "FCP": 832,
+                "LCP": 1372,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2841,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 53,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22222,
+                "totalBytes": 189208,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 4732,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 65.19999980926514,
+            "ttfbServerMs": 50.30000019073486,
+            "webVitals": {
+              "TTFB": 115.5,
+              "FCP": 832,
+              "LCP": 1368,
+              "CLS": 0,
+              "INP": 24
+            },
+            "totalBytes": 189237,
+            "initialJsBytes": 4577,
+            "interactionBytes": 25194,
+            "requests": 23
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 189237,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 23,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        },
+        "warm": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/vanilla/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.39999961853027,
+                "serverMs": 46.40000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.39999961853027344,
+                  "domainLookupEnd": 1.8999996185302734,
+                  "connectStart": 1.8999996185302734,
+                  "secureConnectionStart": 30.399999618530273,
+                  "connectEnd": 59.39999961853027,
+                  "requestStart": 59.39999961853027,
+                  "responseStart": 105.7999997138977,
+                  "responseEnd": 243.19999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 105.7999997138977,
+                "FCP": 840,
+                "LCP": 1364,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 189174,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 63.80000019073486,
+                "serverMs": 48.69999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.10000038146972656,
+                  "domainLookupStart": 0.6000003814697266,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 30.90000009536743,
+                  "connectEnd": 63.700000286102295,
+                  "requestStart": 63.80000019073486,
+                  "responseStart": 112.5,
+                  "responseEnd": 244.7000002861023
+                }
+              },
+              "webVitals": {
+                "TTFB": 112.5,
+                "FCP": 824,
+                "LCP": 1356,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 189174,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.09999990463257,
+                "serverMs": 58.200000286102295,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 28.40000009536743,
+                  "connectEnd": 61.09999990463257,
+                  "requestStart": 61.09999990463257,
+                  "responseStart": 119.30000019073486,
+                  "responseEnd": 243.09999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 119.30000019073486,
+                "FCP": 828,
+                "LCP": 1364,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4653,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 189270,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 64.69999980926514,
+                "serverMs": 50.5,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 29.699999809265137,
+                  "connectEnd": 64.59999990463257,
+                  "requestStart": 64.69999980926514,
+                  "responseStart": 115.19999980926514,
+                  "responseEnd": 243.90000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 115.19999980926514,
+                "FCP": 860,
+                "LCP": 1368,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4577,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22255,
+                "totalBytes": 189174,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.09999990463257,
+                "serverMs": 46.09999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.799999713897705,
+                  "connectStart": 1.799999713897705,
+                  "secureConnectionStart": 27,
+                  "connectEnd": 62.09999990463257,
+                  "requestStart": 62.09999990463257,
+                  "responseStart": 108.19999980926514,
+                  "responseEnd": 244.90000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 108.19999980926514,
+                "FCP": 852,
+                "LCP": 1372,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4653,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22255,
+                "totalBytes": 189250,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.5,
+                "serverMs": 50.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.7000002861022949,
+                  "domainLookupEnd": 2.0999999046325684,
+                  "connectStart": 2.0999999046325684,
+                  "secureConnectionStart": 26.5,
+                  "connectEnd": 62.40000009536743,
+                  "requestStart": 62.5,
+                  "responseStart": 113.40000009536743,
+                  "responseEnd": 242.30000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 113.40000009536743,
+                "FCP": 812,
+                "LCP": 1372,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4653,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4653,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 189270,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 82.59999990463257,
+                "serverMs": 64.7999997138977,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.3999996185302734,
+                  "connectStart": 2.3999996185302734,
+                  "secureConnectionStart": 40.39999961853027,
+                  "connectEnd": 82.5,
+                  "requestStart": 82.59999990463257,
+                  "responseStart": 147.39999961853027,
+                  "responseEnd": 256.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 147.39999961853027,
+                "FCP": 836,
+                "LCP": 1368,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2816,
+                  "js": 4577,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 44,
+                  "other": 0
+                },
+                "initialJsBytes": 4577,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 189194,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 4731,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 23,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 62.5,
+            "ttfbServerMs": 50.5,
+            "webVitals": {
+              "TTFB": 113.40000009536743,
+              "FCP": 836,
+              "LCP": 1368,
+              "CLS": 0,
+              "INP": 24
+            },
+            "totalBytes": 189194,
+            "initialJsBytes": 4577,
+            "interactionBytes": 25194,
+            "requests": 23
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 189194,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 23,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/react-next/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/",
+      "variant": "react-next",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/react-next/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13&cache=cold",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.5,
+                "serverMs": 59.19999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.8999996185302734,
+                  "connectStart": 1.8999996185302734,
+                  "secureConnectionStart": 27.09999990463257,
+                  "connectEnd": 59.5,
+                  "requestStart": 59.5,
+                  "responseStart": 118.69999980926514,
+                  "responseEnd": 265.8999996185303
+                }
+              },
+              "webVitals": {
+                "TTFB": 118.69999980926514,
+                "FCP": 900,
+                "LCP": 2108,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2194,
+                  "js": 160324,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160324,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22265,
+                "totalBytes": 344275,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8598,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -76,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59,
+                "serverMs": 65,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.3999996185302734,
+                  "connectStart": 2.3999996185302734,
+                  "secureConnectionStart": 28.09999990463257,
+                  "connectEnd": 58.89999961853027,
+                  "requestStart": 59,
+                  "responseStart": 124,
+                  "responseEnd": 265.8999996185303
+                }
+              },
+              "webVitals": {
+                "TTFB": 124,
+                "FCP": 900,
+                "LCP": 2112,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2194,
+                  "js": 160305,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160305,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22335,
+                "totalBytes": 344236,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8598,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -76,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.40000009536743,
+                "serverMs": 65.19999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.1999998092651367,
+                  "connectStart": 2.1999998092651367,
+                  "secureConnectionStart": 26.40000009536743,
+                  "connectEnd": 59.19999980926514,
+                  "requestStart": 59.40000009536743,
+                  "responseStart": 124.59999990463257,
+                  "responseEnd": 264
+                }
+              },
+              "webVitals": {
+                "TTFB": 124.59999990463257,
+                "FCP": 896,
+                "LCP": 2104,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2174,
+                  "js": 160306,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160306,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22243,
+                "totalBytes": 344237,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8514,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 8,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.5,
+                "serverMs": 61.30000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 28,
+                  "connectEnd": 60.40000009536743,
+                  "requestStart": 60.5,
+                  "responseStart": 121.80000019073486,
+                  "responseEnd": 257.59999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 121.80000019073486,
+                "FCP": 888,
+                "LCP": 2104,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2177,
+                  "js": 160227,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160227,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22246,
+                "totalBytes": 344161,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8525,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -3,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 51.09999990463257,
+                "serverMs": 62.59999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 24,
+                  "connectEnd": 51,
+                  "requestStart": 51.09999990463257,
+                  "responseStart": 113.69999980926514,
+                  "responseEnd": 249
+                }
+              },
+              "webVitals": {
+                "TTFB": 113.69999980926514,
+                "FCP": 876,
+                "LCP": 2092,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2177,
+                  "js": 160359,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160359,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22246,
+                "totalBytes": 344273,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8525,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -3,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 63.5,
+                "serverMs": 68,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 30.5,
+                  "connectEnd": 63.5,
+                  "requestStart": 63.5,
+                  "responseStart": 131.5,
+                  "responseEnd": 270.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 131.5,
+                "FCP": 908,
+                "LCP": 2112,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2194,
+                  "js": 160245,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160245,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22335,
+                "totalBytes": 344196,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8598,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -76,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.09999990463257,
+                "serverMs": 62.69999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.4000000953674316,
+                  "connectStart": 2.4000000953674316,
+                  "secureConnectionStart": 27.199999809265137,
+                  "connectEnd": 60.09999990463257,
+                  "requestStart": 60.09999990463257,
+                  "responseStart": 122.7999997138977,
+                  "responseEnd": 257.2999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 122.7999997138977,
+                "FCP": 896,
+                "LCP": 2100,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2159,
+                  "js": 160334,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160334,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22315,
+                "totalBytes": 344250,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 8479,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 24,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 59.5,
+            "ttfbServerMs": 62.69999980926514,
+            "webVitals": {
+              "TTFB": 122.7999997138977,
+              "FCP": 896,
+              "LCP": 2104,
+              "CLS": 0.0007716713208465457,
+              "INP": 24
+            },
+            "totalBytes": 344237,
+            "initialJsBytes": 160306,
+            "interactionBytes": 25194,
+            "requests": 29
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 344237,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 29,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        },
+        "warm": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/react-next/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.299999713897705,
+                "serverMs": 173.40000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.19999980926513672,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.799999713897705,
+                  "connectStart": 2.799999713897705,
+                  "secureConnectionStart": 25.199999809265137,
+                  "connectEnd": 60.19999980926514,
+                  "requestStart": 60.299999713897705,
+                  "responseStart": 233.69999980926514,
+                  "responseEnd": 285.7999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 233.69999980926514,
+                "FCP": 904,
+                "LCP": 2124,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2210,
+                  "js": 160351,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160351,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22263,
+                "totalBytes": 344318,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8598,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -80,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 63.59999990463257,
+                "serverMs": 76.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.8000001907348633,
+                  "connectStart": 1.8000001907348633,
+                  "secureConnectionStart": 30.59999990463257,
+                  "connectEnd": 63.5,
+                  "requestStart": 63.59999990463257,
+                  "responseStart": 140.5,
+                  "responseEnd": 265.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 140.5,
+                "FCP": 900,
+                "LCP": 2112,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2191,
+                  "js": 160260,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160260,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22243,
+                "totalBytes": 344188,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8521,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -3,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 58.09999990463257,
+                "serverMs": 59.30000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 1.9000000953674316,
+                  "connectStart": 1.9000000953674316,
+                  "secureConnectionStart": 28.800000190734863,
+                  "connectEnd": 58.09999990463257,
+                  "requestStart": 58.09999990463257,
+                  "responseStart": 117.40000009536743,
+                  "responseEnd": 263.40000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 117.40000009536743,
+                "FCP": 912,
+                "LCP": 2108,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2191,
+                  "js": 160308,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160308,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22243,
+                "totalBytes": 344256,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8521,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -3,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.80000019073486,
+                "serverMs": 69.09999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.10000038146972656,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 27.90000009536743,
+                  "connectEnd": 60.700000286102295,
+                  "requestStart": 60.80000019073486,
+                  "responseStart": 129.90000009536743,
+                  "responseEnd": 257.40000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 129.90000009536743,
+                "FCP": 900,
+                "LCP": 2096,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2189,
+                  "js": 160210,
+                  "css": 21009,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160210,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22312,
+                "totalBytes": 344152,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8514,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 4,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.19999980926514,
+                "serverMs": 68.69999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.1999998092651367,
+                  "connectStart": 2.1999998092651367,
+                  "secureConnectionStart": 26.799999713897705,
+                  "connectEnd": 62.09999990463257,
+                  "requestStart": 62.19999980926514,
+                  "responseStart": 130.89999961853027,
+                  "responseEnd": 266.5
+                }
+              },
+              "webVitals": {
+                "TTFB": 130.89999961853027,
+                "FCP": 896,
+                "LCP": 2104,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2188,
+                  "js": 160271,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160271,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22241,
+                "totalBytes": 344196,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8510,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 8,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 57.19999980926514,
+                "serverMs": 57.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.6999998092651367,
+                  "connectStart": 2.6999998092651367,
+                  "secureConnectionStart": 28.800000190734863,
+                  "connectEnd": 57.09999990463257,
+                  "requestStart": 57.19999980926514,
+                  "responseStart": 115.09999990463257,
+                  "responseEnd": 266.09999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 115.09999990463257,
+                "FCP": 968,
+                "LCP": 2108,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2192,
+                  "js": 160156,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160156,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22315,
+                "totalBytes": 344085,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 8526,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -8,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.69999980926514,
+                "serverMs": 67,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.799999713897705,
+                  "connectStart": 1.799999713897705,
+                  "secureConnectionStart": 28.699999809265137,
+                  "connectEnd": 61.59999990463257,
+                  "requestStart": 61.69999980926514,
+                  "responseStart": 128.69999980926514,
+                  "responseEnd": 266.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 128.69999980926514,
+                "FCP": 896,
+                "LCP": 2104,
+                "CLS": 0.0007716713208465457,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2165,
+                  "js": 160194,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 0,
+                  "other": 0
+                },
+                "initialJsBytes": 160194,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22241,
+                "totalBytes": 344096,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 4,
+                  "calibrationTargetBytes": 8471,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 19,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 29,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 60.80000019073486,
+            "ttfbServerMs": 68.69999980926514,
+            "webVitals": {
+              "TTFB": 129.90000009536743,
+              "FCP": 900,
+              "LCP": 2108,
+              "CLS": 0,
+              "INP": 24
+            },
+            "totalBytes": 344188,
+            "initialJsBytes": 160260,
+            "interactionBytes": 25194,
+            "requests": 29
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 344188,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 29,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/astro/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/",
+      "variant": "astro",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/astro/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13&cache=cold",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.80000019073486,
+                "serverMs": 44.5,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 27.700000286102295,
+                  "connectEnd": 60.700000286102295,
+                  "requestStart": 60.80000019073486,
+                  "responseStart": 105.30000019073486,
+                  "responseEnd": 257.2000002861023
+                }
+              },
+              "webVitals": {
+                "TTFB": 105.30000019073486,
+                "FCP": 816,
+                "LCP": 1344,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22117,
+                "totalBytes": 186041,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60,
+                "serverMs": 48.59999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 27.09999990463257,
+                  "connectEnd": 59.90000009536743,
+                  "requestStart": 60,
+                  "responseStart": 108.59999990463257,
+                  "responseEnd": 241
+                }
+              },
+              "webVitals": {
+                "TTFB": 108.59999990463257,
+                "FCP": 820,
+                "LCP": 1344,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22117,
+                "totalBytes": 186021,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.5,
+                "serverMs": 60.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 27.59999990463257,
+                  "connectEnd": 62.5,
+                  "requestStart": 62.5,
+                  "responseStart": 123.40000009536743,
+                  "responseEnd": 259.7000002861023
+                }
+              },
+              "webVitals": {
+                "TTFB": 123.40000009536743,
+                "FCP": 824,
+                "LCP": 1356,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22187,
+                "totalBytes": 186041,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.39999961853027,
+                "serverMs": 49.80000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 29.5,
+                  "connectEnd": 61.39999961853027,
+                  "requestStart": 61.39999961853027,
+                  "responseStart": 111.19999980926514,
+                  "responseEnd": 250.19999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 111.19999980926514,
+                "FCP": 800,
+                "LCP": 1340,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22117,
+                "totalBytes": 186021,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62,
+                "serverMs": 47.59999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 30.59999990463257,
+                  "connectEnd": 62,
+                  "requestStart": 62,
+                  "responseStart": 109.59999990463257,
+                  "responseEnd": 251.39999961853027
+                }
+              },
+              "webVitals": {
+                "TTFB": 109.59999990463257,
+                "FCP": 808,
+                "LCP": 1340,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22187,
+                "totalBytes": 186041,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 73.30000019073486,
+                "serverMs": 54.19999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 34.40000009536743,
+                  "connectEnd": 73.19999980926514,
+                  "requestStart": 73.30000019073486,
+                  "responseStart": 127.5,
+                  "responseEnd": 264.5
+                }
+              },
+              "webVitals": {
+                "TTFB": 127.5,
+                "FCP": 824,
+                "LCP": 1348,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22117,
+                "totalBytes": 186041,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 66.40000009536743,
+                "serverMs": 55.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.9000000953674316,
+                  "connectStart": 2.9000000953674316,
+                  "secureConnectionStart": 30.700000286102295,
+                  "connectEnd": 66.40000009536743,
+                  "requestStart": 66.40000009536743,
+                  "responseStart": 122.30000019073486,
+                  "responseEnd": 256.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 122.30000019073486,
+                "FCP": 824,
+                "LCP": 1348,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2556,
+                  "js": 1693,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 35,
+                  "other": 0
+                },
+                "initialJsBytes": 1693,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22117,
+                "totalBytes": 186021,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 7,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 62,
+            "ttfbServerMs": 49.80000019073486,
+            "webVitals": {
+              "TTFB": 111.19999980926514,
+              "FCP": 820,
+              "LCP": 1344,
+              "CLS": 0,
+              "INP": 24
+            },
+            "totalBytes": 186041,
+            "initialJsBytes": 1693,
+            "interactionBytes": 25194,
+            "requests": 22
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 186041,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 22,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        },
+        "warm": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/astro/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.40000009536743,
+                "serverMs": 48.5,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 28.300000190734863,
+                  "connectEnd": 61.40000009536743,
+                  "requestStart": 61.40000009536743,
+                  "responseStart": 109.90000009536743,
+                  "responseEnd": 256.5
+                }
+              },
+              "webVitals": {
+                "TTFB": 109.90000009536743,
+                "FCP": 828,
+                "LCP": 1348,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22116,
+                "totalBytes": 186022,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.89999961853027,
+                "serverMs": 52.700000286102295,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2,
+                  "connectStart": 2,
+                  "secureConnectionStart": 29.299999713897705,
+                  "connectEnd": 59.89999961853027,
+                  "requestStart": 59.89999961853027,
+                  "responseStart": 112.59999990463257,
+                  "responseEnd": 251.2999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 112.59999990463257,
+                "FCP": 828,
+                "LCP": 1332,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22186,
+                "totalBytes": 186042,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 64.5,
+                "serverMs": 50.59999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.8000001907348633,
+                  "connectStart": 1.8000001907348633,
+                  "secureConnectionStart": 29.59999990463257,
+                  "connectEnd": 64.5,
+                  "requestStart": 64.5,
+                  "responseStart": 115.09999990463257,
+                  "responseEnd": 251.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 115.09999990463257,
+                "FCP": 832,
+                "LCP": 1348,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22186,
+                "totalBytes": 186022,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.700000286102295,
+                "serverMs": 42.89999961853027,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 26.700000286102295,
+                  "connectEnd": 59.59999990463257,
+                  "requestStart": 59.700000286102295,
+                  "responseStart": 102.59999990463257,
+                  "responseEnd": 251.7000002861023
+                }
+              },
+              "webVitals": {
+                "TTFB": 102.59999990463257,
+                "FCP": 800,
+                "LCP": 1324,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2575,
+                  "js": 1705,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 39,
+                  "other": 0
+                },
+                "initialJsBytes": 1705,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22132,
+                "totalBytes": 186056,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6137,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -41,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 57.59999990463257,
+                "serverMs": 43.10000038146973,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 26.700000286102295,
+                  "connectEnd": 57.59999990463257,
+                  "requestStart": 57.59999990463257,
+                  "responseStart": 100.7000002861023,
+                  "responseEnd": 249.90000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 100.7000002861023,
+                "FCP": 824,
+                "LCP": 1340,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22186,
+                "totalBytes": 186022,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 66.7999997138977,
+                "serverMs": 49.30000019073486,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 1.799999713897705,
+                  "connectStart": 1.799999713897705,
+                  "secureConnectionStart": 32.09999990463257,
+                  "connectEnd": 66.69999980926514,
+                  "requestStart": 66.7999997138977,
+                  "responseStart": 116.09999990463257,
+                  "responseEnd": 256.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 116.09999990463257,
+                "FCP": 792,
+                "LCP": 1352,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22116,
+                "totalBytes": 186042,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 64.80000019073486,
+                "serverMs": 48,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 31.5,
+                  "connectEnd": 64.69999980926514,
+                  "requestStart": 64.80000019073486,
+                  "responseStart": 112.80000019073486,
+                  "responseEnd": 250
+                }
+              },
+              "webVitals": {
+                "TTFB": 112.80000019073486,
+                "FCP": 812,
+                "LCP": 1340,
+                "CLS": 0,
+                "INP": 24
+              },
+              "kb": {
+                "buckets": {
+                  "html": 2555,
+                  "js": 1692,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 38,
+                  "other": 0
+                },
+                "initialJsBytes": 1692,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22186,
+                "totalBytes": 186022,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6087,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 9,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 22,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 61.40000009536743,
+            "ttfbServerMs": 48.5,
+            "webVitals": {
+              "TTFB": 112.59999990463257,
+              "FCP": 824,
+              "LCP": 1340,
+              "CLS": 0,
+              "INP": 24
+            },
+            "totalBytes": 186022,
+            "initialJsBytes": 1692,
+            "interactionBytes": 25194,
+            "requests": 22
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 186022,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 22,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        }
+      }
+    },
+    {
+      "path": "/qwik/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/",
+      "variant": "qwik",
+      "surface": "pdp",
+      "interactionId": "pdp-gallery-switch",
+      "columns": {
+        "cold": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/qwik/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13&cache=cold",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.30000019073486,
+                "serverMs": 63.09999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.200000286102295,
+                  "connectStart": 2.200000286102295,
+                  "secureConnectionStart": 30,
+                  "connectEnd": 62.200000286102295,
+                  "requestStart": 62.30000019073486,
+                  "responseStart": 125.40000009536743,
+                  "responseEnd": 242.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 125.40000009536743,
+                "FCP": 876,
+                "LCP": 1492,
+                "CLS": 0,
+                "INP": 0
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3490,
+                  "js": 34980,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 594,
+                  "other": 1181
+                },
+                "initialJsBytes": 34980,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22233,
+                "totalBytes": 221982,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6461,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 10,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.09999990463257,
+                "serverMs": 63.799999713897705,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.1999998092651367,
+                  "connectStart": 2.1999998092651367,
+                  "secureConnectionStart": 26.299999713897705,
+                  "connectEnd": 62,
+                  "requestStart": 62.09999990463257,
+                  "responseStart": 125.89999961853027,
+                  "responseEnd": 251.2999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 125.89999961853027,
+                "FCP": 856,
+                "LCP": 1496,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3489,
+                  "js": 34979,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 593,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22165,
+                "totalBytes": 221999,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6460,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 11,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 64.5,
+                "serverMs": 63.40000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.0999999046325684,
+                  "connectStart": 2.0999999046325684,
+                  "secureConnectionStart": 29.699999809265137,
+                  "connectEnd": 64.40000009536743,
+                  "requestStart": 64.5,
+                  "responseStart": 127.90000009536743,
+                  "responseEnd": 249.5
+                }
+              },
+              "webVitals": {
+                "TTFB": 127.90000009536743,
+                "FCP": 852,
+                "LCP": 1492,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3525,
+                  "js": 35041,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 598,
+                  "other": 1181
+                },
+                "initialJsBytes": 35041,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22185,
+                "totalBytes": 222082,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6526,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": -55,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.19999980926514,
+                "serverMs": 56.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 29.199999809265137,
+                  "connectEnd": 62.09999990463257,
+                  "requestStart": 62.19999980926514,
+                  "responseStart": 119.09999990463257,
+                  "responseEnd": 256.69999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 119.09999990463257,
+                "FCP": 900,
+                "LCP": 1516,
+                "CLS": 0,
+                "INP": 0
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3494,
+                  "js": 34979,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 591,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22238,
+                "totalBytes": 222002,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6465,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 60.40000009536743,
+                "serverMs": 63.90000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.10000038146972656,
+                  "domainLookupStart": 0.6000003814697266,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 28.100000381469727,
+                  "connectEnd": 60.30000019073486,
+                  "requestStart": 60.40000009536743,
+                  "responseStart": 124.30000019073486,
+                  "responseEnd": 242.30000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 124.30000019073486,
+                "FCP": 872,
+                "LCP": 1500,
+                "CLS": 0,
+                "INP": 0
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3488,
+                  "js": 35037,
+                  "css": 21009,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 596,
+                  "other": 1181
+                },
+                "initialJsBytes": 35037,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22166,
+                "totalBytes": 222055,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6464,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 10,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 55.09999990463257,
+                "serverMs": 65.10000038146973,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.0999999046325684,
+                  "connectStart": 2.0999999046325684,
+                  "secureConnectionStart": 26.300000190734863,
+                  "connectEnd": 55.09999990463257,
+                  "requestStart": 55.09999990463257,
+                  "responseStart": 120.2000002861023,
+                  "responseEnd": 242.09999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 120.2000002861023,
+                "FCP": 852,
+                "LCP": 1492,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3495,
+                  "js": 35036,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 35036,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22166,
+                "totalBytes": 222061,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6466,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.40000009536743,
+                "serverMs": 67.59999990463257,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5,
+                  "connectStart": 2.5,
+                  "secureConnectionStart": 30.40000009536743,
+                  "connectEnd": 61.40000009536743,
+                  "requestStart": 61.40000009536743,
+                  "responseStart": 129,
+                  "responseEnd": 249.90000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 129,
+                "FCP": 892,
+                "LCP": 1488,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3521,
+                  "js": 34986,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 600,
+                  "other": 1181
+                },
+                "initialJsBytes": 34986,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22257,
+                "totalBytes": 222045,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 2,
+                  "calibrationTargetBytes": 6528,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 54,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 62.09999990463257,
+            "ttfbServerMs": 63.799999713897705,
+            "webVitals": {
+              "TTFB": 125.40000009536743,
+              "FCP": 872,
+              "LCP": 1492,
+              "CLS": 0,
+              "INP": 8
+            },
+            "totalBytes": 222045,
+            "initialJsBytes": 34986,
+            "interactionBytes": 25194,
+            "requests": 33
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 222045,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 33,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        },
+        "warm": {
+          "effectiveUrl": "https://pm-front.robresearch87.workers.dev/qwik/pdp/896191-explosions-in-the-sky-all-of-a-sudden-i-miss-everyone/?n=24&run=pdp-batch1-2026-10-13",
+          "runs": [
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 57.40000009536743,
+                "serverMs": 66.5,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.8000001907348633,
+                  "domainLookupEnd": 2.3000001907348633,
+                  "connectStart": 2.3000001907348633,
+                  "secureConnectionStart": 26.199999809265137,
+                  "connectEnd": 57.40000009536743,
+                  "requestStart": 57.40000009536743,
+                  "responseStart": 123.90000009536743,
+                  "responseEnd": 243.80000019073486
+                }
+              },
+              "webVitals": {
+                "TTFB": 123.90000009536743,
+                "FCP": 852,
+                "LCP": 1500,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3491,
+                  "js": 34978,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 34978,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22237,
+                "totalBytes": 221999,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6462,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 6,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 66.5,
+                "serverMs": 72.89999961853027,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.799999713897705,
+                  "connectStart": 1.799999713897705,
+                  "secureConnectionStart": 31.299999713897705,
+                  "connectEnd": 66.39999961853027,
+                  "requestStart": 66.5,
+                  "responseStart": 139.39999961853027,
+                  "responseEnd": 257.7999997138977
+                }
+              },
+              "webVitals": {
+                "TTFB": 139.39999961853027,
+                "FCP": 864,
+                "LCP": 1508,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3494,
+                  "js": 34979,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 593,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22163,
+                "totalBytes": 222004,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6463,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 58.80000019073486,
+                "serverMs": 64.40000009536743,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.8000001907348633,
+                  "connectStart": 1.8000001907348633,
+                  "secureConnectionStart": 25.40000009536743,
+                  "connectEnd": 58.80000019073486,
+                  "requestStart": 58.80000019073486,
+                  "responseStart": 123.2000002861023,
+                  "responseEnd": 249.2000002861023
+                }
+              },
+              "webVitals": {
+                "TTFB": 123.2000002861023,
+                "FCP": 860,
+                "LCP": 1500,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3496,
+                  "js": 35036,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 35036,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22163,
+                "totalBytes": 222062,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6464,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 61.200000286102295,
+                "serverMs": 62.19999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 28.5,
+                  "connectEnd": 61.200000286102295,
+                  "requestStart": 61.200000286102295,
+                  "responseStart": 123.40000009536743,
+                  "responseEnd": 251.5
+                }
+              },
+              "webVitals": {
+                "TTFB": 123.40000009536743,
+                "FCP": 840,
+                "LCP": 1500,
+                "CLS": 0,
+                "INP": 0
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3494,
+                  "js": 34979,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 591,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22164,
+                "totalBytes": 222002,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6462,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 8,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 59.19999980926514,
+                "serverMs": 62.700000286102295,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0,
+                  "domainLookupStart": 0.5999999046325684,
+                  "domainLookupEnd": 2.5999999046325684,
+                  "connectStart": 2.5999999046325684,
+                  "secureConnectionStart": 27.59999990463257,
+                  "connectEnd": 59.09999990463257,
+                  "requestStart": 59.19999980926514,
+                  "responseStart": 121.90000009536743,
+                  "responseEnd": 248.90000009536743
+                }
+              },
+              "webVitals": {
+                "TTFB": 121.90000009536743,
+                "FCP": 868,
+                "LCP": 1492,
+                "CLS": 0,
+                "INP": 0
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3495,
+                  "js": 34979,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22166,
+                "totalBytes": 222004,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6466,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 57.69999980926514,
+                "serverMs": 62.69999980926514,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.5,
+                  "domainLookupEnd": 1.799999713897705,
+                  "connectStart": 1.799999713897705,
+                  "secureConnectionStart": 26.699999809265137,
+                  "connectEnd": 57.59999990463257,
+                  "requestStart": 57.69999980926514,
+                  "responseStart": 120.39999961853027,
+                  "responseEnd": 251.09999990463257
+                }
+              },
+              "webVitals": {
+                "TTFB": 120.39999961853027,
+                "FCP": 852,
+                "LCP": 1500,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3495,
+                  "js": 34979,
+                  "css": 20993,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 34979,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22234,
+                "totalBytes": 221984,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6464,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 6,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            },
+            {
+              "docCacheState": null,
+              "interactionSettled": true,
+              "ttfb": {
+                "travelMs": 62.09999990463257,
+                "serverMs": 61,
+                "raw": {
+                  "startTime": 0,
+                  "redirectCount": 0,
+                  "fetchStart": 0.09999990463256836,
+                  "domainLookupStart": 0.6999998092651367,
+                  "domainLookupEnd": 2.6999998092651367,
+                  "connectStart": 2.6999998092651367,
+                  "secureConnectionStart": 29.09999990463257,
+                  "connectEnd": 62,
+                  "requestStart": 62.09999990463257,
+                  "responseStart": 123.09999990463257,
+                  "responseEnd": 251.19999980926514
+                }
+              },
+              "webVitals": {
+                "TTFB": 123.09999990463257,
+                "FCP": 876,
+                "LCP": 1508,
+                "CLS": 0,
+                "INP": 8
+              },
+              "kb": {
+                "buckets": {
+                  "html": 3495,
+                  "js": 34978,
+                  "css": 21013,
+                  "fonts": 28072,
+                  "images": 132672,
+                  "data": 592,
+                  "other": 1181
+                },
+                "initialJsBytes": 34978,
+                "interactionBytes": 25194,
+                "instrumentationBytes": 22165,
+                "totalBytes": 222003,
+                "docAttribution": {
+                  "estimator": "loo-wire-normalised",
+                  "codec": "zstd",
+                  "quality": 3,
+                  "calibrationTargetBytes": 6464,
+                  "calibrationTargetSource": "encoded-body",
+                  "calibrationResidualBytes": 5,
+                  "contentEncoding": "zstd"
+                }
+              },
+              "requests": {
+                "counted": 33,
+                "instrumentation": 3
+              }
+            }
+          ],
+          "medians": {
+            "ttfbTravelMs": 59.19999980926514,
+            "ttfbServerMs": 62.700000286102295,
+            "webVitals": {
+              "TTFB": 123.2000002861023,
+              "FCP": 860,
+              "LCP": 1500,
+              "CLS": 0,
+              "INP": 8
+            },
+            "totalBytes": 222003,
+            "initialJsBytes": 34979,
+            "interactionBytes": 25194,
+            "requests": 33
+          },
+          "resourceProfile": {
+            "cpuMs": {
+              "value": null,
+              "source": "unavailable here, the deployed plane's accounting is Workers observability's per-invocation $workers.cpuTimeMs (harvestable via POST /accounts/{id}/workers/observability/telemetry/query with an API token; observability.enabled is already on for every plane Worker; verified against Cloudflare docs 2026-07-09), which arms with the deploy leg. Locally, use the inspector profiler against wrangler dev."
+            },
+            "bytes": {
+              "value": 222003,
+              "source": "resource-timing transferSize (compressed over-wire, instrumentation stripped), median of runs"
+            },
+            "requests": {
+              "value": 33,
+              "source": "resource-timing entry count + document (instrumentation stripped), median of runs"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -87,6 +87,7 @@
  * @property {{ label: string }} runLocation
  * @property {{ id: string }} profile
  * @property {number} runsPerUrl
+ * @property {{ quiescence?: string }} [harness]
  * @property {Target[]} targets
  */
 /** @typedef {import("./fit.mjs").FitSpec} FitSpec */
@@ -415,6 +416,35 @@ export function bundleFromReceipt(receipt, fitSpec, receiptUrl, surfaceVariants)
       `front lab: FIT.${surfaceName} declares the interaction "${fitSpec.interactionId}" but this batch ` +
         `drove "${interactionId}", re-run the batch with the declared interaction, or change the ` +
         `declaration deliberately and rewrite the sentence with it`,
+    );
+  }
+
+  // The MECHANISM behind those flags, attested in the artifact (ADR-0001
+  // addendum R's bound obligation, landed 2026-10-13 by the measurement
+  // pass's PR-2 in the same commit as the first receipts that satisfy it).
+  // Until 2026-08-28 the runner's "settled" was Playwright's networkidle
+  // LATCH, which had already closed during load, so every pre-fix receipt
+  // carries `interactionSettled: true` on every run, earned by nothing, and
+  // its VALUES are indistinguishable from an honest receipt's. The runner
+  // now stamps `harness.quiescence: "in-flight-tracked"` from the code that
+  // does the tracking (bench-runner batch.ts). UNCONDITIONAL here: the
+  // absence-tolerant reading ("absent means the weaker pre-fix guarantee")
+  // would have let the three 1c543ac receipts keep publishing, the exact
+  // artifacts this gate exists to retire. Compared against the literal, not
+  // against presence, so a receipt naming another mechanism is refused too.
+  // Stated limit: the attestation is the runner's WORD in the artifact
+  // (batch.ts writes the literal), not something the gate can derive from
+  // the runs, so a pre-fix receipt with the key added by hand admits here
+  // and nothing in a JSON file can prove which code wrote it. Review and
+  // `pnpm bench reproduce` are what hold that; the measurement pass's
+  // sabotage table records the miss as a row (R6), not as coverage.
+  if (receipt.harness?.quiescence !== "in-flight-tracked") {
+    // refusal: no-quiescence-attestation
+    throw new Error(
+      `front lab: ${receiptUrl} does not attest harness.quiescence "in-flight-tracked" ` +
+        `(found ${JSON.stringify(receipt.harness?.quiescence)}), so its interactionSettled flags were ` +
+        `produced by the pre-2026-08-28 networkidle latch, which had already closed during load, and are ` +
+        `earned by nothing (ADR-0001 addendum R); not publishable`,
     );
   }
 

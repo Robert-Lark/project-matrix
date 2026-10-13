@@ -9,8 +9,9 @@
  * rather than proving the gate against an artifact that could never exist.
  *
  * Rows the generator flags `schemaValid: false` are the deliberate
- * exceptions, a wrong `kind`, a second receiptVersion, a null run value,
- * and each is asserted to FAIL the schema, so the flag cannot go stale.
+ * exceptions, a wrong `kind`, a second receiptVersion, a null run value, a
+ * quiescence mechanism other than the one literal the schema admits, and
+ * each is asserted to FAIL the schema, so the flag cannot go stale.
  *
  * Cross-workspace read by path: `@pm/bench-runner#test` is uncached in
  * turbo.json for exactly this class of read.

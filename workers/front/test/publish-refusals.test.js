@@ -26,8 +26,9 @@
  *    skeptic lens: the first draft counted labels, and 19 of 29
  *    condition-level mutants passed it);
  *  - CONTROL rows that must PASS: the valid fixtures admit and publish a
- *    sentence with bands, and the three receipts the plane actually
- *    publishes admit through the same call build.mjs makes.
+ *    sentence with bands, and every receipt the plane actually publishes
+ *    (six since the 2026-10-13 measurement pass, editorial and PDP, three
+ *    profiles each) admits through the same call build.mjs makes.
  */
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";

@@ -227,9 +227,14 @@ export const Receipt = z.object({
      * honest ones by their VALUES, the only thing that separates them is
      * which mechanism produced them, so the mechanism has to be recorded.
      *
-     * Optional, because receipts minted before this field existed cannot grow
-     * it retroactively; a publication gate treats its ABSENCE as the weaker
-     * pre-fix guarantee rather than reading a date and guessing.
+     * Optional in this SCHEMA, because receipts minted before the field
+     * existed cannot grow it retroactively and the runner must still parse
+     * them (`reproduce`, the cost calculator). The publication gate does
+     * NOT read absence as the weaker guarantee: since 2026-10-13 (the
+     * measurement pass's PR-2) `workers/front/lab/publish.mjs` refuses any
+     * receipt without this exact literal, landed in the same commit as the
+     * first receipts that carry it, so the pre-fix receipts are retired
+     * rather than tolerated.
      */
     quiescence: z.literal("in-flight-tracked").optional(),
   }),

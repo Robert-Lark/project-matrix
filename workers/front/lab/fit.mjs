@@ -72,15 +72,19 @@ export const FIT = {
      *
      * Editorial publishes it, and that is a measurement rather than an
      * assumption: across the committed receipts every column's INP sits inside
-     * one narrow band, published medians 24 ms throughout except react-next's
-     * 32 ms on average broadband, and every run of every variant between 24 and
-     * 32 ms. (The methodology page states that spread DERIVED from the
-     * receipts rather than typed, so it cannot go stale at the next batch; an
-     * earlier draft of this comment claimed a flat 24 ms everywhere and the
-     * receipts refuted it.) The async-handler asymmetry ADR-0001 addendum T
-     * describes exists here too, qwik's DOM change lands at 22.0 ms against
-     * 1.0-3.5 ms for the others, but it falls INSIDE the measured window, so
-     * the cell is like-for-like.
+     * one narrow band. On the 2026-10-13 batch (the first minted under the
+     * in-flight tracker) the warm medians are 24 or 32 ms in every column of
+     * every profile and the runs behind them span 24 to 40 ms, with three
+     * fast-wifi runs recording no INP at all (absent, not zero; the median is
+     * over the runs that produced a value, as the methodology page says). The
+     * 2026-08-17 batch read 24 ms throughout except react-next's 32 ms on
+     * average broadband, with runs between 24 and 32; an earlier draft of this
+     * comment claimed a flat 24 ms everywhere and the receipts refuted it, so
+     * the methodology page states the spread DERIVED from the receipts rather
+     * than typed, and nothing here is a published figure. The async-handler
+     * asymmetry ADR-0001 addendum T describes exists here too, qwik's DOM
+     * change lands at 22.0 ms against 1.0-3.5 ms for the others, but it falls
+     * INSIDE the measured window, so the cell is like-for-like.
      */
     interactionTiming: { publish: true },
     /**
@@ -150,6 +154,16 @@ export const FIT = {
      *   pdp-gallery-switch, slow-4g          qwik  0 ms  (runs 0, 8, 0)
      *   pdp-add-to-cart,    avg-broadband   qwik  8 ms
      *   pdp-add-to-cart,    slow-4g          qwik 24 ms
+     *
+     * That probe is the dated origin of the decision and has no committed
+     * artifact; the committed evidence is the 2026-10-13 batch (seven runs,
+     * the receipts beside this file and under lab/unpublished/): gallery
+     * qwik 8 ms on average broadband (8, 8, 8, 8, 8, 0, 8) and on slow-4G
+     * (8, 8, 8, 0, 0, 8, 8) against 24 on fast-wifi; add-to-cart qwik 8 ms
+     * on average broadband and fast-wifi (every run 8) against 24 on
+     * slow-4G; the other three 24 ms throughout, react-next 32 on slow-4G
+     * for add-to-cart. Which condition carries the race moves; that it is
+     * qwik's column does not.
      *
      * One column swinging 0 → 24 across conditions while the others hold at 24
      * is not a measurement of responsiveness, and the direction flatters the
