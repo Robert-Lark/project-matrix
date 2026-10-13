@@ -1,0 +1,31 @@
+# gate-bites, 2026-10-13T02:04:24Z, worktree a0ae215 + this commit's uncommitted edits
+$ git stash push -- workers/front/lab/receipts   # restores the three tracked 1c543ac editorial receipts; the untracked pdp-* stay
+Saved working directory and index state WIP on measurement-pass-receipts: a0ae215 Repo hygiene: four guarded one-liners, three calls recorded as Rob's (#53)
+$ for f in workers/front/lab/receipts/editorial-*.json; do jq -r ...; done
+editorial-avg-broadband-desktop.json 1c543ac harness.keys=browser,browserVersion,settleMs
+editorial-fast-wifi-laptop.json 1c543ac harness.keys=browser,browserVersion,settleMs
+editorial-slow-4g-mid-phone.json 1c543ac harness.keys=browser,browserVersion,settleMs
+$ pnpm --filter @pm/front run build 2>&1 | grep "front lab"; echo "build exit=${PIPESTATUS[0]}"
+front lab: /_pm/lab/receipts/editorial-avg-broadband-desktop.json does not attest harness.quiescence "in-flight-tracked" (found undefined)
+build exit=1
+$ git stash pop
+Dropped refs/stash@{0} (6d843d8145222160b9b7689402978b5694b976a0)
+$ for f in workers/front/lab/receipts/*.json; do jq -r ...; done
+editorial-avg-broadband-desktop.json a0ae215 in-flight-tracked
+editorial-fast-wifi-laptop.json a0ae215 in-flight-tracked
+editorial-slow-4g-mid-phone.json a0ae215 in-flight-tracked
+pdp-avg-broadband-desktop.json a0ae215 in-flight-tracked
+pdp-fast-wifi-laptop.json a0ae215 in-flight-tracked
+pdp-slow-4g-mid-phone.json a0ae215 in-flight-tracked
+$ pnpm --filter @pm/front run build 2>&1 | tail -2; echo "build exit=${PIPESTATUS[0]}"
+front: stamped dist/_pm/build.json and dist/how-it-was-built/index.html (a0ae215, dirty)
+front: dist assembled (home + methodology + how-it-was-built + /pm fonts + /_pm instrumentation + lab bundle + _headers)
+build exit=0
+$ jq -c "{surface, profiles:(.profiles|keys)}" workers/front/dist/_pm/lab/pdp.json workers/front/dist/_pm/lab/editorial.json
+{"surface":"pdp","profiles":["avg-broadband-desktop","fast-wifi-laptop","slow-4g-mid-phone"]}
+{"surface":"editorial","profiles":["avg-broadband-desktop","fast-wifi-laptop","slow-4g-mid-phone"]}
+$ ls workers/front/dist/_pm/lab/receipts/ | wc -l; ls workers/front/dist/_pm/lab/ | grep -c unpublished
+       6
+0
+$ git stash list | wc -l
+       0

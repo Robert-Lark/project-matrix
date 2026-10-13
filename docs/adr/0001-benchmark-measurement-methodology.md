@@ -985,6 +985,13 @@ an exposure this unit did not create and does not widen; it is what main
 publishes today. If the re-run is declined, the gate cannot land and this
 paragraph is the record of why.
 
+**Landed, 2026-10-13 (`measurement-pass` PR-2).** The gate is
+`workers/front/lab/publish.mjs`, refusal site `no-quiescence-attestation`,
+unconditional, in the same commit as the re-run editorial receipts and the
+PDP's first, all minted at the plane's attested SHA with the field stamped. The
+three pre-2026-08-28 receipts are gone from `lab/receipts/`; the paragraph
+above is now the record of why the gate waited, not of an exposure.
+
 ## Addendum: the transport floor's bytes, named (2026-09-18, `security-floor`)
 
 **U. Three response headers ride every measured response, identically, and

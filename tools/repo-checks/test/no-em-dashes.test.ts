@@ -10,9 +10,12 @@
  * What is EXEMPT, and why each one is a fact rather than a preference:
  *  - the frozen crate (`tools/snapshot-capture/crate/`): Discogs' own
  *    release text, hashed by the manifest (ADR-0002), not ours to edit;
- *  - the three minted receipts (`workers/front/lab/receipts/`): measurement
- *    records whose text fields are not rendered anywhere, and whose
- *    provenance rules bar editing after the fact;
+ *  - (the three minted receipts under `workers/front/lab/receipts/` were
+ *    exempt until 2026-10-13: measurement records whose provenance rules
+ *    bar editing after the fact. The measurement pass re-minted every
+ *    receipt the build reads on that day, none carries the glyph, so the
+ *    exemption was dead and is gone; a receipt is held to the rule like
+ *    any other tracked file);
  *  - the GitHub-anchor evidence (`packages/reference/test/fixtures/
  *    github-heading-anchors.json` and `packages/reference/test/
  *    reference.test.ts`): they pin how GitHub slugs an em-dash heading,
@@ -36,7 +39,6 @@ const EM_DASH = "\u2014";
 const EXEMPT: readonly RegExp[] = [
   /^pnpm-lock\.yaml$/,
   /^tools\/snapshot-capture\/crate\//,
-  /^workers\/front\/lab\/receipts\/[^/]+\.json$/,
   /^packages\/reference\/test\/fixtures\/github-heading-anchors\.json$/,
   /^packages\/reference\/test\/reference\.test\.ts$/,
 ];
