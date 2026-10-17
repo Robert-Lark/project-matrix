@@ -9483,3 +9483,152 @@ without a timeout; the checkout line list without `tabindex`; the react-next
 `not-found.tsx` and `plp-error.tsx` slot claims; the deployed plane's h2/h3
 header bytes stated from RFC tables; the snapshot-capture node's 455 against
 the summaries' 456 priced releases.
+
+### `measurement-pass`: narrative moved from the decision map (2026-10-17)
+
+The decision map's `measurement-pass` node resolved on 2026-10-17 (PR-3 of the
+pass, unit 1 of the 2026-08-29 audit) and was compacted to the shape the map's
+own header states, the question, the decisions with their tradeoffs, and what
+is owed, under the cap `tools/repo-checks/test/decision-map-node-cap.test.ts`
+enforces on resolved nodes; the map links here. The paragraphs below stood in
+that node until then and are moved here verbatim, in their original order;
+what the node kept (the question, the answer, the option-(a) tradeoff, the
+three-PR finding, and the PR-2 and PR-3 decisions and owed lists) is not
+repeated.
+
+- **The mechanism, at source.** The edge keys the bypass on the TRAY request's own `?cache=cold` (`workers/edge/src/index.js:62`). The request-time variants fetch the tray server-side with no query string (`variants/react-next/src/lib/edge.ts:25,:35`, `variants/qwik/src/lib/edge.ts:85`, `variants/htmx/src/index.js:94,:99`), so under the cold column those fetches read KV every run, the same tier as warm. The receipt's minted method note (`tools/bench-runner/src/batch.ts:350` at `360f90a`) said the columns "measure the edge tier". Artifact and method disagreed; the receipt data already showed it (cold ≈ warm server think-time for all three). Build-time variants (vanilla, astro) make no runtime fetch, so cold ≡ warm there by construction. Net: on editorial and PDP the cold column reaches R2 for **no target**.
+
+- **Blast radius is bounded.** The site publishes the warm column only (`workers/front/build.mjs:1032-1036` at `360f90a`). No published cell reads cold. The defect was in the record, not in a number.
+
+- **PR-1 also lands the route-level fence (owed item (4) above).** `fencedPaths()`/`fencedPathOf()` in `packages/switcher/src/config.ts:210-219, :251-267` derive the fenced set from `fencedExhibits` plus `strategies[].fenced` and match by URL-resolved, percent-decoded segment (`pathSegments`/`decodeSegment`, `:224-241`), so `react-next/plp/apollo`, `/./react-next/plp/apollo/`, `/react-next/plp/apollo?cache=cold` and `/react-next/plp/%61pollo/` all resolve to the exhibit, while `/react-next/plp/plain/` and `/react-next/plp/apollo-two/` do not. The runner refuses the target in `tools/bench-runner/src/batch.ts:162-182` (`assertBenchableTarget`, called at `:203` before any origin fetch); its twin `resolvedPathSegments` (`:144-160`) decodes the same way so the receipt's variant/surface labels agree with the fence. The front build mirrors the check at receipt ingest (`workers/front/build.mjs:732-737`), so a hand-edited or pre-fence receipt cannot publish. Drift tests pin the registries together in `tools/origin-suite/suite/bench.browser.test.ts:394-408` (every `fencedExhibits` variant), `:410-452` (every fenced strategy in every alias shape the runner accepts, the percent-encoded one at `:437`) and `:468` (`runBatch` rejects the slashless 308 shape before driving anything). Not covered: a segment that decodes to contain `/` (`%2F`) is not re-split; whether the app routes such a path is unverified.
+
+### The constant that waited for its plane, and the pin that left with it (2026-10-17)
+
+This is PR-3 of the measurement pass, the last open item in the 2026-08-29
+audit runbook. It could not run before today for the two reasons the pass's
+own gates state: the chrome constant must describe the fragment the plane
+ships (ADR-0001 addendum P, the identity gate), and it must be measured on a
+plane that attests the checkout it is minted from (addendum Q), and the chrome
+with both lab bundles populated did not exist on any plane until PR-2 (#54,
+`770a6d8`) deployed. The deploy ran green end to end, the post-deploy smoke
+included, which means the qwik quantity-stepper assertion that had failed
+four deployed smokes in a row passed on this one; recorded, not explained,
+and still Rob's.
+
+**The tree, and the plane.** Worktree `.claude/worktrees/measurement-pass-constant`
+on branch `measurement-pass-constant` at `origin/main` = `770a6d8`, porcelain 0,
+`pnpm install --offline`, `pnpm run check` 40 of 40 (31 cached, 14.88 s)
+before anything was touched. `/_pm/build.json` answered `770a6d8`,
+`dirty: false`, by `curl` and by a Node `fetch` under `NODE_EXTRA_CA_CERTS`,
+and `/_pm/lab/pdp.json` carried three profiles, so the plane was serving
+PR-2's publication. Chromium was Playwright 1.61.1's revision 1228,
+`149.0.7827.55`, the build PR-2's receipts name.
+
+**The probe, as it ran.** `chrome-constant.mjs` against the deployed origin,
+`/vanilla/editorial/`, `slow-4g-mid-phone`, seven runs per condition,
+ABBA-interleaved, 01:33:41Z to 01:34:13Z: 32 seconds, not the runbook's two
+to five minutes, because the probe re-fulfills the padded document locally
+and the throttle governs only the chrome's real subresources. The plane
+attested `770a6d8` before and after; the probe checks that itself. Medians
+with the chrome 700 ms first and largest paint against 628 ms without,
+**+72 ms FCP, +72 ms LCP, 0 CLS, 0 ms long tasks**, with two non-zero
+long-task samples (118 and 51 ms) both in the with-chrome condition, the
+one-sided signal addenda N and Q recorded before, with a confound the
+skeptic lens named: the probe's first visit is always a with-chrome visit
+on a cold browser, and in every artifact this project holds the largest
+with-sample is that first run (1,064 ms here). The medians survive it; the
+published range and the one-sided reading lean on it, so a discarded
+warm-up visit is owed to the probe, not to this PR. Wire **2,392 B brotli at
+the calibrated q4**, residual −3 B on the 4,787 B compressed body. Against the
+record: the deployed-plane constants published before read +104, +76 and
++88; the local-plane interims +224/+216, +208 and +236 were recorded and
+never published.
++72 sits 4 ms under the low edge of the deployed band and 164 ms under the
+local interim; the first with-chrome run read 1,064 ms and the median did its
+job. The brief's stop condition, "far outside", did not fire. The fragment
+measured is the largest yet, 12,171 B against 12,131 and 12,023, because
+PR-2's receipts populate two surfaces' slots, and the wire figure moved with
+it (2,322 and 1,913 before). Every number is in `constant-2026-10-17.md`.
+
+**Landing it.** The artifact copied byte-identical into
+`workers/front/lab/chrome-constant.json`, absent on `main` since
+`interaction-registry` removed the stale one, and the front build ADMITTED it:
+the fragment this tree renders for `vanilla/editorial` at `SJC` hashes
+`dc5a776b7424…`, the sha256 the probe recorded against the deployed plane. No
+local interim, no second pass: addendum P's two-pass cycle collapses to one
+when the plane already serves the publication, which is exactly why the pass
+was three PRs. `/methodology/` now states the constant from the artifact
+(the absent-state sentence occurs 0 times in the built page) and the suite
+leg that asserts both directions reads the populated one.
+
+**The pin.** `publish.mjs` exported `BOOTSTRAP_CONSTANT_COMMIT` and
+`admitChromeConstant` skipped the origin-provenance check for a constant
+pinned to it: the 2026-08-16 bootstrap predated the plane's attestation and
+proved its identity by fragment hash alone. With a constant that carries the
+attestation, the exemption is a second admission path and nothing else, so it
+is gone and the check is unconditional. The three fixture rows that prove the
+refusal pin the fixture SHA, not the bootstrap, and did not change; the
+refusals suite's marker map still holds, 48 throw sites, 48 markers, 76 tests
+green, and the runner-side schema leg 43.
+
+**The words.** Addendum U flagged "addendum O's phrase 'headers-included
+`transferSize`'" for this pass. Read for it, addendum O carries no header
+wording at all (`grep -n -i header` over its lines: nothing); the phrase was
+the runner's, three comments in `collect.ts` and one in `receipt.ts`, each
+now saying what U established: the compressed body plus the spec's fixed
+300-octet stand-in, never the real header bytes. The arithmetic was never
+wrong; the words were, and the flag's address was too. ADR-0001 says so in a
+dated correction under O and a dated "Landed" note under Q; the flag at U
+stays as written, because it is the record of the flag.
+
+**The node, resolved under the cap.** `measurement-pass` stood at 6,401 B
+open; resolving it put it under the 7,168 B cap for the first time. Three
+paragraphs (the mechanism at source, the blast radius, PR-1's fence), 2,437 B
+by the guard's own `splitNodes` rule, moved verbatim to the sub-entry above; the node keeps the question, the
+answer, the option-(a) tradeoff, the three-PR finding and the PR-2 and PR-3
+decisions and owed lists, 5,736 B by the guard's own `splitNodes`. The log
+was 770,957 B when this unit started and the third ceiling observation stands
+at 786,432 B; this entry was written to fit under it, so no re-observation
+was needed (the size after this entry is in the verification paragraph).
+
+**Verification, in the standing order.** `pnpm run check` 40 of 40 three
+times (baseline, after the edits, after staging). The origin suite ALONE,
+fixture mode 670 of 670 in 151.74 s; crate mode's first attempt died in the
+first recorded plane class, wrangler 4.110's front crash (the empty
+`✘ [ERROR]`, the "please create an issue" banner, 262 refused connections,
+374 legs red after 459 served responses), and its re-run alone passed 670 of
+670 in 146.66 s (`suite-runs-2026-10-17.md`). The sabotage table
+(`sabotage-constant.mjs`, round 1): 22 rows, 13 caught, 7 controls passed, 1
+expected miss (P5, the pin re-introduced admits a bootstrap-shaped constant,
+which is the point), and one MISSED row that was the row's fault and a
+finding about the guard: re-dating the sub-entry heading does not fail the
+completeness leg, which pairs log and map by node name with the date as a
+wildcard; the exactness leg holds the date, and the row re-aimed at the suite
+was caught. The real artifact through the real build: a cross-tree
+`originCommit`, the bootstrap shape with no attestation, a dirty origin, each
+refused by provenance; an edited `sha256` refused by the identity gate by the
+fragment's name. Verify-slice (`.claude/workflows/verify-slice.js` by
+scriptPath, four lenses in sequence, the scratchpad as the findings dir,
+probing inline meanwhile): 17 raw findings, 11 distinct, 0 refuted, 9 folded and two held open as stated limits with owed follow-ups, the median-versus-runs gate gap and the cold first visit; the folds that mattered were the wrong addendum letter in the Q note, a fourth header comment the phrase search missed, and the runner scoring a crashed guard as a catch, fixed before round 2 (23 rows, 14 caught, 7 controls, 0 missed, 2 expected misses, 0 runner errors) (`verify-slice-2026-10-17.md`). Inline
+probes of my own: `admitChromeConstant` has one caller (`build.mjs`); no
+served copy carries an older constant's figure; the built methodology page
+no longer renders the local-origin caveat and does render the order-of-
+magnitude scope; the em-dash guard walks `git ls-files`, so every new file
+was staged before the guard and the table ran. The folded tree ran the fixture suite alone
+again: a second wrangler crash late in the run (5,600 served lines, then the
+banner), then issue #16's INP-null flake on one leg of 670, then 670 of 670
+in 149.86 s; twice in six runs is a crash rate worth weighing with the
+wrangler bump. Masters regenerated
+byte-identical (the entry sits below every `## Phase` heading, so no line
+anchor moved). The log is 783,327 B against the 786,432 B ceiling.
+
+**Left for Rob, carried forward.** The push, the PR and the merge, which
+deploys the constant; the readiness check for the application link, with a
+fresh audit folded into it, now that the runbook is complete. Unchanged from
+the 2026-10-13 entry's list: the qwik quantity-stepper smoke assertion (four
+reds, then this deploy's green); the Discogs API Terms (no application link
+while open); branch protection on `main` and the parked worktrees; wrangler
+4.110's crashes under load (4.151.1 available today); `pm-warm`'s plan;
+`CdpConnection.send()` without a timeout; the checkout line list's
+`tabindex`; the react-next slot claims; the deployed h2/h3 header bytes from
+RFC tables; snapshot-capture's 455 against 456; home's PLP row.

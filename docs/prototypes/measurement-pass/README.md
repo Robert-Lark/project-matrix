@@ -30,3 +30,27 @@ The gate the pass adds is one refusal site in `workers/front/lab/publish.mjs`
 `workers/front/test/fixtures/publish/generate.mjs`; the evidence receipts and their
 README are in `workers/front/lab/unpublished/`. Numbers quoted in the records come
 from the commands these files show, never from a tally by eye.
+
+## PR-3: the chrome constant (2026-10-17)
+
+The pass's last PR, recorded in the build-log entry "The constant that waited for its
+plane, and the pin that left with it (2026-10-17)" and the resolved `measurement-pass`
+node (its PR-3 bullet). Same directory, dated files:
+
+- `constant-2026-10-17.md`: the probe as it ran against the deployed plane at the
+  attested `770a6d8`, every run's values, the done-check, the identity gate's outcome
+  (admitted, no local interim), the pin's removal and the wording correction, each with
+  the command that produced the figure.
+- `sabotage-constant.mjs`: the runner, re-rowed for this PR (the constant through the
+  real front build under four defects and two stated-limit rows, the pin re-introduced
+  and a hand-edited delta no gate reconciles with the runs; the marker map; the resolved node's cap and both pointer legs; the glyph rule
+  over the staged record; the log's size ceiling; the masters' anchors).
+  `SCRATCH=<dir> node docs/prototypes/measurement-pass/sabotage-constant.mjs [rowId…]`
+  from the repo root, after `git add` of the new files, with nothing else running.
+- `sabotage-2026-10-17.md`: the table, with CONTROL rows.
+- `suite-runs-2026-10-17.md`: every origin-suite run of this PR, fixture and crate mode.
+- `verify-slice-2026-10-17.md`: the lenses' findings, folds and refutations.
+
+The published artifact is `workers/front/lab/chrome-constant.json`, served verbatim at
+`/_pm/lab/chrome-constant.json`; the gate that admits it is `admitChromeConstant` in
+`workers/front/lab/publish.mjs`, now without the `BOOTSTRAP_CONSTANT_COMMIT` exemption.

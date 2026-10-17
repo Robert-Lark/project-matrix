@@ -426,9 +426,10 @@ function bucketOf(url: string): keyof RunSampleT["kb"]["buckets"] {
 export interface DocumentAttribution {
   /** Which rule attributed the document's wire bytes (see block comment).
    *  The two fallback labels are DISTINCT on purpose: "no-encoded-size"
-   *  means the caller could not supply the compressed body size (so the
-   *  headers-included transferSize was the only target and identity could
-   *  not be verified); "fallback" means calibration ran and every
+   *  means the caller could not supply the compressed body size (so
+   *  transferSize, the compressed body plus the spec's 300-octet constant,
+   *  not the real headers, ADR-0001 addendum U, was the only target and
+   *  identity could not be verified); "fallback" means calibration ran and every
    *  leave-one-out marginal vanished on a degenerate document. An auditor
    *  must be able to tell them apart from the artifact alone. */
   estimator:
@@ -456,9 +457,12 @@ export interface DocumentAttribution {
    *  (a residual without its denominator is not a bound). */
   calibrationTargetBytes: number | null;
   /** WHAT the target was: the compressed body (the honest fit) or the
-   *  headers-included transferSize fallback when the browser exposed no
-   *  encodedBodySize. A fallback fit is labeled so the publication gate can
-   *  refuse it, a header-padded target is not a body fit (loo only). */
+   *  transferSize fallback when the browser exposed no encodedBodySize.
+   *  transferSize is the compressed body plus a fixed 300 octets the spec
+   *  substitutes for the headers (ADR-0001 addendum U), so the fallback
+   *  target is padded by a constant, never by the real header bytes. A
+   *  fallback fit is labeled so the publication gate can refuse it, a
+   *  padded target is not a body fit (loo only). */
   calibrationTargetSource: "encoded-body" | "transfer-size" | null;
   /** model(body, quality) − the calibration target, in bytes (loo only). */
   calibrationResidualBytes: number | null;
@@ -665,8 +669,9 @@ function calibrateQuality(
  * html/js/data/instrumentation (see the block comment above): level from
  * `transferSize`, ratios from leave-one-out brotli marginals at the quality
  * calibrated against `encodedBodySize` (the compressed body the browser
- * actually received; falls back to `transferSize`, headers included, and
- * the recorded residual then shows it, when the caller has no body size).
+ * actually received; falls back to `transferSize`, the body plus the
+ * spec's fixed 300-octet header stand-in (ADR-0001 addendum U), and the
+ * recorded residual then shows it, when the caller has no body size).
  * `body` is the exact decoded bytes the browser received (chrome injection
  * already applied). An identity-encoded response (no compression on the
  * wire) uses uncompressed share, which is exact there, not an estimate.
@@ -701,7 +706,8 @@ export function decomposeDocument(
   for (const s of segments) uncompressed[s.label] += utf8Len(s.text);
 
   // The identity claim needs the real compressed-body size: transferSize
-  // includes response HEADER bytes (Resource Timing §4.6.2), so on a small
+  // is the compressed body plus the fixed 300 octets Resource Timing
+  // substitutes for the headers (ADR-0001 addendum U), so on a small
   // well-compressed document the fallback target can exceed docBytes and
   // would otherwise mislabel a compressed response as identity-encoded with
   // no recorded residual (verify-slice, this unit). Without encodedBodySize
