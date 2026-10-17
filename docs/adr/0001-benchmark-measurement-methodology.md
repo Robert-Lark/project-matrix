@@ -615,6 +615,25 @@ L→N cycle now enforced by mechanism. (4) The floors sentence leaves
 `/methodology/` in the re-run commit, with its pin in
 `published-readings.test.ts` moving in the same commit.
 
+**Corrected, 2026-10-17 (`measurement-pass` PR-3): the addendum-U flag, and
+O's runbook step (3).** Addendum U flagged "addendum O's phrase
+'headers-included `transferSize`'" for the measurement pass to correct.
+Read for it, O carries neither that phrase nor any header wording: its one
+statement on the matter is that `transferSize` is the authority on the
+LEVEL, which stands. The phrase, and its paraphrase "includes response header bytes", lived in
+the runner and its test: four comments in `tools/bench-runner/src/collect.ts`,
+one in `receipt.ts`, and two in the origin suite's `decompose.test.ts` (the
+verify-slice conformance lens found the three the phrase search missed), and
+each now says what U established: `transferSize` is the compressed body plus the
+spec's fixed 300-octet stand-in for the headers, never the real header
+bytes. The fallback's arithmetic was never affected (it adds and subtracts
+nothing for headers); the words were. Step (3) of the runbook above is
+discharged in the same PR: the constant was re-measured against the
+deployed plane serving PR-2's receipts, at the attested merge SHA, and the
+P gate admitted it with no local interim, because the fragment that plane
+serves is the fragment this tree's build renders. The pin that step tolerated
+is gone (Q, below).
+
 **P. Addendum-N hole 1 closed: the constant is bound to the fragment that
 ships, by hash.** The chrome-constant probe records the measured fragment's
 sha256 AND its full render context (variant/surface/pathname/search read
@@ -688,6 +707,17 @@ as the dilution itself. The timing figures supersede N's +104/+104
 (measured against the same plane; the deltas moved with the plane's own
 run-to-run spread, which is why the constant publishes as an order of
 magnitude, never a per-profile equality, addendum F's scope note stands).
+
+**Landed, 2026-10-17 (`measurement-pass` PR-3).** The grandfathering above
+is over on both counts. The pre-attestation receipts left with PR-2 (T,
+Landed), and the one pinned exemption for the constant,
+`BOOTSTRAP_CONSTANT_COMMIT` in `workers/front/lab/publish.mjs`, left with
+this PR: the published constant is the deployed-plane measurement at the
+attested merge SHA, `originCommit` equal to its commit pin and clean, so
+`admitChromeConstant` now holds every constant to the bar this addendum set
+for receipts, with no second admission path. The fixture rows that prove the
+refusal (`cc-cross-tree`, `cc-dirty-origin`, `cc-unattested`) pin a fixture
+SHA, not the bootstrap, and were unchanged by the removal.
 
 ## Addendum: the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, `interaction-registry`)
 

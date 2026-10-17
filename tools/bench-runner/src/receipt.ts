@@ -96,7 +96,8 @@ export const RunSample = z.object({
          *  artifact alone. */
         calibrationTargetBytes: z.number().nullable().optional(),
         /** "encoded-body" (the honest fit) or "transfer-size" (the
-         *  headers-included fallback, publishable never). */
+         *  fallback, the body plus the spec's fixed 300-octet header
+         *  stand-in, ADR-0001 addendum U; publishable never). */
         calibrationTargetSource: z.string().nullable().optional(),
         calibrationResidualBytes: z.number().nullable(),
         /** The document response's content-encoding, verbatim, a model

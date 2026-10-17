@@ -247,8 +247,8 @@ writeFileSync(
 // The chrome constant (ADR-0001 addendum F) is OPTIONAL-BUT-VALIDATED,
 // absent, the methodology page renders its designed "not yet measured"
 // statement; present, it meets the full refusal set in publish.mjs
-// admitChromeConstant (kind/dirty, finite deltas, provenance with the
-// bootstrap pin, populated, renderContext, and the addendum-N hole-1
+// admitChromeConstant (kind/dirty, finite deltas, the unconditional
+// origin-provenance bar, populated, renderContext, and the addendum-N hole-1
 // IDENTITY gate: the build re-renders the fragment the Worker will serve,
 // the REAL renderer against the lab bundles written above, under the exact
 // renderContext the probe recorded, and refuses when the sha256 differs).

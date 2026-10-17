@@ -154,17 +154,6 @@ export const CODEC_FOR_ENCODING = Object.freeze({
 const COMPRESSED_ENCODINGS = new Set(Object.keys(CODEC_FOR_ENCODING));
 
 /**
- * The chrome constant is held to the SAME origin-provenance bar as receipts
- * (ADR-0001 addendum Q). ONE artifact is exempt by explicit pin, the
- * bootstrap constant minted against the pre-attestation plane, whose
- * identity is proven by the fragment hash instead (its originCommit is null
- * AS A PRESENT FIELD, so absence-based grandfathering cannot be forged onto
- * future artifacts). Remove the pin when the post-re-run deployed-plane
- * re-measure replaces it (addendum O runbook, step 3).
- */
-export const BOOTSTRAP_CONSTANT_COMMIT = "49e00e51a991ee8002b24838c3bf245d2a0ce0c1";
-
-/**
  * The lab-publishing surfaces are the `labBundle`-flagged entries of the
  * switcher registry, one registry for the build, the Worker's served
  * bundles, and the origin suite's per-surface bundle leg, so registering a
@@ -990,16 +979,20 @@ export function admitChromeConstant(chromeConstant, deps) {
       );
     }
   }
-  // The provenance bar (ADR-0001 addendum Q), with the one pinned exemption
-  // (BOOTSTRAP_CONSTANT_COMMIT above).
-  if (chromeConstant.commit.sha !== BOOTSTRAP_CONSTANT_COMMIT) {
-    const oc = chromeConstant.originCommit;
-    if (!oc || oc.dirty !== false || oc.sha !== chromeConstant.commit.sha) {
-      // refusal: cc-provenance
-      throw new Error(
-        "front lab: the chrome constant's origin attestation is missing, dirty, or names a different tree than its commit pin, an unattested or cross-tree constant is not publishable (ADR-0001 addendum Q)",
-      );
-    }
+  // The provenance bar (ADR-0001 addendum Q), unconditional. Until
+  // 2026-10-17 one artifact was exempt by an explicit SHA pin, the bootstrap
+  // constant minted 2026-08-16 against the pre-attestation plane, whose
+  // identity the fragment hash proved instead; the deployed-plane re-measure
+  // at the attested merge SHA replaced it (measurement-pass PR-3), so the
+  // pin is gone and every constant must carry the attestation the receipts
+  // carry. A pinned exemption is a second admission path, and the record
+  // keeps only this one.
+  const oc = chromeConstant.originCommit;
+  if (!oc || oc.dirty !== false || oc.sha !== chromeConstant.commit.sha) {
+    // refusal: cc-provenance
+    throw new Error(
+      "front lab: the chrome constant's origin attestation is missing, dirty, or names a different tree than its commit pin, an unattested or cross-tree constant is not publishable (ADR-0001 addendum Q)",
+    );
   }
   // The constant must describe the chrome that SHIPS. The strip's cost
   // scales with what it renders, and the populated state (receipt anchors +

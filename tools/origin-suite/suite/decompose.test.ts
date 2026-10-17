@@ -254,9 +254,9 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(gLow.attribution.quality, "gzip level knob is dead").not.toBe(gHigh.attribution.quality);
   });
 
-  it("the transfer-size fallback fit is labeled as such, a header-padded target is not a body fit", () => {
+  it("the transfer-size fallback fit is labeled as such, a padded target is not a body fit", () => {
     const wire = brotli(doc, 4);
-    const d = decomposeDocument(doc, wire + 700); // no encodedBodySize; headers inflate the target
+    const d = decomposeDocument(doc, wire + 700); // no encodedBodySize; a padded target (the spec adds a fixed 300, this pads more to make the miss unmistakable)
     expect(d.attribution.estimator).toBe("loo-wire-normalised");
     expect(d.attribution.calibrationTargetSource).toBe("transfer-size");
     // The publication gate refuses this source; the split still runs for
@@ -272,8 +272,9 @@ describe("the estimator (ADR-0001 §3 addendum 2026-08-15, superseding addendum 
     expect(sum(d)).toBe(docBytes + 300);
   });
 
-  it("never claims IDENTITY from the transferSize fallback, headers can outweigh compression on a small doc", () => {
-    // transferSize includes response header bytes, so for a small
+  it("never claims IDENTITY from the transferSize fallback, the fixed 300-octet pad can outweigh compression on a small doc", () => {
+    // transferSize is the compressed body plus the spec's fixed 300 octets
+    // (ADR-0001 addendum U), not the real header bytes, so for a small
     // well-compressed document the fallback target can exceed the decoded
     // size, which must label itself as the fallback it is, never as a
     // verified identity encoding (verify-slice, this unit).
