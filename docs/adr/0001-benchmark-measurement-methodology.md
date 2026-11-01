@@ -377,6 +377,21 @@ ran on the same plane under the same emulated network. **Bound
 obligation:** re-measure against the deployed plane once this ships, when
 that plane can render the chrome being measured.
 
+*The first visit, 2026-11-01 (post-runbook unit 1).* In every artifact this
+probe had published from the deployed plane, the largest with-chrome sample
+was run 0, the visit a freshly launched browser opened first, and three of
+the four carry a long-task sample there (55, 57 and 118 ms; two of them a
+second one later in the run, 64 and 51 ms at run 5), the 2026-10-17 record's
+verify-slice having named the shape. A medians delta mostly absorbs one spike, but a
+spike that always lands on one condition is a bias, not noise. The probe now
+opens one DISCARDED warm-up visit, without chrome, before run 0; every
+recorded visit still opens a fresh context (section 4), and the probe is
+addendum S's stated exception, routing in both arms with the cache off
+within every visit, so nothing can carry from the warm-up into run 0 either
+way: the warm-up heats the browser process and never a cache. The published constant is unchanged by this, the probe is; the
+re-probe at the next attested SHA is what shows whether run 0 still spikes,
+and that comparison is recorded when it runs.
+
 **M. The addendum-G cross-framework asymmetry, resolved: publish with the
 stated caveat, never reclassify.** The executable→JS byte rule stands,
 classifying "known framework hydration payloads" as data by role would put
@@ -718,6 +733,26 @@ attested merge SHA, `originCommit` equal to its commit pin and clean, so
 for receipts, with no second admission path. The fixture rows that prove the
 refusal (`cc-cross-tree`, `cc-dirty-origin`, `cc-unattested`) pin a fixture
 SHA, not the bootstrap, and were unchanged by the removal.
+
+**Landed, 2026-11-01 (post-runbook unit 1): the delta is held to the runs.**
+PR-3's verify-slice named the gap it left: nothing reconciled the published
+`deltaMedians` or `runsPerCondition` with the `conditions` runs the same
+artifact carries, so a hand-edited delta published beside bands derived from
+those runs (the receipts' R6 shape, for the constant). `admitChromeConstant`
+now recomputes each metric's median from the with-chrome and without-chrome
+run lists with the runner's own rule (the non-null values sorted, the middle
+one or the mean of the middle two) and refuses when the recomputed delta is
+not the published one, or when either list is not `runsPerCondition` long
+(`cc-delta-mismatch`, `cc-runs-count`; and from the unit's own verify-slice,
+`cc-usable-samples`, every run carrying a finite value for every metric, since
+the probe writes `null` for a paint it never saw and a list's length is not its
+sample count, and `cc-stored-median`, holding the per-condition medians the
+runner writes beside the runs to the same rule). The fixture constant now carries two
+run lists whose medians differ by exactly its delta, with the run-0 spike the
+real artifacts carried, so the admitted shape is the shape the runner writes.
+**Stated limit:** the gate holds the medians, not every run; a run edited so
+that both medians stand is invisible to it, as it is to any reader of the
+delta, and `pnpm bench reproduce` plus review are what hold that.
 
 ## Addendum: the interaction boundary, the cache the instrument was taking away, and the INP asymmetry (2026-08-28, `interaction-registry`)
 

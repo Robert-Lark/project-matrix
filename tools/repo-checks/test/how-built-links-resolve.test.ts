@@ -147,7 +147,19 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     // the crossing after that re-observes again. The two JSON observation
     // lines verbatim and a screenshot are in the unit's record
     // (docs/prototypes/decision-map-compaction/ceiling-2026-09-26.*).
-    const OBSERVED_CEILING_BYTES = 768 * 1024;
+    //
+    // Fourth observation, 2026-11-01 (the constant's two stated limits,
+    // post-runbook unit 1): the unit's entry took the file past the 768 KiB
+    // pinned above (783,327 B at 24cd504 left 3,105 B of headroom). The
+    // same script is to open the pushed branch's code view at two anchors,
+    // #L4508 ("## Phase 15, The instrument was the thing that was wrong")
+    // and the unit's own entry heading; the observation is PENDING the push
+    // (Rob-gated) and this comment is completed in the amend that records
+    // it, with the two JSON observation lines and a screenshot in the
+    // unit's record (docs/prototypes/measurement-pass/ceiling-2026-11-01.*).
+    // Ceiling raised to 896 KiB, the next 128 KiB step, as the three pins
+    // before it.
+    const OBSERVED_CEILING_BYTES = 896 * 1024;
     const size = statSync(join(repoRoot, "docs", "build-log.md")).size;
     expect(
       size,

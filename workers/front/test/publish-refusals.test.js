@@ -44,7 +44,7 @@ import {
   bundleFromReceipt,
   labSurfacesOf,
 } from "../lab/publish.mjs";
-import { CASES, CC_CONTEXT, SURFACE, fixtureFragment, fixtures } from "./fixtures/publish/generate.mjs";
+import { CASES, CC_CONTEXT, SURFACE, baseChromeConstant, fixtureFragment, fixtures } from "./fixtures/publish/generate.mjs";
 
 const here = import.meta.dirname;
 const fixtureDir = join(here, "fixtures", "publish");
@@ -181,11 +181,17 @@ describe("CONTROL. What must pass", () => {
     const lab = labBundles.editorial?.["avg-broadband-desktop"];
     expect(lab, "the editorial publication is what the plane serves today").toBeDefined();
     const fragment = chromeFragmentOf(renderChrome({ ...rc, lab }));
+    // The run lists and the delta come from the VALID fixture (the delta is
+    // the delta of medians of those runs, the reconciliation gate's own
+    // bar since 2026-11-01); only the fragment identity is this leg's.
+    const { runsPerCondition, deltaMedians, conditions } = baseChromeConstant();
     const constant = (renderContext) => ({
       kind: "pm-chrome-constant",
       commit: { sha: "c".repeat(40), dirty: false },
       originCommit: { sha: "c".repeat(40), dirty: false },
-      deltaMedians: { FCP: 76, LCP: 76, CLS: 0, longTaskMs: 0 },
+      runsPerCondition,
+      deltaMedians,
+      conditions,
       measuredChrome: { populated: true, sha256: sha256Hex(fragment), bytes: Buffer.byteLength(fragment, "utf8"), renderContext },
     });
     expect(() => admitChromeConstant(constant(rc), deps)).not.toThrow();

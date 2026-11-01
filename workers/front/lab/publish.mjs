@@ -113,7 +113,13 @@
  * @property {{ sha: string, dirty: boolean }} commit
  * @property {{ sha: string, dirty: boolean } | null} [originCommit]
  * @property {Record<string, number>} [deltaMedians]
+ * @property {number} [runsPerCondition]
+ * @property {{ with?: ConditionRecord, without?: ConditionRecord }} [conditions]
  * @property {{ populated?: boolean, sha256?: string, bytes?: number, renderContext?: RenderContext }} [measuredChrome]
+ */
+/**
+ * One condition's runs and the medians the runner derived from them.
+ * @typedef {{ runs?: Record<string, number | null>[], medians?: Record<string, number | null> }} ConditionRecord
  */
 /**
  * @typedef {object} RenderContext
@@ -977,6 +983,100 @@ export function admitChromeConstant(chromeConstant, deps) {
       throw new Error(
         `front lab: chrome-constant delta for ${metric} is not a finite number, a constant that was never measured cannot publish`,
       );
+    }
+  }
+  // The published delta must be the artifact's own runs' word. Until
+  // 2026-11-01 nothing reconciled `deltaMedians` or `runsPerCondition` with
+  // the `conditions` runs the same file carries, so a hand-edited delta
+  // published beside bands derived from the runs (PR-3's verify-slice,
+  // skeptic lens, row 9; the R6 shape for the constant; sabotage row P6, an
+  // expected miss until this gate). The rule is the runner's own
+  // (chrome-constant.ts `medians` over receipt.ts `median`: the non-null
+  // values sorted, the middle one, or the mean of the middle two), applied
+  // to the runs as published, so the recomputed delta is the same double
+  // the runner wrote and the comparison is exact. A run value is counted
+  // when it is a finite number; JSON carries no other number the runner
+  // can write, and `null` is the runner's own "not measurable".
+  const runsPerCondition = chromeConstant.runsPerCondition;
+  /** @param {"with" | "without"} condition */
+  const runsOf = (condition) => chromeConstant.conditions?.[condition]?.runs;
+  for (const condition of /** @type {const} */ (["with", "without"])) {
+    const runs = runsOf(condition);
+    if (!Array.isArray(runs) || runs.length !== runsPerCondition) {
+      // refusal: cc-runs-count
+      throw new Error(
+        `front lab: the chrome constant's ${condition}-chrome run list holds ` +
+          `${Array.isArray(runs) ? runs.length : "no"} runs against runsPerCondition ${runsPerCondition}, ` +
+          `a delta of medians over runs the artifact does not carry in full is not publishable`,
+      );
+    }
+  }
+  /** @param {ReadonlyArray<number | null | undefined>} values */
+  const medianOf = (values) => {
+    const present = /** @type {number[]} */ (values.filter((v) => typeof v === "number" && Number.isFinite(v))).sort(
+      (a, b) => a - b,
+    );
+    if (present.length === 0) return null;
+    const mid = Math.floor(present.length / 2);
+    const hi = /** @type {number} */ (present[mid]);
+    const lo = /** @type {number} */ (present[mid - 1]);
+    return present.length % 2 === 1 ? hi : (lo + hi) / 2;
+  };
+  // Every delta is a finite number by the loop above; the shape is kept
+  // optional for the absent-artifact path the typedef also describes.
+  const deltaMedians = /** @type {Record<string, number>} */ (chromeConstant.deltaMedians);
+  const withRuns = /** @type {Record<string, number | null>[]} */ (runsOf("with"));
+  const withoutRuns = /** @type {Record<string, number | null>[]} */ (runsOf("without"));
+  for (const metric of ["FCP", "LCP", "CLS", "longTaskMs"]) {
+    // The list's length is not the sample count: the probe writes `null`
+    // for a paint it never observed, and a median over one finite sample
+    // of seven would publish beside "7 runs per condition" with the band
+    // omitted. Held the way the receipts gate holds `incomplete-run-set`:
+    // every run must carry a finite value for every metric (verify-slice
+    // 2026-11-01, conformance lens).
+    for (const [condition, runs] of /** @type {const} */ ([
+      ["with", withRuns],
+      ["without", withoutRuns],
+    ])) {
+      const usable = runs.filter((r) => typeof r?.[metric] === "number" && Number.isFinite(r[metric])).length;
+      if (usable !== runsPerCondition) {
+        // refusal: cc-usable-samples
+        throw new Error(
+          `front lab: the chrome constant's ${condition}-chrome runs carry ${usable} usable ${metric} samples ` +
+            `against runsPerCondition ${runsPerCondition}, a median over fewer samples than the artifact claims ` +
+            `is not publishable`,
+        );
+      }
+    }
+    const withMed = medianOf(withRuns.map((r) => r?.[metric]));
+    const withoutMed = medianOf(withoutRuns.map((r) => r?.[metric]));
+    const recomputed = withMed === null || withoutMed === null ? null : withMed - withoutMed;
+    if (recomputed !== deltaMedians[metric]) {
+      // refusal: cc-delta-mismatch
+      throw new Error(
+        `front lab: the chrome constant's published delta for ${metric} (${deltaMedians[metric]}) ` +
+          `is not the delta of medians of its own runs (${withMed} with, ${withoutMed} without, ` +
+          `${recomputed === null ? "not measurable" : recomputed}), a delta the runs do not support is not publishable`,
+      );
+    }
+    // The runner also writes each condition's medians beside its runs; a
+    // reader of the raw artifact sees them, so they are held to the runs
+    // too, after the published delta, which is the figure that matters
+    // most and so is named first when a run edit breaks both (verify-slice
+    // 2026-11-01, correctness lens).
+    for (const [condition, med] of /** @type {const} */ ([
+      ["with", withMed],
+      ["without", withoutMed],
+    ])) {
+      const stored = chromeConstant.conditions?.[condition]?.medians;
+      if (!stored || stored[metric] !== med) {
+        // refusal: cc-stored-median
+        throw new Error(
+          `front lab: the chrome constant's stored ${condition}-chrome median for ${metric} ` +
+            `(${stored ? stored[metric] : "absent"}) is not the median of its own runs (${med}), ` +
+            `a figure the runs do not support is not publishable`,
+        );
+      }
     }
   }
   // The provenance bar (ADR-0001 addendum Q), unconditional. Until

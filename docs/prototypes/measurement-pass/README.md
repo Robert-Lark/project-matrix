@@ -54,3 +54,33 @@ node (its PR-3 bullet). Same directory, dated files:
 The published artifact is `workers/front/lab/chrome-constant.json`, served verbatim at
 `/_pm/lab/chrome-constant.json`; the gate that admits it is `admitChromeConstant` in
 `workers/front/lab/publish.mjs`, now without the `BOOTSTRAP_CONSTANT_COMMIT` exemption.
+
+## Post-runbook unit 1: the constant's two stated limits (2026-11-01)
+
+The unit that closed the two limits PR-3 stated, recorded in the build-log entry
+"The gate the runs had been waiting for, and the visit the artifact never sees
+(2026-11-01)" and the `measurement-pass` node's dated 2026-11-01 bullet. Same
+directory, dated files:
+
+- `limits-2026-11-01.md`: the gate as built (the rule it borrows from the runner,
+  the four refusal sites, the fixture's run lists and why their shape is the real
+  artifacts'), the committed constant reconciled by that rule with the command, the
+  probe's warm-up visit, and the run-0 evidence across every artifact in the file's
+  history, each figure with the command that produced it.
+- `sabotage-limits.mjs`: the runner, re-rowed for this unit (PR-3's expected-miss
+  row P6 as the first live row; the committed constant under four more edits; the
+  gate's own guards, its median rule inverted to a mean included; the warm-up visit
+  deleted as a stated limit no test can catch; the node's cap and pointer legs; the
+  glyph rule; the raised log ceiling; the masters' anchors).
+  `SCRATCH=<dir> node docs/prototypes/measurement-pass/sabotage-limits.mjs [rowId…]`
+  from the repo root, after `git add` of the new files, with nothing else running.
+- `sabotage-2026-11-01.md`: the table, with CONTROL rows.
+- `suite-runs-2026-11-01.md`: every origin-suite run of this unit, fixture and crate mode.
+- `verify-slice-2026-11-01.md`: the lenses' findings, folds and refutations.
+
+The gate's four new sites are `cc-runs-count`, `cc-usable-samples`, `cc-delta-mismatch`
+and `cc-stored-median` in `admitChromeConstant` (`workers/front/lab/publish.mjs`), with six rows in
+`workers/front/test/fixtures/publish/generate.mjs`; the probe's warm-up visit sits
+before the run loop in `tools/bench-runner/src/chrome-constant.ts`, and its sentence
+is the seventh entry of the artifact's `method` array, before the scope sentence that
+stays last.
