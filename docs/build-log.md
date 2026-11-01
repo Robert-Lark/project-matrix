@@ -9728,9 +9728,14 @@ code view was last observed to honour `?plain=1#L<n>` (783,327 B at
 re-observe on the pushed branch with
 `docs/prototypes/workers-hardening/observe-ceiling.mjs`, record the
 observation beside the three in the test's comment, and raise the ceiling one
-128 KiB step, to 896 KiB. The raise is in this commit; the observation needs
-the branch on GitHub, which needs Rob's push, so the comment names the
-observation as pending until the amend that records it.
+128 KiB step, to 896 KiB. The raise and the observation are both in this commit, the
+observation made on the pushed branch at `c5238a6` with the log at
+794,772 B after Rob's "push and merge": GitHub's header read "9800 lines
+(8790 loc) · 776 KB", both anchors (the Phase 15 heading and this entry's)
+present and highlighted, no "too large" notice. One change to the observing
+script, in a scratch copy: GitHub's page no longer goes network-idle inside
+90 s, so the run waited for the load event instead (`ceiling-2026-11-01.txt`
+says so beside the two JSON lines).
 
 **Verification, in the standing order.** `pnpm run check` 40 of 40 three
 times (baseline, after the code edits once the JSDoc types were added for

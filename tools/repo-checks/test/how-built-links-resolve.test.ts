@@ -150,15 +150,18 @@ describe("the how-it-was-built master's links resolve (PRD D4/D5)", () => {
     //
     // Fourth observation, 2026-11-01 (the constant's two stated limits,
     // post-runbook unit 1): the unit's entry took the file past the 768 KiB
-    // pinned above (783,327 B at 24cd504 left 3,105 B of headroom). The
-    // same script is to open the pushed branch's code view at two anchors,
-    // #L4508 ("## Phase 15, The instrument was the thing that was wrong")
-    // and the unit's own entry heading; the observation is PENDING the push
-    // (Rob-gated) and this comment is completed in the amend that records
-    // it, with the two JSON observation lines and a screenshot in the
+    // pinned above (783,327 B at 24cd504 left 3,105 B of headroom) to
+    // 794,772 B. The same script (waiting for the load event, since
+    // GitHub's page no longer goes network-idle inside 90 s) opened the
+    // pushed branch's code view (commit c5238a6) at two anchors, #L4508
+    // ("## Phase 15, The instrument was the thing that was wrong") and
+    // #L9636 (the unit's own entry heading): GitHub's header read
+    // "9800 lines (8790 loc) · 776 KB", both lines present reading their
+    // headings, both highlighted, no "too large" notice. Ceiling raised to
+    // 896 KiB, the next 128 KiB step, as the three pins before it; about
+    // 120 KB of headroom, so the crossing after that re-observes again.
+    // The two JSON observation lines verbatim and a screenshot are in the
     // unit's record (docs/prototypes/measurement-pass/ceiling-2026-11-01.*).
-    // Ceiling raised to 896 KiB, the next 128 KiB step, as the three pins
-    // before it.
     const OBSERVED_CEILING_BYTES = 896 * 1024;
     const size = statSync(join(repoRoot, "docs", "build-log.md")).size;
     expect(

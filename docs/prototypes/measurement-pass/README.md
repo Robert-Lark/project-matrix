@@ -77,6 +77,9 @@ directory, dated files:
 - `sabotage-2026-11-01.md`: the table, with CONTROL rows.
 - `suite-runs-2026-11-01.md`: every origin-suite run of this unit, fixture and crate mode.
 - `verify-slice-2026-11-01.md`: the lenses' findings, folds and refutations.
+- `ceiling-2026-11-01.txt` and `ceiling-2026-11-01-L9636.jpg`: the fourth GitHub code-view
+  observation behind the log ceiling's raise to 896 KiB (the two JSON lines verbatim, the
+  one change to the observing script, and the screenshot of this unit's entry anchor).
 
 The gate's four new sites are `cc-runs-count`, `cc-usable-samples`, `cc-delta-mismatch`
 and `cc-stored-median` in `admitChromeConstant` (`workers/front/lab/publish.mjs`), with six rows in
