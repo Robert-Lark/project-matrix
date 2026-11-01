@@ -9632,3 +9632,174 @@ while open); branch protection on `main` and the parked worktrees; wrangler
 `CdpConnection.send()` without a timeout; the checkout line list's
 `tabindex`; the react-next slot claims; the deployed h2/h3 header bytes from
 RFC tables; snapshot-capture's 455 against 456; home's PLP row.
+
+### The gate the runs had been waiting for, and the visit the artifact never sees (2026-11-01)
+
+The runbook was complete on 2026-10-17, and its last entry stated two limits
+its own verify-slice had named rather than closing them in the PR that closed
+the runbook: nothing reconciled the chrome constant's published delta with the
+runs the same artifact carries, and the probe's first visit was always a
+with-chrome visit on a cold browser. This is the unit that closes both, the
+first of the post-runbook list (`~/Desktop/pm-post-runbook-prompt.md`), with
+unit 0 folded in: Rob's two calls, made 2026-11-01, recorded where each
+question lived. The published constant does not change; the gate that admits
+it and the probe that mints the next one do.
+
+**The tree, and the plane.** Worktree `.claude/worktrees/constant-limits` on
+branch `constant-limits` at `origin/main` = `24cd504`, porcelain 0 after the
+crate-image symlink, `pnpm install --offline` 9 s, `pnpm run check` 40 of 40
+(31 cached, 14.42 s) before any edit. The plane was not touched, not even
+read: this unit mints nothing, so the attestation and the quiet-window rules
+apply to the follow-up re-probe, not here.
+
+**The gate: the delta is held to the runs.** `admitChromeConstant` recomputes
+each metric's median from `conditions.with.runs` and `conditions.without.runs`
+with the runner's own rule (`receipt.ts` `median`, as `chrome-constant.ts`
+`medians` applies it: the non-null values sorted, the middle one or the mean
+of the middle two) and refuses when with minus without is not
+`deltaMedians[metric]`, or when either list is not `runsPerCondition` long.
+Four refusal sites, `cc-runs-count` first, so a missing or short list is
+named as such rather than as a mismatch, then `cc-usable-samples` (every
+run carries a finite value for every metric: the probe writes `null` for a
+paint it never saw, and the conformance lens proved a list of seven with
+one finite paint admitted and would have published a one-sample median
+beside "7 runs per condition"), then `cc-delta-mismatch`, then
+`cc-stored-median` (the per-condition medians the runner writes beside the
+runs, held to the same rule, after the published delta so that a run edit
+breaking both is named by the figure that matters; the correctness lens
+found the field unread); an absent `conditions` refuses rather than admits. The committed artifact reconciles
+exactly (700 with, 628 without, 72, on both paint metrics; 0 and 0 on the
+other two; seven runs a side), and the front build admits it unchanged. The
+rule is copied, not imported: the front Worker's build does not depend on the
+runner, and the comparison is `!==` on the same doubles the runner
+subtracted, with no tolerance. **What is given up:** the gate holds the
+medians, not every run; a run edited so that both medians stand is invisible
+to it, as it is to any reader of the delta, and that is stated as a limit
+rather than closed (sabotage row P6). The fixture constant carried no runs at
+all, so the gate could not be proven against it; it now carries two seven-run
+lists whose medians differ by exactly its delta, with the run-0 spike every
+deployed-plane artifact had, so the admitted shape is the runner's shape and
+not a convenient one. Six rows join the refusal table (a short list, an
+absent `conditions`, a paint nulled, PR-3's row P6 edit, a stored median
+edited, and a run edited with the delta left alone), every committed
+`cc-*.json` changed, six were added, and the suite's
+control leg, which had built its own constant inline without runs, now takes
+the runs from the valid fixture and keeps only the fragment identity as its
+own. Numbers, commands and the fixture's run table: `limits-2026-11-01.md`.
+
+**The probe: a visit the artifact never sees.** The run-0 confound was
+measured before it was removed: of the seven artifacts in the file's history,
+six put their largest with-chrome sample at run 0, all four measured on the
+deployed plane do, and three of those four carry a long-task sample there
+(55, 57 and 118 ms; two of them a second one at run 5, 64 and 51 ms), with
+the without-chrome condition never above 0 at run 0; the one exception is the very first probe, on a local origin. The
+probe now opens one discarded warm-up visit, without chrome, before run 0,
+judged for the fragment sha like every recorded visit, and the artifact's
+`method` array says so in its last sentence. Every visit still opens a fresh
+context, and the probe is addendum S's stated exception (it routes in both
+arms, cache off within every visit), so the warm-up heats the browser
+process and never a cache; the chrome's own subresources are stripped from
+the without-chrome document, so a plane-side cold hit on them at run 0 is
+untouched by it, and named in the record as the first place to look if run 0
+still spikes. **What is given up:** nothing about the
+published number, which stays +72 ms at `770a6d8`; what is owed is the
+re-probe at the next attested SHA, after this unit's merge and deploy, and
+the comparison of its run 0 against the four deployed-plane artifacts' is
+that follow-up's finding, not this entry's. No test drives the probe's visit
+sequence (it needs a browser against an attested plane), so the re-probe is
+also the warm-up's proof (sabotage row W1, a stated limit).
+
+**Unit 0: Rob's two calls, recorded where they lived.** The Discogs API Terms
+check (`repo-hygiene` item 8, `domain-cutover` sub-decision (e)): done
+2026-11-01, all good, no obligation found, Rob's reading; the
+application-link gate it held is open. Branch protection on `main`
+(`repo-hygiene` item 6): declined for this project 2026-11-01, closed, not
+deferred. Each is one dated sentence on the node where the question sat and
+one dated line in `prototypes/repo-hygiene/README.md`; the evidence files
+from 2026-10-05 stand as what the calls were made on. The parked worktrees
+(item 7) stay deferred. Home's PLP row ("filters not yet served", ADR-0007
+copy, false since the data plane landed in PR #39) is a content call put to
+Rob with this unit, with the one sentence that would replace it; it lands
+only if he says yes.
+
+**The ceiling.** This entry takes the log past the 768 KiB at which GitHub's
+code view was last observed to honour `?plain=1#L<n>` (783,327 B at
+`24cd504`, 3,105 B of headroom), so the guard's own instruction applies:
+re-observe on the pushed branch with
+`docs/prototypes/workers-hardening/observe-ceiling.mjs`, record the
+observation beside the three in the test's comment, and raise the ceiling one
+128 KiB step, to 896 KiB. The raise and the observation are both in this commit, the
+observation made on the pushed branch at `c5238a6` with the log at
+794,772 B after Rob's "push and merge": GitHub's header read "9800 lines
+(8790 loc) · 776 KB", both anchors (the Phase 15 heading and this entry's)
+present and highlighted, no "too large" notice. One change to the observing
+script, in a scratch copy: GitHub's page no longer goes network-idle inside
+90 s, so the run waited for the load event instead (`ceiling-2026-11-01.txt`
+says so beside the two JSON lines).
+
+**Verification, in the standing order.** `pnpm run check` 40 of 40 three
+times (baseline, after the code edits once the JSDoc types were added for
+the new helpers, after staging). The origin suite ALONE, fixture mode 670 of
+670 in 145.75 s on the code tree and 670 of 670 again in 143.99 s on the
+final tree after every fold. Crate mode would not give a clean run today: six attempts,
+the first the wrangler 4.110 crash in its late shape (the banner after 1,187
+served responses, 80 refused connections), then two hangs of the third plane
+class (every fetch leg at exactly 5 s, every browser leg at the 30 s wall,
+zero refused, no banner, the front Worker still logging 200s), one 669 of 670
+whose red was issue #16's INP-null flake, one 643 green with 27 skipped
+behind two hook timeouts, and a third hang, with the machine's load average
+at 5.7 and a VM plus two other sessions on it the whole afternoon; no
+crate-mode leg asserted red on the code under test in any run, and the
+runs, their signatures and the way the two hangs were stopped (a signal to
+the vitest runner alone, so run-local's own teardown ran) are in
+`suite-runs-2026-11-01.md`. The crate re-run on a quiet machine is stated as
+open, not rounded up. The sabotage table (`sabotage-limits.mjs`): 25 rows,
+16 caught, 7 controls, 0 missed, 2 expected misses; round 1 broke one
+control, the glyph guard on the runner's own file, because the tool that
+wrote the runner turned the U+2014 escape in its E1 row into the literal
+glyph, fixed and re-run as round 2. The rows that matter: PR-3's row P6,
+the hand-edited delta the build admitted on 2026-10-17, refused by name; a
+run edited with the delta left alone, a short list, a wrong
+`runsPerCondition` and an absent `conditions`, each refused; the median rule
+inverted to a mean, caught by the fixture; the gate's marker and rows
+deleted, caught by the map leg; the fixture edited by hand, caught by the
+byte-identity leg. The two expected misses are this unit's stated limits:
+P6, a run edited so both medians stand, and W1, the warm-up visit deleted,
+which no test drives. Verify-slice (`.claude/workflows/verify-slice.js` by
+scriptPath, the lenses in sequence, the scratchpad as the findings dir,
+probing inline meanwhile): the correctness lens found the stored
+per-condition medians unread (folded as `cc-stored-median`, with its
+fixture row and a re-ordering so a run edit is named by the published delta
+first); the conformance lens proved a list of seven with six null paints
+admitted (folded as `cc-usable-samples`) and found the addendum S citation
+backwards in four places (the probe is S's stated exception, not its rule;
+reworded); the seams lens named the asymmetry the new site creates, a probe
+that would exit 0 with a null paint the gate then refuses after the hour
+the mint costs (folded: the probe now refuses at mint, naming the run, and
+writes nothing); the probe's "every artifact" overclaiming what the
+record's own table says is six of seven, and the ADR's and this entry's
+"only long-task sample" contradicted by two artifacts' second samples at
+run 5; each folded, and the whole table re-run as round 3 over the folded
+tree, 25 rows, 16 caught, 7 controls, 0 missed, the same 2 expected misses
+(`sabotage-2026-11-01.md`, `verify-slice-2026-11-01.md`). Inline probes of
+my own: the gate's median rule and `receipt.ts` `median` agree on eight
+input shapes including all-null, even counts and mixed nulls (a node
+one-liner, in the limits record); `admitChromeConstant` has one caller
+(`build.mjs`); the methodology page built from the committed artifact
+carries the absent statement 0 times and the +72 ms figure once; the
+served constant is byte-identical to the committed one. Masters regenerated
+byte-identical (the entry sits below every `## Phase` heading). The log is past the old 786,432 B ceiling
+and under the new 917,504 B one; the observation that backs the raise is
+pending the push.
+
+**Left for Rob, carried forward.** The push, the PR and the merge, which
+deploys nothing new to the plane but puts the gate on `main`; then the
+ceiling observation on the pushed branch and the amend that records it; the
+crate-mode re-run on a quiet machine; the home PLP row's one sentence; the
+re-probe at the attested merge SHA as a follow-up PR, comparing run 0
+against the four deployed-plane artifacts. Unchanged from the 2026-10-17
+entry's list, less the two calls made: the qwik quantity-stepper smoke
+assertion; wrangler 4.110's crashes (one more today); the parked worktrees;
+`pm-warm`'s plan; `CdpConnection.send()` without a timeout; the checkout
+line list's `tabindex`; the react-next slot claims; the deployed h2/h3
+header bytes from RFC tables; snapshot-capture's 455 against 456.

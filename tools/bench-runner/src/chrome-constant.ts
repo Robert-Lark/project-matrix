@@ -32,9 +32,13 @@
  *    via an init-script observer, IDENTICALLY in both conditions, the
  *    injected ruler cannot measure its own absence, so neither condition
  *    uses it (the constant is about the ruler, not from it).
- *  - Conditions are round-robin interleaved (with, without, with, …) so a
- *    noisy moment lands on both, and the published constant is the delta of
- *    medians. Beacons are captured and never delivered (lab/field split).
+ *  - Conditions are pair-interleaved in alternating order (with/without,
+ *    then without/with, ABBA) so a noisy moment lands on both and first-order
+ *    drift cancels, and the published constant is the delta of medians.
+ *    Beacons are captured and never delivered (lab/field split).
+ *  - One discarded warm-up visit (without chrome) precedes run 0, so the
+ *    browser process's first visit is never a recorded with-chrome sample
+ *    (2026-11-01; see the loop).
  *  - Scope, stated: the constant covers LOAD-time metrics (FCP/LCP/CLS plus
  *    long-task main-thread time). It does not claim the chrome's
  *    interaction-time cost.
@@ -490,6 +494,32 @@ async function main(): Promise<number> {
   }
   const samples: Record<"with" | "without", ProbeMetrics[]> = { with: [], without: [] };
   try {
+    // One DISCARDED warm-up visit, without chrome, before any recorded run.
+    // Every visit opens a fresh context (section 4), and this probe is
+    // addendum S's stated exception, routing in both arms with the cache
+    // off within every visit, so nothing rides between visits either way;
+    // but the browser PROCESS
+    // was cold on run 0's with-chrome visit in every artifact published
+    // until 2026-11-01, and in six of those seven (all four measured on
+    // the deployed plane) the largest with-sample was run 0, the 118 ms
+    // long-task sample riding it in the 2026-10-17 artifact (PR-3's
+    // verify-slice, skeptic lens, row 10). A medians delta
+    // mostly absorbs one spike, but a spike that always lands on one
+    // condition is a bias, not noise, so the first visit is now one the
+    // artifact never sees. Without chrome, so the condition the spike
+    // favoured is not the one that gets warmed; judged for the fragment
+    // like every recorded visit (a mid-probe chrome change is a refusal
+    // whichever visit sees it).
+    {
+      const { fragmentSha } = await probeVisit(browser, profile, url, "without");
+      if (fragmentSha !== measuredChrome.sha256) {
+        throw new Error(
+          `the served chrome changed before the first recorded run (${measuredChrome.sha256.slice(0, 12)} → ` +
+            `${fragmentSha === null ? "no document intercepted" : fragmentSha.slice(0, 12)}), ` +
+            `the delta would mix two fragments`,
+        );
+      }
+    }
     for (let run = 0; run < runs; run++) {
       // ABBA pair ordering: a fixed with-then-without order puts every
       // with-sample systematically half a pair EARLIER than its partner, so
@@ -542,6 +572,22 @@ async function main(): Promise<number> {
     }
   }
 
+  // A paint the observer never saw is `null` in its sample, and the
+  // publication gate refuses an artifact whose run lists carry one
+  // (`cc-usable-samples`, 2026-11-01), so writing it would make the mint,
+  // the costly step, lie at the point of use the way the --runs check above
+  // says a tool must not. Refused here, naming the run, with no artifact.
+  for (const condition of ["with", "without"] as const) {
+    samples[condition].forEach((sample, i) => {
+      const missing = (["FCP", "LCP"] as const).filter((m) => sample[m] === null);
+      if (missing.length) {
+        throw new Error(
+          `run ${i} (${condition} chrome) observed no ${missing.join("/")} paint; the publication gate ` +
+            `would refuse the artifact (cc-usable-samples), so none is written: re-run in a quiet window`,
+        );
+      }
+    });
+  }
   const withMed = medians(samples.with);
   const withoutMed = medians(samples.without);
   const delta = (a: number | null, b: number | null) =>
@@ -568,6 +614,7 @@ async function main(): Promise<number> {
       "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions, the injected ruler cannot measure its own absence",
       "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
       "conditions pair-interleaved in ALTERNATING order (with/without, then without/with, ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
+      "one DISCARDED warm-up visit, without chrome, precedes run 0, so no recorded visit is the browser process's first (six of the seven artifacts before 2026-11-01, and all four measured on the deployed plane, carried their largest with-sample at run 0, the with-chrome visit a cold browser opened); every recorded visit still opens a fresh context, so the warm-up heats the process, never a cache",
       "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality",
     ],
     conditions: {

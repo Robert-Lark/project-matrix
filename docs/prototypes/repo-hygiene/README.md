@@ -36,3 +36,15 @@ inside turbo's resolved lint inputs; every variant `deploy` one deploy command w
 the front Worker's exemption held live; every `uses:` a full SHA with its release
 and every `runs-on:` a dated image). Numbers quoted in the records come from the
 commands these files show, never from a tally by eye.
+
+## 2026-11-01: two of the three calls made
+
+- Item 8, the Discogs Terms: Rob, 2026-11-01, done, all good, no obligation found
+  (his reading). The application-link gate this item held is open. Recorded on the
+  `repo-hygiene` node and under `domain-cutover` (e); `discogs-tos-2026-10-05.md`
+  stays as the fetched evidence the call was made on.
+- Item 6, branch protection: Rob, 2026-11-01, declined for this project; closed,
+  not deferred. `branch-protection-2026-10-05.md` stays as the ruleset a yes would
+  have created.
+- Item 7, the parked worktrees: still deferred; `worktree-inventory-2026-10-05.md`
+  stands.

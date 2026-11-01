@@ -161,15 +161,28 @@ export const CC_CONTEXT = {
 const sha256Hex = (text) => createHash("sha256").update(text).digest("hex");
 
 /** The VALID chrome constant. Its sha256 is the stand-in renderer's own
- *  output for CC_CONTEXT with a populated lab. */
+ *  output for CC_CONTEXT with a populated lab. Its `conditions` carry seven
+ *  runs each whose medians differ by exactly `deltaMedians` (with 704/704,
+ *  without 628/628 on FCP/LCP; 0 on CLS and longTaskMs), the reconciliation
+ *  the gate enforces since 2026-11-01; the with-chrome list's run 0 is the
+ *  spike every real artifact carried before the probe's warm-up visit, so
+ *  the fixture's shape is the shape the gate must admit. */
 export function baseChromeConstant() {
   const fragment = fixtureFragment({ ...CC_CONTEXT, lab: {} });
+  const run = (paint, longTaskMs) => ({ FCP: paint, LCP: paint, CLS: 0, longTaskMs });
+  const withRuns = [run(1040, 118), run(700, 0), run(704, 0), run(696, 0), run(712, 0), run(690, 51), run(720, 0)];
+  const withoutRuns = [run(632, 0), run(616, 0), run(620, 0), run(628, 0), run(636, 0), run(624, 0), run(640, 0)];
   return {
     kind: "pm-chrome-constant",
     date: DATE,
     commit: { sha: SHA, dirty: false },
     originCommit: { sha: SHA, dirty: false },
+    runsPerCondition: 7,
     deltaMedians: { FCP: 76, LCP: 76, CLS: 0, longTaskMs: 0 },
+    conditions: {
+      with: { runs: withRuns, medians: { FCP: 704, LCP: 704, CLS: 0, longTaskMs: 0 } },
+      without: { runs: withoutRuns, medians: { FCP: 628, LCP: 628, CLS: 0, longTaskMs: 0 } },
+    },
     measuredChrome: {
       populated: true,
       sha256: sha256Hex(fragment),
@@ -286,6 +299,12 @@ export const CASES = [
   { id: "cc-dirty-tree", kind: "chrome-constant", site: "cc-malformed", mutate: (c) => { c.commit.dirty = true; }, expect: /chrome-constant\.json malformed or minted from a dirty tree/ },
   { id: "cc-nonfinite-delta", kind: "chrome-constant", site: "cc-nonfinite", mutate: (c) => { c.deltaMedians.LCP = null; }, expect: /chrome-constant delta for LCP is not a finite number/ },
   { id: "cc-nonfinite-longtask", kind: "chrome-constant", site: "cc-nonfinite", mutate: (c) => { c.deltaMedians.longTaskMs = null; }, expect: /chrome-constant delta for longTaskMs is not a finite number/ },
+  { id: "cc-runs-count", kind: "chrome-constant", site: "cc-runs-count", mutate: (c) => { c.conditions.with.runs.pop(); }, expect: /with-chrome run list holds 6 runs against runsPerCondition 7/ },
+  { id: "cc-runs-absent", kind: "chrome-constant", site: "cc-runs-count", mutate: (c) => { delete c.conditions; }, expect: /with-chrome run list holds no runs against runsPerCondition 7/ },
+  { id: "cc-usable-samples", kind: "chrome-constant", site: "cc-usable-samples", mutate: (c) => { c.conditions.with.runs[1].FCP = null; }, expect: /with-chrome runs carry 6 usable FCP samples against runsPerCondition 7/ },
+  { id: "cc-delta-mismatch", kind: "chrome-constant", site: "cc-delta-mismatch", mutate: (c) => { c.deltaMedians.FCP = 20; }, expect: /published delta for FCP \(20\) is not the delta of medians of its own runs \(704 with, 628 without, 76\)/ },
+  { id: "cc-stored-median", kind: "chrome-constant", site: "cc-stored-median", mutate: (c) => { c.conditions.with.medians.FCP = 900; }, expect: /stored with-chrome median for FCP \(900\) is not the median of its own runs \(704\)/ },
+  { id: "cc-run-edited", kind: "chrome-constant", site: "cc-delta-mismatch", mutate: (c) => { c.conditions.without.runs[3].LCP = 700; }, expect: /published delta for LCP \(76\) is not the delta of medians of its own runs \(704 with, 632 without, 72\)/ },
   { id: "cc-cross-tree", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit.sha = OTHER_SHA; }, expect: /an unattested or cross-tree constant is not publishable/ },
   { id: "cc-dirty-origin", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit.dirty = true; }, expect: /an unattested or cross-tree constant is not publishable/ },
   { id: "cc-unattested", kind: "chrome-constant", site: "cc-provenance", mutate: (c) => { c.originCommit = null; }, expect: /an unattested or cross-tree constant is not publishable/ },
