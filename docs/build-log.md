@@ -2761,7 +2761,7 @@ writes it with, 1000% separate from the benchmark by construction
 (ADR-0009, ticket `blog`). Kickoff was a live interview (web CMS from any
 device · drafts-over-days · essay/photo/note/link with series as grouping ·
 curated art-direction knobs · the Tumblr as photo-post mood reference only ·
-secret preview links · login identity robresearch87@gmail.com · masthead
+secret preview links · login identity Rob's personal email (redacted) · masthead
 "Rob Lark"); every remaining call was made autonomously and recorded.
 
 **The plane.** A sibling Worker `pm-blog` behind pm-front at the single
@@ -9803,3 +9803,39 @@ assertion; wrangler 4.110's crashes (one more today); the parked worktrees;
 `pm-warm`'s plan; `CdpConnection.send()` without a timeout; the checkout
 line list's `tabindex`; the react-next slot claims; the deployed h2/h3
 header bytes from RFC tables; snapshot-capture's 455 against 456.
+
+### The two private details a public repo was carrying, and the guard that names neither (2026-11-10)
+
+A release-readiness audit of `main` at b580dea (eleven readers, each
+finding re-checked by a second agent) found two private details in the
+tracked tree. Neither was a credential.
+
+**The lockfile.** `docs/prototypes/cf-composition/package-lock.json` was
+minted through an org-internal npm mirror, so all 89 of its `resolved`
+URLs named that mirror's host and cloud account (`grep -c '"resolved"'`
+= 89, 89 of them the mirror). The root `.npmrc` pins the public registry
+for exactly this reason, but a prototype is its own npm project root and
+the pin does not reach it. `data-strategy-lab` hit the same fault in July
+and fixed it with a local `.npmrc`; `cf-composition` never got one. The
+89 URLs now read `registry.npmjs.org` (same paths, same integrity
+hashes) and the prototype carries the same local `.npmrc`. Proof: `npm ci
+--ignore-scripts` on a scratch copy of the three files installed 36
+packages, which checks every integrity hash against the public registry.
+
+**The mailbox.** A personal address, recorded as the blog's login
+identity, sat on five lines in three docs (ADR-0009 twice, the decision
+map twice, this log once). Each now reads "Rob's personal email
+(redacted)". The identity is unchanged; only the public record of it is.
+
+**The guard.** `tools/repo-checks/test/no-private-details.test.ts`: every
+npm lockfile resolves from the public registry and nowhere else, and no
+tracked text file carries an address at a consumer mailbox domain (the
+frozen crate exempt, as Discogs' own text). Its failure messages give
+the file and the count or line, never the host or the address, because
+CI logs are public too. Proved both ways: with the two old files put
+back, 2 of its 3 tests fail and name `cf-composition` (89 entries) and
+`build-log.md:2764`; on the fixed tree `pnpm check` is 40 of 40 tasks.
+
+**Not done, and Rob's.** Both details are still in git history and on
+the merged remote branches. Removing them means rewriting history, which
+changes every SHA the published receipts attest. Not taken here.
