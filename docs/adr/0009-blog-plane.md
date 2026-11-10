@@ -23,7 +23,7 @@ any device; an editor built for drafts that grow over days with several
 open at once; four post kinds (essay, photo, note, link) with series as an
 attachable grouping; per-post art direction as curated knobs, never raw
 CSS; the Tumblr photo blog as aesthetic reference only, never imported;
-secret revocable preview links; login identity robresearch87@gmail.com;
+secret revocable preview links; login identity Rob's personal email (redacted);
 masthead "Rob Lark"; words never locked in.
 
 ## Decision
@@ -98,7 +98,7 @@ credential brute force and session riding; the design closes both, brute
 force hits a rate-limited endpoint guarding a 256-bit secret with no
 username dimension, and riding fails on the custom-header CSRF gate while
 the stolen-cookie path is cut by HttpOnly + server-side revocation. At
-`domain-cutover`, Cloudflare Access (allowlist robresearch87@gmail.com) is
+`domain-cutover`, Cloudflare Access (allowlist of one: Rob's personal email, redacted) is
 layered onto `roblark.com/blog/admin/*` as defense-in-depth in front of
 this wall, not instead of it.
 
