@@ -87,3 +87,33 @@ and `cc-stored-median` in `admitChromeConstant` (`workers/front/lab/publish.mjs`
 before the run loop in `tools/bench-runner/src/chrome-constant.ts`, and its sentence
 is the seventh entry of the artifact's `method` array, before the scope sentence that
 stays last.
+
+## Post-runbook unit 1, the follow-up: the re-probe (2026-11-17)
+
+The follow-up PR the 2026-11-01 unit owed: the probe, now with its warm-up visit, run
+again against the deployed plane at the first attested SHA after that unit's merge, and
+the constant re-published from it. Recorded in the build-log entry "The spike that left
+run 0, and the long task that stayed (2026-11-17)" and the `measurement-pass` node's dated
+2026-11-17 bullet. Same directory, dated files:
+
+- `constant-2026-11-17.md`: the probe as it ran at the attested `64725e2`, every run's
+  values, the done-check, the identity gate's outcome (admitted, no local interim), the
+  run-0 comparison against the four deployed-plane artifacts before it (the finding), the
+  edge-cache headers of the chrome's three subresources after the probe, and the home PLP
+  row's one proposed sentence, each figure with the command that produced it.
+- `sabotage-reprobe.mjs`: the runner, re-rowed for this unit (the new artifact through the
+  real front build under the same six edits plus the long-task sample zeroed, a stated
+  limit; the gate's own guards unchanged; the warm-up still a stated limit, since nothing
+  asserts the method sentence; the node's cap and pointer legs with this unit's line and
+  title; the glyph rule over this unit's records; the log ceiling; the masters' anchors).
+  `SCRATCH=<dir> node docs/prototypes/measurement-pass/sabotage-reprobe.mjs [rowId…]`
+  from the repo root, after `git add` of the new files, with nothing else running.
+- `sabotage-2026-11-17.md`: the table, with CONTROL rows.
+- `suite-runs-2026-11-17.md`: every origin-suite run of this unit, the crate-mode run on
+  the untouched tree first (the open item from 2026-11-01, closed at 670 of 670), then
+  fixture and crate mode on the final tree.
+- `verify-slice-2026-11-17.md`: the lenses' findings, folds and refutations.
+
+The published artifact is still `workers/front/lab/chrome-constant.json`, now the
+2026-11-17 measurement at `64725e2` (+92 ms on both paints), served verbatim at
+`/_pm/lab/chrome-constant.json`; the gate and the probe are unchanged by this unit.
