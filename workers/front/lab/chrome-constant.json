@@ -1,12 +1,12 @@
 {
   "kind": "pm-chrome-constant",
-  "date": "2026-10-17T01:34:13.097Z",
+  "date": "2026-11-17T22:09:54.311Z",
   "commit": {
-    "sha": "770a6d8c1403da5d84fd00dcc8ee5c0a162fc96c",
+    "sha": "64725e28b93e74b69d68fb00025a50fb72c5fe1c",
     "dirty": false
   },
   "originCommit": {
-    "sha": "770a6d8c1403da5d84fd00dcc8ee5c0a162fc96c",
+    "sha": "64725e28b93e74b69d68fb00025a50fb72c5fe1c",
     "dirty": false
   },
   "origin": "https://pm-front.robresearch87.workers.dev",
@@ -41,16 +41,29 @@
     "paint/shift/long-task metrics come from the browser's own performance timeline via an init-script observer, identically in both conditions, the injected ruler cannot measure its own absence",
     "CLS is the session-window maximum (the web-vitals definition the rest of the site publishes), never the superseded running total",
     "conditions pair-interleaved in ALTERNATING order (with/without, then without/with, ABBA), so first-order environmental drift cancels from the delta as well as random noise; the published constant is the delta of medians (with − without)",
+    "one DISCARDED warm-up visit, without chrome, precedes run 0, so no recorded visit is the browser process's first (six of the seven artifacts before 2026-11-01, and all four measured on the deployed plane, carried their largest with-sample at run 0, the with-chrome visit a cold browser opened); every recorded visit still opens a fresh context, so the warm-up heats the process, never a cache",
     "scope: load-time cost only (FCP/LCP/CLS/long-task main-thread ms) for ONE target page under ONE profile; interaction-time cost is not claimed, and the constant is not a claim of per-variant or per-profile equality"
   ],
   "conditions": {
     "with": {
       "runs": [
         {
-          "FCP": 1064,
-          "LCP": 1064,
+          "FCP": 744,
+          "LCP": 744,
           "CLS": 0,
-          "longTaskMs": 118
+          "longTaskMs": 97
+        },
+        {
+          "FCP": 704,
+          "LCP": 704,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 692,
+          "LCP": 692,
+          "CLS": 0,
+          "longTaskMs": 0
         },
         {
           "FCP": 696,
@@ -59,8 +72,14 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 700,
-          "LCP": 700,
+          "FCP": 916,
+          "LCP": 916,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 712,
+          "LCP": 712,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -69,29 +88,11 @@
           "LCP": 676,
           "CLS": 0,
           "longTaskMs": 0
-        },
-        {
-          "FCP": 668,
-          "LCP": 668,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 704,
-          "LCP": 704,
-          "CLS": 0,
-          "longTaskMs": 51
-        },
-        {
-          "FCP": 712,
-          "LCP": 712,
-          "CLS": 0,
-          "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 700,
-        "LCP": 700,
+        "FCP": 704,
+        "LCP": 704,
         "CLS": 0,
         "longTaskMs": 0
       }
@@ -99,8 +100,32 @@
     "without": {
       "runs": [
         {
-          "FCP": 632,
-          "LCP": 632,
+          "FCP": 612,
+          "LCP": 612,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 604,
+          "LCP": 604,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 644,
+          "LCP": 644,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 620,
+          "LCP": 620,
+          "CLS": 0,
+          "longTaskMs": 0
+        },
+        {
+          "FCP": 592,
+          "LCP": 592,
           "CLS": 0,
           "longTaskMs": 0
         },
@@ -111,47 +136,23 @@
           "longTaskMs": 0
         },
         {
-          "FCP": 588,
-          "LCP": 588,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 628,
-          "LCP": 628,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 656,
-          "LCP": 656,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 612,
-          "LCP": 612,
-          "CLS": 0,
-          "longTaskMs": 0
-        },
-        {
-          "FCP": 636,
-          "LCP": 636,
+          "FCP": 624,
+          "LCP": 624,
           "CLS": 0,
           "longTaskMs": 0
         }
       ],
       "medians": {
-        "FCP": 628,
-        "LCP": 628,
+        "FCP": 612,
+        "LCP": 612,
         "CLS": 0,
         "longTaskMs": 0
       }
     }
   },
   "deltaMedians": {
-    "FCP": 72,
-    "LCP": 72,
+    "FCP": 92,
+    "LCP": 92,
     "CLS": 0,
     "longTaskMs": 0
   }

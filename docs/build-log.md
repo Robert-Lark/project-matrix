@@ -9839,3 +9839,210 @@ back, 2 of its 3 tests fail and name `cf-composition` (89 entries) and
 **Not done, and Rob's.** Both details are still in git history and on
 the merged remote branches. Removing them means rewriting history, which
 changes every SHA the published receipts attest. Not taken here.
+
+### `measurement-pass`: narrative moved from the decision map (2026-11-17)
+
+Moved verbatim from the `measurement-pass` node on 2026-11-17 so that the
+node's dated re-probe bullet fits under the 7,168 B cap: the three owed lists
+its PR-2, PR-3 and 2026-11-01 bullets carried, each discharged since or
+carried by the node that owns it (PR-3 landed 2026-10-17; the re-probe is the
+2026-11-17 bullet; the home PLP row is put to Rob in the re-probe's hand-off;
+`labBundle` for `plp` and the checkout fit template are `plp-data-plane`'s and
+`checkout-measure-prep`'s first batches; the qwik stepper, the Terms, branch
+protection and the worktrees are `repo-hygiene`'s items and Rob's flags). The
+decisions stayed on the node.
+
+From the PR-2 (2026-10-13) bullet:
+**Owed:** PR-3 (the constant, the bootstrap pin, ADR-0001 addendum O's wording), which must also compact this node under the cap when it resolves it; `labBundle` for `plp` and the checkout fit template with their first batches; home's PDP row keeps "Public today" (ADR-0007), and its PLP row still reads "filters not yet served", false since 2026-09-18, a content call for Rob.
+
+From the PR-3 (2026-10-17) bullet:
+**Owed, carried out of this node:** the two follow-ups just named; `labBundle` for `plp` and the checkout fit template land with their surfaces' first batches; home's PLP row still reads "filters not yet served" (ADR-0007 copy, Rob's content call); the qwik quantity-stepper smoke flake, the Discogs Terms, branch protection and the parked worktrees stay Rob's, listed in the log entry.
+
+From the Closed (2026-11-01) bullet:
+**Owed:** the re-probe at the next attested SHA, run 0 against the four deployed-plane artifacts; no test drives the probe's visits, so that re-probe is the warm-up's proof.
+
+### The spike that left run 0, and the long task that stayed (2026-11-17)
+
+The 2026-11-01 unit put a discarded warm-up visit in front of the chrome
+probe's first recorded run and said, three times over, that it could not
+prove the visit did anything: no test drives the probe against a plane, so
+the proof was the next mint, comparing its run 0 against the four artifacts
+measured on the deployed plane before it, every one of which had its largest
+with-chrome sample at run 0. This is that mint, the follow-up PR #56 owed,
+with unit 0 of the post-runbook list folded in: the crate-mode suite run on
+a quiet machine the last unit left open, and the home PLP row's one sentence
+put to Rob.
+
+**The tree, and the plane.** `origin/main` had moved one commit past the
+brief, to `64725e2` (PR #94, 2026-11-10, a private-details redaction, a
+mailbox address in three docs and a prototype lockfile's mirror URLs, with a
+guard for both, nothing on the plane's request path or in the chrome). Worktree `.claude/worktrees/re-probe` at that SHA, porcelain 0
+after the crate-image symlink, `pnpm install --offline`, `pnpm run check`
+40 of 40 before anything. The plane attested `64725e2`, `dirty:false`,
+before and after the probe, by `curl` and by Node's `fetch` under the
+Homebrew CA; the probe re-checks it itself after its last visit. One thing
+the plane's record carried that the brief did not: the deploy of `64725e2`
+(CI run 42854913367) went green through `check`, `origin` and the deploy
+step, then RED at the post-deploy smoke on one leg, the qwik quantity
+stepper (`expected '1' to be '2'`), after three deployed smokes in a row had
+passed it. Unit 3's "it fixed itself" is disproved by the plane before unit
+3 starts; recorded in the constant record, not explained here.
+
+**Unit 0, closed.** Crate mode ran alone on the untouched tree first, before
+the probe: 670 of 670 in 150 s, no banner, no refused connection, nothing
+left behind (`suite-runs-2026-11-17.md`, run 1). The machine was not as quiet
+as the brief asked (load 3.32 at the start, the same VM and another session
+on it) and the run is recorded with that figure rather than rounded either
+way. One clean run says the code was never the reason, which the fixture runs
+had already argued; it says nothing about how often the plane's three classes
+recur, and this unit's later runs say that plainly (below). Home's PLP row
+("filters not yet served", `workers/front/home/index.html` line 161, ADR-0007
+copy, false since PR #39) is put to Rob in the hand-off with its one
+replacement sentence, "search, filters and sort served", and the fact that no
+suite leg pins the old text; it lands only on his yes.
+
+**The probe, warmed.** Same command as 2026-10-17, same target, profile and
+run count, 33 s of wall clock for fifteen visits (the warm-up, then seven per
+condition, ABBA). The artifact's `method` array has eight sentences, the
+warm-up's seventh; the fragment it hashed is byte-for-byte the 2026-10-17
+one (12,171 B, the same sha256), so the identity gate admitted it with no
+local interim, and so did the four reconciliation sites the last unit added.
+The constant re-publishes at **+92 ms first paint, +92 ms largest paint, 0
+layout shift, 0 ms of long tasks**, 2,392 B on the wire at the calibrated q4:
+inside the band the four deployed-plane artifacts span (+104, +76, +88,
++72), and published as addendum F says a constant is, an order of magnitude
+for one target under one profile on one day. It is not declared better or
+worse than +72; of the 20 ms between them, 16 is the without-chrome arm
+running faster (628 to 612) and 4 the with-chrome arm slower (700 to 704),
+each inside its own spread.
+
+**The finding, in two parts that do not say the same thing.** First: run 0
+is no longer the largest with-chrome sample. Its first paint is 744 ms, 40
+over the median and second of seven, where the four artifacts before it put
+their largest sample at run 0 by 364, 96, 100 and 232 ms over their medians
+(`jq`, in the record). The largest sample this time is run 4, 916 ms, a
+mid-probe with-chrome visit with no long task beside it and the fastest
+without-chrome visit of the probe as its pair partner, the plane's own
+excursion and not a first-visit shape. So the one-sided paint bias at run 0
+was the cold browser process, and the warm-up removed it; one artifact is one
+data point, so "was" is one artifact's word and the next mint is the second.
+Second: the long task did not
+leave. Run 0's with-chrome visit carries 97 ms of long task, every other
+visit in both conditions 0, which makes four deployed-plane artifacts of five
+with a long-task sample at run 0 in the with-chrome condition only (55, 57,
+118, 97 ms), and this one on a warm process. Run 0 is the modal position,
+not the only one: two of the four earlier artifacts carry a second with-chrome
+sample at run 5 (64 and 51 ms, the ADR's L note already says so), so six
+non-zero samples across five artifacts, four at run 0, two at run 5, none
+without the chrome. Two effects that moved differently under the warm-up:
+the paint spike went with the cold process, the long task mostly did not,
+and the 2026-11-01 record's named place to look stands: the chrome's three subresources (`/_pm/chrome.css`, the
+instrument mono, `/_pm/measure.js`) are stripped from the without-chrome
+document, so the warm-up never requests them and run 0's with-chrome visit is
+the probe's first request for each. Whether that path is edge-cached was
+unverified; fetched twice each two minutes after the probe, all three came
+back `cf-cache-status: HIT` at SJC under `max-age=0, must-revalidate`, so the
+edge holds them once requested, but whether they were HITs at run 0 itself is
+not observable after the fact (the probe's seven with-chrome visits had just
+requested them). A long task is main-thread time, so a slow fetch alone is not
+it; and the renderer-local firsts (a first parse of the stylesheet, a first
+decode of the variable font, a first compile of the ruler) are EXCLUDED by
+the probe's own design, because every recorded visit opens a fresh context
+and Chromium never shares a renderer across contexts, so every with-chrome
+visit pays those and six of seven show 0 ms (the correctness lens caught this
+entry naming them). What is left is process-wide or plane-side: state the
+browser shares across contexts (its one network process's first contact with
+those three paths, its GPU process's first raster of the mono) or the edge's
+and the Worker's first serving of them, named as candidates and not as
+causes. **What is given up:**
+the published long-task constant stays 0 ms, the medians absorbing the one
+sample as before, and the methodology page's band clause states it ("0–97 ms
+across the runs, every non-zero sample in the with-chrome condition"), derived
+from the runs; the cause is not claimed. **Owed:** `cf-cache-status` per
+subresource per visit in the probe's artifact, a small probe change, so the
+next mint can settle the edge question instead of inferring it.
+
+**Where the words went.** The constant record (`constant-2026-11-17.md`),
+one dated note under ADR-0001 addendum L, the `measurement-pass` node's dated
+bullet, which fit under the cap only after the node's three stale owed lists
+(PR-2's, PR-3's and the 2026-11-01 bullet's, each discharged or carried by
+the node that owns it) moved verbatim to this log under "`measurement-pass`: narrative moved from
+the decision map (2026-11-17)"; the node's Status quotes both sub-entries.
+The log stays under the 896 KiB ceiling (917,504 B) with room: 812,048 B at
+the commit (`wc -c docs/build-log.md`, the whole file with this entry in it),
+so no re-observation this unit.
+
+**Verification, in the standing order.** `pnpm run check` 40 of 40 three
+times (the untouched tree, the staged tree with the records in, the folded
+tree before the commit). The origin suite ALONE: crate mode first, on the
+untouched tree, 670 of 670 in 150.12 s (unit 0's open item); then on the
+final tree, fixture mode hung in the third plane class on a quiet box (load
+1.02; the front Worker silent after twenty seconds, every fetch leg at 5 s,
+signalled at the vitest runner alone, exit 143), crashed next in wrangler
+4.110's first class (the banner after 65 served responses, 138 refused
+connections, the banner now naming 4.164.0 as current), then passed 670 of
+670 in 149.62 s; crate mode on the final tree 670 of 670 in 144.85 s. Two
+plane failures in five runs on a tree whose only non-record change is one
+JSON file the front build bakes into `dist/`; the hang at load 1.02 takes
+away the loaded-machine reason the last entry offered and leaves the plane,
+which is unit 2's subject (`suite-runs-2026-11-17.md`). The sabotage table
+(`sabotage-reprobe.mjs`): 26 rows, 16 caught, 7 controls, 0 missed, 3
+expected misses, twice, round 1 before the lenses and round 2 after every
+fold. The rows that matter: the new artifact under the six edits the
+2026-11-01 gate was proven on, re-aimed at its own values (the delta 92 to
+20; the largest sample, run 4 now, moved so the median moves; a short list;
+a wrong `runsPerCondition`; `conditions` deleted), each refused by name
+through the real front build; the node over and under the cap; the Status
+quoting this entry's title exactly and with one word changed; the glyph rule
+over the staged record; the log past its ceiling; the masters' anchors. The
+three expected misses are stated limits: P6 (a run edited so both medians
+stand) and W1 (the warm-up visit deleted, which no test drives and no test
+asserts) carried from 2026-11-01, and P7, new here: the artifact's only
+long-task sample zeroed by hand, with every median and the delta unchanged
+because six of seven samples were already 0, so the one-sided signal the
+methodology page reports in its band clause can be erased without a refusal;
+the same limit as P6 in the metric where this unit's finding lives, and
+`pnpm bench reproduce` plus review are what hold it. Verify-slice
+(`.claude/workflows/verify-slice.js` by scriptPath, the four lenses in
+sequence, the scratchpad as the findings dir, probing inline meanwhile):
+seventeen raw findings, fourteen distinct, thirteen folded, one the pending
+record the lenses were told about. The ones that changed what this entry
+says: the correctness lens struck the renderer-local candidates for the
+97 ms (a fresh context per visit means every with-chrome visit pays them,
+and six of seven show 0), leaving the process-wide and plane-side ones; the
+conformance lens found the 2026-11-01 bullet's owed sentence deleted rather
+than moved (now the sub-entry's third block), the "parked worktrees gone"
+sentence false (five remain, named), the 20 ms attributed to one arm when
+16 ms is one and 4 the other, and the cause stated as settled in the ADR,
+the node and the Status where the record itself says one artifact is one
+data point (hedged in all three, with the six-in-seven base rate stated);
+the skeptic lens found the long-task narrative claiming later visits never
+carry the sample when two of the four earlier artifacts carry one at run 5
+(64 and 51 ms, now in the record and here: six samples across five
+artifacts, four at run 0, two at run 5, none without the chrome); the seams
+lens found two quoted `grep` results that did not reproduce as written and a
+bare ADR path that does not resolve from `docs/adr/`; and the runner's own
+`caught=` count would have counted a wrong stated limit as a designed catch
+(narrowed). Each fold ran the glyph count, the node measure, the masters
+and the re-stage; the whole table re-ran as round 2 (`sabotage-2026-11-17.md`,
+`verify-slice-2026-11-17.md`). Inline probes of my own: the gate has two
+callers, `build.mjs` and the refusals test; the artifact's run 0 is 744 ms
+against a 704 median and its largest sample sits at index 4 (`jq`); the
+served sentence matches the record verbatim; the served constant is
+byte-identical to the committed one, re-checked after each sabotage round;
+the three subresources re-fetched by the seams lens twenty-five minutes
+after the probe were still HITs. Masters regenerated byte-identical after
+every fold (the entry and the sub-entry sit below every `## Phase` heading).
+The log at commit is the figure in the sentence that names it, under the
+917,504 B ceiling.
+
+**Left for Rob, carried forward.** The push, the PR and the merge, which
+deploy the re-published constant; the home PLP row's one sentence; the
+remaining five parked worktrees and the remote branch `constant-limits`;
+then unit 2, the wrangler bump, with this unit's two plane failures as its
+newest evidence, and unit 3, the qwik stepper, with the `64725e2` smoke red
+as the claim-killer the brief asked for. Unchanged from the 2026-11-01
+entry's list otherwise: `pm-warm`'s plan; `CdpConnection.send()` without a
+timeout; the checkout line list's `tabindex`; the react-next slot claims; the
+deployed h2/h3 header bytes from RFC tables; snapshot-capture's 455 against
+456. New and small: `cf-cache-status` per subresource per visit in the probe.

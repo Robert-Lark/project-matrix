@@ -390,7 +390,17 @@ addendum S's stated exception, routing in both arms with the cache off
 within every visit, so nothing can carry from the warm-up into run 0 either
 way: the warm-up heats the browser process and never a cache. The published constant is unchanged by this, the probe is; the
 re-probe at the next attested SHA is what shows whether run 0 still spikes,
-and that comparison is recorded when it runs.
+and that comparison is recorded when it runs. *Re-probed 2026-11-17 at
+the attested `64725e2` (post-runbook unit 1 follow-up):* the warmed probe's run 0
+was not the largest with-chrome sample (the first deployed-plane artifact where
+it is not; the largest sat at run 4 with no long task beside it) and still
+carried the artifact's only long-task sample, 97 ms, on a warm process; on one
+artifact, with the next mint as the second data point, that reads as the paint
+spike having been the cold process and the long task something else, with the
+chrome's three subresources, which the without-chrome warm-up never requests,
+the first place to look; the constant re-published at +92 ms on both paints,
+inside the band of the four deployed-plane artifacts before it (record:
+[docs/prototypes/measurement-pass/constant-2026-11-17.md](../prototypes/measurement-pass/constant-2026-11-17.md)).
 
 **M. The addendum-G cross-framework asymmetry, resolved: publish with the
 stated caveat, never reclassify.** The executable→JS byte rule stands,
