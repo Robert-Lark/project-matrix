@@ -10046,3 +10046,202 @@ entry's list otherwise: `pm-warm`'s plan; `CdpConnection.send()` without a
 timeout; the checkout line list's `tabindex`; the react-next slot claims; the
 deployed h2/h3 header bytes from RFC tables; snapshot-capture's 455 against
 456. New and small: `cf-cache-status` per subresource per visit in the probe.
+
+### The runtime that stopped answering, and the bump that made it say so (2026-11-18)
+
+The `repo-hygiene` node has carried "wrangler 4.110's plane crashes (a lockfile
+change with its own verification)" as owed since 2026-10-05, and every suite record
+since has paid for it: the empty `✘ [ERROR]` banner four times in seventeen local
+runs, the hang class four times (three on 2026-11-01, one on 2026-11-17), and on 2026-11-17 a hang at load 1.02 that took
+away the loaded-machine reason the 2026-11-01 record had offered. This is the bump,
+post-runbook unit 2: one lockfile change, wrangler 4.110.0 to 4.164.0, and the
+verification the brief said IS the unit. The verification found the hang still
+there, and found where it is.
+
+**The tree, and the one change.** Worktree `.claude/worktrees/wrangler-bump` at
+`origin/main` = `76b4678` (PR #95), porcelain 0, `pnpm install --offline` and `pnpm
+run check` 40 of 40 before anything. `npm view wrangler version` said 4.164.0, the
+version the 4.110 crash banner had named the day before; its publish time
+(2026-11-17T11:15Z) was 29 hours old when the resolution ran, which matters because
+pnpm 11's default `minimumReleaseAge` is a day (the settings page, fetched and quoted
+in the record) and the workspace file's `minimumReleaseAgeExclude` entries for
+`wrangler@4.110.0` and `miniflare@4.20260708.1` are the trace of the last time that
+gate bit; they now name versions nothing resolves and were left for a one-line
+follow-up. `pnpm --recursive update wrangler` did two things the brief did not ask:
+it rewrote the specifier in all eleven workspace `package.json` files to `^4.164.0`,
+and in `variants/qwik/package.json` it re-serialised the file, turning the
+description's JSON escape for U+2014 into the glyph the em-dash guard forbids. The
+eleven files were put back and `pnpm install` re-synced the lockfile's importer lines
+with the resolution kept; `pnpm install --frozen-lockfile --offline` admits the
+result; porcelain is ` M pnpm-lock.yaml`, one file, before and after the check (40 of
+40). The alternative, eleven floor bumps, is named and rejected in the record (the
+lockfile is the pin; floors are churn with no guard); what is given up is that
+`package.json` alone still says `^4.110.0`. Thirteen tracked `package.json` files
+name wrangler, not the brief's eight: the eleven, plus two prototypes under
+`docs/prototypes/` that are their own npm roots and are not touched.
+
+**What the lockfile now carries.** wrangler 4.164.0, workerd 1.20261117.1 (from
+1.20260708.1), esbuild 0.28.2 under wrangler, and `miniflare 5.20261117.0-beta`: the
+stable wrangler has shipped Miniflare 5 pre-releases since 4.117.0, alpha through 4.149.0
+and beta from 4.150.0 (38 and 21 "Updated dependencies" lines in the changelog range; `npm view miniflare dist-tags`
+still has `latest` at a 4.x), so 4.116.0 was the last wrangler on Miniflare 4 (pinning it was the alternative, rejected in the record: it keeps a stable Miniflare and gives up 4.132.0's error surfacing, the thing that made this unit's hang legible), and the local dev runtime under every run below is a beta by its own tag.
+One new warning: wrangler 4.164.0 wants `@cloudflare/workers-types ^5.20261117.1` as
+an optional peer, the workspace has 5.20260718.1 (qwik and react-next declare it);
+`pnpm peers check` exits 1 where the baseline printed nothing. The three Workers
+generate their runtime types from the installed wrangler and do not use the peer; a
+workers-types bump is its own small unit. The CLI surface this repo uses (`dev
+--port --inspector-port`, `--test-scheduled`, `deploy`, `d1 migrations apply
+--local/--remote`, `types`, `r2 bucket create`, each with its file and line in the
+record) was read against the 70 version headings between 4.110.0 and 4.164.0 of
+`packages/wrangler/CHANGELOG.md` at the 4.164.0 tag (fetched by `gh api`, 1.79 MB,
+330 KB in range): no flag or subcommand renamed or removed; "breaking" appears once,
+about Email Routing; the entries that touch what is used are quoted (`d1 migrations
+apply` statement splitting in 4.124.0, `types` declaring built-in module patterns in
+4.148.0, the deploy reading its workers.dev URL from the Worker resource in 4.136.1,
+signal exits non-zero in 4.159.0). Two surfaces the local suite cannot exercise: the deploy output's URL line that CI
+greps (`ci.yml:214`), and the remote seed's parsing of wrangler's missing-key error
+(`workers/edge/seed-local.mjs`, run by CI's deploy job, missed by my first surface sweep
+and found by the seams lens; its message is unchanged in the 4.164.0 dist); the merge's
+deploy run is the proof of both. The lockfile change also moved the test runner: vitest's
+vite resolves esbuild 0.28.2 in ten importers and keeps 0.28.1 in six (`grep -c` and the
+importer list in the record).
+
+**The runs.** `pnpm run check` 40 of 40 on the bumped tree, then the origin suite
+alone, fixture and crate, each with its front-log tail in
+`docs/prototypes/wrangler-bump/suite-runs-2026-11-18.md`: fixture 670 of 670 in
+144.06 s; crate HUNG; fixture HUNG; crate 670 of 670 in 145.16 s; crate 670 of 670 in
+144.29 s. Both modes hold on wrangler 4.164.0 and workerd 1.20261117.1 (fixture green once,
+crate twice; the other fixture run hung), which is what the bump had to show. Two of five hung, one in each mode, on loads of 2.97 and 1.64,
+against one of five on 4.110 the day before and three of six on 2026-11-01: counts
+this small do not show the rate moving either way. No run crashed in the empty-banner
+class; five clean runs do not retire a class seen four times in seventeen. No leg
+asserted red on the code in any run whose failure messages were captured (run 2's one
+2 ms red was cut off by the signal). Then the old lockfile written back (`git show HEAD:pnpm-lock.yaml`, the frozen offline install re-linking 4.110.0 in 3.2 s): fixture 670 of 670 in 144.04 s, the F3 row's proof; the bumped lockfile restored byte-identical after. Then a diagnostic, not a change: three fixture runs with the front's `log()` returning at once (a one-line scratch edit, reverted; zero JSON lines in its log): 670 of 670, 670 of 670, 669 of 670 (one leg red, the `bench.browser.test.ts` web-vitals leg, issue #16's null-vital flake class), no hang in three, against two hangs in five with the logging on; the bench's CPU
+profiler ran in all three, so they vary one factor of the two the hang record names, and
+three runs are too few to call even that.
+
+**The hang, dissected (`hang-2026-11-18.md`).** The two hung runs have the third
+class's suite shape exactly (every fetch leg at 5 s, every browser leg at 30 s, zero
+refused, no banner), and this time the front Worker's log did not go silent: after 213
+and 704 served responses it reported every request from then on as `✘ [ERROR] Error
+inside ProxyWorker ... (failed after 3 attempts): internal error; reference = <id>`
+(GETs retried twice, POST/PUT/DELETE given up at once), 147 and 42 such lines, the
+message 4.132.0's changelog entry promised where 4.110 printed nothing. Every other
+Worker answered on its own port in under 30 ms while the front timed out. Each `wrangler
+dev` runs two `workerd` processes, the proxy and the user Worker's runtime; the proxy was
+idle, the runtime at 12 to 15% CPU. `sample` (macOS) found two of its threads blocked for
+every sample, in both runs, both in `kj::_::Mutex::lock` waiting for a write lock: the
+main thread, inside the Worker's `console.log` (the front logs one JSON line per
+dispatch, `workers/front/src/index.js:103-104`), where V8 reports the call to an
+attached inspector session and workerd's `InspectorChannelImpl::WebSocketIoHandler::send`
+forwards it, with the isolate lock held, so nothing else on that isolate could run; and
+the inspector thread, the one that transmits on that websocket (`transmitLoop` in one
+run, `XThreadNotifier::awaitNotification` in the other), so nothing went out on it either.
+The CPU was a third thread, V8's sampling profiler, signalling the main thread. The
+inspector session was not wrangler's: its only commands in the front's debug log are
+`Profiler.enable`, a 100 microsecond sampling interval, `Profiler.start` and an
+unanswered `Profiler.stop`, which is the origin suite's own bench leg profiling the
+Workers on each visit's path (`tools/bench-runner/src/cpu.ts:179-197`, built at
+`tools/origin-suite/suite/bench.browser.test.ts:100`). Run 2 hung in its first profiler session and run 3 in its second, while every green
+run completed 40; the last console event left the runtime 0.76 s and 0.21 s after the
+session's start, which by itself is weak (a third of all console events fall within a
+second of a start in the green runs, three quarters inside a session), and the inspector
+side answered nothing after it (the proxy's ten-second
+heartbeat: 80 and 33 sent, 0 answered); the profiler's socket closed at exactly 300.1 s
+in run 2, which is the bench `beforeAll` hook's `300_000` timeout. In every green run the
+profiler started and stopped 40 times on the front, logging on or off, 4.110 or 4.164.
+The front logs a dispatch after the upstream answers and before it returns, and eight
+dispatches were logged after run 2's last served response and never returned, which is
+what a thread stopping inside a later `console.log` predicts; the proxy's
+first report came minutes later, its retries' time.
+
+**What is claimed, and what is not.** Claimed: the suite holds on the bumped tree;
+the hang class survives the bump; on 4.164.0 a hung run names its own failures and its
+stuck process, which 4.110 did not, and that is the bump's one measured gain (the 4.114.0
+entry describes 4.110's silence exactly: GETs "would silently hang (with nothing
+logged)"). Named as a candidate with its evidence, not as a cause: with the suite's CPU
+profiler just started on the front's isolate, a console notification to that session and the inspector's transmit thread each block
+on a kj mutex (the same one is likely, not shown) that nothing releases. Not shown: who holds the lock, and which factor is needed. The three silenced runs dropped
+the logging and kept the profiler (40 starts each) and did not hang, so they vary one
+factor of two; the run that varies the other, the profiler off with the logging on, was
+not made. The blog logs per request and never wedged, but the bench never profiles it
+(`cpu.ts:218`), so it is not a control. A first draft of this entry named the inspector
+client as wrangler's own CLI and missed the second blocked thread; the seams and skeptic
+lenses found both (the verify-slice record, rows 23 and 24). No workerd or workers-sdk
+issue found names this shape (the searches are in the record). The bump therefore cannot
+be said to fix the crash or the hang, and the sabotage table's F3 row shows why a green
+run could not have said so: the old lockfile written back installs and runs green too.
+What the bump buys, in something real: a hung run now costs the minutes to its signal
+plus a `sample`, instead of the minutes plus a guess; the plane runs on the runtime
+Cloudflare ships today instead of July's; and the hang now has a suspect inside this
+repo, the bench's own profiler, which a one-line change can take out of a run.
+
+**Where the words went.** `docs/prototypes/wrangler-bump/`: `bump-2026-11-18.md`
+(the change, the gate, the changelog against the CLI surface, the quoted entries),
+`suite-runs-2026-11-18.md`, `hang-2026-11-18.md` with the two trimmed stacks,
+`sabotage-wrangler-bump.mjs` and its table, the verify-slice record, a README. The
+`repo-hygiene` node's dated 2026-11-18 bullet and its Status pointer to this entry;
+the `measurement-pass` node untouched (7,057 B of 7,168, no room, and not this
+unit's node). ADR-0004's "what local `wrangler dev` 4.110 does, measured" (the POST
+to an asset path) stands as a dated measurement; nothing here re-measured it. The log
+stays under the 896 KiB ceiling: 828,834 B at the commit (`wc -c
+docs/build-log.md`), so no re-observation this unit.
+
+**Verification, in the standing order.** `pnpm run check` 40 of 40 five times (the
+untouched tree; the bumped tree; the staged tree with the records in, twice as the folds
+landed; the final tree). The origin
+suite ALONE as above, five runs on the bumped tree plus the phase-2 runs, every one
+recorded with its front-log tail and the load at its start. The sabotage table
+(`sabotage-wrangler-bump.mjs`): two rounds: round 1, 20 rows, 10 caught, 7 controls, 2 expected misses and 1 row
+caught where a miss was expected (R2, below); round 2, after the runner gained a
+reason check on every row and every lens fold had landed, 21 rows, 11 caught, 7
+controls, 3 expected misses, no row caught for the wrong reason, no runner error. The rows that matter: the frozen
+install refusing a specifier moved without the lockfile (the eleven-file rewrite
+pnpm made, re-done for one file: `ERR_PNPM_OUTDATED_LOCKFILE`, what CI's three
+frozen installs would hit) and a resolution hash altered by one character; the
+private-details guard catching a mirror host re-planted in a prototype lockfile and a
+mailbox in this unit's record; the same host planted in `pnpm-lock.yaml` refused, but by
+pnpm itself (its supply-chain policy check, `ERR_PNPM_TARBALL_URL_MISMATCH`, run at every
+pnpm invocation, so CI's frozen install would hit it) and not by the repo's guard, whose
+lockfile regex names `package-lock.json` and `npm-shrinkwrap.json` only (a pnpm lockfile
+records registry packages by integrity alone, zero URLs in the file, so a mirror leaves no
+host in it); round 1 scored that row as the repo guard's catch because the guard runs
+through `pnpm --filter`, which ran the policy check first, and the row was re-aimed; the
+same host in `.npmrc` seen by nothing, offline (pnpm's frozen offline install passes with
+it, a stated limit). So the brief's "keep the registry pinned or the no-private-details
+guard bites" names the wrong guard: pnpm's bites, the repo's does not; the node
+over and under the cap; the Status quoting this entry's title exactly and with one
+word changed; the glyph rule over the staged records; the log past its ceiling; the
+masters' anchors; and F3, the old lockfile written back, admitted by the install
+(exit 0) and passed by the suite, the stated limit the brief asked to be shown.
+Verify-slice (`.claude/workflows/verify-slice.js` by scriptPath, the four lenses in
+sequence, the scratchpad as the findings dir, probing inline meanwhile):
+38 findings, all confirmed and all folded. The two that changed what this entry says
+most: the seams and skeptic lenses found that the inspector client was the suite's own
+CPU profiler and that a second thread was blocked (my first draft had named wrangler's
+CLI and trimmed that thread away); the skeptic lens then priced the timing coincidence
+(about one in eight) and found the session-index signal. The rest corrected figures
+(the doubled console counts, "seven" hangs, the Miniflare 4 and 5 boundaries, the
+heartbeat's owner, the run tails), widened the CLI-surface sweep to the edge's seed
+script, named the test runner's esbuild split, fenced the blog as a non-control, scoped
+the workers-types follow-up to the two variants ADR-0004 allows, and gave the sabotage
+runner its reason checks. The seams and skeptic lenses died at a model usage limit partway
+through and were resumed on another model, the first two replaying from cache. Masters regenerated byte-identical (the entry sits below every `## Phase`
+heading). The log at commit is the figure in the sentence that names it.
+
+**Left for Rob, carried forward.** The push, the PR and the merge, whose deploy run
+and post-deploy smoke are the bump's proof on the plane (the deploy URL grep, the
+qwik stepper's fifth smoke); then the two small units this one surfaced:
+`@cloudflare/workers-types` to wrangler's peer range in the two variants that declare it
+(qwik and react-next; the three Workers keep generating their types, ADR-0004), with
+react-next's committed `cloudflare-env.d.ts` regenerated (its header still names workerd
+1.20260708.1), and the two stale
+`minimumReleaseAgeExclude` entries; and the hang's next step, which is a choice
+rather than a unit: an upstream issue with the two stacks and the debug-log timeline
+(Rob-gated, it leaves the machine), or the discriminating run first (the bench's `cpuSource` off with the logging
+on, a one-line scratch edit and a handful of 145 s runs), or neither; whether CI's
+origin job, which runs the same suite with the profiler on, has ever hit it was not
+checked. Unchanged otherwise: the home PLP row's sentence; the
+five parked worktrees and the remote branches `constant-limits` and `re-probe`;
+`domain-cutover` (e)'s older sentence; the rest of the 2026-11-01 list; the probe's
+`cf-cache-status` per subresource; unit 3, the qwik stepper, now with four reds.
