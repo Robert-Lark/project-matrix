@@ -1,0 +1,101 @@
+# workerd 74698 (the front Worker's runtime), sampled 2 s at 16:34Z during suite run 3 (fixture, the second hang; suite-runs-2026-11-18.md), 2026-11-18
+# macOS `sample 74698 2`; the main thread's stack, frames trimmed as in the run-2 excerpt (workerd-sample-run2-2026-11-18.txt).
+
+Process:         workerd [74698]
+Date/Time:       2026-11-18 08:34:30.497 -0800
+
+1648  Thread_138750529   DispatchQueue_1: com.apple.main-thread  (serial)
+1648  start
+1648  main
+1648  _RNvNtCsa9BKTri5B3M_3std2rt19lang_start_internal
+1648  _RNCINvNtCsa9BKTri5B3M_3std2rt10lang_startNtNtB6_7process8ExitCodeE0CslARvANVufHy_7workerd
+1648  _RINvNtNtCsa9BKTri5B3M_3std3sys9backtrace28___rust_begin_short_backtraceFENtNtB6_7process8ExitCodeB19_ECslARvANVufHy_7workerd
+1648  _RNvCslTgN5UuhylB_11workerd_cli4main
+1648  _RNvCslTgN5UuhylB_11workerd_cli11run_command
+1648  _RNvNtCsbyKmY2wN7DJ_14workerd_server5entry5serve
+1648  workerd$server$cli$cxxbridge1$with_process_context
+1648  workerd::server::cli::with_process_context(bool, rust::cxxbridge1::Vec<unsigned long long>, rust::cxxbridge1::Box<workerd::server::PendingCommand>)
+1648  workerd::server::run_pending_command(rust::cxxbridge1::Box<workerd::server::PendingCommand>, rust::cxxbridge1::Vec<unsigned long long>, bool)
+1648  workerd$server$cxxbridge1$run_pending_command
+1648  _RNSNvYNCINvNtCsbyKmY2wN7DJ_14workerd_server5entry3runNCNvB9_12server_serve0NCNvB9_5serve0E0INtNtNtCsgtPOCBgevO_4core3ops8function6FnOnceTINtNtCslJsSqIQKwiA_5alloc3vec3VecyEbEE9call_once6vtableB
+1648  _RNvMs1_NtNtCsJ1NiIcemM6_11kj_rs_tokio3ffi6bridgeNtB5_19TokioAsyncIoContext8block_on
+1648  kj_rs_tokio$cxxbridge1$TokioAsyncIoContext$block_on
+1648  kj_rs_tokio::TokioAsyncIoContext::blockOn(rust::cxxbridge1::Box<kj_rs_tokio::BlockOnTask>)
+1648  kj::_::waitImpl(kj::Own<kj::_::PromiseNode, kj::_::PromiseDisposer>&&, kj::_::ExceptionOrValue&, kj::WaitScope&, kj::SourceLocation)
+1648  kj::_::waitImpl(kj::Own<kj::_::PromiseNode, kj::_::PromiseDisposer>&&, kj::_::ExceptionOrValue&, kj::WaitScope&, kj::SourceLocation)::$_2::operator()() const
+1648  kj::TaskSet::Task::fire()
+1648  kj::_::TransformPromiseNodeBase::get(kj::_::ExceptionOrValue&)
+1648  kj::_::SimpleTransformPromiseNode<workerd::Worker::AsyncLock, decltype(reducePromiseType((kj::_::ReturnType_<kj::HttpClient::Response, workerd::Worker::Lock&>::Type*)(nullptr), false)) workerd::
+1648  decltype(reducePromiseType((kj::_::ReturnType_<kj::HttpClient::Response, workerd::Worker::Lock&>::Type*)(nullptr), false)) workerd::IoContext::runSingle<void workerd::IoContext::resumeAfterIo<kj
+1648  workerd::IoContext::runImpl(workerd::IoContext::Runnable&, workerd::Worker::LockType, kj::Maybe<workerd::InputGate::Lock>, workerd::IoContext_Runnable_Exceptional)
+1648  workerd::IoContext::runInContextScope(workerd::Worker::LockType, kj::Maybe<workerd::InputGate::Lock>, kj::Function<void (workerd::Worker::Lock&)>)
+1648  workerd::IoContext::runInContextScope(workerd::Worker::LockType, kj::Maybe<workerd::InputGate::Lock>, kj::Function<void (workerd::Worker::Lock&)>)::$_0 workerd::jsg::V8StackScope::runInV8StackIm
+1648  kj::Function<void (workerd::Worker::Lock&)>::Impl<workerd::IoContext::runImpl(workerd::IoContext::Runnable&, workerd::Worker::LockType, kj::Maybe<workerd::InputGate::Lock>, workerd::IoContext_Ru
+1648  kj::_::Deferred<workerd::IoContext::runImpl(workerd::IoContext::Runnable&, workerd::Worker::LockType, kj::Maybe<workerd::InputGate::Lock>, workerd::IoContext_Runnable_Exceptional)::$_0::operator
+1648  workerd::jsg::Lock::runMicrotasks()
+1648  v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*)
+1648  v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*)
+1648  v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*)
+1648  v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)
+1648  v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)
+1648  Builtins_JSRunMicrotasksEntry
+1648  Builtins_RunMicrotasks
+1648  Builtins_AsyncFunctionAwaitResolveClosure
+1648  ???  [0x170744fc8]
+1648  ???  [0x170004594]
+1648  Builtins_CallApiCallbackGeneric
+1648  v8::internal::(anonymous namespace)::InvokeFunctionCallback(v8::FunctionCallbackInfo<v8::Value> const&, v8::internal::CallApiCallbackMode)
+1648  workerd::(anonymous namespace)::consoleDecorator<(workerd::jsg::ContextDataSlot)8, (capnp::schemas::Level_a8b8c4ab94a9dea7)2>(v8::FunctionCallbackInfo<v8::Value> const&)
+1648  workerd::(anonymous namespace)::handleLog(workerd::jsg::Lock&, workerd::Worker::LoggingOptions const&, capnp::schemas::Level_a8b8c4ab94a9dea7, v8::Local<v8::Function>, v8::FunctionCallbackInfo<v
+1648  v8::Function::Call(v8::Isolate*, v8::Local<v8::Context>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*)
+1648  v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHan
+1648  v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)
+1648  Builtins_JSEntry
+1648  Builtins_JSEntryTrampoline
+1648  Builtins_CEntry_Return1_ArgvOnStack_BuiltinExit
+1648  v8::internal::Builtin_ConsoleLog(int, unsigned long*, v8::internal::Isolate*)
+1648  v8::internal::(anonymous namespace)::ConsoleCall(v8::internal::Isolate*, v8::internal::BuiltinArguments const&, void (v8::debug::ConsoleDelegate::*)(v8::debug::ConsoleCallArguments const&, v8::d
+1648  v8_inspector::V8Console::Log(v8::debug::ConsoleCallArguments const&, v8::debug::ConsoleContext const&)
+1648  v8_inspector::(anonymous namespace)::ConsoleHelper::reportCall(v8_inspector::ConsoleAPIType)
+1648  v8_inspector::(anonymous namespace)::ConsoleHelper::reportCall(v8_inspector::ConsoleAPIType, std::span<v8::Local<v8::Value> const, 18446744073709551615ul>)
+1648  v8_inspector::V8ConsoleMessageStorage::addMessage(std::unique_ptr<v8_inspector::V8ConsoleMessage>)
+1648  v8_inspector::V8InspectorImpl::forEachSession(int, std::function<void (v8_inspector::V8InspectorSessionImpl*)> const&)
+1648  v8_inspector::V8RuntimeAgentImpl::messageAdded(v8_inspector::V8ConsoleMessage*)
+1648  v8_inspector::V8ConsoleMessage::reportToFrontend(v8_inspector::protocol::Runtime::Frontend*, v8_inspector::V8InspectorSessionImpl*, bool) const
+1648  v8_inspector::protocol::Runtime::Frontend::consoleAPICalled(v8_inspector::String16 const&, std::unique_ptr<std::vector<std::unique_ptr<v8_inspector::protocol::Runtime::RemoteObject>>>, int, doub
+1648  v8_inspector::V8InspectorSessionImpl::SendProtocolNotification(std::unique_ptr<v8_crdtp::Serializable>)
+1648  v8_inspector::(anonymous namespace)::ChannelWrapper::sendNotification(std::unique_ptr<v8_inspector::StringBuffer>)
+1648  workerd::Worker::Isolate::InspectorChannelImpl::sendNotification(std::unique_ptr<v8_inspector::StringBuffer>)
+1648  workerd::Worker::Isolate::InspectorChannelImpl::WebSocketIoHandler::send(kj::String)
+1648  workerd::XThreadNotifier::notify() const
+1648  kj::_::Mutex::lock(kj::_::Mutex::Exclusivity, kj::Maybe<kj::Quantity<long long, kj::_::NanosecondLabel>>, kj::NoopSourceLocation)
+1648  _pthread_rwlock_lock_slow
+1648  _pthread_rwlock_lock_wait
+1455  __psynch_rw_wrlock
+182  _sigtramp
+11  _sigtramp
+11  v8::sampler::SignalHandler::HandleProfilerSignal(int, __siginfo*, void*)
+11  v8::sampler::SamplerManager::DoSample(v8::RegisterState const&)
+11  v8::internal::CpuSampler::SampleStack(v8::RegisterState const&)
+11  v8::internal::TickSample::Init(v8::internal::Isolate*, v8::RegisterState const&, v8::internal::TickSample::RecordCEntryFrame, bool, bool, v8::base::TimeDelta, std::optional<unsigned long long>, vo
+
+# The inspector thread (workerd::server::startInspector), same sample, trimmed the same way:
+
+1648  Thread_138750556
+1648  thread_start
+1648  _pthread_start
+1648  kj::Thread::runThread(void*)
+1648  kj::Function<void (kj::Function<void ()>)>::Impl<workerd::server::JsonLogger::getThreadInitializer()::$_0>::operator()(kj::Function<void ()>)
+1648  kj::Function<void (kj::Function<void ()>)>::Impl<kj::ExceptionCallback::RootExceptionCallback::getThreadInitializer()::'lambda'(kj::Function<void ()>)>::operator()(kj::Function<void ()>)
+1648  kj::Function<void ()>::Impl<workerd::server::JsonLogger::getThreadInitializer()::$_0::operator()(kj::Function<void ()>)::'lambda'()>::operator()()
+1648  kj::Function<void ()>::Impl<workerd::server::startInspector(kj::String, workerd::server::InspectorServiceIsolateRegistrar&)::$_0>::operator()()
+1648  kj::_::NeverDone::wait(kj::WaitScope&, kj::SourceLocation) const
+1648  kj::_::waitImpl(kj::Own<kj::_::PromiseNode, kj::_::PromiseDisposer>&&, kj::_::ExceptionOrValue&, kj::WaitScope&, kj::SourceLocation)
+1648  kj::_::waitImpl(kj::Own<kj::_::PromiseNode, kj::_::PromiseDisposer>&&, kj::_::ExceptionOrValue&, kj::WaitScope&, kj::SourceLocation)::$_2::operator()() const
+1648  workerd::XThreadNotifier::awaitNotification() (.resume)
+1648  kj::_::Mutex::lock(kj::_::Mutex::Exclusivity, kj::Maybe<kj::Quantity<long long, kj::_::NanosecondLabel>>, kj::NoopSourceLocation)
+1648  _pthread_rwlock_lock_slow
+1648  _pthread_rwlock_lock_wait
+1648  __psynch_rw_wrlock
+
+# Threads in this sample (grep -c -E '^ +[0-9]+ Thread_'): 14: main, eleven V8 DefaultWorker threads parked in __psynch_cvwait, the inspector thread above, and v8:ProfEvntProc (the sampling profiler's).
